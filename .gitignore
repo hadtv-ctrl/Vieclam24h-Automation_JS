@@ -1,17 +1,13 @@
-node_modules/
+# Thư mục báo cáo của Playwright
+/playwright-report/
 
-# Playwright outputs
-playwright-report/
-test-results/
-blob-report/
-evidence/
+# Kết quả test (chứa video, trace,...)
+/test-results/
 
-# Environment and local machine files
+# Thư mục chứa ảnh chụp màn hình làm bằng chứng
+/evidence/
+
+# Thư viện và các file môi trường
+/node_modules/
 .env
-.env.*
-!.env.example
-*.log
-
-# OS/editor noise
 .DS_Store
-Thumbs.db

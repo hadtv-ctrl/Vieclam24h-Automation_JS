@@ -69,10 +69,10 @@ class LoginPopup extends BasePage {
 
   async waitForOtpVisible() {
     try {
-      await this.otpModalTitle.waitFor({ state: 'visible', timeout: 15000 });
+      await this.otpModalTitle.waitFor({ state: 'visible', timeout: 30000 });
       return;
     } catch (error) {
-      await this.otpInputs.first().waitFor({ state: 'visible', timeout: 15000 });
+      await this.otpInputs.first().waitFor({ state: 'visible', timeout: 30000 });
     }
   }
 

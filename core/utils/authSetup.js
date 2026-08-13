@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
-const { expect } = require('@playwright/test');
+const { expect, request: playwrightRequest } = require('@playwright/test');
+const { generateRandomVNPhone, generateRandomEmail } = require('./commonUtils');
+const { RegistrationApiHelper } = require('./registrationApiHelper');
 const { LoginPopup } = require('../../pages/LoginPopup');
 const { HomePage } = require('../../pages/HomePage');
 const { PopupConsent } = require('../../pages/PopupConsent');
@@ -17,36 +18,41 @@ function loadUserData() {
   }
 }
 
-async function executeRegisterApiSpec() {
-  const repoRoot = path.resolve(__dirname, '../..');
-  const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const args = [
-    'playwright',
-    'test',
-    'tests/api/register_api.spec.js',
-    '--reporter=line',
-    '--trace=off',
-    '--output=test-results/register-api-precondition',
-    '--grep=POST /seeker/fe/register'
-  ];
+async function createRegisteredUserForPrecondition() {
+  const requestContext = await playwrightRequest.newContext();
+  const apiHelper = new RegistrationApiHelper(requestContext);
+  const payload = apiHelper.buildPayload(
+    generateRandomEmail(),
+    'Test@1234',
+    generateRandomVNPhone(),
+    'Hà JS'
+  );
 
-  await new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      cwd: repoRoot,
-      stdio: 'inherit',
-      env: { ...process.env },
-      shell: true,
-    });
+  try {
+    const headers = apiHelper.buildHeaders();
+    const { response, body } = await apiHelper.register(payload, headers);
 
-    child.on('error', reject);
-    child.on('exit', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`register_api.spec.js exited with code ${code}`));
+    if (response.status() !== 200) {
+      throw new Error(`Register API returned ${response.status()}: ${JSON.stringify(body)}`);
+    }
+
+    const savedUser = apiHelper.persistUserState(payload, body, { writeFile: false });
+
+    if (savedUser.tokenAuth) {
+      const authHeaders = apiHelper.buildHeaders({
+        authorization: `Bearer ${savedUser.tokenAuth}`,
+      });
+      const { response: consentResponse, body: consentBody } = await apiHelper.acceptConsent(authHeaders);
+
+      if (consentResponse.status() !== 200) {
+        throw new Error(`Accept consent API returned ${consentResponse.status()}: ${JSON.stringify(consentBody)}`);
       }
-    });
-  });
+    }
+
+    return savedUser;
+  } finally {
+    await requestContext.dispose();
+  }
 }
 
 async function loginUserFromDataForPrecondition(page) {
@@ -54,7 +60,7 @@ async function loginUserFromDataForPrecondition(page) {
   const homePage = new HomePage(page);
   const popupConsent = new PopupConsent(page);
 
-  await executeRegisterApiSpec();
+  const createdUser = await createRegisteredUserForPrecondition();
   await homePage.navigate();
   await page.waitForLoadState('domcontentloaded');
   await homePage.closeAdsIfVisible();
@@ -62,7 +68,7 @@ async function loginUserFromDataForPrecondition(page) {
   await loginPopup.clickLoginHeader();
   await expect(loginPopup.modalTitle).toBeVisible();
 
-  const userProfile = loadUserData()[0] || {};
+  const userProfile = createdUser || loadUserData()[0] || {};
   const phone = userProfile.phone || userProfile.username || '';
   if (!phone) {
     throw new Error('No phone found in data/users.json for login precondition');
@@ -70,6 +76,9 @@ async function loginUserFromDataForPrecondition(page) {
 
   await loginPopup.fillPhone(phone);
   await loginPopup.clickContinue();
+
+  // Sử dụng hàm chờ loading động từ BasePage để tối ưu hơn
+  await loginPopup.waitForGlobalLoadingHidden();
 
   await loginPopup.waitForOtpVisible();
   const otpCode = userProfile.otp || '1111';
@@ -80,6 +89,10 @@ async function loginUserFromDataForPrecondition(page) {
   } catch (error) {
     // Bỏ qua nếu popup consent không xuất hiện
   }
+
+  // Chờ modal đăng nhập biến mất để đảm bảo login hoàn tất
+  await loginPopup.modalTitle.waitFor({ state: 'hidden', timeout: 30000 });
+
 
   return {
     phone,
@@ -103,7 +116,7 @@ function saveGeneratedUser(createdUser) {
   } catch (e) {
     console.error('Error reading users.json:', e);
   }
-  
+
   if (usersData.length > 0) {
     usersData[0].phone = createdUser.phone;
     usersData[0].email = createdUser.email;
@@ -122,4 +135,9 @@ function saveGeneratedUser(createdUser) {
   fs.writeFileSync(usersFilePath, JSON.stringify(usersData, null, 2), 'utf8');
 }
 
-module.exports = { loginUserFromDataForPrecondition, registerUserByPhoneForPrecondition, saveGeneratedUser };
+module.exports = {
+  loginUserFromDataForPrecondition,
+  registerUserByPhoneForPrecondition,
+  saveGeneratedUser,
+  createRegisteredUserForPrecondition,
+};

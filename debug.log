@@ -1,0 +1,7 @@
+[0813/215100.418:ERROR:net\base\network_change_notifier_win.cc:213] WSALookupServiceBegin failed with: -1
+[0813/215102.635:ERROR:net\base\network_change_notifier_win.cc:213] WSALookupServiceBegin failed with: -1
+[0813/215109.876:ERROR:net\base\network_change_notifier_win.cc:213] WSALookupServiceBegin failed with: -1
+[0813/215117.115:ERROR:net\base\network_change_notifier_win.cc:213] WSALookupServiceBegin failed with: -1
+[0813/215123.702:ERROR:net\base\network_change_notifier_win.cc:213] WSALookupServiceBegin failed with: -1
+[0813/215125.384:ERROR:net\base\network_change_notifier_win.cc:213] WSALookupServiceBegin failed with: -1
+[0813/215127.067:ERROR:net\base\network_change_notifier_win.cc:213] WSALookupServiceBegin failed with: -1

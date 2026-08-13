@@ -1,4 +1,3 @@
-const path = require('path');
 const { UiActions, ScreenshotHelper } = require('../core/utils/commonUtils');
 
 class BasePage {
@@ -44,31 +43,40 @@ class BasePage {
   async waitForElement(locator) {
     return locator.waitFor({ state: 'visible', timeout: 15000 });
   }
- 
+
   async _capture(actionName, details = '', fullPage = false, options = {}) {
     if (this.screenshotHelper) {
       const fileName = `${actionName}${details ? `-${details}` : ''}`;
       await this.screenshotHelper.takeScreenshot(fileName, fullPage, options);
     }
   }
- 
+
   async capture(stepName, fullPage = false, options = {}) {
     return this._capture(stepName, '', fullPage, options);
   }
 
   async clickElement(locatorOrSelector, options = {}) {
     // await this._capture('click');
-    const locator = await this.actions.waitForVisible(locatorOrSelector, { timeout: 15000 });
+    const locator = await this.actions.waitForVisible(locatorOrSelector, { timeout: 30000 });
     // Cuộn đến element nếu cần thiết, phương thức này đã tự kiểm tra
     await locator.scrollIntoViewIfNeeded();
     return this.actions.click(locator, options);
-    await expect(this.page.locator('.overlay-loading')).toBeHidden({ timeout: 25000 }); 
+  }
+
+  /**
+   * Đợi một chút để UI render loading, sau đó chờ đến khi loading overlay thực sự biến mất
+   * Hàm này giúp script chạy mượt hơn ở điều kiện mạng chậm, không bị lỗi race condition
+   */
+  async waitForGlobalLoadingHidden(timeout = 60000) {
+    const loadingOverlay = this.page.locator('.overlay-loading');
+
+    await loadingOverlay.waitFor({ state: 'hidden', timeout });
   }
 
   async fillInput(locatorOrSelector, text, options = {}) {
     const sanitizedText = String(text).substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_');
     // await this._capture('fill', sanitizedText);
-    const locator = await this.actions.waitForVisible(locatorOrSelector, { timeout: 15000 });
+    const locator = await this.actions.waitForVisible(locatorOrSelector, { timeout: 30000 });
     // Cuộn đến element nếu cần thiết, phương thức này đã tự kiểm tra
     await locator.scrollIntoViewIfNeeded();
     return this.actions.fill(locator, text, options);

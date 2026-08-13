@@ -55,12 +55,12 @@ class UserProfilePage extends BasePage {
   async navigateToMyProfile() {
     await this.clickElement(this.btnUserAvatar);
     await this.clickElement(this.btnMyProfile);
-    await this.page.waitForLoadState('networkidle');
+    await this.actions.waitForVisible(this.btnAddExperience, { timeout: 30000 });
   }
 
   async saveSection() {
     await this.clickElement(this.btnCommonSave);
-    await this.page.waitForLoadState('networkidle');
+    await this.waitForGlobalLoadingHidden(30000);
   }
 
   // --- Kinh nghiệm ---
@@ -70,11 +70,10 @@ class UserProfilePage extends BasePage {
 
   async fillExperience(data) {
     await this.fillInput(this.txtCompany, data.company);
-    await this.page.waitForTimeout(500); // Đợi dropdown hiển thị
 
     await this.fillInput(this.txtJobTitleSearch, data.jobTitle);
-    await this.page.waitForTimeout(500); // Đợi dropdown hiển thị
-    await this.clickElement(this.page.getByRole('listitem').filter({ hasText: new RegExp('^' + data.jobTitle + '$', 'i') }).locator('span').first());
+    const jobTitleOption = this.page.getByRole('listitem').filter({ hasText: new RegExp('^' + data.jobTitle + '$', 'i') }).locator('span').first();
+    await this.clickElement(jobTitleOption);
 
     if (data.isWorkingHere) {
       await this.actions.check(this.chkWorkingHere);
@@ -112,7 +111,6 @@ class UserProfilePage extends BasePage {
 
   async fillEducation(data) {
     await this.fillInput(this.txtSchool, data.school);
-    await this.page.waitForTimeout(500); // Đợi dropdown hiển thị
     await this.clickElement(this.page.getByRole('listitem').filter({ hasText: new RegExp('^' + data.school + '$', 'i') }).first());
 
     await this.clickElement(this.inpStartDate);
@@ -122,12 +120,10 @@ class UserProfilePage extends BasePage {
     await this.clickElement(this.page.getByText(data.endYear).first());
 
     await this.fillInput(this.txtMajor, data.major);
-    await this.page.waitForTimeout(500); // Đợi dropdown hiển thị
     // Since major could be a long string or cut off, we pick the first match containing the text
     await this.clickElement(this.page.getByText(data.major).first());
 
     await this.lblDegree.click();
-    await this.page.waitForTimeout(500);
     await this.clickElement(this.page.getByText(data.degree).first(), { timeout: 3000 });
     await this.fillInput(this.txtEduDescription, data.description);
   }
@@ -162,7 +158,6 @@ class UserProfilePage extends BasePage {
 
   async fillSkill(skillName) {
     await this.fillInput(this.txtCommonInput, skillName);
-    await this.page.waitForTimeout(500); // Đợi dropdown hiển thị
     await this.clickElement(this.page.getByRole('listitem').filter({ hasText: new RegExp('^' + skillName + '$', 'i') }).first());
   }
 

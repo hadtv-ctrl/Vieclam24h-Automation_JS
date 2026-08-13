@@ -6,18 +6,18 @@ class JobApplyPage extends BasePage {
     super(page);
 
     this.screenshotHelper = new ScreenshotHelper(page, 'job-apply-details');
-    
+
     // --- Locators (Các element trong page) ---
     this.btnApplyNow = this.page.getByRole('button', { name: 'Ứng tuyển ngay' }).first();
     this.optProfileMethod = this.page.locator('[data-test-id="apply-method-selector__option-profile"]').first();
     this.btnContinueProfile = this.page.locator('[data-test-id="apply-profile-completion-content__action"]').first();
     this.btnCommonSave = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]').first();
     this.txtCommonInput = this.page.locator('[data-test-id="common__input"]').first();
-    
+
     // Giới thiệu
     this.btnAddIntro = this.page.locator('[data-test-id="apply-job__introduce"] [data-test-id="user-profile__add-button"]').first();
     this.txtIntro = this.page.getByRole('textbox', { name: /Hãy chia sẻ về kinh nghiệm/i }).first();
-    
+
     // Kinh nghiệm
     this.btnHasExperience = this.page.getByRole('button', { name: /Đã có/i }).first();
     this.btnAddExperience = this.page.locator('[data-test-id="apply-job__experience"] [data-test-id="user-profile__add-button"]').first();
@@ -49,18 +49,18 @@ class JobApplyPage extends BasePage {
 
     // Chứng chỉ
     this.btnAddCertificate = this.page.locator('[data-test-id="apply-job__certificate"]').first();
-    
+
     // Ngoại ngữ
     this.btnAddLanguage = this.page.locator('[data-test-id="apply-job__foreign-language"]').first();
     this.lblLanguage = this.page.getByText('Chọn ngoại ngữ').first();
-    
+
     // Submit Application & Final steps
     this.chkAllowSearch = this.page.locator('[data-test-id="common__checkbox"] input[type="checkbox"]').first();
     this.msgSuccess = this.page.getByText('Ứng tuyển thành công!').first();
     this.chkConfirmAll = this.page.locator('[data-test-id="common__checkall"]').first();
     this.confirmCheckboxes = this.page.locator('[data-test-id="common__checkbox-group"] [data-test-id="common__checkbox"]');
     this.btnConfirmPopup = this.page.getByRole('button', { name: /Nộp hồ sơ ngay/i }).first();
-    
+
     this.btnApplyAll = this.page.locator('[data-test-id="common__button"]').first();
     this.btnSeeMoreJobs = this.page.getByRole('button', { name: /Xem thêm việc gợi ý/i }).first();
   }
@@ -138,7 +138,7 @@ class JobApplyPage extends BasePage {
     await this.clickElement(this.inpStartYear);
     // await this.clickElement(this.btnSelectYear);
     await this.page.locator('#apply-job-modal .react-datepicker__year-text', { hasText: data.startYear }).scrollIntoViewIfNeeded();
-    await this.clickElement(this.page.locator('#apply-job-modal .react-datepicker__year-text', { hasText: data.startYear })); 
+    await this.clickElement(this.page.locator('#apply-job-modal .react-datepicker__year-text', { hasText: data.startYear }));
 
     await this.clickElement(this.inpEndYear);
     // await this.clickElement(this.btnSelectYear);
@@ -222,14 +222,14 @@ class JobApplyPage extends BasePage {
   }
 
   async confirmAndFinishApplication() {
-    await this.page.waitForTimeout(1000);
+    await this.actions.waitForVisible(this.btnConfirmPopup, { timeout: 15000 });
     const box = await this.btnConfirmPopup.boundingBox();
     if (box) {
       await this.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     } else {
       await this.btnConfirmPopup.click({ force: true });
     }
-    
+
     await this.actions.waitForVisible(this.msgSuccess, { timeout: 15000 });
   }
 
@@ -237,23 +237,21 @@ class JobApplyPage extends BasePage {
     // Chờ cho page xác nhận cuối cùng hiển thị
     await this.actions.waitForVisible(this.chkConfirmAll, { timeout: 15000 });
 
-    // Chờ cho checkbox cuối cùng trong danh sách hiển thị, đảm bảo tất cả đã được tải
-    await this.page.waitForLoadState('networkidle', { timeout: 15000 });
+    // Checkbox là tín hiệu nghiệp vụ cho biết danh sách bulk apply đã sẵn sàng.
+    await this.actions.waitForVisible(this.chkConfirmAll, { timeout: 15000 });
     await this.capture('before_bulk_apply');
     await this.clickElement(this.chkConfirmAll); // Check all checkbox để xác nhận thông tin
     await this.capture('after_bulk_apply');
-    
+
     await this.clickElement(this.btnApplyAll);
     await this.capture('after_click_apply_all');
-    
+
     await this.clickElement(this.btnCommonSave);
-    
+
     // Wait for loading icon to disappear
-    await this.page.locator('.overlay-loading').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+    await this.waitForGlobalLoadingHidden(15000);
     // Wait for the popup and its button to be visible
     await this.actions.waitForVisible(this.btnSeeMoreJobs, { timeout: 15000 });
-    await this.page.waitForTimeout(1000); // animation delay
-    
     await this.capture('after_click_submit_all');
     await this.clickElement(this.btnSeeMoreJobs);
   }

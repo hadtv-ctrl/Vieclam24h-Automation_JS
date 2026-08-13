@@ -6,7 +6,7 @@ const { HomePage } = require('../../pages/HomePage');
 const { PopupConsent } = require('../../pages/PopupConsent');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../core/utils/commonUtils');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại @register', () => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại @register @e2e', () => {
   let page;
   let loginPopup;
   let homePage;
@@ -56,15 +56,15 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số
       await loginPopup.fillPhone(randomPhone);
       await loginPopup.capture('after_fill_phone');
       await loginPopup.clickContinue();
-      await loginPopup.capture('after_click_continue');
+      // await loginPopup.capture('after_click_continue');
     });
 
     await test.step('And Tôi nhập mã OTP (nếu có)', async () => {
       await loginPopup.waitForOtpVisible();
-      // await loginPopup.capture('before_fill_otp');
+      await loginPopup.capture('before_fill_otp');
       const testOtpCode = '1111';
       await loginPopup.fillOtpCode(testOtpCode);
-      await loginPopup.capture('after_fill_otp');
+      // await loginPopup.capture('after_fill_otp');
     });
 
     await test.step('Then Tôi phải thấy form "Tạo tài khoản mới" xuất hiện', async () => {
@@ -86,11 +86,13 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số
       await expect(loginPopup.submitBtn).toBeVisible();
       // await loginPopup.capture('before_submit_registration');
       await loginPopup.clickSubmit();
-      await loginPopup.capture('after_register_successfully');
+      await popupConsent.waitForConsentOrHomepageReady(homePage);
+      // await loginPopup.capture('after_register_successfully');
     });
 
     await test.step('And Tôi đồng ý với Consent', async () => {
       await popupConsent.agreeIfVisible();
+      await homePage.expectHomepageContentLoaded();
       await popupConsent.capture('after_Agree_Consent_successfully');
     });
   });

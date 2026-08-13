@@ -2,7 +2,21 @@ const fs = require('fs');
 const path = require('path');
 
 let globalScreenshotSequence = 0;
-let globalRunTimestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+function getFormattedDate(date) {
+  const yy = String(date.getFullYear()).slice(-2);
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  const ss = String(date.getSeconds()).padStart(2, '0');
+  return {
+    dateStr: `${yy}-${mm}-${dd}`,
+    timeStr: `${hh}-${min}-${ss}`
+  };
+}
+
+let globalRunDateInfo = getFormattedDate(new Date());
 let currentTestFile = '';
 
 class ScreenshotHelper {
@@ -13,7 +27,7 @@ class ScreenshotHelper {
   constructor(page, featureName) {
     this.page = page;
     this.featureName = featureName;
-    
+
     // Check if we are in a new test file to reset sequence and timestamp
     try {
       const { test } = require('@playwright/test');
@@ -21,11 +35,11 @@ class ScreenshotHelper {
       if (info && info.file && info.file !== currentTestFile) {
         currentTestFile = info.file;
         globalScreenshotSequence = 0;
-        globalRunTimestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        globalRunDateInfo = getFormattedDate(new Date());
       }
     } catch(e) {}
 
-    this.runTimestamp = globalRunTimestamp;
+    this.runDateInfo = globalRunDateInfo;
     this.screenshotCount = 0;
   }
 
@@ -38,15 +52,143 @@ class ScreenshotHelper {
         scriptName = path.basename(info.file).replace(/\.spec\.js$|\.js$/, '');
       }
     } catch(e) {}
-    
+
     if (!scriptName) {
       scriptName = String(this.featureName || 'unknown');
     }
-    
-    const safeName = scriptName.replace(/[^a-zA-Z0-9-_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').toLowerCase();
-    const baseDir = `evidence/${safeName}`;
-    const timestamp = this.runTimestamp;
-    return `${baseDir}-${timestamp}`;
+
+    const safeName = scriptName.replace(/[^a-zA-Z0-9-_\s]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').trim();
+    const dateStr = this.runDateInfo.dateStr;
+    const timeStr = this.runDateInfo.timeStr;
+
+    return `evidence/${dateStr}/[${dateStr} ${timeStr}] ${safeName}`;
+  }
+
+  async waitForPageStable(options = {}) {
+    const {
+      maxWaitMs = 5000,
+      stableFrameCount = 5,
+    } = options;
+
+    try {
+      await this.page.evaluate(async ({ maxWaitMs, stableFrameCount }) => {
+        const startedAt = performance.now();
+        let previousSignature = '';
+        let stableFrames = 0;
+
+        const hasRunningAnimations = () => {
+          if (typeof document.getAnimations !== 'function') return false;
+          return document
+            .getAnimations({ subtree: true })
+            .some((animation) => animation.playState === 'running' || animation.pending);
+        };
+
+        const getLayoutSignature = () => {
+          const elements = Array.from(document.querySelectorAll('body, body *'));
+          const parts = [
+            window.scrollX,
+            window.scrollY,
+            document.documentElement.scrollWidth,
+            document.documentElement.scrollHeight,
+          ];
+
+          for (const element of elements) {
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+            const isVisible =
+              style.visibility !== 'hidden' &&
+              style.display !== 'none' &&
+              Number(style.opacity) !== 0 &&
+              rect.width > 1 &&
+              rect.height > 1 &&
+              rect.bottom >= 0 &&
+              rect.right >= 0 &&
+              rect.top <= window.innerHeight &&
+              rect.left <= window.innerWidth;
+
+            if (!isVisible) continue;
+
+            parts.push(
+              Math.round(rect.left * 2) / 2,
+              Math.round(rect.top * 2) / 2,
+              Math.round(rect.width * 2) / 2,
+              Math.round(rect.height * 2) / 2
+            );
+
+            if (parts.length > 1200) break;
+          }
+
+          return parts.join('|');
+        };
+
+        while (performance.now() - startedAt < maxWaitMs) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+
+          const signature = getLayoutSignature();
+          if (signature === previousSignature && !hasRunningAnimations()) {
+            stableFrames += 1;
+            if (stableFrames >= stableFrameCount) return;
+          } else {
+            stableFrames = 0;
+            previousSignature = signature;
+          }
+        }
+      }, { maxWaitMs, stableFrameCount });
+    } catch (error) {
+      // Ignore if the page navigates or closes while evidence is stabilizing.
+    }
+  }
+
+  async waitForVisualLoadingHidden(options = {}) {
+    const {
+      timeout = 15000,
+    } = options;
+
+    try {
+      await this.page.waitForFunction(
+        () => {
+          const loadingSelectors = [
+            '.overlay-loading',
+            '.ant-skeleton',
+            '.ant-spin',
+            '.skeleton',
+            '.skeleton-loading',
+            '.react-loading-skeleton',
+            '[class*="skeleton"]',
+            '[class*="Skeleton"]',
+            '[class*="shimmer"]',
+            '[class*="animate-pulse"]',
+            '[aria-busy="true"]',
+            '[role="progressbar"]',
+          ];
+
+          const isVisible = (element) => {
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+
+            return (
+              style.visibility !== 'hidden' &&
+              style.display !== 'none' &&
+              Number(style.opacity) !== 0 &&
+              rect.width > 1 &&
+              rect.height > 1 &&
+              rect.bottom >= 0 &&
+              rect.right >= 0 &&
+              rect.top <= window.innerHeight &&
+              rect.left <= window.innerWidth
+            );
+          };
+
+          return !loadingSelectors.some((selector) =>
+            Array.from(document.querySelectorAll(selector)).some(isVisible)
+          );
+        },
+        null,
+        { timeout }
+      );
+    } catch (error) {
+      // Continue so evidence capture does not hide the underlying test result.
+    }
   }
 
   async takeScreenshot(stepName, fullPage = false, options = {}) {
@@ -54,14 +196,17 @@ class ScreenshotHelper {
     this.screenshotCount = captureSequence;
 
     const {
-      waitForNetworkIdle = fullPage,
+      waitForNetworkIdle = false,
       scrollDuringStabilization = fullPage,
       waitForAnimations = true,
-      stabilizationMs = 400,
+      stabilizationMs = 0,
       waitForLoadState = true,
-      loadState = 'networkidle',
+      loadState = 'domcontentloaded',
       waitForDomContentLoaded = true,
-      stabilizationDelayMs = 300,
+      maxStabilizationMs = 5000,
+      stableFrameCount = 5,
+      waitForVisualLoading = true,
+      visualLoadingTimeout = 15000,
     } = options;
 
     if (waitForDomContentLoaded) {
@@ -88,36 +233,21 @@ class ScreenshotHelper {
       }
     }
 
+    if (waitForVisualLoading) {
+      await this.waitForVisualLoadingHidden({ timeout: visualLoadingTimeout });
+    }
+
     try {
       if (waitForAnimations) {
-        await this.page.evaluate(async (ms) => {
-          const hasAnimatingElements = () => {
-            const elements = document.querySelectorAll('*');
-            for (const el of elements) {
-              const style = window.getComputedStyle(el);
-              const hasAnimation = style.animationDuration && style.animationDuration !== '0s';
-              const hasTransition = style.transitionDuration && style.transitionDuration !== '0s';
-              const transformState = style.transform && style.transform !== 'none';
+        await this.waitForPageStable({ maxWaitMs: maxStabilizationMs, stableFrameCount });
 
-              if (hasAnimation || hasTransition || transformState) {
-                return true;
-              }
-            }
-            return false;
-          };
-
-          const start = Date.now();
-          while (Date.now() - start < 2000) {
-            if (!hasAnimatingElements()) {
-              break;
-            }
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          }
-
-          if (ms > 0) {
-            await new Promise((resolve) => setTimeout(resolve, ms));
-          }
-        }, stabilizationMs);
+        if (stabilizationMs > 0) {
+          await this.page.evaluate(
+            (ms) => new Promise((resolve) => window.setTimeout(resolve, ms)),
+            stabilizationMs
+          );
+          await this.waitForPageStable({ maxWaitMs: maxStabilizationMs, stableFrameCount });
+        }
       }
     } catch (error) {
       // Bỏ qua nếu page đã bị navigate/đóng trước khi ổn định
@@ -142,21 +272,13 @@ class ScreenshotHelper {
       // Bỏ qua nếu page đã bị navigate/đóng trước khi cuộn
     }
 
-    try {
-      if (stabilizationDelayMs > 0) {
-        await this.page.waitForTimeout(stabilizationDelayMs);
-      }
-    } catch (error) {
-      // Bỏ qua nếu page bị đóng trước khi delay kết thúc
-    }
-
     const dir = this.getEvidenceDir();
     const safeStepName = (stepName || 'step').replace(/[^a-zA-Z0-9-_]+/g, '-').toLowerCase();
     const path = `${dir}/step${String(captureSequence).padStart(3, '0')}_${safeStepName}.png`;
 
     fs.mkdirSync(dir, { recursive: true });
     try {
-      await this.page.screenshot({ path, fullPage });
+      await this.page.screenshot({ path, fullPage, animations: 'disabled' });
     } catch (error) {
       // Bỏ qua nếu không thể chụp ảnh do context đã bị hủy
     }
@@ -190,9 +312,6 @@ class UiActions {
         return this.page.locator(locatorOrSelector.selector);
       }
 
-      if (typeof locatorOrSelector._selector === 'string') {
-        return this.page.locator(locatorOrSelector._selector);
-      }
     }
 
     return locatorOrSelector;

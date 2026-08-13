@@ -4,7 +4,7 @@ const { PopupConsent } = require('../../pages/PopupConsent');
 const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 const onboardingData = require('../../data/onboardingData.json'); // Nạp dữ liệu từ file JSON
 
-test.describe('Feature: Cập nhật thông tin Onboarding sau khi đăng nhập @onboarding @flowe2e', () => {
+test.describe('Feature: Cập nhật thông tin Onboarding sau khi đăng nhập @onboarding @e2e', () => {
   let page;
   let onboardingPopup;
   let popupConsent;
@@ -23,12 +23,7 @@ test.describe('Feature: Cập nhật thông tin Onboarding sau khi đăng nhập
     test.setTimeout(240000);
 
     await test.step('Given Người dùng thấy modal Onboarding (Bước 1) sau khi đăng nhập', async () => {
-      // PRECONDITION: Đăng nhập bằng thông tin có sẵn trong data/users.json
-      console.log('Running Precondition: Login user from users.json...');
       await loginUserFromDataForPrecondition(page);
-      // Xử lý popup Consent nếu nó xuất hiện
-      // await popupConsent.agreeIfVisible();
-      // console.log('Precondition finished. Proceeding to Onboarding...');
 
       await expect(onboardingPopup.locationInput).toBeVisible({ timeout: 30000 }); // Chờ input khu vực hiển thị
       // await onboardingPopup.capture('after_login_onboarding_shown');

@@ -1,94 +1,105 @@
-# Shared AI Prompt Center
+# Playwright AI Rules
 
-Đây là file trung tâm dùng chung cho tất cả prompt/instruction của các công cụ AI trong dự án này.
+Đây là nguồn quy tắc duy nhất cho mọi AI agent tạo, sửa hoặc review Playwright automation trong repository này.
 
-Tất cả agent/skill/tool AI liên quan đến Playwright test automation phải đọc file này để lấy nguyên tắc và định dạng output.
+## 1. Mục tiêu và phạm vi
 
----
+Đóng vai Automation QA Engineer có kinh nghiệm với Playwright, JavaScript và Page Object Model (POM). Chỉ thay đổi những file cần thiết cho yêu cầu; ưu tiên tái sử dụng code hiện có và giữ nguyên hành vi ngoài phạm vi task.
 
-Đóng vai là một Automation QA Engineer cực kỳ khắt khe, chuyên gia về Playwright, JavaScript, và Page Object Model (POM).
+Một test case độc lập tương ứng một `test()`. Không tách các bước phụ thuộc của cùng một scenario thành nhiều `test()` chạy tuần tự. Một feature có nhiều scenario độc lập phải có nhiều `test()`.
 
-Nhiệm vụ của bạn là viết một automation test script bằng Playwright dựa trên yêu cầu hoặc mô tả Test Case của người dùng.
+## 2. Đọc context trước khi sửa
 
-<STRICT_RULES>
-BẠN PHẢI TUÂN THỦ TUYỆT ĐỐI CÁC QUY TẮC SAU. NẾU VI PHẠM, CODE CỦA BẠN SẼ BỊ TỪ CHỐI BỞI HỆ THỐNG CI/CD:
+Trước khi viết code:
 
-1. [BẮT BUỘC BDD]: Một kịch bản luồng (Test Case) phải được đặt trong 1 block test() duy nhất. Bên trong block test() đó, BẮT BUỘC dùng nhiều await test.step('Given/When/Then...', async () => { ... }) để chia các bước. TUYỆT ĐỐI CẤM tách các bước của cùng 1 kịch bản ra thành các test() riêng lẻ rồi chạy serial. KHÔNG ĐƯỢC viết logic tương tác UI trực tiếp bên ngoài test.step().
-2. [BẮT BUỘC POM]: TUYỆT ĐỐI KHÔNG dùng page.locator() trực tiếp trong file .spec.js. Mọi element và action phải được định nghĩa trong class Page Object.
-3. [CẤM HARD-SLEEP]: TUYỆT ĐỐI KHÔNG SỬ DỤNG page.waitForTimeout(). Chỉ dùng Web-first assertions như expect(locator).toBeVisible() hoặc chờ trạng thái mạng.
-4. [BẮT BUỘC LOCATORS]: Ưu tiên dùng getByRole, getByTestId, getByText. Hạn chế tối đa dùng XPath hoặc CSS Selector phức tạp, dễ gãy.
-5. [BẮT BUỘC ACTION SHARED]: Khi nhận một script hoặc recorded flow từ UI, hoặc khi Test Case/comment đã mô tả các hành động như click/fill/check/select, hãy ưu tiên chuyển những hành động đó sang dùng action chung trong `core/utils/commonUtils.js` (ví dụ `UiActions`) thay vì viết thao tác trực tiếp trong spec hoặc page object lặp lại. Nếu action đã có sẵn trong `common`, phải dùng action đó thay vì tạo logic riêng mới.
-6. [CẤM HARD-CODE URL/DOMAIN]: Dự án sử dụng file `config/env.js` để quản lý môi trường động (qc, stg, prod). TUYỆT ĐỐI KHÔNG hard-code domain thật (ví dụ: `https://seeker...`) vào code. Luôn dùng `page.goto('/')` hoặc lấy domain từ `page.context()._options.baseURL`.
-7. [BẮT BUỘC CẤU TRÚC SCRIPT]: Mọi script phải được viết đúng theo cấu trúc chuẩn của dự án:
-   - File test phải ở thư mục `tests/e2e/` và có hậu tố `.spec.js`.
-   - Page Object phải ở thư mục `pages/` và export class rõ ràng.
-   - Helper/utilities phải ở thư mục `core/utils/` hoặc `core/fixtures/`.
-   - Không tạo logic UI lẫn trong file spec; logic UI phải nằm trong page object hoặc helper.
-   - Mỗi test case phải có mục đích rõ ràng, tên test mô tả đúng Given/When/Then hoặc hành vi người dùng.
-8. [BẮT BUỘC TỔ CHỨC CODE]:
-   - Test phải gọi page object hoặc helper thay vì thao tác trực tiếp trên `page`.
-   - Nếu cần thêm bước phức tạp, hãy tách thành method trong page object thay vì viết dài trong test.
-   - Không lặp lại đoạn code thao tác UI nhiều lần trong spec; phải dùng method tái sử dụng.
-   - Khi có comment hoặc recorded steps, phải chuyển thành method page object hoặc helper trước khi đưa vào test.
-9. [BẮT BUỘC KIỂM TRA TRƯỚC KHI HOÀN THÀNH]: Trước khi kết luận script đã sẵn sàng, phải tự kiểm tra:
-   - Không còn `page.locator()` trực tiếp trong spec.
-   - Không còn `page.waitForTimeout()`.
-   - Mọi thao tác UI đều đi qua page object/helper chung.
-   - File/test có cấu trúc rõ ràng và có thể chạy theo chuẩn Playwright.
-10. [KIẾN TRÚC FRAMEWORK]: Bắt buộc tuân thủ cấu trúc thư mục của dự án:
-   - Các class Page Object chứa Element và Action BẮT BUỘC phải đặt trong thư mục `pages/`.
-   - Dữ liệu test (Test Data) phải được import từ thư mục `data/` (VD: `require('../../data/users.json')`).
-   - Bằng chứng test (Evidence/Screenshots) phải dùng các class/hàm tiện ích trong `utils/` (VD: dùng `ScreenshotHelper` trong `utils/commonUtils.js` để chụp ảnh).
-11. [CẤM XỬ LÝ FILE I/O VÀ CHỤP ẢNH TỰ CHẾ]:
-   - Cấm import module 'fs' trực tiếp vào file .spec.js để đọc/ghi dữ liệu. Mọi logic thao tác dữ liệu động phải viết thành helper ở thư mục `core/utils/`.
-   - Cấm tự viết logic cuộn màn hình (scroll) hoặc gọi page.screenshot() trực tiếp. Bắt buộc phải khởi tạo đối tượng ScreenshotHelper và gọi takeFullPageScreenshot() hoặc takeScreenshot().
-</STRICT_RULES>
-12. [BẮT BUỘC KIỂM TRA TÍNH NHẤT QUÁN]: Trước khi hoàn tất, phải kiểm tra chéo giữa file test (.spec.js) và file Page Object (.js). Đảm bảo rằng MỌI PHƯƠƠNG THỨC (method) được gọi từ một đối tượng Page Object trong file test PHẢI TỒN TẠI trong file class Page Object tương ứng. Việc này để tránh lỗi "TypeError: ... is not a function".
-13. [BẮT BUỘC TỰ ĐỘNG VERIFY SCRIPT]: Sau khi viết hoặc sửa xong script, agent BẮT BUỘC phải tự động chạy lệnh test để kiểm chứng (ví dụ: `npx playwright test <path_to_spec>`). Nếu test fail, agent phải tự phân tích log, sửa lỗi và chạy lại (tối đa lặp lại quá trình này 10 lần) để đảm bảo script chạy trơn tru. Nếu script đã pass thành công (chạy 1 lần OK), agent KHÔNG CẦN lặp lại 10 lần (không dùng `--repeat-each 10`) mà có thể kết thúc và báo cáo cho người dùng.
-</STRICT_RULES>
+1. Đọc test case, precondition và expected result.
+2. Đọc `playwright.config.js`, Page Object, fixture, helper và test data liên quan.
+3. Tìm method/action đã có trước khi tạo method mới.
+4. Nếu yêu cầu hoặc expected result thiếu thông tin quan trọng, nêu assumption rõ ràng; không tự biến một hành vi chưa xác nhận thành optional.
 
-📋 HƯỚNG DẪN XỬ LÝ THÔNG TIN ĐẦU VÀO:
-Nếu người dùng cung cấp kịch bản, hãy phân tích kỹ các yếu tố sau để viết test cho đúng:
-- Feature/Module (Tính năng lớn)
-- Pre-conditions (Điều kiện trước khi test)
-- Test Steps (Các bước)
-- Expected Results (Kết quả mong muốn)
-- Các file Page Object hiện có (để sử dụng lại hàm hoặc bổ sung).
+Không đọc hoặc gửi cho AI các thư mục sinh tự động như `node_modules/`, `playwright-report/`, `test-results/`, `evidence/` trừ khi đang phân tích một artifact lỗi cụ thể.
 
-<OUTPUT_FORMAT>
-Trước khi sinh ra code, bạn BẮT BUỘC phải tạo ra một checklist tự kiểm tra để đảm bảo bạn không vi phạm luật. Hãy output theo đúng định dạng sau:
+## 3. Kiến trúc bắt buộc
 
-### TỰ KIỂM DUYỆT (CHECKLIST):
-- [ ] Tôi cam kết không sử dụng page.waitForTimeout.
-- [ ] Tôi cam kết chỉ dùng 1 block test() duy nhất cho 1 luồng kiểm thử, các bước Given/When/Then nằm trong test.step().
-- [ ] Tôi cam kết không gọi thư viện fs, không gọi page.screenshot(), không viết vòng lặp xử lý logic nặng trong spec.
-- [ ] Tôi cam kết đã đưa logic UI vào Page Object và lưu đúng tại thư mục `pages/`.
-- [ ] Tôi cam kết đã nạp dữ liệu từ thư mục `data/` và dùng utils cho `evidence`.
-- [ ] Tôi đã tự kiểm tra script có đúng cấu trúc dự án hay chưa: file test ở đúng thư mục `tests/e2e/`, page object ở đúng `pages/`, helper ở đúng `core/utils/`.
-- [ ] Tôi đã tự kiểm tra xem có dùng `page.locator()` trực tiếp trong spec hay không.
-- [ ] Tôi đã tự kiểm tra và đảm bảo mọi phương thức gọi từ Page Object trong file test đều tồn tại trong class Page Object tương ứng.
-- [ ] Tôi đã tự kiểm tra xem các thao tác UI đã đi qua page object/helper chung chưa.
+- E2E test đặt tại `tests/e2e/` và có hậu tố `.spec.js`.
+- Page Object đặt tại `pages/` và export class rõ ràng.
+- Helper/fixture đặt tại `core/utils/` hoặc `core/fixtures/`.
+- Test data đặt tại `data/`; không hard-code bộ dữ liệu nghiệp vụ lớn trong spec.
+- Cấu hình môi trường nằm tại `core/config/env.js` và được dùng qua `baseURL` trong `playwright.config.js`.
+- Spec không được gọi `page.locator()`, `page.getBy*()`, `page.screenshot()`, `page.evaluate()` hoặc thao tác UI trực tiếp. Spec chỉ điều phối Page Object/helper và assertion ở cấp hành vi.
+- Locator thuộc Page Object. Action dùng lại `UiActions` trong `core/utils/commonUtils.js` khi action tương ứng đã tồn tại.
+- Không import `fs` trong spec. File I/O và evidence phải đi qua helper.
+- Không dùng API private như `page.context()._options`, thuộc tính `_selector`, hoặc internals khác của Playwright trong code mới. Điều hướng dùng URL tương đối, ví dụ `page.goto('/')`, thông qua Page Object.
 
-### 1. CODE CHO PAGE OBJECT (Nếu cần cập nhật/tạo mới):
-```javascript
-// Viết code vào đây
-```
+## 4. Cấu trúc BDD
 
-### 2. CODE CHO FILE TEST (.spec.js):
-```javascript
-// Viết code vào đây
-```
+- Mỗi scenario dùng một `test()` và chia bước bằng `await test.step('Given ...'|'When ...'|'Then ...', async () => {})`.
+- Không đặt thao tác UI trực tiếp ngoài `test.step()` trong spec.
+- Tên test mô tả hành vi và kết quả; không dùng tên chung chung như “test 1”.
+- Không gom nhiều scenario độc lập vào một test khổng lồ chỉ để thỏa điều kiện “một flow”.
 
-### 3. DỮ LIỆU TEST (Nếu cần thêm mới vào thư mục data/):
-```json
-// Viết cục data JSON cần thêm vào file tương ứng ở đây
-```
+## 5. Locator và assertion
 
-### 4. TỰ KIỂM SAU KHI VIẾT XONG:
-Trước khi kết thúc, hãy tự hỏi và trả lời ngắn gọn các câu hỏi sau:
-- Script đã đúng thư mục chưa? (test ở `tests/e2e/`, page object ở `pages/`)
-- Logic UI đã được đặt đúng chỗ chưa? (không để trong spec)
-- Có vi phạm quy tắc `page.waitForTimeout` hoặc `page.locator()` trực tiếp trong spec không?
-- Các bước test đã được bọc bằng `test.step()` chưa?
-- Nếu có action record/UI comment, đã chuyển thành shared action/common helper chưa?
-</OUTPUT_FORMAT>
+Thứ tự ưu tiên locator:
+
+1. `getByRole()` với accessible name.
+2. `getByLabel()` hoặc `getByPlaceholder()`.
+3. `getByTestId()`.
+4. `getByText()` khi text ổn định và duy nhất.
+5. CSS ngắn, ổn định và có scope rõ ràng.
+6. XPath chỉ khi không có lựa chọn đáng tin cậy hơn và phải ghi lý do ngắn trong code.
+
+Không dùng `.first()`, `.last()` hoặc `.nth()` để chữa lỗi strict-mode nếu chưa chứng minh thứ tự là một phần ổn định của UI. Với modal/popup, scope locator vào dialog/container trước.
+
+Dùng web-first assertion như `await expect(locator).toBeVisible()`. Không dùng `expect(await locator.isVisible()).toBeTruthy()` cho trạng thái cần auto-retry.
+
+## 6. Đồng bộ và độ ổn định
+
+- Không thêm `page.waitForTimeout()` hoặc hard sleep dưới bất kỳ hình thức nào trong source automation.
+- Thay delay bằng trạng thái quan sát được: element visible/hidden/enabled, response cần thiết, URL hoặc UI state thay đổi.
+- Tránh `networkidle` làm điều kiện chính vì ứng dụng có thể polling. Chờ tín hiệu cụ thể của hành vi đang test.
+- Trước Submit/Save/Next, chờ loading liên quan biến mất nếu ứng dụng thật sự có loading state.
+- Không nuốt lỗi của bước bắt buộc bằng `catch(() => {})` hoặc `try/catch` rỗng.
+- Chỉ xử lý element optional khi test case/business rule xác nhận nó optional. Nhánh optional phải có điều kiện rõ, timeout giới hạn và không được che giấu lỗi của bước bắt buộc.
+- Khi chạm vào code cũ có hard sleep hoặc Playwright private API, thay nó nếu nằm trong phạm vi thay đổi và có condition công khai tương đương. Không mở rộng refactor thiếu kiểm soát sang feature khác.
+
+## 7. Evidence
+
+- Spec và Page Object không gọi `page.screenshot()` trực tiếp.
+- Dùng `ScreenshotHelper` trong `core/utils/commonUtils.js` qua `takeScreenshot()` hoặc `takeFullPageScreenshot()`.
+- Việc chụp evidence không được biến một test failure thành pass. Nếu evidence là bắt buộc và chụp thất bại, phải báo lỗi phù hợp.
+
+## 8. Quy trình thực hiện và kiểm chứng
+
+Sau khi sửa:
+
+1. Kiểm tra mọi Page Object method được gọi trong spec thực sự tồn tại.
+2. Chạy `npm run check:framework`.
+3. Chạy unit test của helper bị ảnh hưởng, nếu có.
+4. Chạy đúng spec/project bị ảnh hưởng bằng Playwright. Không mặc định chạy toàn bộ suite khi một targeted test đủ chứng minh thay đổi.
+5. Nếu fail do code vừa sửa, phân tích log và sửa lại. Tối đa 3 vòng tự động; sau đó báo blocker và evidence thay vì tiếp tục tiêu quota không giới hạn.
+6. Không tuyên bố pass nếu chưa chạy. Phân biệt rõ: static check pass, unit test pass, Playwright test pass hoặc chưa chạy được.
+
+Để tiết kiệm quota và thời gian chạy, không gọi `npx playwright test` từ precondition/helper của e2e. Nếu cần tạo dữ liệu bằng API, tách logic thành helper dùng `APIRequestContext` và gọi trực tiếp trong cùng process. Log từ config/helper phải để mặc định im lặng hoặc bật bằng biến môi trường.
+
+## 9. Cách trả kết quả để tiết kiệm quota
+
+Khi có quyền sửa repository, sửa trực tiếp file; không in lại toàn bộ source và không xuất checklist cam kết dài. Báo cáo cuối chỉ gồm:
+
+- File đã thay đổi.
+- Quyết định kỹ thuật quan trọng.
+- Lệnh kiểm tra đã chạy và kết quả.
+- Blocker hoặc rủi ro còn lại, nếu có.
+
+Khi người dùng chỉ yêu cầu code mà không cho phép sửa file, chỉ xuất những file/đoạn code cần thiết. Không lặp lại toàn bộ quy tắc trong câu trả lời.
+
+## 10. Definition of Done
+
+Chỉ coi task hoàn tất khi:
+
+- Cấu trúc thư mục và POM đúng quy định.
+- Spec không chứa UI locator/action trực tiếp.
+- Không thêm hard sleep, domain thật, Playwright private API hoặc error swallowing.
+- Locator đủ ổn định và assertion kiểm tra đúng expected result.
+- Method giữa spec và Page Object nhất quán.
+- Các kiểm tra phù hợp đã được chạy và báo cáo trung thực.

@@ -8,7 +8,7 @@ const { UserProfilePage } = require('../../pages/UserProfilePage');
 const applyData = require('../../data/userProfileData.json');
 const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 
-test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', () => {
+test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob @e2e', () => {
 
   test('Người dùng hoàn thành tạo profile và ứng tuyển', async ({ page }) => {
     test.slow();
@@ -25,7 +25,7 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', (
     });
 
     await test.step('And Người dùng thấy popup Onboarding và đóng popup này', async () => {
-      await onboardingPopup.closeIfVisible('and_onboarding_close_start', {
+      await onboardingPopup.closeIfVisible(undefined, {
         modalTimeout: 15000,
         closeBtnTimeout: 5000,
         modalHiddenTimeout: 10000,
@@ -41,7 +41,7 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', (
     });
 
     await test.step('And Người dùng thêm kinh nghiệm làm việc', async () => {
-      await userProfilePage.capture('and_experience_start');
+      await userProfilePage.capture('and_experience_start', true);
       await userProfilePage.clickAddExperience();
       await userProfilePage.capture('and_experience_end');
       await userProfilePage.fillExperience(applyData.experience);
@@ -50,7 +50,7 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', (
     });
 
     await test.step('And Người dùng điền thông tin Giới thiệu bản thân', async () => {
-      await userProfilePage.capture('and_intro_start');
+      await userProfilePage.capture('and_intro_start', true);
       await userProfilePage.clickAddIntroduction();
       await userProfilePage.capture('and_intro_end');
       await userProfilePage.fillIntroduction(applyData.intro);
@@ -58,7 +58,7 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', (
     });
 
     await test.step('And Người dùng điền thông tin Học vấn', async () => {
-      await userProfilePage.capture('and_education_start');
+      await userProfilePage.capture('and_education_start', true);
       await userProfilePage.clickAddEducation();
       await userProfilePage.capture('and_education_end');
       await userProfilePage.fillEducation(applyData.education);
@@ -67,7 +67,7 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', (
     });
 
     await test.step('And Người dùng thêm Thành tựu', async () => {
-      await userProfilePage.capture('and_achievement_start');
+      await userProfilePage.capture('and_achievement_start', true);
       await userProfilePage.clickAddAchievement();
       await userProfilePage.capture('and_achievement_end');
       await userProfilePage.fillAchievement(applyData.achievement);
@@ -76,7 +76,7 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', (
     });
 
     await test.step('And Người dùng thêm Kỹ năng', async () => {
-      await userProfilePage.capture('and_skill_start');
+      await userProfilePage.capture('and_skill_start', true);
       await userProfilePage.clickAddSkill();
       await userProfilePage.capture('and_skill_end');
       await userProfilePage.fillSkill(applyData.skill);
@@ -85,7 +85,7 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', (
     });
 
     await test.step('And Người dùng thêm Chứng chỉ', async () => {
-      await userProfilePage.capture('and_certificate_start');
+      await userProfilePage.capture('and_certificate_start', true);
       await userProfilePage.clickAddCertificate();
       await userProfilePage.capture('and_certificate_end');
       await userProfilePage.fillCertificate(applyData.certificate);
@@ -94,13 +94,13 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', (
     });
 
     await test.step('And Người dùng thêm Ngoại ngữ', async () => {
-      await userProfilePage.capture('and_language_start');
+      await userProfilePage.capture('and_language_start', true);
       await userProfilePage.clickAddForeignLanguage();
       await userProfilePage.capture('and_language_end');
       await userProfilePage.fillForeignLanguage(applyData.language.language, applyData.language.level);
       await userProfilePage.capture('and_language_filled');
       await userProfilePage.saveSection();
-      await userProfilePage.capture('and_language_saved');
+      await userProfilePage.capture('and_language_saved', true);
     });
   });
 

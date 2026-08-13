@@ -17,7 +17,26 @@ class PopupConsent extends BasePage {
       await this.capture('popup_consent_visible');
       await this.actions.click(this.agreeBtn);
     } catch (error) {
-      console.log('Popup Consent không xuất hiện, bỏ qua bước này.');
+      if (process.env.DEBUG_OPTIONAL_POPUPS === '1') {
+        console.log('Popup Consent không xuất hiện, bỏ qua bước này.');
+      }
+    }
+  }
+
+  async waitForConsentOrHomepageReady(homePage) {
+    try {
+      await this.actions.waitForVisible(this.popupTitle, { timeout: 15000 });
+      if (this.screenshotHelper) {
+        await this.screenshotHelper.waitForPageStable({ maxWaitMs: 10000, stableFrameCount: 5 });
+      }
+      return 'consent';
+    } catch (error) {
+      if (!homePage || typeof homePage.expectHomepageContentLoaded !== 'function') {
+        throw error;
+      }
+
+      await homePage.expectHomepageContentLoaded();
+      return 'homepage';
     }
   }
 }

@@ -5,7 +5,7 @@ const { OnboardingPopup } = require('../../pages/OnboardingPopup');
 const applyData = require('../../data/applyJobData.json');
 const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 
-test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @applyjob', () => {
+test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @applyjob @e2e', () => {
 
   test('Người dùng hoàn thành tạo profile và ứng tuyển job không cần CV', async ({ page }) => {
     test.slow();
@@ -20,7 +20,7 @@ test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không c
     });
 
     await test.step('And Người dùng thấy popup Onboarding và đóng popup này', async () => {
-      await onboardingPopup.closeIfVisible('and_onboarding_close_start', {
+      await onboardingPopup.closeIfVisible(undefined, {
         modalTimeout: 15000,
         closeBtnTimeout: 5000,
         modalHiddenTimeout: 10000,

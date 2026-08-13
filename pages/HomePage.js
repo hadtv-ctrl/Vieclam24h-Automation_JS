@@ -8,11 +8,23 @@ class HomePage extends BasePage {
     super(page, featureName);
 
     this.closeAdsBtns = page.locator('//button[./i[contains(@class,"svicon-close")]]');
+    this.mobileEntryPopup = page.locator('.mbep-popup');
+    this.mobileEntryPopupCloseBtn = this.mobileEntryPopup.getByRole('button').first();
     this.allLinks = page.locator('a[href]');
     this.logo = page.locator('a[href="/"] svg').first();
 
     this.jobMenuBtn = page.getByRole('button', { name: /Việc làm/ });
     this.findJobSubMenuBtn = page.getByRole('button', { name: 'Tìm việc làm' });
+    this.noCVJobLink = page.getByRole('link', { name: 'Việc không cần CV' });
+    this.lotteJobLink = page.getByRole('link', { name: 'Nhân Viên Bán Hàng - Lotte' });
+  }
+
+  async clickNoCVJobLink() {
+    await this.clickElement(this.noCVJobLink);
+  }
+
+  async clickLotteJobLink() {
+    await this.clickElement(this.lotteJobLink);
   }
 
   async clickJobMenu() {
@@ -23,11 +35,24 @@ class HomePage extends BasePage {
     await this.clickElement(this.findJobSubMenuBtn);
   }
 
+  async openJobSearch() {
+    await this.clickJobMenu();
+    await Promise.all([
+      this.page.waitForURL(/\/tim-kiem-viec-lam-nhanh(?:[/?#]|$)/i, { timeout: 30000 }),
+      this.clickFindJobSubMenu(),
+    ]);
+  }
+
   async navigate() {
-    await this.page.goto('/');
+    await super.navigate('/');
   }
 
   async closeAdsIfVisible() {
+    if (await this.mobileEntryPopup.isVisible()) {
+      await this.actions.click(this.mobileEntryPopupCloseBtn, { force: true });
+      await this.mobileEntryPopup.waitFor({ state: 'hidden', timeout: 10000 });
+    }
+
     try {
       await this.actions.waitForVisible(this.closeAdsBtns.first(), { timeout: 8000 });
       const count = await this.closeAdsBtns.count();
@@ -56,6 +81,48 @@ class HomePage extends BasePage {
   async expectHomepageVisible() {
     await this.page.waitForLoadState('domcontentloaded');
     await this.actions.waitForVisible(this.logo, { timeout: 20000 });
+  }
+
+  async expectHomepageContentLoaded() {
+    await this.expectHomepageVisible();
+    await this.page.waitForFunction(
+      () => {
+        const isVisible = (element) => {
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+
+          return (
+            style.visibility !== 'hidden' &&
+            style.display !== 'none' &&
+            Number(style.opacity) !== 0 &&
+            rect.width > 1 &&
+            rect.height > 1 &&
+            rect.bottom >= 0 &&
+            rect.right >= 0 &&
+            rect.top <= window.innerHeight &&
+            rect.left <= window.innerWidth
+          );
+        };
+
+        const hasVisibleText = (text) =>
+          Array.from(document.querySelectorAll('body *')).some((element) =>
+            isVisible(element) && element.innerText && element.innerText.includes(text)
+          );
+
+        return (
+          hasVisibleText('Tìm việc') &&
+          hasVisibleText('Việc đi làm ngay') &&
+          hasVisibleText('Việc không cần CV')
+        );
+      },
+      null,
+      { timeout: 30000 }
+    );
+
+    if (this.screenshotHelper) {
+      await this.screenshotHelper.waitForVisualLoadingHidden({ timeout: 30000 });
+      await this.screenshotHelper.waitForPageStable({ maxWaitMs: 10000, stableFrameCount: 5 });
+    }
   }
 
   async expectLoginAreaVisible() {
