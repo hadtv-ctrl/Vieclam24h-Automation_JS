@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Playwright runtime artifacts
+playwright-report/
+test-results/
+blob-report/
+evidence/
+
+# Environment and local overrides
+.env
+.env.*
+!.env.example
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Editors and operating systems
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local media used as test input is kept explicitly when referenced by test data.
