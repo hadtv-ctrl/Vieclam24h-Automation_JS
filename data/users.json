@@ -1,0 +1,13 @@
+[
+  {
+    "username": "0503233868",
+    "phone": "0503233868",
+    "otp": "1111",
+    "email": "test_auto_1786534780768@example.com",
+    "password": "Test@1234",
+    "fullName": "Hà JS",
+    "mobile": "0503233868",
+    "tokenAuth": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjaGFubmVsX2NvZGUiOiJ2bDI0aCIsInVzZXIiOnsiaWQiOiIyMDA0NDg2MjY0IiwibmFtZSI6IkhcdTAwZTAgSnMiLCJlbWFpbCI6InRlc3RfYXV0b18xNzg2NTM0NzgwNzY4QGV4YW1wbGUuY29tIiwiYXZhdGFyIjpudWxsLCJoYXNfcGFzcyI6ImIxYTE1OWZjMDExNWMyZWZlMjI4ZTVjYWU0ZmU0YWU4Iiwicm9sZSI6InNlZWtlciJ9LCJleHAiOjE4MTc2Mzg3ODEsInZlcnNpb24iOjF9.ASs6NKNTIQCWx29RA_i7JA_f0L4NrT3uHJE4Fu-9cSw",
+    "registeredAt": "2026-08-12T11:39:41.354Z"
+  }
+]

@@ -1,0 +1,33 @@
+{
+  "intro": "giới thiệu bản thân",
+  "experience": {
+    "company": "Cty TNHH KMS",
+    "jobTitle": "nhân viên nhân sự",
+    "startYear": "2021",
+    "startMonth": "January",
+    "isWorkingHere": true,
+    "description": "tuyển dụng nhân sự"
+  },
+  "education": {
+    "school": "Aptech",
+    "startYear": "2017",
+    "endYear": "2020",
+    "major": "3D Animation Visual Effects (VFX)",
+    "degree": "Đại học",
+    "description": "tốt nghiệp loại giỏi"
+  },
+  "skill": "Microsoft Excel",
+  "achievement": {
+    "name": "dự án 1",
+    "startYear": "2024",
+    "startMonth": "January",
+    "endYear": "2024",
+    "endMonth": "January",
+    "description": "thành tự 1"
+  },
+  "certificate": "chứng chỉ 1",
+  "language": {
+    "language": "Tiếng Anh",
+    "level": "Trung Cấp"
+  }
+}

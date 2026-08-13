@@ -1,0 +1,33 @@
+{
+  "intro": "Giới thiệu bản thân",
+  "experience": {
+    "company": "Tên cty",
+    "jobTitle": "nhân viên kinh doanh",
+    "startYear": "2023",
+    "startMonth": "January",
+    "isWorkingHere": true,
+    "description": "Mô tả trách nhiệm công việc"
+  },
+  "education": {
+    "school": "AIM Academy",
+    "startYear": "2017",
+    "endYear": "2019",
+    "major": "3D Animation Visual Effects (",
+    "degree": "Chưa tốt nghiệp THPT",
+    "description": "Mô tả chi tiết"
+  },
+  "skill": "Kỹ năng tốc ký",
+  "achievement": {
+    "name": "Tên thành tựu",
+    "startYear": "2023",
+    "startMonth": "January",
+    "endYear": "2023",
+    "endMonth": "February",
+    "description": "Mô tả chi tiết thành tựu"
+  },
+  "certificate": "Tên chứng chỉ",
+  "language": {
+    "language": "Tiếng Anh",
+    "level": "Trung cấp"
+  }
+}

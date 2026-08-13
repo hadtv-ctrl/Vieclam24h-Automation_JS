@@ -1,0 +1,17 @@
+node_modules/
+
+# Playwright outputs
+playwright-report/
+test-results/
+blob-report/
+evidence/
+
+# Environment and local machine files
+.env
+.env.*
+!.env.example
+*.log
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

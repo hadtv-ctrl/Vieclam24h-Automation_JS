@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRT Visual Compare</title>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --panel-bg: #ffffff;
+            --text-color: #1f2937;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --sidebar-width: 300px;
+            --border-color: #e5e7eb;
+            --header-bg: #f9fafb;
+            --hover-bg: #f3f4f6;
+            --checker-1: #e5e7eb;
+            --checker-2: #f9fafb;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --panel-bg: #2d2d2d;
+            --text-color: #ffffff;
+            --accent: #007acc;
+            --accent-hover: #005999;
+            --border-color: #3d3d3d;
+            --header-bg: #333333;
+            --hover-bg: #3d3d3d;
+            --checker-1: #2a2a2a;
+            --checker-2: #222222;
+        }
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            margin: 0; padding: 15px; display: flex; flex-direction: column;
+            height: 100vh; box-sizing: border-box; gap: 15px;
+        }
+        
+        /* Toolbar */
+        .toolbar {
+            display: flex; gap: 15px; align-items: center;
+            padding: 15px; background: var(--panel-bg);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .toolbar h2 { margin: 0; font-size: 1.2rem; flex-shrink: 0; width: calc(var(--sidebar-width) - 30px); }
+        .folder-controls { display: flex; gap: 10px; flex: 1; align-items: center; }
+        
+        button {
+            background-color: var(--accent); color: white; border: none; 
+            padding: 8px 16px; border-radius: 6px; cursor: pointer; 
+            font-weight: 600; font-size: 0.9rem; transition: background 0.2s;
+        }
+        button:hover { background-color: var(--accent-hover); }
+        button.active { background-color: #ef4444; }
+
+        .lbl-folder { font-size: 0.85rem; color: #4b5563; background: var(--bg-color); padding: 6px 10px; border-radius: 4px; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid var(--border-color); }
+
+        /* Main Layout */
+        .main-layout { display: flex; gap: 15px; flex: 1; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width); background: var(--panel-bg); 
+            border-radius: 8px; display: flex; flex-direction: column; overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .sidebar-header { padding: 12px; background: var(--header-bg); font-weight: bold; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
+        .file-list { flex: 1; overflow-y: auto; padding: 5px 0; }
+        .file-item {
+            padding: 10px 15px; cursor: pointer; font-size: 0.9rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            border-bottom: 1px solid var(--border-color); display: flex; gap: 8px; align-items: center;
+        }
+        .file-item:hover { background: var(--hover-bg); }
+        .file-item.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .sidebar.hide-passed .file-item.status-passed { display: none !important; }
+
+        /* Workspace */
+        .workspace { display: flex; gap: 15px; flex: 1; overflow: hidden; }
+        .panel {
+            flex: 1; background: var(--panel-bg); border-radius: 8px; 
+            display: flex; flex-direction: column; border: 1px solid var(--border-color); overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .panel-header {
+            padding: 10px; background: var(--header-bg); text-align: center;
+            font-weight: bold; border-bottom: 1px solid var(--border-color); z-index: 10; font-size: 0.95rem;
+        }
+        
+        .image-container {
+            flex: 1; overflow: auto; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            background: repeating-conic-gradient(var(--checker-1) 0% 25%, var(--checker-2) 0% 50%) 50% / 20px 20px;
+        }
+        /* max-width: none ensures 1:1 pixel mapping for accurate VRT */
+        img { max-width: none; display: block; user-select: none; }
+        
+        .workspace.fit-screen img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .img-overlay {
+            display: none; position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            mix-blend-mode: difference; pointer-events: none;
+        }
+        
+        /* Mode: Diff */
+        .workspace.mode-diff #container2 .img-overlay { display: block; mix-blend-mode: difference; clip-path: none; opacity: 1; }
+        .workspace.mode-diff #container2 { background: #000; }
+        .workspace.mode-diff .diff-badge { display: inline; }
+
+        /* Mode: Slider */
+        .workspace.mode-slider #container2 .img-overlay { display: block; mix-blend-mode: normal; opacity: 1; pointer-events: none; }
+        .workspace.mode-slider .diff-badge { display: inline; color: var(--accent); }
+        
+        /* Mode: Blink */
+        .workspace.mode-blink #container2 .img-overlay { display: block; mix-blend-mode: normal; pointer-events: none; }
+        .workspace.mode-blink .diff-badge { display: inline; color: #f59e0b; }
+        
+        .diff-badge { display: none; color: #ef4444; margin-left: 8px; font-size: 0.85rem; }
+        
+        .slider-control {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 80%; max-width: 400px; z-index: 100;
+            display: none; cursor: ew-resize;
+        }
+        .workspace.mode-slider .slider-control { display: block; }
+        .mode-btn.active { background: var(--accent) !important; color: white !important; }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <h2>👁️ VRT Visual Compare</h2>
+        <div class="folder-controls">
+            <button onclick="selectFolder1()">📁 Chọn Folder 1 (Expected)</button>
+            <span class="lbl-folder" id="lblFolder1" title="Chưa chọn...">Chưa chọn...</span>
+            
+            <button onclick="selectFolder2()">📁 Chọn Folder 2 (Actual)</button>
+            <span class="lbl-folder" id="lblFolder2" title="Chưa chọn...">Chưa chọn...</span>
+        </div>
+        <button id="btnFit" onclick="toggleFit()" style="background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); margin-right: 10px; cursor: pointer;">🔍 Thu gọn</button>
+        <button id="btnTheme" onclick="toggleTheme()" style="background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); margin-right: 10px;">🌙 Dark</button>
+        
+        <div style="display: flex; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; margin-right: 10px;">
+            <button class="mode-btn active" id="mode-side" onclick="setViewMode('side')" style="border-radius: 0; background: transparent; color: var(--text-color);">Đôi (Side)</button>
+            <button class="mode-btn" id="mode-diff" onclick="setViewMode('diff')" style="border-radius: 0; background: transparent; color: var(--text-color);">Đè (Diff)</button>
+            <button class="mode-btn" id="mode-slider" onclick="setViewMode('slider')" style="border-radius: 0; background: transparent; color: var(--text-color);">Kéo (Slider)</button>
+            <button class="mode-btn" id="mode-blink" onclick="setViewMode('blink')" style="border-radius: 0; background: transparent; color: var(--text-color);">Nháy (Blink)</button>
+        </div>
+
+        <button id="btnApprove" onclick="approveCurrentFile()" style="background: #10b981; display: none;">✅ Approve Baseline</button>
+    </div>
+
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="sidebar-header">Danh sách File</div>
+            <div id="sidebarSummary" style="padding: 10px; background: var(--header-bg); font-size: 0.85rem; border-bottom: 1px solid var(--border-color);">
+                <div id="summaryStats" style="margin-bottom: 8px;">Đang chờ dữ liệu...</div>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="chkHidePassed" onchange="toggleHidePassed()">
+                    <span>Chỉ hiện file có khác biệt</span>
+                </label>
+            </div>
+            <div class="file-list" id="fileList">
+                <div style="padding: 20px; color: #888; font-size: 0.9rem; text-align: center; line-height: 1.5;">
+                    Hãy chọn cả 2 folder ở trên để công cụ tự động quét và đối chiếu ảnh.
+                </div>
+            </div>
+        </div>
+
+        <div class="workspace" id="workspace">
+            <!-- Cột trái -->
+            <div class="panel">
+                <div class="panel-header">Folder 1: Baseline</div>
+                <div class="image-container" id="container1">
+                    <img id="img1" src="" alt="">
+                </div>
+            </div>
+
+            <!-- Cột phải -->
+            <div class="panel" id="panel2">
+                <div class="panel-header">
+                    Folder 2: Actual <span class="diff-badge">(Đang xem Diff)</span>
+                </div>
+                <div class="image-container" id="container2">
+                    <img id="img2" src="" alt="">
+                    <!-- Overlay image (Folder 1) -->
+                    <img id="imgOverlay" class="img-overlay" src="" alt="">
+                    <input type="range" id="diffSlider" class="slider-control" min="0" max="100" value="50" oninput="updateSlider()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Theme Toggle Logic ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('vrt_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButton(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('vrt_theme', newTheme);
+            updateThemeButton(newTheme);
+        }
+
+        function updateThemeButton(theme) {
+            const btn = document.getElementById('btnTheme');
+            if (theme === 'dark') {
+                btn.innerHTML = '☀️ Light';
+            } else {
+                btn.innerHTML = '🌙 Dark';
+            }
+        }
+        
+        initTheme();
+
+        // --- Fit Screen Logic ---
+        let isFitScreen = false;
+        function toggleFit() {
+            isFitScreen = !isFitScreen;
+            const workspace = document.getElementById('workspace');
+            const btn = document.getElementById('btnFit');
+            if (isFitScreen) {
+                workspace.classList.add('fit-screen');
+                btn.innerHTML = '🔍 Xem 1:1';
+            } else {
+                workspace.classList.remove('fit-screen');
+                btn.innerHTML = '🔍 Thu gọn';
+            }
+        }
+
+        // --- Folder Selection & File System Access API ---
+        let dirHandle1, dirHandle2;
+        const files1 = new Map();
+        const files2 = new Map();
+
+        async function selectFolder1() {
+            try {
+                dirHandle1 = await window.showDirectoryPicker();
+                document.getElementById('lblFolder1').innerText = dirHandle1.name;
+                document.getElementById('lblFolder1').title = dirHandle1.name;
+                files1.clear();
+                for await (const entry of dirHandle1.values()) {
+                    if (entry.kind === 'file' && entry.name.match(/\.(png|jpe?g)$/i)) {
+                        files1.set(entry.name, entry);
+                    }
+                }
+                updateFileList();
+            } catch (err) { console.log("User cancelled or error:", err); }
+        }
+
+        async function selectFolder2() {
+            try {
+                dirHandle2 = await window.showDirectoryPicker();
+                document.getElementById('lblFolder2').innerText = dirHandle2.name;
+                document.getElementById('lblFolder2').title = dirHandle2.name;
+                files2.clear();
+                for await (const entry of dirHandle2.values()) {
+                    if (entry.kind === 'file' && entry.name.match(/\.(png|jpe?g)$/i)) {
+                        files2.set(entry.name, entry);
+                    }
+                }
+                updateFileList();
+            } catch (err) { console.log("User cancelled or error:", err); }
+        }
+
+        const fileStatuses = new Map();
+
+        async function areFilesIdentical(handle1, handle2) {
+            try {
+                const file1 = await handle1.getFile();
+                const file2 = await handle2.getFile();
+                if (file1.size !== file2.size) return false;
+                
+                const buffer1 = await file1.arrayBuffer();
+                const buffer2 = await file2.arrayBuffer();
+                if (buffer1.byteLength !== buffer2.byteLength) return false;
+                
+            const length32 = Math.floor(buffer1.byteLength / 4);
+            
+            const view1 = new Uint32Array(buffer1, 0, length32);
+            const view2 = new Uint32Array(buffer2, 0, length32);
+            for (let i = 0; i < view1.length; i++) {
+                if (view1[i] !== view2[i]) return false;
+            }
+            
+            const bytes1 = new Uint8Array(buffer1);
+            const bytes2 = new Uint8Array(buffer2);
+            for (let i = length32 * 4; i < bytes1.length; i++) {
+                if (bytes1[i] !== bytes2[i]) return false;
+            }
+                
+                return true;
+            } catch (e) {
+                console.error("Comparison error:", e);
+                return false;
+            }
+        }
+
+        async function updateFileList() {
+            const list = document.getElementById('fileList');
+            const summaryStats = document.getElementById('summaryStats');
+            list.innerHTML = '<div style="padding: 15px; text-align: center; color: var(--text-color);">Đang phân tích và so sánh...</div>';
+            
+            const allNames = new Set([...files1.keys(), ...files2.keys()]);
+            const sortedNames = Array.from(allNames).sort();
+            
+            if (sortedNames.length === 0) {
+                list.innerHTML = '<div style="padding: 15px; color: #888; text-align: center;">Không tìm thấy ảnh (.png/.jpg)</div>';
+                summaryStats.innerText = 'Không có dữ liệu';
+                return;
+            }
+
+            fileStatuses.clear();
+            list.innerHTML = '';
+            
+            let countPassed = 0;
+            let countFailed = 0;
+            let countMissing = 0;
+            let firstFailed = null;
+
+            for (const name of sortedNames) {
+                let status = '';
+                let icon = '';
+                let title = '';
+                
+                if (files1.has(name) && files2.has(name)) {
+                    const isIdentical = await areFilesIdentical(files1.get(name), files2.get(name));
+                    if (isIdentical) {
+                        status = 'passed'; icon = '✅'; title = 'Giống hệt nhau'; countPassed++;
+                    } else {
+                        status = 'failed'; icon = '❌'; title = 'Có khác biệt'; countFailed++;
+                        if (!firstFailed) firstFailed = name;
+                    }
+                } else if (files1.has(name)) {
+                    status = 'missing2'; icon = '⚠️'; title = 'Chỉ có ở Baseline (1)'; countMissing++;
+                    if (!firstFailed) firstFailed = name;
+                } else {
+                    status = 'missing1'; icon = '⚠️'; title = 'Chỉ có ở Actual (2)'; countMissing++;
+                    if (!firstFailed) firstFailed = name;
+                }
+                
+                fileStatuses.set(name, status);
+                
+                const item = document.createElement('div');
+                item.className = `file-item status-${status}`;
+                item.innerHTML = `<span title="${title}">${icon}</span> <span>${name}</span>`;
+                item.title = name;
+                item.dataset.name = name;
+                
+                item.onclick = () => {
+                    document.querySelectorAll('.file-item').forEach(el => el.classList.remove('active'));
+                    item.classList.add('active');
+                    loadImages(name);
+                };
+                list.appendChild(item);
+            }
+            
+            summaryStats.innerHTML = `<strong>Tổng:</strong> ${sortedNames.length} | ✅ ${countPassed} | ❌ ${countFailed} | ⚠️ ${countMissing}`;
+            
+            if (firstFailed) {
+                const itemToClick = list.querySelector(`.file-item[data-name="${firstFailed.replace(/"/g, '&quot;')}"]`);
+                if (itemToClick) itemToClick.click();
+                
+                if (currentMode === 'side') {
+                    setViewMode('diff');
+                }
+            } else if (sortedNames.length > 0) {
+                const firstItem = list.querySelector('.file-item');
+                if (firstItem) firstItem.click();
+            }
+        }
+
+        function toggleHidePassed() {
+            const chk = document.getElementById('chkHidePassed');
+            const sidebar = document.querySelector('.sidebar');
+            if (chk.checked) {
+                sidebar.classList.add('hide-passed');
+            } else {
+                sidebar.classList.remove('hide-passed');
+            }
+        }
+
+        let activeFilename = null;
+
+        async function loadImages(filename) {
+            activeFilename = filename;
+            const btnApprove = document.getElementById('btnApprove');
+            if (fileStatuses.get(filename) === 'failed') {
+                btnApprove.style.display = 'block';
+            } else {
+                btnApprove.style.display = 'none';
+            }
+
+            const img1 = document.getElementById('img1');
+            const img2 = document.getElementById('img2');
+            const imgOverlay = document.getElementById('imgOverlay');
+            
+            // Xóa URL cũ khỏi memory
+            if(img1.src) URL.revokeObjectURL(img1.src);
+            if(img2.src) URL.revokeObjectURL(img2.src);
+            if(imgOverlay.src) URL.revokeObjectURL(imgOverlay.src);
+
+            img1.src = ''; img2.src = ''; imgOverlay.src = '';
+
+            try {
+                if (files1.has(filename)) {
+                    const file = await files1.get(filename).getFile();
+                    const url = URL.createObjectURL(file);
+                    img1.src = url;
+                    imgOverlay.src = url;
+                }
+                if (files2.has(filename)) {
+                    const file = await files2.get(filename).getFile();
+                    const url = URL.createObjectURL(file);
+                    img2.src = url;
+                }
+            } catch (e) {
+                console.error("Error loading image", e);
+            }
+        }
+
+        // --- Sync Scroll ---
+        const cont1 = document.getElementById('container1');
+        const cont2 = document.getElementById('container2');
+        let isSyncingLeft = false, isSyncingRight = false;
+
+        cont1.addEventListener('scroll', () => {
+            if (!isSyncingLeft) {
+                isSyncingRight = true;
+                cont2.scrollTop = cont1.scrollTop; cont2.scrollLeft = cont1.scrollLeft;
+            }
+            isSyncingLeft = false;
+        });
+
+        cont2.addEventListener('scroll', () => {
+            if (!isSyncingRight) {
+                isSyncingLeft = true;
+                cont1.scrollTop = cont2.scrollTop; cont1.scrollLeft = cont2.scrollLeft;
+            }
+            isSyncingRight = false;
+        });
+
+        // --- View Modes ---
+        let currentMode = 'side';
+        let blinkTimer = null;
+
+        function setViewMode(mode) {
+            currentMode = mode;
+            const workspace = document.getElementById('workspace');
+            const badge = document.querySelector('.diff-badge');
+            const imgOverlay = document.getElementById('imgOverlay');
+            
+            // Đặt lại state Thu gọn về mặc định (1:1) khi chuyển mode
+            isFitScreen = false;
+            if (document.getElementById('btnFit')) {
+                document.getElementById('btnFit').innerHTML = '🔍 Thu gọn';
+            }
+            
+            workspace.className = 'workspace mode-' + mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('mode-' + mode).classList.add('active');
+            
+            clearInterval(blinkTimer);
+            imgOverlay.style.opacity = '1';
+            imgOverlay.style.clipPath = 'none';
+
+            if (mode === 'diff') {
+                badge.innerText = '(Diff Mode)';
+            } else if (mode === 'slider') {
+                badge.innerText = '(Slider Mode)';
+                updateSlider();
+            } else if (mode === 'blink') {
+                badge.innerText = '(Blink Mode)';
+                blinkTimer = setInterval(() => {
+                    imgOverlay.style.opacity = imgOverlay.style.opacity === '1' ? '0' : '1';
+                }, 400);
+            }
+        }
+
+        function updateSlider() {
+            if (currentMode !== 'slider') return;
+            const val = document.getElementById('diffSlider').value;
+            const imgOverlay = document.getElementById('imgOverlay');
+            imgOverlay.style.clipPath = `polygon(0 0, ${val}% 0, ${val}% 100%, 0 100%)`;
+        }
+
+        // --- Approve Baseline ---
+        async function approveCurrentFile() {
+            if (!activeFilename || !files1.has(activeFilename) || !files2.has(activeFilename)) return;
+            
+            const expectedHandle = files1.get(activeFilename);
+            const actualHandle = files2.get(activeFilename);
+            
+            try {
+                // Yêu cầu quyền ghi vào file Baseline (nếu chưa có)
+                if ((await expectedHandle.queryPermission({mode: 'readwrite'})) !== 'granted') {
+                    if ((await expectedHandle.requestPermission({mode: 'readwrite'})) !== 'granted') {
+                        alert("Không được cấp quyền ghi đè file. Hãy thử chọn lại Folder 1 và cho phép.");
+                        return;
+                    }
+                }
+                
+                if (!confirm(`Xác nhận ghi đè ảnh Actual lên ảnh Expected (Baseline) của "${activeFilename}"?`)) return;
+                
+                const writable = await expectedHandle.createWritable();
+                const actualFile = await actualHandle.getFile();
+                await writable.write(await actualFile.arrayBuffer());
+                await writable.close();
+                
+                alert("✅ Đã cập nhật Baseline thành công!");
+                updateFileList(); // Tự quét lại để biến file này thành màu xanh
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi khi ghi đè. Cần cấp quyền chỉnh sửa cho trình duyệt hoặc thử chọn lại thư mục 1.");
+            }
+        }
+    </script>
+</body>
+</html>

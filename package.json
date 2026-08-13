@@ -1,0 +1,20 @@
+{
+  "name": "automation-project",
+  "version": "1.0.0",
+  "description": "Playwright Automation Testing Project",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "suite:smoke": "playwright test --grep @smoke",
+    "suite:regression": "playwright test --grep-invert @smoke",
+    "suite:register": "playwright test --project=\"Register Suite\"",
+    "report": "playwright show-report",
+    "check:framework": "node scripts/check-framework-structure.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "dotenv": "^16.3.1"
+  }
+}
