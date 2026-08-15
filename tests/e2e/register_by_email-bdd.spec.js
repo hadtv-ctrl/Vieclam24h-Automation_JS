@@ -5,7 +5,7 @@ const { LoginPopup } = require('../../pages/LoginPopup');
 const { HomePage } = require('../../pages/HomePage');
 const { ScreenshotHelper, generateRandomVNPhone, generateRandomEmail } = require('../../core/utils/commonUtils');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Email @register', () => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Email @register @e2e', () => {
   let page;
   let loginPopup;
   let homePage;
@@ -35,7 +35,6 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Emai
     await test.step('And Tôi tắt tất cả các popup quảng cáo nếu có', async () => {
       try {
         await homePage.closeAdsIfVisible();
-        await homePage.capture('after_close_popup');
       } catch (e) {
         await homePage.capture('no_popup_found');
       }
@@ -82,7 +81,6 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Emai
     });
 
     await test.step('And Tôi bấm nút Đăng ký để hoàn tất', async () => {
-      await loginPopup.capture('before_submit_registration');
       await expect(loginPopup.submitBtn).toBeVisible();
       await loginPopup.clickSubmit();
       await loginPopup.capture('after_register_successfully');

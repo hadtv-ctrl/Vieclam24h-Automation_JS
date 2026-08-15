@@ -5,7 +5,7 @@ class JobApplyNoCVPage extends BasePage {
   constructor(page) {
     super(page);
     this.screenshotHelper = new ScreenshotHelper(page, 'job-apply-nocv');
-
+    
     // Locators
     this.btnApplyNoCV = this.page.getByRole('button', { name: /Ứng tuyển không cần CV/i }).first();
     this.txtProvince = this.page.getByRole('textbox', { name: /Chọn tỉnh/i }).first();
@@ -107,9 +107,9 @@ class JobApplyNoCVPage extends BasePage {
     await this.capture('before_bulk_apply');
     await this.actions.check(this.chkCheckAll);
     await this.capture('after_bulk_apply');
-
+    
     await this.clickElement(this.btnBulkApply);
-
+    
     // Check if missing info form appears for next job
     try {
       await this.txtProvince.waitFor({ state: 'visible', timeout: 8000 });
@@ -126,7 +126,7 @@ class JobApplyNoCVPage extends BasePage {
 
     // Wait for loading icon to disappear if present
     await this.waitForGlobalLoadingHidden(15000);
-
+    
     // Wait for the final popup and click 'Xem thêm việc gợi ý'
     await this.actions.waitForVisible(this.btnSeeMoreJobs, { timeout: 15000 });
     await this.capture('after_click_submit_all');

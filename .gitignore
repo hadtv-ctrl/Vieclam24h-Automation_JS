@@ -1,25 +1,32 @@
-# Dependencies
-node_modules/
+# Thư mục báo cáo của Playwright
+/playwright-report/
 
-# Playwright runtime artifacts
-playwright-report/
-test-results/
-blob-report/
-evidence/
+# Kết quả test (chứa video, trace,...)
+/test-results/
 
-# Environment and local overrides
+# Thư mục chứa ảnh chụp màn hình làm bằng chứng
+/evidence/
+
+# Thư viện và các file môi trường
+/node_modules/
 .env
-.env.*
-!.env.example
-
-# Logs and temporary files
-*.log
-*.tmp
-*.temp
-
-# Editors and operating systems
-.idea/
+.env.local
+.env.*.local
 .DS_Store
-Thumbs.db
 
-# Local media used as test input is kept explicitly when referenced by test data.
+# Các file log
+*.log
+debug.log
+
+# IDE và editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store

@@ -61,12 +61,11 @@ test('UiActions waits for visibility before click/fill/check', async () => {
   assert.equal(checkLocator.checkCalls.length, 1);
 });
 
-test('UiActions normalizes selector-like objects before waiting', async () => {
+test('UiActions normalizes selector strings before waiting', async () => {
   const page = new MockPage();
   const actions = new UiActions(page);
 
-  const selectorLike = { _selector: '#dynamic' };
-  const locator = await actions.waitForVisible(selectorLike, { timeout: 5000 });
+  const locator = await actions.waitForVisible('#dynamic', { timeout: 5000 });
 
   assert.ok(locator);
   assert.deepEqual(page.locators['#dynamic'].waitCalls[0], { state: 'visible', timeout: 5000 });

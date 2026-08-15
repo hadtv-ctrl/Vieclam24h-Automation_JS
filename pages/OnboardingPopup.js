@@ -12,10 +12,10 @@ class OnboardingPopup extends BasePage {
 
     this.nextBtn = page.locator('button:has-text("Tiếp theo")').first();
     this.submitBtn = page.locator('button:has-text("Xem công việc phù hợp")').first();
-    this.closeBtn = page.locator('[data-test-id="common__close-button"]').first();
-    this.modal = page.locator('form, [role="dialog"], div').filter({
+    this.modal = page.locator('#common__modal, [data-test-id="common__form-modal"], [role="dialog"]').filter({
       hasText: /Bạn đang tìm việc ở khu vực nào\?|Bạn đang quan tâm đến ngành nghề nào\?|Bạn đang muốn tìm công việc gì\?/i,
     }).first();
+    this.closeBtn = page.locator('#common__modal [data-test-id="common__close-button"], [data-test-id="common__form-modal"] [data-test-id="common__close-button"], [role="dialog"] [data-test-id="common__close-button"]').first();
     this.overlayLoading = page.locator('.overlay-loading'); // Thêm locator cho overlay loading
 
     this.step1Title = page.getByText('Bạn đang tìm việc ở khu vực nào?').first();
@@ -78,11 +78,10 @@ class OnboardingPopup extends BasePage {
 
   async closeIfVisible(captureName, opts = {}) {
     const modal = this.modal;
-    const closeButton = modal.locator('[data-test-id="common__close-button"]').first();
+    const closeButton = this.closeBtn;
     const modalTimeout = opts.modalTimeout ?? 15000;
     const closeBtnTimeout = opts.closeBtnTimeout ?? 5000;
     const modalHiddenTimeout = opts.modalHiddenTimeout ?? 5000;
-    const modalDetachedTimeout = opts.modalDetachedTimeout ?? 5000;
 
     try {
       await modal.waitFor({ state: 'visible', timeout: modalTimeout });
@@ -100,25 +99,11 @@ class OnboardingPopup extends BasePage {
       try {
         await this.actions.waitForVisible(closeButton, { timeout: closeBtnTimeout });
 
-        let clicked = false;
         try {
           await closeButton.click();
-          clicked = true;
         } catch (clickErr) {
-          try {
-            await closeButton.click({ force: true });
-            clicked = true;
-          } catch (forceErr) {
-            try {
-              await closeButton.evaluate((el) => el.click());
-              clicked = true;
-            } catch (evalErr) {
-              throw evalErr;
-            }
-          }
+          await closeButton.click({ force: true });
         }
-
-        if (!clicked) throw new Error('Unable to click close button');
 
         try {
           await modal.waitFor({ state: 'hidden', timeout: modalHiddenTimeout });
@@ -130,18 +115,8 @@ class OnboardingPopup extends BasePage {
           } catch (ovErr) {
             console.warn('Overlay did not hide promptly after close click:', ovErr.message || ovErr);
           }
-        }
-
-        try {
-          await modal.waitFor({ state: 'detached', timeout: modalDetachedTimeout });
-        } catch (detachedErr) {
-          console.warn('Modal did not detach within timeout:', detachedErr.message || detachedErr);
-        }
-
-        try {
-          await this.page.waitForLoadState('networkidle', { timeout: 5000 });
-        } catch (niErr) {
-          // ignore networkidle timeouts — not critical
+          await this.page.keyboard.press('Escape');
+          await modal.waitFor({ state: 'hidden', timeout: modalHiddenTimeout });
         }
 
         lastErr = null;
@@ -153,37 +128,6 @@ class OnboardingPopup extends BasePage {
     }
 
     if (lastErr) {
-      try {
-        await this.page.evaluate(() => {
-          document.querySelectorAll('.overlay-loading').forEach(el => el.remove());
-          document.querySelectorAll('form, [role="dialog"], div').forEach((f) => {
-            try {
-              if (f.innerText && /Bạn đang tìm việc ở khu vực nào\?|Bạn đang quan tâm đến ngành nghề nào\?|Bạn đang muốn tìm công việc gì\?/i.test(f.innerText)) {
-                f.remove();
-              }
-            } catch (e) {
-              // ignore
-            }
-          });
-          document.querySelectorAll('[data-test-id="common__close-button"]').forEach(el => el.remove());
-        });
-
-        try {
-          await modal.waitFor({ state: 'detached', timeout: 2000 });
-          await this.capture('onboarding_removed_by_dom', true);
-          return;
-        } catch (detErr) {
-          console.warn('DOM removal fallback could not detach modal:', detErr.message || detErr);
-        }
-      } catch (domErr) {
-        console.warn('Error during DOM removal fallback:', domErr.message || domErr);
-      }
-
-      try {
-        await this.capture('onboarding_close_failure', true);
-      } catch (capErr) {
-        // ignore capture errors
-      }
       throw lastErr;
     }
   }

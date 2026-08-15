@@ -121,7 +121,7 @@ class RegistrationApiHelper {
     return userRecord;
   }
 
-  persistUserState(payload = {}, responseBody = {}) {
+  persistUserState(payload = {}, responseBody = {}, options = {}) {
     const extractToken = (body) => {
       if (!body || typeof body !== 'object') return null;
       const possibleKeys = ['token_auth', 'tokenAuth', 'token', 'access_token', 'accessToken'];
@@ -155,6 +155,10 @@ class RegistrationApiHelper {
     };
 
     this.setRuntimeCache(userRecord);
+
+    if (options.writeFile === false) {
+      return userRecord;
+    }
 
     const usersFilePath = path.join(__dirname, '../../data/users.json');
     let usersData = [];

@@ -80,6 +80,8 @@ Sau khi sửa:
 5. Nếu fail do code vừa sửa, phân tích log và sửa lại. Tối đa 3 vòng tự động; sau đó báo blocker và evidence thay vì tiếp tục tiêu quota không giới hạn.
 6. Không tuyên bố pass nếu chưa chạy. Phân biệt rõ: static check pass, unit test pass, Playwright test pass hoặc chưa chạy được.
 
+Để tiết kiệm quota và thời gian chạy, không gọi `npx playwright test` từ precondition/helper của e2e. Nếu cần tạo dữ liệu bằng API, tách logic thành helper dùng `APIRequestContext` và gọi trực tiếp trong cùng process. Log từ config/helper phải để mặc định im lặng hoặc bật bằng biến môi trường.
+
 ## 9. Cách trả kết quả để tiết kiệm quota
 
 Khi có quyền sửa repository, sửa trực tiếp file; không in lại toàn bộ source và không xuất checklist cam kết dài. Báo cáo cuối chỉ gồm:

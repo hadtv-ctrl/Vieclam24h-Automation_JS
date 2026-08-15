@@ -1,0 +1,20 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+#
+# --- COMMIT MESSAGE TYPES ---
+# feat: New feature
+# fix: Bug fix
+# test: Add/update test cases
+# refactor: Code refactoring without changing functionality
+# docs: Update documentation
+# style: Code style changes (formatting, semicolons, etc)
+# chore: Dependencies or build updates
+#
+# --- EXAMPLES ---
+# test(loginPopup): add test for email validation
+# fix(jobApplyPage): handle CV upload timeout
+# docs(README): update installation instructions
+# refactor(commonUtils): extract screenshot logic

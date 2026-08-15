@@ -8,7 +8,7 @@ const { UserProfilePage } = require('../../pages/UserProfilePage');
 const applyData = require('../../data/userProfileData.json');
 const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 
-test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', () => {
+test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob @e2e', () => {
 
   test('Người dùng hoàn thành tạo profile và ứng tuyển', async ({ page }) => {
     test.slow();
@@ -25,7 +25,7 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @applyjob', (
     });
 
     await test.step('And Người dùng thấy popup Onboarding và đóng popup này', async () => {
-      await onboardingPopup.closeIfVisible('and_onboarding_close_start', {
+      await onboardingPopup.closeIfVisible(undefined, {
         modalTimeout: 15000,
         closeBtnTimeout: 5000,
         modalHiddenTimeout: 10000,

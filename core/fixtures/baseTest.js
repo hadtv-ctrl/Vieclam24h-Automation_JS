@@ -1,5 +1,5 @@
 const { test: baseTest } = require('@playwright/test');
-const { BasePage } = require('../pages/BasePage');
+const { BasePage } = require('../../pages/BasePage');
 
 // Extend basic test by providing custom fixtures like "basePage".
 // This allows auto-injecting pages into your tests.

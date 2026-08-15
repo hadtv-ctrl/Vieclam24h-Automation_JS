@@ -29,5 +29,25 @@
   "language": {
     "language": "Tiếng Anh",
     "level": "Trung Cấp"
+  },
+  "personalInfo": {
+    "province": "TP.HCM",
+    "district": "Quận 1 (Cũ)",
+    "birthMonth": "Tháng 3",
+    "birthYear": "2003",
+    "birthDay": "1",
+    "gender": "Nữ"
+  },
+  "jobCriteria": {
+    "experienceLevel": "Đã có kinh nghiệm",
+    "yearsOfExperience": "Hơn 5 năm",
+    "jobTitle": "nhân viên kinh doanh",
+    "industry": "Hành chính - Thư ký",
+    "workLocation": "TP.HCM",
+    "minSalary": "20",
+    "maxSalary": "40",
+    "canNegotiateSalary": false,
+    "currentLevel": "Nhân viên",
+    "workType": "Toàn thời gian cố định"
   }
 }

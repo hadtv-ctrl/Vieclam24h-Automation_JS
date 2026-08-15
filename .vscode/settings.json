@@ -3,6 +3,7 @@
         "/^cd /d/_Automation-Project ; node -e \"require\\('\\./pages/OnboardingPopup'\\); console\\.log\\('OnboardingPopup loaded successfully'\\)\"$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "npx playwright": true
     }
 }

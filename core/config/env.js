@@ -2,10 +2,6 @@ require('dotenv').config();
 
 const ENV = process.env.NODE_ENV || 'qc';
 
-console.log('=======================================');
-console.log(`🚀 ĐANG CHẠY TEST TRÊN MÔI TRƯỜNG: ${ENV.toUpperCase()}`);
-console.log('=======================================');
-
 const environments = {
   qc: {
     baseURL: 'https://seeker.vl24hv2.qc.sieuviet-team.com',
@@ -21,5 +17,13 @@ const environments = {
     apiBaseURL: 'https://api.vl24hv2.staging.sieuviet-team.com'
   }
 };
+
+if (!environments[ENV]) {
+  throw new Error(`Unknown NODE_ENV "${ENV}". Supported values: ${Object.keys(environments).join(', ')}`);
+}
+
+if (process.env.SHOW_ENV_BANNER === '1') {
+  console.log(`Running tests on ${ENV.toUpperCase()} environment`);
+}
 
 module.exports = environments[ENV];

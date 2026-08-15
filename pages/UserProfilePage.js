@@ -55,12 +55,15 @@ class UserProfilePage extends BasePage {
   async navigateToMyProfile() {
     await this.clickElement(this.btnUserAvatar);
     await this.clickElement(this.btnMyProfile);
-    await this.page.waitForLoadState('networkidle');
+    // Wait for navigation to profile page to complete
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => null);
+    // Then wait for the add experience button to appear
+    await this.actions.waitForVisible(this.btnAddExperience, { timeout: 30000 });
   }
 
   async saveSection() {
     await this.clickElement(this.btnCommonSave);
-    await this.page.waitForLoadState('networkidle');
+    await this.waitForGlobalLoadingHidden(30000);
   }
 
   // --- Kinh nghiệm ---
@@ -185,6 +188,163 @@ class UserProfilePage extends BasePage {
       console.log('fillForeignLanguage simple fallback', e);
     }
     await this.clickElement(this.page.getByRole('button', { name: level }).first());
+  }
+
+  // --- Thông tin cá nhân (Personal Info) ---
+  async clickEditPersonalInfo() {
+    const btnEditPersonalInfo = this.page.locator('[data-test-id="user-profile__personal-info"] [data-test-id="user-profile__edit-button"]').first();
+    await this.clickElement(btnEditPersonalInfo);
+  }
+
+  async fillPersonalInfo(data) {
+    // Select Province
+    await this.clickElement(this.page.getByText('Chọn tỉnh thành').first());
+    await this.clickElement(this.page.locator('[data-test-id="common__select-menu"] div').filter({ hasText: data.province }).nth(3).first());
+
+    // Wait for modal to update after province selection
+    await this.page.waitForTimeout(800);
+
+    // Select District with improved error handling
+    await this.clickElement(this.page.getByText('Chọn quận huyện').first());
+    
+    // Try exact match first, if fails try partial match
+    try {
+      const districtExact = this.page.getByRole('heading', { name: data.district }).first();
+      await districtExact.waitFor({ state: 'visible', timeout: 10000 });
+      await this.clickElement(districtExact);
+    } catch {
+      // Try partial match for district
+      const districtPartial = this.page.getByRole('heading').filter({ hasText: data.district.split('(')[0].trim() }).first();
+      await districtPartial.waitFor({ state: 'visible', timeout: 10000 });
+      await this.clickElement(districtPartial);
+    }
+
+    // Fill Date of Birth
+    const inpDateOfBirth = this.page.getByRole('textbox', { name: 'DD/MM/YYYY' }).first();
+    await this.clickElement(inpDateOfBirth);
+
+    // Select Month
+    await this.clickElement(this.page.getByRole('button', { name: new RegExp('^Tháng \\d+', 'i') }).first());
+    await this.clickElement(this.page.getByText(data.birthMonth).first());
+
+    // Select Year
+    await this.clickElement(this.page.getByRole('button', { name: new RegExp('^\\d{4}', 'i') }).first());
+    await this.clickElement(this.page.getByText(data.birthYear).first());
+
+    // Select Day
+    await this.clickElement(this.page.getByRole('button', { name: new RegExp(`Choose.*${data.birthDay}.*tháng`) }).first());
+
+    // Select Gender
+    await this.clickElement(this.page.getByRole('button', { name: data.gender }).first());
+
+    // Save personal info
+    await this.saveSection();
+  }
+
+  // --- Tiêu chí tìm việc (Job Goal/Criteria) ---
+  async clickSearchCriteria() {
+    // First click avatar to open menu
+    await this.clickElement(this.btnUserAvatar);
+    // Then click search criteria button from the dropdown menu
+    const btnSearchCriteria = this.page.getByRole('button', { name: /Tiêu chí tìm việc/i }).first();
+    await this.clickElement(btnSearchCriteria);
+  }
+
+  async clickAddJobGoal() {
+    const linkAddJobGoal = this.page.getByText('Thêm vị trí công việc').first();
+    await this.clickElement(linkAddJobGoal);
+  }
+
+  async fillJobGoal(data) {
+    // Select experience level
+    await this.clickElement(this.page.getByRole('button', { name: new RegExp(data.experienceLevel, 'i') }).first());
+
+    // Select years of experience
+    await this.clickElement(this.page.getByText('Chọn số năm kinh nghiệm').first());
+    await this.clickElement(this.page.getByRole('heading', { name: data.yearsOfExperience }).first());
+
+    // Fill job title
+    const jobTitleInput = this.page.locator('[data-test-id="common__job-title-select"] [data-test-id="common__input"]').first();
+    await this.fillInput(jobTitleInput, data.jobTitle);
+    await this.clickElement(this.page.getByRole('listitem').filter({ hasText: new RegExp(`^${data.jobTitle}$`, 'i') }).locator('span').first());
+
+    // Select industry
+    await this.clickElement(this.page.getByText('Chọn ngành nghề').first());
+    await this.clickElement(this.page.getByRole('heading', { name: new RegExp(data.industry, 'i') }).first());
+    const removeIndustryBtn = this.page.locator('.text-16.text-se-grey-48.svicon-square').first();
+    await this.clickElement(removeIndustryBtn);
+
+    // Select location
+    await this.clickElement(this.page.getByText('Chọn địa điểm').first());
+    await this.clickElement(this.page.getByRole('heading', { name: data.workLocation }).first());
+    const removeLocationBtn = this.page.locator('.text-16.text-se-grey-48.svicon-square').first();
+    await this.clickElement(removeLocationBtn);
+
+    // Scroll to salary fields
+    const jobGoalModal = this.page.locator('[data-test-id="user-profile__job-goal-modal"]');
+    const scrollTarget = jobGoalModal.locator('div').filter({ hasText: 'Kinh nghiệm làm việc*' }).nth(2);
+    await scrollTarget.scrollIntoViewIfNeeded();
+
+    // Fill salary range
+    const minSalaryInput = this.page.getByRole('textbox', { name: 'Tối thiểu' }).first();
+    await this.fillInput(minSalaryInput, data.minSalary);
+
+    const maxSalaryInput = this.page.getByRole('textbox', { name: 'Tối đa' }).last();
+    await this.fillInput(maxSalaryInput, data.maxSalary);
+
+    // Handle checkbox (negotiate salary option)
+    const negotiateCb = this.page.getByRole('checkbox').first();
+    if (data.canNegotiateSalary) {
+      await this.actions.check(negotiateCb);
+    } else {
+      await this.actions.uncheck(negotiateCb);
+    }
+
+    // Select current level
+    await this.clickElement(this.page.getByText('Chọn cấp bậc hiện tại').first());
+    await this.clickElement(this.page.locator('[data-test-id="common__select-menu"] div').filter({ hasText: data.currentLevel }).nth(3).first());
+
+    // Select work type
+    await this.clickElement(this.page.getByText('Chọn hình thức làm việc').first());
+    await this.clickElement(this.page.getByRole('heading', { name: data.workType }).first());
+    const removeWorkTypeBtn = this.page.locator('.text-16.text-se-grey-48.svicon-square').first();
+    await this.clickElement(removeWorkTypeBtn);
+
+    // Scroll back to save button
+    const scrollTarget2 = jobGoalModal.locator('div').filter({ hasText: 'Kinh nghiệm làm việc*' }).nth(2);
+    await scrollTarget2.scrollIntoViewIfNeeded();
+
+    // Save job goal
+    await this.saveSection();
+  }
+
+  // --- CV Upload ---
+  async enableCVSearch() {
+    const cvSearchSwitch = this.page.locator('[data-test-id="common__switch"]').first();
+    await this.clickElement(cvSearchSwitch);
+  }
+
+  async clickContinueButton() {
+    const btnContinue = this.page.getByRole('button', { name: 'Tiếp tục' }).first();
+    await this.clickElement(btnContinue);
+  }
+
+  async fillVerificationCode(code) {
+    const verificationInputs = this.page.getByRole('textbox', { name: /Digit|Please enter verification/i });
+    const count = await verificationInputs.count();
+    for (let i = 0; i < count; i++) {
+      await this.fillInput(verificationInputs.nth(i), code.charAt(i));
+    }
+  }
+
+  async uploadCV(filePath) {
+    const uploadButton = this.page.locator('[data-test-id="user-profile__enable-search-cv"] [data-test-id="common__button"]').first();
+    await uploadButton.setInputFiles(filePath);
+  }
+
+  async clickAllowSearch() {
+    const btnAllowSearch = this.page.getByRole('button', { name: 'Cho phép tìm kiếm' }).first();
+    await this.clickElement(btnAllowSearch);
   }
 }
 

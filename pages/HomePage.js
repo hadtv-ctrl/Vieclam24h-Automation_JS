@@ -83,6 +83,48 @@ class HomePage extends BasePage {
     await this.actions.waitForVisible(this.logo, { timeout: 20000 });
   }
 
+  async expectHomepageContentLoaded() {
+    await this.expectHomepageVisible();
+    await this.page.waitForFunction(
+      () => {
+        const isVisible = (element) => {
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+
+          return (
+            style.visibility !== 'hidden' &&
+            style.display !== 'none' &&
+            Number(style.opacity) !== 0 &&
+            rect.width > 1 &&
+            rect.height > 1 &&
+            rect.bottom >= 0 &&
+            rect.right >= 0 &&
+            rect.top <= window.innerHeight &&
+            rect.left <= window.innerWidth
+          );
+        };
+
+        const hasVisibleText = (text) =>
+          Array.from(document.querySelectorAll('body *')).some((element) =>
+            isVisible(element) && element.innerText && element.innerText.includes(text)
+          );
+
+        return (
+          hasVisibleText('Tìm việc') &&
+          hasVisibleText('Việc đi làm ngay') &&
+          hasVisibleText('Việc không cần CV')
+        );
+      },
+      null,
+      { timeout: 30000 }
+    );
+
+    if (this.screenshotHelper) {
+      await this.screenshotHelper.waitForVisualLoadingHidden({ timeout: 30000 });
+      await this.screenshotHelper.waitForPageStable({ maxWaitMs: 10000, stableFrameCount: 5 });
+    }
+  }
+
   async expectLoginAreaVisible() {
     const loginBtn = this.page.locator('#btn-login-header');
     await this.actions.waitForVisible(loginBtn, { timeout: 20000 });
