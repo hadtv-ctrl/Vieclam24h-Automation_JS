@@ -55,11 +55,35 @@ class BasePage {
     return this._capture(stepName, '', fullPage, options);
   }
 
+  async isElementInViewport(locator) {
+    return locator.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > 0 &&
+        rect.right > 0 &&
+        rect.top < viewportHeight &&
+        rect.left < viewportWidth
+      );
+    });
+  }
+
+  async scrollToElementIfOutsideViewport(locator) {
+    const isInViewport = await this.isElementInViewport(locator);
+    if (!isInViewport) {
+      await locator.scrollIntoViewIfNeeded();
+    }
+  }
+
   async clickElement(locatorOrSelector, options = {}) {
     // await this._capture('click');
     const locator = await this.actions.waitForVisible(locatorOrSelector, { timeout: 30000 });
     // Cuộn đến element nếu cần thiết, phương thức này đã tự kiểm tra
-    await locator.scrollIntoViewIfNeeded();
+    await this.scrollToElementIfOutsideViewport(locator);
     return this.actions.click(locator, options);
   }
 
@@ -78,8 +102,150 @@ class BasePage {
     // await this._capture('fill', sanitizedText);
     const locator = await this.actions.waitForVisible(locatorOrSelector, { timeout: 30000 });
     // Cuộn đến element nếu cần thiết, phương thức này đã tự kiểm tra
-    await locator.scrollIntoViewIfNeeded();
+    await this.scrollToElementIfOutsideViewport(locator);
     return this.actions.fill(locator, text, options);
+  }
+
+  async fillCodeInputs(inputLocator, code) {
+    const codeText = String(code);
+    await this.waitForElement(inputLocator.first());
+
+    const inputCount = await inputLocator.count();
+    const fillCount = Math.min(inputCount, codeText.length);
+
+    for (let i = 0; i < fillCount; i++) {
+      await this.fillInput(inputLocator.nth(i), codeText.charAt(i));
+    }
+  }
+
+  getPhoneVerificationLocators() {
+    return {
+      title: this.page.getByText(/Xác thực số điện thoại/i).first(),
+      phoneInput: this.page.getByRole('textbox', { name: /Số điện thoại|Nhập số điện thoại/i }).first(),
+      codeInputs: this.page.locator(
+        [
+          'input[maxlength="1"]:visible',
+          'input[autocomplete="one-time-code"]:visible',
+          'input[aria-label*="Digit"]:visible',
+          'input[name*="otp"]:visible',
+          'input[id*="otp"]:visible',
+        ].join(', ')
+      ),
+      telCodeInputs: this.page.locator('input[type="tel"]:visible'),
+      codeTextboxes: this.page.getByRole('textbox', { name: /Digit|Please enter verification|OTP|Mã xác thực/i }),
+      submitButton: this.page.getByRole('button', { name: /Xác thực|Xác nhận|Tiếp tục|Hoàn tất/i }).first(),
+    };
+  }
+
+  async handlePhoneVerificationAfterApplyIfVisible(otpCode) {
+    const locators = this.getPhoneVerificationLocators();
+
+    try {
+      await locators.title.waitFor({ state: 'visible', timeout: 5000 });
+    } catch {
+      return false;
+    }
+
+    await this.capture('phone_verification_visible');
+
+    if (!otpCode) {
+      throw new Error('Phone verification appeared after clicking apply, but no otpCode was provided.');
+    }
+
+    await this.continuePhoneVerificationPhoneStepIfNeeded(locators);
+    await this.capture('phone_verification_code_step');
+    await this.fillPhoneVerificationCode(locators, otpCode);
+    await this.clickPhoneVerificationSubmitIfVisible(locators);
+    await this.waitForGlobalLoadingHidden(15000);
+    return true;
+  }
+
+  async continuePhoneVerificationPhoneStepIfNeeded(locators) {
+    const hasPhoneStep = await this.isPhoneVerificationPhoneStepVisible(locators, 1500);
+    if (hasPhoneStep) {
+      await this.clickElement(locators.submitButton);
+      await this.waitForGlobalLoadingHidden(15000);
+      return true;
+    }
+
+    const hasCodeInputs = await this.isPhoneVerificationCodeInputVisible(locators, 1500);
+    if (hasCodeInputs) {
+      return false;
+    }
+
+    await this.clickElement(locators.submitButton);
+    await this.waitForGlobalLoadingHidden(15000);
+    return true;
+  }
+
+  async isPhoneVerificationPhoneStepVisible(locators, timeout = 5000) {
+    try {
+      await locators.phoneInput.waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      try {
+        await locators.telCodeInputs.first().waitFor({ state: 'visible', timeout });
+        return (await locators.telCodeInputs.count()) === 1;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  async isPhoneVerificationCodeInputVisible(locators, timeout = 5000) {
+    try {
+      await locators.codeTextboxes.first().waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      try {
+        await locators.codeInputs.first().waitFor({ state: 'visible', timeout });
+        return true;
+      } catch {
+        try {
+          await locators.telCodeInputs.first().waitFor({ state: 'visible', timeout });
+          return (await locators.telCodeInputs.count()) > 1;
+        } catch {
+          return false;
+        }
+      }
+    }
+  }
+
+  async fillPhoneVerificationCode(locators, otpCode) {
+    try {
+      await locators.codeTextboxes.first().waitFor({ state: 'visible', timeout: 10000 });
+      await this.fillCodeInputs(locators.codeTextboxes, otpCode);
+      return;
+    } catch {
+      // Try the next supported OTP locator shape.
+    }
+
+    try {
+      await locators.codeInputs.first().waitFor({ state: 'visible', timeout: 10000 });
+      await this.fillCodeInputs(locators.codeInputs, otpCode);
+      return;
+    } catch {
+      // Try grouped tel inputs as a final OTP fallback.
+    }
+
+    await locators.telCodeInputs.first().waitFor({ state: 'visible', timeout: 10000 });
+    const telInputCount = await locators.telCodeInputs.count();
+    if (telInputCount <= 1) {
+      throw new Error('Phone verification OTP inputs were not visible after continuing phone verification.');
+    }
+
+    await this.fillCodeInputs(locators.telCodeInputs, otpCode);
+  }
+
+  async clickPhoneVerificationSubmitIfVisible(locators) {
+    try {
+      await locators.submitButton.waitFor({ state: 'visible', timeout: 5000 });
+    } catch {
+      return false;
+    }
+
+    await this.clickElement(locators.submitButton);
+    return true;
   }
 }
 

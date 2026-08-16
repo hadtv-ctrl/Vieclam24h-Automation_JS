@@ -358,6 +358,12 @@ class UiActions {
     await locator.check({ force: options.force });
     return locator;
   }
+
+  async uncheck(locatorOrSelector, options = {}) {
+    const locator = await this.waitForVisible(locatorOrSelector, options);
+    await locator.uncheck({ force: options.force });
+    return locator;
+  }
 }
 
 const generateRandomVNPhone = () => {

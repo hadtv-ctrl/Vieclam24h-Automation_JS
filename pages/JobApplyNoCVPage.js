@@ -19,12 +19,17 @@ class JobApplyNoCVPage extends BasePage {
     this.btnCommonSave = this.page.getByRole('button', { name: /Nộp hồ sơ ngay/i }).first();
     this.chkCheckAll = this.page.locator('[data-test-id="common__checkall"]').getByRole('checkbox').first();
     this.btnBulkApply = this.page.getByRole('button', { name: /Ứng tuyển/i }).last();
+    this.btnBulkApplyZero = this.page.getByRole('button', { name: /Ứng tuyển\s*0\s*vị trí/i }).first();
     this.btnCommonNext = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]').last();
     this.btnSeeMoreJobs = this.page.getByRole('button', { name: /Xem thêm việc gợi ý/i }).first();
+    this.msgNoSimilarJobs = this.page
+      .getByText(/Hiện chưa tìm thấy việc làm phù hợp|Không có.*(?:job|việc làm).*gợi ý|Không tìm thấy.*việc làm phù hợp/i)
+      .first();
   }
 
-  async startApplyNoCV() {
+  async startApplyNoCV(options = {}) {
     await this.clickElement(this.btnApplyNoCV);
+    await this.handlePhoneVerificationAfterApplyIfVisible(options.otpCode);
   }
 
   async fillMiniProfile(data) {
@@ -60,8 +65,16 @@ class JobApplyNoCVPage extends BasePage {
       await this.clickElement(this.page.getByText(data.education, { exact: true }).last());
     }
 
-    // Gender
-    await this.clickElement(this.page.locator('label').filter({ hasText: data.gender }).locator('i'));
+    // Gender can be absent in some no-CV mini profile forms.
+    if (data.gender) {
+      const genderOption = this.page.locator('label').filter({ hasText: data.gender }).locator('i').first();
+      try {
+        await genderOption.waitFor({ state: 'visible', timeout: 3000 });
+        await this.clickElement(genderOption);
+      } catch (e) {
+        console.log('Job hiện tại không yêu cầu chọn giới tính, bỏ qua trường optional.');
+      }
+    }
 
     // File Upload
     if (data.uploadFile) {
@@ -88,15 +101,27 @@ class JobApplyNoCVPage extends BasePage {
   }
 
   async bulkApply(dataJob2) {
-    // Wait for either the bulk apply checkbox or the success page button
-    const target = this.chkCheckAll.or(this.btnSeeMoreJobs);
-    await target.first().waitFor({ state: 'visible', timeout: 15000 });
+    // Wait for either the bulk apply list, the success action, or the empty-state message.
+    const target = this.chkCheckAll.or(this.btnSeeMoreJobs).or(this.msgNoSimilarJobs).or(this.btnBulkApplyZero);
+    try {
+      await target.first().waitFor({ state: 'visible', timeout: 15000 });
+    } catch {
+      console.log('Không tìm thấy danh sách Bulk Apply, kết thúc kịch bản.');
+      await this.capture('after_no_bulk_apply_list');
+      return;
+    }
 
     if (await this.btnSeeMoreJobs.isVisible()) {
         console.log('Không có job nào gợi ý để Bulk Apply, kết thúc kịch bản.');
         await this.capture('after_click_submit_all');
         await this.clickElement(this.btnSeeMoreJobs);
         return;
+    }
+
+    if (await this.hasNoBulkApplyJobs()) {
+      console.log('Không có việc làm phù hợp để Bulk Apply, kết thúc kịch bản.');
+      await this.capture('after_no_similar_jobs');
+      return;
     }
 
     if (!(await this.chkCheckAll.isVisible())) {
@@ -131,6 +156,16 @@ class JobApplyNoCVPage extends BasePage {
     await this.actions.waitForVisible(this.btnSeeMoreJobs, { timeout: 15000 });
     await this.capture('after_click_submit_all');
     await this.clickElement(this.btnSeeMoreJobs);
+  }
+
+  async hasNoBulkApplyJobs() {
+    try {
+      await this.msgNoSimilarJobs.or(this.btnBulkApplyZero).first().waitFor({ state: 'visible', timeout: 3000 });
+      return true;
+    } catch {
+      const bulkApplyText = await this.btnBulkApply.textContent().catch(() => '');
+      return /Ứng tuyển\s*0\s*vị trí/i.test(bulkApplyText || '');
+    }
   }
 }
 

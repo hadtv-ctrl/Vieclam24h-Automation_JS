@@ -66,8 +66,9 @@ class JobApplyPage extends BasePage {
   }
 
   // --- Actions ---
-  async startApply() {
+  async startApply(options = {}) {
     await this.clickElement(this.btnApplyNow);
+    await this.handlePhoneVerificationAfterApplyIfVisible(options.otpCode);
     await this.actions.waitForVisible(this.optProfileMethod);
   }
 

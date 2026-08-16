@@ -10,4 +10,23 @@
 # Thư viện và các file môi trường
 /node_modules/
 .env
+.env.local
+.env.*.local
+.DS_Store
+
+# Các file log
+*.log
+debug.log
+
+# IDE và editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
 .DS_Store

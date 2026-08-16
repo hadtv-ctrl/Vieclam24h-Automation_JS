@@ -81,11 +81,7 @@ class LoginPopup extends BasePage {
   }
 
   async fillOtpCode(code) {
-    for (let i = 0; i < code.length; i++) {
-      const otpBox = this.otpInputs.nth(i);
-      await this.waitForElement(otpBox);
-      await this.actions.fill(otpBox, code[i]);
-    }
+    await this.fillCodeInputs(this.otpInputs, code);
   }
 }
 
