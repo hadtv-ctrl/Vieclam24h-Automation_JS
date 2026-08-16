@@ -79,6 +79,87 @@ class BasePage {
     }
   }
 
+  async waitForElementStable(locatorOrSelector, options = {}) {
+    const {
+      timeout = 10000,
+      stableFrameCount = 8,
+      maxElements = 120,
+    } = options;
+
+    const locator = await this.actions.waitForVisible(locatorOrSelector, { timeout });
+
+    await locator.evaluate(
+      async (element, { timeout, stableFrameCount, maxElements }) => {
+        const startedAt = performance.now();
+        let previousSignature = '';
+        let stableFrames = 0;
+
+        const isVisible = (target) => {
+          const rect = target.getBoundingClientRect();
+          const style = window.getComputedStyle(target);
+          return (
+            style.visibility !== 'hidden' &&
+            style.display !== 'none' &&
+            Number(style.opacity) !== 0 &&
+            rect.width > 1 &&
+            rect.height > 1 &&
+            rect.bottom >= 0 &&
+            rect.right >= 0 &&
+            rect.top <= window.innerHeight &&
+            rect.left <= window.innerWidth
+          );
+        };
+
+        const hasRunningAnimations = () => {
+          if (typeof element.getAnimations !== 'function') return false;
+          return element
+            .getAnimations({ subtree: true })
+            .some((animation) => animation.playState === 'running' || animation.pending);
+        };
+
+        const getSignature = () => {
+          const targets = [element, ...Array.from(element.querySelectorAll('*')).slice(0, maxElements)];
+          const parts = [];
+
+          for (const target of targets) {
+            if (!isVisible(target)) continue;
+
+            const rect = target.getBoundingClientRect();
+            const style = window.getComputedStyle(target);
+            parts.push(
+              Math.round(rect.left * 2) / 2,
+              Math.round(rect.top * 2) / 2,
+              Math.round(rect.width * 2) / 2,
+              Math.round(rect.height * 2) / 2,
+              style.transform,
+              style.opacity
+            );
+          }
+
+          return parts.join('|');
+        };
+
+        while (performance.now() - startedAt < timeout) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+
+          const signature = getSignature();
+          if (signature === previousSignature && !hasRunningAnimations()) {
+            stableFrames += 1;
+            if (stableFrames >= stableFrameCount) return;
+          } else {
+            stableFrames = 0;
+            previousSignature = signature;
+          }
+        }
+
+        throw new Error('Element did not become visually stable before timeout.');
+      },
+      { timeout, stableFrameCount, maxElements }
+    );
+
+    return locator;
+  }
+
   async clickElement(locatorOrSelector, options = {}) {
     // await this._capture('click');
     const locator = await this.actions.waitForVisible(locatorOrSelector, { timeout: 30000 });

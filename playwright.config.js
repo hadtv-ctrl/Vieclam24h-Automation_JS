@@ -16,7 +16,7 @@ module.exports = defineConfig({
       outputFolder: reportDir,
       open: 'never'
     }],
-    ['./core/reporters/summaryReporter.js', {
+    ['./core/reporters/htmlSummaryReporter.js', {
       outputFolder: reportDir
     }]
   ],

@@ -50,6 +50,7 @@ test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
       const specName = path.basename(test.info().file, path.extname(test.info().file));
       jobApplyPage = new JobApplyPage(newPage, specName);
 
+      await jobApplyPage.capture('after_job_detail_opened');
       await jobApplyPage.startApply({ otpCode: usersData[0]?.otp });
       await jobApplyPage.applyByProfile();
       await jobApplyPage.continueApply();
