@@ -67,13 +67,50 @@ class LoginPopup extends BasePage {
     return this.waitForElement(this.modalTitle);
   }
 
-  async waitForOtpVisible() {
-    try {
-      await this.otpModalTitle.waitFor({ state: 'visible', timeout: 30000 });
-      return;
-    } catch (error) {
-      await this.otpInputs.first().waitFor({ state: 'visible', timeout: 30000 });
+  async waitForOtpVisible(options = {}) {
+    const { timeout = 30000 } = options;
+    await this.otpModalTitle.or(this.otpInputs.first()).first().waitFor({ state: 'visible', timeout });
+  }
+
+  async clickContinueUntilOtpVisible(options = {}) {
+    const {
+      maxAttempts = 3,
+      otpTimeout = 10000,
+      loadingTimeout = 15000,
+    } = options;
+
+    let lastOtpError;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await this.actions.waitForVisible(this.continueBtn, { timeout: 5000 });
+      await this.clickContinue();
+      await this.waitForGlobalLoadingHidden(loadingTimeout);
+
+      try {
+        await this.waitForOtpVisible({ timeout: otpTimeout });
+        return;
+      } catch (error) {
+        lastOtpError = error;
+      }
+
+      let canRetry = false;
+      try {
+        canRetry = await this.continueBtn.isVisible();
+      } catch (error) {
+        canRetry = false;
+      }
+
+      if (!canRetry || attempt === maxAttempts) {
+        break;
+      }
+
+      console.warn(`OTP screen did not appear after Continue attempt ${attempt}; retrying.`);
     }
+
+    throw new Error(
+      `OTP screen did not appear after clicking Continue ${maxAttempts} time(s). ` +
+      `Last wait error: ${lastOtpError?.message || 'unknown'}`
+    );
   }
 
   async waitForRegisterFormVisible() {

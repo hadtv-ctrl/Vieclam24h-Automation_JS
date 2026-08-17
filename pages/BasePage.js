@@ -241,22 +241,49 @@ class BasePage {
     return true;
   }
 
-  async continuePhoneVerificationPhoneStepIfNeeded(locators) {
-    const hasPhoneStep = await this.isPhoneVerificationPhoneStepVisible(locators, 1500);
-    if (hasPhoneStep) {
-      await this.clickElement(locators.submitButton);
-      await this.waitForGlobalLoadingHidden(15000);
-      return true;
-    }
+  async continuePhoneVerificationPhoneStepIfNeeded(locators, options = {}) {
+    const {
+      maxAttempts = 3,
+      codeStepTimeout = 10000,
+      loadingTimeout = 15000,
+    } = options;
 
-    const hasCodeInputs = await this.isPhoneVerificationCodeInputVisible(locators, 1500);
-    if (hasCodeInputs) {
+    if (await this.isPhoneVerificationCodeInputVisible(locators, 1500)) {
       return false;
     }
 
-    await this.clickElement(locators.submitButton);
-    await this.waitForGlobalLoadingHidden(15000);
-    return true;
+    let lastCodeStepError;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const hasPhoneStep = await this.isPhoneVerificationPhoneStepVisible(locators, 1500);
+      const hasContinueButton = await this.isPhoneVerificationSubmitVisible(locators, 1500);
+
+      if (!hasPhoneStep && !hasContinueButton) {
+        break;
+      }
+
+      await this.clickElement(locators.submitButton);
+      await this.waitForGlobalLoadingHidden(loadingTimeout);
+
+      try {
+        await this.waitForPhoneVerificationCodeStepVisible(locators, codeStepTimeout);
+        return true;
+      } catch (error) {
+        lastCodeStepError = error;
+      }
+
+      const canRetry = await this.isPhoneVerificationSubmitVisible(locators, 1500);
+      if (!canRetry || attempt === maxAttempts) {
+        break;
+      }
+
+      console.warn(`Phone verification code step did not appear after Continue attempt ${attempt}; retrying.`);
+    }
+
+    throw new Error(
+      `Phone verification code step did not appear after clicking Continue ${maxAttempts} time(s). ` +
+      `Last wait error: ${lastCodeStepError?.message || 'unknown'}`
+    );
   }
 
   async isPhoneVerificationPhoneStepVisible(locators, timeout = 5000) {
@@ -289,6 +316,37 @@ class BasePage {
           return false;
         }
       }
+    }
+  }
+
+  async isPhoneVerificationSubmitVisible(locators, timeout = 5000) {
+    try {
+      await locators.submitButton.waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async waitForPhoneVerificationCodeStepVisible(locators, timeout = 10000) {
+    try {
+      await locators.codeTextboxes.first().waitFor({ state: 'visible', timeout });
+      return;
+    } catch {
+      // Try the next supported OTP locator shape.
+    }
+
+    try {
+      await locators.codeInputs.first().waitFor({ state: 'visible', timeout });
+      return;
+    } catch {
+      // Try grouped tel inputs as a final OTP fallback.
+    }
+
+    await locators.telCodeInputs.first().waitFor({ state: 'visible', timeout });
+    const telInputCount = await locators.telCodeInputs.count();
+    if (telInputCount <= 1) {
+      throw new Error('Phone verification code step was not visible after continuing phone verification.');
     }
   }
 

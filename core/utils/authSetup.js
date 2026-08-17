@@ -109,12 +109,11 @@ async function loginUserFromDataForPrecondition(page) {
   // Verify continue button is enabled before clicking
   await loginPopup.continueBtn.waitFor({ state: 'visible', timeout: 5000 });
   await expect(loginPopup.continueBtn).toBeEnabled();
-  await loginPopup.clickContinue();
-
-  await loginPopup.waitForGlobalLoadingHidden(15000);
-
-  // Wait for OTP form to appear (either via modal title or OTP input)
-  await loginPopup.waitForOtpVisible();
+  await loginPopup.clickContinueUntilOtpVisible({
+    maxAttempts: 3,
+    otpTimeout: 10000,
+    loadingTimeout: 15000,
+  });
 
   // Wait for OTP inputs to be visible
   await loginPopup.otpInputs.first().waitFor({ state: 'visible', timeout: 15000 });
