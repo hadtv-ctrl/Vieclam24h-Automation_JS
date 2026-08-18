@@ -33,7 +33,10 @@
   "noCVApply": {
     "job1": {
       "province": "TP.HCM",
-      "districts": ["Quận 3 (Cũ)", "Quận 4 (Cũ)"],
+      "districts": [
+        "Quận 3 (Cũ)",
+        "Quận 4 (Cũ)"
+      ],
       "intro": "Giới thiệu bản thân",
       "birthYear": "2008",
       "education": "Chưa tốt nghiệp THPT",
@@ -42,12 +45,16 @@
     },
     "job2": {
       "province": "An Giang",
-      "districts": ["Châu Đốc", "An Phú"],
+      "districts": [
+        "Châu Đốc",
+        "An Phú"
+      ],
       "intro": "Giới thiệu bản thân giới thiệu bản thân apply nhiều job",
       "birthYear": "2007",
       "education": "Chưa tốt nghiệp THPT",
       "gender": "Nữ",
       "uploadFile": "pexels-eberhardgross-640781.jpg"
     }
-  }
+  },
+  "cvPath": "data/TemplateCV.pdf"
 }

@@ -10,9 +10,15 @@ class JobApplyPage extends BasePage {
     // --- Locators (Các element trong page) ---
     this.btnApplyNow = this.page.getByRole('button', { name: 'Ứng tuyển ngay' }).first();
     this.optProfileMethod = this.page.locator('[data-test-id="apply-method-selector__option-profile"]').first();
+    this.optCVMethod = this.page.locator('[data-test-id="apply-method-selector__option-cv"]').first();
     this.btnContinueProfile = this.page.locator('[data-test-id="apply-profile-completion-content__action"]').first();
     this.btnCommonSave = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]').first();
     this.txtCommonInput = this.page.locator('[data-test-id="common__input"]').first();
+
+    // Upload CV
+    this.btnUploadCV = this.page.locator('[data-test-id="apply-method-selector__option-cv"]').first();
+    this.inpCV = this.page.locator('input[type="file"]').first();
+
 
     // Giới thiệu
     this.btnAddIntro = this.page.locator('[data-test-id="apply-job__introduce"] [data-test-id="user-profile__add-button"]').first();
@@ -112,8 +118,35 @@ class JobApplyPage extends BasePage {
     await this.waitForApplyModalStable();
   }
 
+  async applyByCV() {
+    await this.clickElement(this.optCVMethod);
+  }
+
+  // --- Upload CV Actions ---
+  async uploadCV(filePath) {
+    const uploadBtn = this.page.locator('[data-test-id="user-profile__upload-cv"] [data-test-id="common__button"]').first();
+    await uploadBtn.waitFor({ state: 'visible', timeout: 10000 });
+
+    try {
+      const [fileChooser] = await Promise.all([
+        this.page.waitForEvent('filechooser', { timeout: 5000 }),
+        uploadBtn.click(),
+      ]);
+      await fileChooser.setFiles(filePath);
+      return;
+    } catch (e) {
+      console.log('File chooser fallback: ', e.message);
+    }
+
+    // Fallback to finding input[type="file"] anywhere on page
+    const fileInput = this.page.locator('input[type="file"]').first();
+    await fileInput.setInputFiles(filePath);
+  }
+
+
   async continueApply() {
-    await this.clickElement(this.btnContinueProfile);
+    const btnAction = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]');
+    await this.clickElement(btnAction);
     await this.waitForApplyModalStable();
   }
 

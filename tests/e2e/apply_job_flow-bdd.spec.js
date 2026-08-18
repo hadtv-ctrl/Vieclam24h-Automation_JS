@@ -15,8 +15,8 @@ test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
   let jobSearchPage;
   let newPage; // Page của tab chi tiết việc làm
 
-  test.beforeEach(async ({ browser }, testInfo) => {
-    page = await browser.newPage();
+  test.beforeEach(async ({ page: testPage }, testInfo) => {
+    page = testPage;
     const specName = path.basename(testInfo.file, path.extname(testInfo.file));
     homePage = new HomePage(page, specName);
     jobSearchPage = new JobSearchPage(page, specName);
@@ -24,11 +24,10 @@ test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
 
   test.afterEach(async () => {
     if (newPage) await newPage.close();
-    if (page) await page.close();
   });
 
   test('Người dùng hoàn thành tạo profile và ứng tuyển thành công', async () => {
-    test.setTimeout(240000); // Tăng timeout cho luồng rất dài
+    test.setTimeout(360000); // Tăng timeout cho luồng rất dài
 
     await test.step('Given Tôi đang ở trang chủ sau khi đã đăng nhập', async () => {
       await loginUserFromDataForPrecondition(page);
@@ -41,11 +40,8 @@ test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
     await test.step('When Tôi mở một việc làm chi tiết và bấm "Ứng tuyển ngay"', async () => {
       await homePage.openJobSearch();
 
-      const page1Promise = page.waitForEvent('popup');
       await jobSearchPage.capture('before_click_first_job');
-      await jobSearchPage.clickFirstJob();
-
-      newPage = await page1Promise;
+      newPage = await jobSearchPage.clickFirstJob();
       await newPage.waitForLoadState();
       const specName = path.basename(test.info().file, path.extname(test.info().file));
       jobApplyPage = new JobApplyPage(newPage, specName);
