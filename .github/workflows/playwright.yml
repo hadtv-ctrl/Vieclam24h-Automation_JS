@@ -13,13 +13,11 @@ concurrency:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  test:
-    name: Framework and Playwright tests
-    timeout-minutes: 30
+  validate:
+    name: Framework and unit tests
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
@@ -35,14 +33,34 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-
       - name: Run framework structure checks
         run: npm run check:framework
 
       - name: Run unit tests
         run: node --test
+
+  e2e:
+    name: Internal Playwright tests
+    if: github.event_name != 'pull_request'
+    needs: validate
+    timeout-minutes: 30
+    runs-on: [self-hosted, windows, x64]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install chromium
 
       - name: Run Playwright tests
         run: npx playwright test --project="Desktop Chrome"
@@ -61,43 +79,3 @@ jobs:
             evidence/
           if-no-files-found: warn
           retention-days: 14
-
-      - name: Prepare report for GitHub Pages
-        if: always() && !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        shell: bash
-        run: |
-          mkdir -p pages-site
-          report_dir="$(find playwright-report -mindepth 1 -maxdepth 1 -type d -name 'report-*' | sort | tail -n 1)"
-
-          if [ -n "$report_dir" ]; then
-            cp -R "$report_dir"/. pages-site/
-          else
-            printf '%s\n' '<!doctype html><title>Playwright report unavailable</title><h1>Playwright report unavailable</h1><p>Download the workflow artifacts for failure details.</p>' > pages-site/index.html
-          fi
-
-      - name: Configure GitHub Pages
-        if: always() && !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload GitHub Pages artifact
-        if: always() && !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: pages-site
-
-  deploy:
-    name: Deploy Playwright report
-    if: always() && needs.test.result != 'cancelled' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: test
-    runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy report to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
