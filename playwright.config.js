@@ -16,7 +16,7 @@ module.exports = defineConfig({
       outputFolder: reportDir,
       open: 'never'
     }],
-    ['./core/reporters/summaryReporter.js', {
+    ['./core/reporters/htmlSummaryReporter.js', {
       outputFolder: reportDir
     }]
   ],
@@ -34,7 +34,7 @@ module.exports = defineConfig({
       testMatch: /.*\.spec\.js/,
       use: { 
         ...devices['Desktop Chrome'],
-        viewport: { width: 2560, height: 1440 },
+        viewport: { width: 1920, height: 1080 },
       },
     },
     {
@@ -42,7 +42,7 @@ module.exports = defineConfig({
       grep: /@e2e/, // Chỉ chạy các test có tag @e2e
       use: { 
         ...devices['Desktop Chrome'],
-        viewport: { width: 2560, height: 1440 },
+        viewport: { width: 1920, height: 1080 },
       },
     }
   ],

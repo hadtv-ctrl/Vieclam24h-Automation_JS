@@ -18,13 +18,21 @@ class JobApplyNoCVPage extends BasePage {
     this.btnDone = this.page.getByRole('button', { name: 'Xong' }).first();
     this.btnCommonSave = this.page.getByRole('button', { name: /Nộp hồ sơ ngay/i }).first();
     this.chkCheckAll = this.page.locator('[data-test-id="common__checkall"]').getByRole('checkbox').first();
+    this.bulkJobCheckboxes = this.page.locator('[data-test-id="common__checkbox"]');
     this.btnBulkApply = this.page.getByRole('button', { name: /Ứng tuyển/i }).last();
+    this.btnBulkApplyZero = this.page.getByRole('button', { name: /Ứng tuyển\s*0\s*vị trí/i }).first();
+    this.btnBulkApplyReady = this.page.getByRole('button', { name: /\u1ee8ng tuy\u1ec3n\s*[1-9]\d*\s*v\u1ecb tr\u00ed/i }).first();
+    this.btnBulkApplyZeroStable = this.page.getByRole('button', { name: /\u1ee8ng tuy\u1ec3n\s*0\s*v\u1ecb tr\u00ed/i }).first();
     this.btnCommonNext = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]').last();
     this.btnSeeMoreJobs = this.page.getByRole('button', { name: /Xem thêm việc gợi ý/i }).first();
+    this.msgNoSimilarJobs = this.page
+      .getByText(/Hiện chưa tìm thấy việc làm phù hợp|Không có.*(?:job|việc làm).*gợi ý|Không tìm thấy.*việc làm phù hợp/i)
+      .first();
   }
 
-  async startApplyNoCV() {
+  async startApplyNoCV(options = {}) {
     await this.clickElement(this.btnApplyNoCV);
+    await this.handlePhoneVerificationAfterApplyIfVisible(options.otpCode);
   }
 
   async fillMiniProfile(data) {
@@ -60,8 +68,16 @@ class JobApplyNoCVPage extends BasePage {
       await this.clickElement(this.page.getByText(data.education, { exact: true }).last());
     }
 
-    // Gender
-    await this.clickElement(this.page.locator('label').filter({ hasText: data.gender }).locator('i'));
+    // Gender can be absent in some no-CV mini profile forms.
+    if (data.gender) {
+      const genderOption = this.page.locator('label').filter({ hasText: data.gender }).locator('i').first();
+      try {
+        await genderOption.waitFor({ state: 'visible', timeout: 3000 });
+        await this.clickElement(genderOption);
+      } catch (e) {
+        console.log('Job hiện tại không yêu cầu chọn giới tính, bỏ qua trường optional.');
+      }
+    }
 
     // File Upload
     if (data.uploadFile) {
@@ -88,9 +104,22 @@ class JobApplyNoCVPage extends BasePage {
   }
 
   async bulkApply(dataJob2) {
-    // Wait for either the bulk apply checkbox or the success page button
-    const target = this.chkCheckAll.or(this.btnSeeMoreJobs);
-    await target.first().waitFor({ state: 'visible', timeout: 15000 });
+    // Wait for either the bulk apply list, the success action, or the empty-state message.
+    const target = this.chkCheckAll.or(this.btnSeeMoreJobs).or(this.msgNoSimilarJobs).or(this.btnBulkApplyZero);
+    try {
+      await target.first().waitFor({ state: 'visible', timeout: 15000 });
+    } catch {
+      console.log('Không tìm thấy danh sách Bulk Apply, kết thúc kịch bản.');
+      await this.capture('after_no_bulk_apply_list');
+      return;
+    }
+
+    const hasBulkApplyJobs = await this.waitForBulkApplyListReady();
+    if (!hasBulkApplyJobs) {
+      console.log('Khong co job trong danh sach Bulk Apply sau khi cho danh sach render xong.');
+      await this.capture('after_no_similar_jobs');
+      return;
+    }
 
     if (await this.btnSeeMoreJobs.isVisible()) {
         console.log('Không có job nào gợi ý để Bulk Apply, kết thúc kịch bản.');
@@ -108,7 +137,8 @@ class JobApplyNoCVPage extends BasePage {
     await this.actions.check(this.chkCheckAll);
     await this.capture('after_bulk_apply');
     
-    await this.clickElement(this.btnBulkApply);
+    await this.actions.waitForVisible(this.btnBulkApplyReady, { timeout: 15000 });
+    await this.clickElement(this.btnBulkApplyReady);
     
     // Check if missing info form appears for next job
     try {
@@ -131,6 +161,71 @@ class JobApplyNoCVPage extends BasePage {
     await this.actions.waitForVisible(this.btnSeeMoreJobs, { timeout: 15000 });
     await this.capture('after_click_submit_all');
     await this.clickElement(this.btnSeeMoreJobs);
+  }
+
+  async hasNoBulkApplyJobs() {
+    try {
+      await this.bulkJobCheckboxes.first().waitFor({ state: 'visible', timeout: 500 });
+      return false;
+    } catch {
+      // Continue checking explicit empty-state signals.
+    }
+
+    try {
+      await this.msgNoSimilarJobs.or(this.btnBulkApplyZero).first().waitFor({ state: 'visible', timeout: 3000 });
+      return true;
+    } catch {
+      let bulkApplyText = '';
+      try {
+        bulkApplyText = await this.btnBulkApply.textContent();
+      } catch (error) {
+        console.log('Bulk Apply button text was not available while checking empty state.');
+      }
+      return /Ứng tuyển\s*0\s*vị trí/i.test(bulkApplyText || '');
+    }
+  }
+  async waitForBulkApplyListReady(timeout = 20000) {
+    try {
+      await this.waitForGlobalLoadingHidden(15000);
+    } catch (error) {
+      console.log('Bulk Apply loading indicator was not present or did not settle before list wait.');
+    }
+
+    try {
+      const result = await this.page.waitForFunction(
+        () => {
+          const isVisible = (element) => {
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+            return (
+              style.visibility !== 'hidden' &&
+              style.display !== 'none' &&
+              Number(style.opacity) !== 0 &&
+              rect.width > 1 &&
+              rect.height > 1
+            );
+          };
+
+          const jobCheckboxes = Array.from(document.querySelectorAll('[data-test-id="common__checkbox"]'))
+            .filter((element) => isVisible(element) && !element.closest('[data-test-id="common__checkall"]'));
+
+          if (jobCheckboxes.length > 0) return 'has-jobs';
+
+          const hasEmptyState = Array.from(document.querySelectorAll('body *')).some((element) =>
+            isVisible(element) &&
+            /Hi\u1ec7n ch\u01b0a t\u00ecm th\u1ea5y vi\u1ec7c l\u00e0m ph\u00f9 h\u1ee3p|Kh\u00f4ng c\u00f3.*(?:job|vi\u1ec7c l\u00e0m).*g\u1ee3i \u00fd|Kh\u00f4ng t\u00ecm th\u1ea5y.*vi\u1ec7c l\u00e0m ph\u00f9 h\u1ee3p/i.test(element.textContent || '')
+          );
+
+          if (hasEmptyState) return 'empty';
+          return null;
+        },
+        null,
+        { timeout, polling: 'raf' }
+      );
+      return (await result.jsonValue()) === 'has-jobs';
+    } catch {
+      return false;
+    }
   }
 }
 

@@ -201,23 +201,18 @@ class UserProfilePage extends BasePage {
     await this.clickElement(this.page.getByText('Chọn tỉnh thành').first());
     await this.clickElement(this.page.locator('[data-test-id="common__select-menu"] div').filter({ hasText: data.province }).nth(3).first());
 
-    // Wait for modal to update after province selection
-    await this.page.waitForTimeout(800);
-
-    // Select District with improved error handling
+    // Select District after its async options finish rendering
     await this.clickElement(this.page.getByText('Chọn quận huyện').first());
-    
-    // Try exact match first, if fails try partial match
-    try {
-      const districtExact = this.page.getByRole('heading', { name: data.district }).first();
-      await districtExact.waitFor({ state: 'visible', timeout: 10000 });
-      await this.clickElement(districtExact);
-    } catch {
-      // Try partial match for district
-      const districtPartial = this.page.getByRole('heading').filter({ hasText: data.district.split('(')[0].trim() }).first();
-      await districtPartial.waitFor({ state: 'visible', timeout: 10000 });
-      await this.clickElement(districtPartial);
-    }
+
+    const districtName = data.district.split('(')[0].trim();
+    const districtOption = this.page
+      .locator('[data-test-id="common__select-menu"]')
+      .getByRole('heading')
+      .filter({ hasText: districtName })
+      .first();
+
+    await districtOption.waitFor({ state: 'visible', timeout: 35000 });
+    await this.clickElement(districtOption);
 
     // Fill Date of Birth
     const inpDateOfBirth = this.page.getByRole('textbox', { name: 'DD/MM/YYYY' }).first();
@@ -236,7 +231,9 @@ class UserProfilePage extends BasePage {
 
     // Select Gender
     await this.clickElement(this.page.getByRole('button', { name: data.gender }).first());
+  }
 
+  async savePersonalInfo() {
     // Save personal info
     await this.saveSection();
   }
@@ -271,13 +268,13 @@ class UserProfilePage extends BasePage {
     // Select industry
     await this.clickElement(this.page.getByText('Chọn ngành nghề').first());
     await this.clickElement(this.page.getByRole('heading', { name: new RegExp(data.industry, 'i') }).first());
-    const removeIndustryBtn = this.page.locator('.text-16.text-se-grey-48.svicon-square').first();
+    const removeIndustryBtn = this.page.locator('[data-test-id="user-profile__job-goal-modal"]').getByRole('heading', { name: 'Tiêu chí tìm việc' }).first();
     await this.clickElement(removeIndustryBtn);
 
     // Select location
     await this.clickElement(this.page.getByText('Chọn địa điểm').first());
     await this.clickElement(this.page.getByRole('heading', { name: data.workLocation }).first());
-    const removeLocationBtn = this.page.locator('.text-16.text-se-grey-48.svicon-square').first();
+    const removeLocationBtn = this.page.locator('[data-test-id="common__actions-button"]').first();
     await this.clickElement(removeLocationBtn);
 
     // Scroll to salary fields
@@ -307,13 +304,16 @@ class UserProfilePage extends BasePage {
     // Select work type
     await this.clickElement(this.page.getByText('Chọn hình thức làm việc').first());
     await this.clickElement(this.page.getByRole('heading', { name: data.workType }).first());
-    const removeWorkTypeBtn = this.page.locator('.text-16.text-se-grey-48.svicon-square').first();
+    const removeWorkTypeBtn = this.page.locator('[data-test-id="common__actions-button"]').first();
     await this.clickElement(removeWorkTypeBtn);
 
     // Scroll back to save button
     const scrollTarget2 = jobGoalModal.locator('div').filter({ hasText: 'Kinh nghiệm làm việc*' }).nth(2);
     await scrollTarget2.scrollIntoViewIfNeeded();
+  }
 
+  // --- CV Upload ---
+  async saveJobGoal() {
     // Save job goal
     await this.saveSection();
   }
@@ -331,15 +331,24 @@ class UserProfilePage extends BasePage {
 
   async fillVerificationCode(code) {
     const verificationInputs = this.page.getByRole('textbox', { name: /Digit|Please enter verification/i });
-    const count = await verificationInputs.count();
-    for (let i = 0; i < count; i++) {
-      await this.fillInput(verificationInputs.nth(i), code.charAt(i));
-    }
+    await this.fillCodeInputs(verificationInputs, code);
   }
 
   async uploadCV(filePath) {
-    const uploadButton = this.page.locator('[data-test-id="user-profile__enable-search-cv"] [data-test-id="common__button"]').first();
-    await uploadButton.setInputFiles(filePath);
+    const uploadSection = this.page.locator('[data-test-id="user-profile__enable-search-cv"]');
+    const fileInput = uploadSection.locator('input[type="file"]');
+
+    if (await fileInput.count() > 0) {
+      await fileInput.setInputFiles(filePath);
+      return;
+    }
+
+    const uploadButton = uploadSection.locator('[data-test-id="common__button"]');
+    const [fileChooser] = await Promise.all([
+      this.page.waitForEvent('filechooser', { timeout: 10000 }),
+      this.clickElement(uploadButton),
+    ]);
+    await fileChooser.setFiles(filePath);
   }
 
   async clickAllowSearch() {

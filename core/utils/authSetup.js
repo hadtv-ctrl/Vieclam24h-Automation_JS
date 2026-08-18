@@ -90,43 +90,34 @@ async function loginUserFromDataForPrecondition(page) {
   const userProfile = createdUser || loadUserData()[0] || {};
   const email = userProfile.email || '';
   const phone = userProfile.phone || userProfile.username || '';
-  
+
   if (!email) {
     throw new Error('No email found in user data for email login precondition');
   }
 
   // Click email login option
   await loginPopup.clickEmailLoginOption();
-  
+
   // Wait for email input to be visible after clicking email login option
   await loginPopup.emailInput.waitFor({ state: 'visible', timeout: 10000 });
-  
+
   // Fill email
   await loginPopup.fillEmail(email);
-  
-  // Small delay to ensure email input is processed
-  await page.waitForTimeout(500);
-  
+
+  await expect(loginPopup.emailInput).toHaveValue(email);
+
   // Verify continue button is enabled before clicking
   await loginPopup.continueBtn.waitFor({ state: 'visible', timeout: 5000 });
-  await loginPopup.clickContinue();
+  await expect(loginPopup.continueBtn).toBeEnabled();
+  await loginPopup.clickContinueUntilOtpVisible({
+    maxAttempts: 3,
+    otpTimeout: 10000,
+    loadingTimeout: 15000,
+  });
 
-  // Wait for loading to complete after clicking continue
-  await page.waitForTimeout(1000);
-  await loginPopup.waitForGlobalLoadingHidden(15000);
-
-  // Wait for OTP form to appear (either via modal title or OTP input)
-  try {
-    // First try to wait for OTP modal title
-    await loginPopup.otpModalTitle.waitFor({ state: 'visible', timeout: 5000 });
-  } catch {
-    // If modal title not visible, wait for OTP inputs directly
-    await page.waitForTimeout(500);
-  }
-  
   // Wait for OTP inputs to be visible
   await loginPopup.otpInputs.first().waitFor({ state: 'visible', timeout: 15000 });
-  
+
   const otpCode = userProfile.otp || '1111';
   await loginPopup.fillOtpCode(otpCode);
 

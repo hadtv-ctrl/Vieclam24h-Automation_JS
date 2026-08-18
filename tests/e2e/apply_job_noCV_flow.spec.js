@@ -3,6 +3,7 @@ const { JobApplyNoCVPage } = require('../../pages/JobApplyNoCVPage');
 const { HomePage } = require('../../pages/HomePage');
 const { OnboardingPopup } = require('../../pages/OnboardingPopup');
 const applyData = require('../../data/applyJobData.json');
+const usersData = require('../../data/users.json');
 const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 
 test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @applyjob @e2e', () => {
@@ -42,7 +43,8 @@ test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không c
       await newPage.waitForLoadState();
 
       jobApplyNoCVPage = new JobApplyNoCVPage(newPage);
-      await jobApplyNoCVPage.startApplyNoCV();
+      await jobApplyNoCVPage.capture('after_job_detail_opened');
+      await jobApplyNoCVPage.startApplyNoCV({ otpCode: usersData[0]?.otp });
     });
 
     await test.step('And Người dùng điền thông tin Profile mini cho Job đầu tiên', async () => {

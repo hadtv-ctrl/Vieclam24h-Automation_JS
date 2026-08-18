@@ -33,7 +33,7 @@ Dự án này là framework kiểm thử tự động bằng [Playwright](https:
 - `core/config/`: cấu hình môi trường, bao gồm `env.js` để lấy `baseURL` theo `NODE_ENV`.
 - `core/utils/`: các helper dùng chung cho test.
 - `core/fixtures/`: custom fixtures của Playwright.
-- `core/reporters/`: reporter tùy chỉnh cho báo cáo kết quả.
+- `core/reporters/`: reporter tùy chỉnh để thêm dashboard vào HTML report.
 - `data/`: dữ liệu test dạng JSON như `users.json`, `applyJobData.json`.
 - `evidence/`: thư mục lưu ảnh bằng chứng chụp trong quá trình chạy test.
 - `playwright-report/`: thư mục báo cáo HTML và trace được sinh ra sau mỗi lần chạy.

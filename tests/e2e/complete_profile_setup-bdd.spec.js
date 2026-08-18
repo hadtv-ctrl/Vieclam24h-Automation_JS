@@ -34,7 +34,6 @@ test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu 
     await test.step('And Người dùng click vào nút Tiêu chí tìm việc', async () => {
       await userProfilePage.capture('when_search_criteria_start', true);
       await userProfilePage.clickSearchCriteria();
-      await userProfilePage.capture('when_search_criteria_clicked');
     });
 
     await test.step('And Người dùng chỉnh sửa thông tin cá nhân (tỉnh thành, quận huyện, ngày sinh, giới tính)', async () => {
@@ -43,18 +42,19 @@ test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu 
       await userProfilePage.capture('and_personal_info_modal_opened');
       await userProfilePage.fillPersonalInfo(profileData.personalInfo);
       await userProfilePage.capture('and_personal_info_filled');
+      await userProfilePage.savePersonalInfo();
     });
 
     await test.step('And Người dùng thêm vị trí công việc mới', async () => {
       await userProfilePage.capture('and_add_job_goal_start', true);
       await userProfilePage.clickAddJobGoal();
-      await userProfilePage.capture('and_job_goal_modal_opened');
     });
 
     await test.step('And Người dùng điền các tiêu chí tìm việc (kinh nghiệm, số năm, vị trí, ngành, địa điểm, mức lương, cấp bậc, hình thức làm việc)', async () => {
-      await userProfilePage.capture('and_job_goal_filling_start', true);
+      await userProfilePage.capture('and_job_goal_filling_start');
       await userProfilePage.fillJobGoal(profileData.jobCriteria);
       await userProfilePage.capture('and_job_goal_filled');
+      await userProfilePage.saveJobGoal();
     });
 
     await test.step('And Người dùng bật tính năng cho phép tìm kiếm hồ sơ CV', async () => {
@@ -69,22 +69,18 @@ test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu 
     });
 
     await test.step('And Người dùng nhập mã xác minh (4 chữ số)', async () => {
-      await userProfilePage.capture('and_verification_start', true);
       await userProfilePage.fillVerificationCode('1111');
-      await userProfilePage.capture('and_verification_filled');
     });
 
     await test.step('And Người dùng tải lên file CV từ thư mục data', async () => {
-      await userProfilePage.capture('and_cv_upload_start', true);
+      await userProfilePage.capture('and_cv_upload_start');
       const cvFilePath = 'data/TemplateCV.pdf';
       await userProfilePage.uploadCV(cvFilePath);
-      await userProfilePage.capture('and_cv_uploaded');
     });
 
     await test.step('Then Người dùng click nút "Cho phép tìm kiếm" để hoàn tất', async () => {
-      await userProfilePage.capture('then_allow_search_start', true);
+      await userProfilePage.capture('then_allow_search_start');
       await userProfilePage.clickAllowSearch();
-      await userProfilePage.capture('then_allow_search_clicked');
       await userProfilePage.waitForGlobalLoadingHidden(30000);
       await userProfilePage.capture('then_profile_setup_complete', true);
     });

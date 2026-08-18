@@ -5,6 +5,7 @@ const { HomePage } = require('../../pages/HomePage');
 const { JobSearchPage } = require('../../pages/JobSearchPage');
 const { OnboardingPopup } = require('../../pages/OnboardingPopup');
 const applyData = require('../../data/applyJobData.json'); // Giả sử file này tồn tại
+const usersData = require('../../data/users.json');
 const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 
 test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
@@ -49,7 +50,8 @@ test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
       const specName = path.basename(test.info().file, path.extname(test.info().file));
       jobApplyPage = new JobApplyPage(newPage, specName);
 
-      await jobApplyPage.startApply();
+      await jobApplyPage.capture('after_job_detail_opened');
+      await jobApplyPage.startApply({ otpCode: usersData[0]?.otp });
       await jobApplyPage.applyByProfile();
       await jobApplyPage.continueApply();
       await jobApplyPage.capture('after_continue_to_profile_form');
