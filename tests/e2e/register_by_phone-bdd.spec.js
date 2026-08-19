@@ -55,7 +55,7 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số
       randomPhone = generateRandomVNPhone();
       await loginPopup.fillPhone(randomPhone);
       await loginPopup.capture('after_fill_phone');
-      await loginPopup.clickContinue();
+      await loginPopup.clickContinueUntilOtpVisible({ maxAttempts: 3 });
       // await loginPopup.capture('after_click_continue');
     });
 
