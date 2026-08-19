@@ -52,6 +52,19 @@ class BasePage {
   }
 
   async capture(stepName, fullPage = false, options = {}) {
+    // Chờ mạng cơ bản ổn định (không bắt buộc, catch lỗi timeout để không gián đoạn)
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => null);
+
+    // Chờ các Skeleton loaders (nếu có) biến mất khỏi DOM
+    await this.page.waitForFunction(
+      () => !document.querySelector('[class*="skeleton"], [class*="Skeleton"], [class*="animate-pulse"], [class*="loading-block"]'),
+      null,
+      { timeout: 15000 }
+    ).catch(() => null);
+    
+    // Chờ giao diện (body) hết các hiệu ứng chuyển động/animation (ví dụ như Skeleton loader dùng animation)
+    await this.waitForElementStable(this.page.locator('body'), { timeout: 5000 }).catch(() => null);
+
     return this._capture(stepName, '', fullPage, options);
   }
 

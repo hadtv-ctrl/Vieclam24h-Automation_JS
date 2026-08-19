@@ -57,6 +57,7 @@ Dùng web-first assertion như `await expect(locator).toBeVisible()`. Không dù
 
 - Không thêm `page.waitForTimeout()` hoặc hard sleep dưới bất kỳ hình thức nào trong source automation.
 - Thay delay bằng trạng thái quan sát được: element visible/hidden/enabled, response cần thiết, URL hoặc UI state thay đổi.
+- Tránh wait/assert các trạng thái trung gian (transient state) diễn ra quá nhanh (ví dụ: text "Đang xử lý...", "Đang chuyển đổi..."). Thay vào đó, hãy wait/assert trực tiếp trạng thái kết quả cuối cùng ("Thành công") để tránh race condition và lỗi do hệ thống đôi khi xử lý cực kỳ nhanh.
 - Tránh `networkidle` làm điều kiện chính vì ứng dụng có thể polling. Chờ tín hiệu cụ thể của hành vi đang test.
 - Trước Submit/Save/Next, chờ loading liên quan biến mất nếu ứng dụng thật sự có loading state.
 - Không nuốt lỗi của bước bắt buộc bằng `catch(() => {})` hoặc `try/catch` rỗng.

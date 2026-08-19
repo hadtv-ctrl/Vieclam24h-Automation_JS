@@ -355,6 +355,41 @@ class UserProfilePage extends BasePage {
     const btnAllowSearch = this.page.getByRole('button', { name: 'Cho phép tìm kiếm' }).first();
     await this.clickElement(btnAllowSearch);
   }
+
+  // --- Tải lên và chuyển đổi CV ---
+  
+  async uploadProfileCV(filePath) {
+    const btnUpload = this.page.getByRole('button', { name: 'Tải lên CV' });
+    
+    const [fileChooser] = await Promise.all([
+      this.page.waitForEvent('filechooser', { timeout: 10000 }),
+      this.clickElement(btnUpload.first())
+    ]);
+    await fileChooser.setFiles(filePath);
+  }
+
+  async confirmCVConversion() {
+    if (typeof this.capture === 'function') await this.capture('before_confirm_cv_conversion', false);
+
+    const btnConfirm = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]').first();
+    await this.clickElement(btnConfirm);
+  }
+
+  async verifyAndApplyCVData() {
+    const txtSuccess = this.page.getByText('Chuyển đổi thành công');
+    await expect(txtSuccess).toBeVisible({ timeout: 60000 });
+
+    if (typeof this.capture === 'function') await this.capture('cv_conversion_success_toast', false);
+
+    // Click vào floating toast để mở modal trích xuất dữ liệu
+    await this.clickElement(txtSuccess);
+
+    if (typeof this.capture === 'function') await this.capture('apply_cv_data_modal_opened', false);
+
+    // Bấm xác nhận trên modal để điền data detect được vào Hồ sơ
+    const btnApplyData = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]').first();
+    await this.clickElement(btnApplyData);
+  }
 }
 
 module.exports = { UserProfilePage };
