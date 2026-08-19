@@ -117,10 +117,10 @@ class UserProfilePage extends BasePage {
     await this.clickElement(this.page.getByRole('listitem').filter({ hasText: new RegExp('^' + data.school + '$', 'i') }).first());
 
     await this.clickElement(this.inpStartDate);
-    await this.clickElement(this.page.getByText(data.startYear, { exact: true }).first());
+    await this.clickElement(this.page.locator('.react-datepicker__year-text', { hasText: data.startYear }).first());
 
     await this.clickElement(this.inpEndDate);
-    await this.clickElement(this.page.getByText(data.endYear).first());
+    await this.clickElement(this.page.locator('.react-datepicker__year-text', { hasText: data.endYear }).first());
 
     await this.fillInput(this.txtMajor, data.major);
     // Since major could be a long string or cut off, we pick the first match containing the text

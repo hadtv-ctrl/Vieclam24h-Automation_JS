@@ -11,7 +11,7 @@ class JobApplyPage extends BasePage {
     this.btnApplyNow = this.page.getByRole('button', { name: 'Ứng tuyển ngay' }).first();
     this.optProfileMethod = this.page.locator('[data-test-id="apply-method-selector__option-profile"]').first();
     this.optCVMethod = this.page.locator('[data-test-id="apply-method-selector__option-cv"]').first();
-    this.btnContinueProfile = this.page.locator('[data-test-id="apply-profile-completion-content__action"]').first();
+    this.btnContinueProfile = this.page.locator('[data-test-id="apply-method-selector__expanded-profile"] [data-test-id="apply-profile-completion-content__action"]').first();
     this.btnCommonSave = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]').first();
     this.txtCommonInput = this.page.locator('[data-test-id="common__input"]').first();
 
@@ -145,6 +145,11 @@ class JobApplyPage extends BasePage {
 
 
   async continueApply() {
+    await this.clickElement(this.btnContinueProfile);
+    await this.waitForApplyModalStable();
+  }
+
+  async continueApplyCV() {
     const btnAction = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]');
     await this.clickElement(btnAction);
     await this.waitForApplyModalStable();

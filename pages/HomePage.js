@@ -10,6 +10,9 @@ class HomePage extends BasePage {
     this.closeAdsBtns = page.locator('//button[./i[contains(@class,"svicon-close")]]');
     this.mobileEntryPopup = page.locator('.mbep-popup');
     this.mobileEntryPopupCloseBtn = this.mobileEntryPopup.getByRole('button').first();
+    this.genericModalCloseBtn = page.locator(
+      '#common__modal [data-test-id="common__close-button"], [data-test-id="common__form-modal"] [data-test-id="common__close-button"]'
+    ).first();
     this.allLinks = page.locator('a[href]');
     this.logo = page.locator('a[href="/"] svg').first();
 
@@ -41,6 +44,13 @@ class HomePage extends BasePage {
       this.page.waitForURL(/\/tim-kiem-viec-lam-nhanh(?:[/?#]|$)/i, { timeout: 30000 }),
       this.clickFindJobSubMenu(),
     ]);
+  }
+
+  async closeBlockingModalIfVisible() {
+    if (!(await this.genericModalCloseBtn.isVisible({ timeout: 2000 }))) return;
+
+    await this.actions.click(this.genericModalCloseBtn, { force: true });
+    await this.genericModalCloseBtn.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   async navigate() {

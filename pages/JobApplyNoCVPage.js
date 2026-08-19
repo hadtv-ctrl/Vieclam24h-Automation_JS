@@ -40,10 +40,27 @@ class JobApplyNoCVPage extends BasePage {
     await this.clickElement(this.txtProvince);
     await this.clickElement(this.page.getByRole('button', { name: data.province }));
 
-    // District
+    // District: match relatively because option labels may differ slightly from source data.
     await this.clickElement(this.txtDistrict);
     for (const district of data.districts) {
-      await this.clickElement(this.page.getByRole('button', { name: district }));
+      const districtName = String(district || '').trim();
+      if (!districtName) continue;
+
+      const districtOption = this.page
+        .getByRole('button')
+        .filter({
+          hasText: new RegExp(districtName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+        })
+        .first();
+
+      try {
+        await this.clickElement(districtOption);
+      } catch (error) {
+        const fallbackOption = this.page
+          .getByText(new RegExp(districtName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'))
+          .first();
+        await this.clickElement(fallbackOption);
+      }
     }
     // Close dropdown
     await this.page.keyboard.press('Escape');

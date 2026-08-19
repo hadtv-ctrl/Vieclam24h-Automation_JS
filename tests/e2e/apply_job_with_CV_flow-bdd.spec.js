@@ -61,7 +61,7 @@ test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
 
     await test.step('And Tôi tiếp tục', async () => {
       await jobApplyPage.capture('before_and_continue');
-      await jobApplyPage.continueApply();
+      await jobApplyPage.continueApplyCV();
     });
 
     await test.step('Then Tôi click bulk apply', async () => {

@@ -12,7 +12,7 @@
     "school": "AIM Academy",
     "startYear": "2017",
     "endYear": "2019",
-    "major": "3D Animation Visual Effects (",
+    "major": "3D Animation Visual Effects",
     "degree": "Chưa tốt nghiệp THPT",
     "description": "Mô tả chi tiết"
   },
@@ -34,8 +34,8 @@
     "job1": {
       "province": "TP.HCM",
       "districts": [
-        "Quận 3 (Cũ)",
-        "Quận 4 (Cũ)"
+        "Quận 3",
+        "Quận 4"
       ],
       "intro": "Giới thiệu bản thân",
       "birthYear": "2008",
