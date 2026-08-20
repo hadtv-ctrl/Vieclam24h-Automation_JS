@@ -36,6 +36,14 @@ class UserProfilePage extends BasePage {
     // Giới thiệu
     this.txtIntro = this.page.getByRole('textbox', { name: /Hãy chia sẻ về kinh nghiệm là/i }).first();
 
+    // Trợ lý AI trong modal Giới thiệu / Kinh nghiệm
+    this.btnAiFormAction = this.page.locator(
+      '[data-test-id="common__form-item"] [data-test-id="common__button"]'
+    );
+    this.btnAiGenerate = this.page.locator('button.style_aiIcon__PcP_l').first();
+    this.btnAiRewrite = this.page.getByRole('button', { name: /Viết lại/i });
+    this.btnAiUse = this.page.getByRole('button', { name: /Sử dụng/i });
+
     // Học vấn
     this.txtSchool = this.page.getByRole('textbox', { name: /Nhập tên trường/i }).first();
     this.txtMajor = this.page.getByRole('textbox', { name: /Nhập chuyên ngành/i }).first();
@@ -66,6 +74,18 @@ class UserProfilePage extends BasePage {
     await this.waitForGlobalLoadingHidden(30000);
   }
 
+  async saveIntroduction() {
+    await this.saveSection();
+    await expect(this.txtIntro).toBeHidden({ timeout: 30000 });
+    await this.capture('introduction_saved', true);
+  }
+
+  async saveExperience() {
+    await this.saveSection();
+    await expect(this.txtCompany).toBeHidden({ timeout: 30000 });
+    await this.capture('experience_saved', true);
+  }
+
   // --- Kinh nghiệm ---
   async clickAddExperience() {
     await this.clickElement(this.btnAddExperience);
@@ -89,22 +109,67 @@ class UserProfilePage extends BasePage {
     await this.fillInput(this.txtExpDescription, data.description);
   }
 
+  async generateExperienceDescriptionWithAi(tones) {
+    await this.clickElement(this.btnAiFormAction);
+    await this.capture('experience_ai_generate_clicked');
+    await this.rewriteWithAiTones(tones);
+  }
+
   // --- Giới thiệu ---
   async clickAddIntroduction() {
-    try {
-      await this.clickElement(this.btnAddIntro, { timeout: 5000 });
-    } catch (e) {
-      console.log('data-test-id for Intro failed, trying fallback...');
-      try {
-        await this.clickElement(this.page.getByRole('button', { name: 'Thêm giới thiệu bản thân' }).first(), { timeout: 3000 });
-      } catch (e2) {
-        await this.clickElement(this.page.locator('xpath=//div[contains(text(), "Giới thiệu bản thân") or h3/text()="Giới thiệu bản thân" or span/text()="Giới thiệu bản thân"]/ancestor::div[1]//button').first());
-      }
-    }
+    await this.clickElement(this.btnAddIntro);
   }
 
   async fillIntroduction(text) {
     await this.fillInput(this.txtIntro, text);
+  }
+
+  async rewriteIntroductionWithAi(text, tones) {
+    await this.clickElement(this.btnAiFormAction);
+    await this.capture('introduction_ai_mode_opened');
+    await this.fillIntroduction(text);
+    await this.capture('introduction_source_filled');
+    await this.clickElement(this.btnAiGenerate);
+    await this.capture('introduction_ai_generate_clicked');
+    await this.selectAiTone(tones[0]);
+
+    for (const tone of tones.slice(1)) {
+      await this.clickElement(this.btnAiRewrite);
+      await this.capture(`introduction_ai_rewrite_clicked_${this.toEvidenceName(tone)}`);
+      await this.selectAiTone(tone);
+    }
+
+    await this.btnAiUse.waitFor({ state: 'visible', timeout: 60000 });
+    await this.clickElement(this.btnAiUse);
+    await this.capture('introduction_ai_content_applied');
+  }
+
+  async rewriteWithAiTones(tones) {
+    for (const tone of tones) {
+      await this.clickElement(this.btnAiRewrite);
+      await this.capture(`experience_ai_rewrite_clicked_${this.toEvidenceName(tone)}`);
+      await this.selectAiTone(tone);
+    }
+
+    await this.btnAiUse.waitFor({ state: 'visible', timeout: 60000 });
+    await this.clickElement(this.btnAiUse);
+    await this.capture('experience_ai_content_applied');
+  }
+
+  async selectAiTone(tone) {
+    const toneButton = this.page.getByRole('button', { name: new RegExp(tone, 'i') });
+    await this.clickElement(toneButton);
+    await this.btnAiUse.waitFor({ state: 'visible', timeout: 60000 });
+    await this.capture(`ai_tone_selected_${this.toEvidenceName(tone)}`);
+  }
+
+  toEvidenceName(value) {
+    return String(value)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .toLowerCase();
   }
 
   // --- Học vấn ---

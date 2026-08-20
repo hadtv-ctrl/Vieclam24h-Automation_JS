@@ -69,6 +69,11 @@ Dùng web-first assertion như `await expect(locator).toBeVisible()`. Không dù
 - Spec và Page Object không gọi `page.screenshot()` trực tiếp.
 - Dùng `ScreenshotHelper` trong `core/utils/commonUtils.js` qua `takeScreenshot()` hoặc `takeFullPageScreenshot()`.
 - Việc chụp evidence không được biến một test failure thành pass. Nếu evidence là bắt buộc và chụp thất bại, phải báo lỗi phù hợp.
+- Mỗi scenario phải có một ảnh sau khi đã vào đúng page cần test và một ảnh cuối cùng sau khi hoàn tất toàn bộ action.
+- Sau thao tác click làm thay đổi trạng thái UI và sau khi fill xong một form, phải capture trạng thái kết quả. Không capture trạng thái trung gian khi UI chưa cập nhật xong.
+- Khi không có popup/modal hiển thị, capture full page. Khi popup/modal đang hiển thị, chỉ capture viewport để tập trung vào popup/modal.
+- Không đặt hai lệnh/hàm capture kề nhau nếu giữa chúng không có action hoặc thay đổi UI có ý nghĩa. Tránh tạo nhiều ảnh giống nhau cho cùng một trạng thái; nếu một ảnh đồng thời thỏa nhiều mốc evidence thì chỉ chụp một lần.
+- Tên ảnh phải mô tả trạng thái sau action, ví dụ `profile_page_opened`, `introduction_form_filled`, `introduction_saved`; không đặt tên chung chung như `screenshot_1`.
 
 ## 8. Quy trình thực hiện và kiểm chứng
 
