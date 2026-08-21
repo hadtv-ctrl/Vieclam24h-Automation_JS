@@ -38,6 +38,7 @@ test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
     });
 
     await test.step('When Tôi mở một việc làm chi tiết và bấm "Ứng tuyển ngay"', async () => {
+      await homePage.closeBlockingModalIfVisible();
       await homePage.openJobSearch();
 
       await jobSearchPage.capture('before_click_first_job');

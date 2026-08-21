@@ -30,6 +30,7 @@ test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không c
     });
 
     await test.step('When Người dùng chọn Xem việc không cần CV và mở chi tiết việc làm', async () => {
+      await homePage.closeBlockingModalIfVisible();
       await homePage.clickNoCVJobLink();
       const { JobSearchPage } = require('../../pages/JobSearchPage');
       const jobSearchPage = new JobSearchPage(page);
