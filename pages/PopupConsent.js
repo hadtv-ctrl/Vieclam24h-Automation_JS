@@ -23,6 +23,13 @@ class PopupConsent extends BasePage {
     }
   }
 
+  async agree() {
+    await this.actions.waitForVisible(this.popupTitle, { timeout: 15000 });
+    await this.capture('popup_consent_visible');
+    await this.actions.click(this.agreeBtn);
+    await this.popupTitle.waitFor({ state: 'hidden', timeout: 15000 });
+  }
+
   async waitForConsentOrHomepageReady(homePage) {
     try {
       await this.actions.waitForVisible(this.popupTitle, { timeout: 15000 });

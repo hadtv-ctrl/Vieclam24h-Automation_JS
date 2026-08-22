@@ -71,7 +71,7 @@ class UserProfilePage extends BasePage {
 
   async saveSection() {
     await this.clickElement(this.btnCommonSave);
-    await this.waitForGlobalLoadingHidden(30000);
+    await expect(this.btnCommonSave).toBeHidden({ timeout: 60000 });
   }
 
   async saveIntroduction() {
@@ -94,8 +94,11 @@ class UserProfilePage extends BasePage {
   async fillExperience(data) {
     await this.fillInput(this.txtCompany, data.company);
 
-    await this.fillInput(this.txtJobTitleSearch, data.jobTitle);
-    const jobTitleOption = this.page.getByRole('listitem').filter({ hasText: new RegExp('^' + data.jobTitle + '$', 'i') }).locator('span').first();
+    await this.actions.fillAutocomplete(this.txtJobTitleSearch, data.jobTitle);
+    const jobTitleOption = this.page
+      .locator('[data-test-id="common__select-dropdown"]')
+      .getByRole('listitem')
+      .first();
     await this.clickElement(jobTitleOption);
 
     if (data.isWorkingHere) {

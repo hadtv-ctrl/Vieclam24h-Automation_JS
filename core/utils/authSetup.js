@@ -34,14 +34,7 @@ async function createRegisteredUserForPrecondition() {
 
     if (response.status() !== 200) {
       console.warn(`Register API returned ${response.status()}: ${JSON.stringify(body)}`);
-      // Return a mock user object if API fails, to allow test to continue
-      return {
-        email: payload.email,
-        phone: payload.mobile,
-        tokenAuth: null,
-        password: payload.password,
-        fullName: payload.name
-      };
+      return null;
     }
 
     const savedUser = apiHelper.persistUserState(payload, body, { writeFile: false });
@@ -59,16 +52,8 @@ async function createRegisteredUserForPrecondition() {
 
     return savedUser;
   } catch (error) {
-    console.warn('Registration API failed, using fallback user:', error.message);
-    // Return a mock user to allow test to continue
-    return {
-      email: payload.email,
-      phone: payload.mobile,
-      tokenAuth: null,
-      password: payload.password,
-      fullName: payload.name,
-      otp: '1111'
-    };
+    console.warn('Registration API failed; using a persisted registered user:', error.message);
+    return null;
   } finally {
     await requestContext.dispose();
   }

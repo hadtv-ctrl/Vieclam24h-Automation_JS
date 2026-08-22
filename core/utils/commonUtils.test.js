@@ -8,6 +8,7 @@ class MockLocator {
     this.waitCalls = [];
     this.clickCalls = [];
     this.fillCalls = [];
+    this.pressSequentiallyCalls = [];
     this.checkCalls = [];
   }
 
@@ -25,6 +26,10 @@ class MockLocator {
 
   async fill(value, options = {}) {
     this.fillCalls.push({ value, options });
+  }
+
+  async pressSequentially(value, options = {}) {
+    this.pressSequentiallyCalls.push({ value, options });
   }
 
   async check(options = {}) {
@@ -69,6 +74,16 @@ test('UiActions normalizes selector strings before waiting', async () => {
 
   assert.ok(locator);
   assert.deepEqual(page.locators['#dynamic'].waitCalls[0], { state: 'visible', timeout: 5000 });
+});
+
+test('UiActions fills autocomplete with sequential keyboard events', async () => {
+  const page = new MockPage();
+  const actions = new UiActions(page);
+
+  const locator = await actions.fillAutocomplete('#job-title', 'nhân viên kinh doanh');
+
+  assert.equal(locator.fillCalls[0].value, '');
+  assert.equal(locator.pressSequentiallyCalls[0].value, 'nhân viên kinh doanh');
 });
 
 test('UiActions rejects bare locator methods like .first instead of .first()', async () => {

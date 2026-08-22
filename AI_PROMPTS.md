@@ -63,6 +63,12 @@ Dùng web-first assertion như `await expect(locator).toBeVisible()`. Không dù
 - Không nuốt lỗi của bước bắt buộc bằng `catch(() => {})` hoặc `try/catch` rỗng.
 - Chỉ xử lý element optional khi test case/business rule xác nhận nó optional. Nhánh optional phải có điều kiện rõ, timeout giới hạn và không được che giấu lỗi của bước bắt buộc.
 - Khi chạm vào code cũ có hard sleep hoặc Playwright private API, thay nó nếu nằm trong phạm vi thay đổi và có condition công khai tương đương. Không mở rộng refactor thiếu kiểm soát sang feature khác.
+- Khi API precondition tạo user thất bại, không được dựng user ngẫu nhiên rồi giả định user đó đã tồn tại để đăng nhập UI. Chỉ fallback sang tài khoản đã đăng ký và được lưu hợp lệ; nếu không có tài khoản hợp lệ thì fail precondition với lỗi rõ ràng. Form đăng ký xuất hiện thay vì màn OTP là tín hiệu tài khoản chưa tồn tại, không được retry nút Continue như lỗi đồng bộ.
+- Với API helper, nhận diện cả thông báo timeout chuẩn của Playwright (`Timeout ...ms exceeded`) là lỗi mạng retryable. Sau số lần retry giới hạn, fallback/fail theo precondition đã định thay vì tiếp tục UI bằng dữ liệu chưa được tạo.
+- Sau action dẫn tới OTP hoặc navigation, ưu tiên chờ trạng thái đích (OTP input, URL đích, hoặc nội dung trang đích) thay vì bắt buộc chờ loading overlay trung gian. Overlay có thể tồn tại lâu hoặc bị kẹt dù trạng thái đích đã sẵn sàng; với navigation do click, đăng ký `waitForURL()` cùng lúc với click bằng `Promise.all()` để tránh race.
+- Mọi action có khả năng bị overlay chặn phải có timeout hữu hạn truyền tới chính action, đặc biệt khi config đặt `actionTimeout: 0`. Chỉ retry click sau khi overlay đã hidden; nếu overlay không hidden trong giới hạn thì fail sớm với lỗi đồng bộ, không để click treo đến timeout toàn test.
+- Với Save/Submit, chờ tín hiệu kết quả nghiệp vụ như form đóng, nút Save biến mất hoặc nội dung đã lưu hiển thị; không dùng loading overlay làm điều kiện thành công duy nhất. Timeout tổng của scenario phải phản ánh số lượng form, upload và evidence thực tế, nhưng không được thêm sleep để kéo dài flow.
+- Với autocomplete gọi API theo keyboard events, `fill()` có thể chỉ đổi value mà không kích hoạt đầy đủ cơ chế gợi ý của ứng dụng. Dùng common action nhập tuần tự, chờ dropdown hiển thị, scope option trong đúng dropdown và chọn option theo business intent; không phụ thuộc CSS class trình bày hoặc exact text nếu API có thể chuẩn hóa label.
 
 ## 7. Evidence
 

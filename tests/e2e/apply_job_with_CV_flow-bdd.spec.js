@@ -8,7 +8,7 @@ const applyData = require('../../data/applyJobData.json'); // Giả sử file n�
 const usersData = require('../../data/users.json');
 const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 
-test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
+test.describe('Feature: Ứng tuyển việc làm @applyjob @e2e', () => {
   let page;
   let homePage;
   let jobApplyPage;
@@ -68,6 +68,12 @@ test.describe('Feature: Ứng tuyển việc làm @apply @e2e', () => {
     await test.step('Then Tôi click bulk apply', async () => {
       await jobApplyPage.bulkApply();
       await jobApplyPage.capture('after_bulk_apply', true);
+    });
+
+    await test.step('Then Việc làm hiển thị trong danh sách đã ứng tuyển', async () => {
+      await jobApplyPage.openAppliedJobs();
+      await jobApplyPage.expectAppliedJobsVisible();
+      await jobApplyPage.capture('applied_jobs_list_visible', true);
     });
   });
 });

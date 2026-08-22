@@ -341,6 +341,7 @@ class UiActions {
     if (options.button) clickOptions.button = options.button;
     if (options.position) clickOptions.position = options.position;
     if (options.delay !== undefined) clickOptions.delay = options.delay;
+    if (options.timeout !== undefined) clickOptions.timeout = options.timeout;
     await locator.click(clickOptions);
     return locator;
   }
@@ -350,6 +351,13 @@ class UiActions {
     const fillOptions = {};
     if (options.force !== undefined) fillOptions.force = options.force;
     await locator.fill(value, fillOptions);
+    return locator;
+  }
+
+  async fillAutocomplete(locatorOrSelector, value, options = {}) {
+    const locator = await this.waitForVisible(locatorOrSelector, options);
+    await locator.fill('');
+    await locator.pressSequentially(String(value));
     return locator;
   }
 

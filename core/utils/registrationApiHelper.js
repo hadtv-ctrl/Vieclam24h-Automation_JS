@@ -49,7 +49,7 @@ class RegistrationApiHelper {
 
   isRetryableNetworkError(error) {
     const message = error?.message || '';
-    return /ETIMEDOUT|ECONNRESET|ECONNREFUSED|socket hang up|fetch failed|networkidle/i.test(message);
+    return /Timeout \d+ms exceeded|ETIMEDOUT|ECONNRESET|ECONNREFUSED|socket hang up|fetch failed|networkidle/i.test(message);
   }
 
   async register(payload, headers = {}, options = {}) {

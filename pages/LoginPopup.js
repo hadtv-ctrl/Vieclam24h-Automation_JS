@@ -31,8 +31,8 @@ class LoginPopup extends BasePage {
     return this.actions.click(this.emailLoginOption);
   }
 
-  async clickContinue() {
-    return this.actions.click(this.continueBtn);
+  async clickContinue(options = {}) {
+    return this.actions.click(this.continueBtn, options);
   }
 
   async fillEmail(email) {
@@ -83,8 +83,7 @@ class LoginPopup extends BasePage {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       await this.actions.waitForVisible(this.continueBtn, { timeout: 5000 });
-      await this.clickContinue();
-      await this.waitForGlobalLoadingHidden(loadingTimeout);
+      await this.clickContinue({ timeout: 15000 });
 
       try {
         await this.waitForOtpVisible({ timeout: otpTimeout });
@@ -92,6 +91,8 @@ class LoginPopup extends BasePage {
       } catch (error) {
         lastOtpError = error;
       }
+
+      await this.waitForGlobalLoadingHidden(loadingTimeout);
 
       let canRetry = false;
       try {

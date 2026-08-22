@@ -29,7 +29,10 @@ class JobApplyPage extends BasePage {
     this.btnAddExperience = this.page.locator('[data-test-id="apply-job__experience"] [data-test-id="user-profile__add-button"]').first();
     this.txtCompany = this.page.getByRole('textbox', { name: /Nhập tên công ty/i }).first();
     this.txtJobTitleSearch = this.page.locator('[data-test-id="common__job-title-select"] [data-test-id="common__input"]').first();
-    this.optJobTitleFirst = this.page.locator('[data-test-id="common__select-dropdown"] .text-se-accent').first();
+    this.optJobTitleFirst = this.page
+      .locator('[data-test-id="common__select-dropdown"]')
+      .getByRole('listitem')
+      .first();
     this.inpStartDate = this.page.locator('input[name="start_date"]').first();
     this.inpEndDate = this.page.locator('input[name="end_date"]').first();
     this.btnSelectYear = this.page.locator('[id="apply-job-modal"] [class="relative"] button').first();
@@ -179,7 +182,7 @@ class JobApplyPage extends BasePage {
   }
   async fillExperience(data) {
     await this.fillInput(this.txtCompany, data.company);
-    await this.fillInput(this.txtJobTitleSearch, data.jobTitle);
+    await this.actions.fillAutocomplete(this.txtJobTitleSearch, data.jobTitle);
     // Chờ cho danh sách gợi ý xuất hiện trước khi click
     await this.actions.waitForVisible(this.optJobTitleFirst);
     await this.clickElement(this.optJobTitleFirst);

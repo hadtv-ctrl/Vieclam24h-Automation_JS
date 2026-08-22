@@ -1,5 +1,6 @@
 const { BasePage } = require('./BasePage');
 const { ScreenshotHelper } = require('../core/utils/commonUtils');
+const { expect } = require('@playwright/test');
 
 class JobApplyNoCVPage extends BasePage {
   constructor(page) {
@@ -8,6 +9,8 @@ class JobApplyNoCVPage extends BasePage {
     
     // Locators
     this.btnApplyNoCV = this.page.getByRole('button', { name: /Ứng tuyển không cần CV/i }).first();
+    this.txtFullName = this.page.getByRole('textbox', { name: /Nhập họ và tên/i });
+    this.txtPhone = this.page.getByRole('textbox', { name: /Nhập số điện thoại/i });
     this.txtProvince = this.page.getByRole('textbox', { name: /Chọn tỉnh/i }).first();
     this.txtDistrict = this.page.getByText('Chọn quận').first();
     this.iconChevronDown = this.page.locator('.flex.items-center.cursor-pointer > .svicon-chevron-down').first();
@@ -33,6 +36,27 @@ class JobApplyNoCVPage extends BasePage {
   async startApplyNoCV(options = {}) {
     await this.clickElement(this.btnApplyNoCV);
     await this.handlePhoneVerificationAfterApplyIfVisible(options.otpCode);
+  }
+
+  async startGuestApplyNoCV() {
+    await this.clickElement(this.btnApplyNoCV);
+    await expect(this.txtFullName).toBeVisible({ timeout: 15000 });
+  }
+
+  async fillGuestContact(data) {
+    await this.fillInput(this.txtFullName, data.fullName);
+    await this.fillInput(this.txtPhone, data.phone);
+  }
+
+  async submitGuestProfile() {
+    await this.submitProfile();
+    const verificationLocators = this.getPhoneVerificationLocators();
+    await this.waitForPhoneVerificationCodeStepVisible(verificationLocators, 15000);
+    await this.capture('phone_verification_code_step');
+  }
+
+  async verifyGuestPhoneOtp(otpCode) {
+    await this.submitPhoneVerificationOtp(otpCode);
   }
 
   async fillMiniProfile(data) {
@@ -127,27 +151,24 @@ class JobApplyNoCVPage extends BasePage {
       await target.first().waitFor({ state: 'visible', timeout: 15000 });
     } catch {
       console.log('Không tìm thấy danh sách Bulk Apply, kết thúc kịch bản.');
-      await this.capture('after_no_bulk_apply_list');
-      return;
+      return false;
     }
 
     const hasBulkApplyJobs = await this.waitForBulkApplyListReady();
     if (!hasBulkApplyJobs) {
       console.log('Khong co job trong danh sach Bulk Apply sau khi cho danh sach render xong.');
-      await this.capture('after_no_similar_jobs');
-      return;
+      return false;
     }
 
     if (await this.btnSeeMoreJobs.isVisible()) {
         console.log('Không có job nào gợi ý để Bulk Apply, kết thúc kịch bản.');
-        await this.capture('after_click_submit_all');
         await this.clickElement(this.btnSeeMoreJobs);
-        return;
+        return false;
     }
 
     if (!(await this.chkCheckAll.isVisible())) {
         console.log('Không tìm thấy danh sách Bulk Apply, bỏ qua.');
-        return;
+        return false;
     }
 
     await this.capture('before_bulk_apply');
@@ -178,6 +199,7 @@ class JobApplyNoCVPage extends BasePage {
     await this.actions.waitForVisible(this.btnSeeMoreJobs, { timeout: 15000 });
     await this.capture('after_click_submit_all');
     await this.clickElement(this.btnSeeMoreJobs);
+    return true;
   }
 
   async hasNoBulkApplyJobs() {

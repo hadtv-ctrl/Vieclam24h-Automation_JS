@@ -43,6 +43,18 @@
       "gender": "Nam",
       "uploadFile": "pexels-eberhardgross-640781.jpg"
     },
+    "guestJob": {
+      "fullName": "Hà Đinh test",
+      "province": "TP.HCM",
+      "districts": [
+        "Quận 1"
+      ],
+      "intro": "Giới thiệu bản thân",
+      "birthYear": "1998",
+      "education": "Đại học",
+      "gender": "Nam",
+      "uploadFile": "pexels-eberhardgross-640781.jpg"
+    },
     "job2": {
       "province": "An Giang",
       "districts": [

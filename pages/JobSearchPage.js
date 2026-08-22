@@ -20,7 +20,9 @@ class JobSearchPage extends BasePage {
   async clickFirstJob() {
     const pagePromise = this.page.waitForEvent('popup');
     await this.clickElement(this.firstJobLink);
-    return await pagePromise;
+    const jobPage = await pagePromise;
+    await jobPage.waitForLoadState('domcontentloaded');
+    return jobPage;
   }
 
   async expectJobSearchPageVisible() {

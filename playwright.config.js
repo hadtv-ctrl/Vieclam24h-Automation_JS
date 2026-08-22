@@ -12,13 +12,19 @@ module.exports = defineConfig({
   workers: 1,
   reporter: [
     ['json'],
-    ['html', {
-      outputFolder: reportDir,
-      open: 'never'
-    }],
-    ['./core/reporters/htmlSummaryReporter.js', {
-      outputFolder: reportDir
-    }]
+    [
+      'html',
+      {
+        outputFolder: reportDir,
+        open: 'never',
+      },
+    ],
+    [
+      './core/reporters/htmlSummaryReporter.js',
+      {
+        outputFolder: reportDir,
+      },
+    ],
   ],
   use: {
     baseURL: envConfig.baseURL,
@@ -26,13 +32,13 @@ module.exports = defineConfig({
     actionTimeout: 0,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure'
+    video: 'retain-on-failure',
   },
   projects: [
     {
       name: 'Desktop Chrome',
       testMatch: /.*\.spec\.js/,
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },
       },
@@ -40,10 +46,18 @@ module.exports = defineConfig({
     {
       name: 'E2E Tests',
       grep: /@e2e/, // Chỉ chạy các test có tag @e2e
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },
       },
-    }
+    },
+    {
+      name: 'Apply Job Tests',
+      grep: /@applyjob/, // Chỉ chạy các test có tag @applyjob
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
   ],
 });

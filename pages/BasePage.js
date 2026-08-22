@@ -1,4 +1,5 @@
 const { UiActions, ScreenshotHelper } = require('../core/utils/commonUtils');
+const { expect } = require('@playwright/test');
 
 class BasePage {
   /**
@@ -7,6 +8,9 @@ class BasePage {
   constructor(page, featureName) {
     this.page = page;
     this.actions = new UiActions(page);
+    this.accountMenuButton = page.getByRole('button', { name: /avt_invalid|tài khoản|hồ sơ/i });
+    this.appliedJobsButton = page.getByRole('button', { name: /Việc làm đã ứng tuyển/i });
+    this.appliedJobsList = page.locator('[data-test-id="applied-job__list-jobs"]');
     const resolvedFeatureName = featureName || this.constructor.name.toLowerCase();
     this.screenshotHelper = new ScreenshotHelper(page, resolvedFeatureName);
   }
@@ -275,8 +279,7 @@ class BasePage {
         break;
       }
 
-      await this.clickElement(locators.submitButton);
-      await this.waitForGlobalLoadingHidden(loadingTimeout);
+      await this.clickElement(locators.submitButton, { timeout: 15000 });
 
       try {
         await this.waitForPhoneVerificationCodeStepVisible(locators, codeStepTimeout);
@@ -284,6 +287,8 @@ class BasePage {
       } catch (error) {
         lastCodeStepError = error;
       }
+
+      await this.waitForGlobalLoadingHidden(loadingTimeout);
 
       const canRetry = await this.isPhoneVerificationSubmitVisible(locators, 1500);
       if (!canRetry || attempt === maxAttempts) {
@@ -387,6 +392,42 @@ class BasePage {
     }
 
     await this.fillCodeInputs(locators.telCodeInputs, otpCode);
+  }
+
+  async openAppliedJobs() {
+    await this.clickElement(this.accountMenuButton);
+    await this.capture('account_menu_opened');
+    await Promise.all([
+      this.page.waitForURL(/\/ntv-trang-quan-tri-viec-lam-da-ung-tuyen\.html(?:[?#]|$)/i, {
+        timeout: 30000,
+      }),
+      this.clickElement(this.appliedJobsButton),
+    ]);
+  }
+
+  async expectAppliedJobsVisible() {
+    await expect(this.appliedJobsList).toBeVisible({ timeout: 30000 });
+  }
+
+  async submitPhoneVerificationOtp(otpCode, options = {}) {
+    if (!otpCode) {
+      throw new Error('OTP code is required to complete phone verification.');
+    }
+
+    const {
+      codeStepTimeout = 15000,
+      loadingTimeout = 15000,
+      confirmButton,
+    } = options;
+    const locators = this.getPhoneVerificationLocators();
+
+    await this.waitForPhoneVerificationCodeStepVisible(locators, codeStepTimeout);
+    await this.fillPhoneVerificationCode(locators, otpCode);
+
+    if (confirmButton) {
+      await this.clickElement(confirmButton);
+      await this.waitForGlobalLoadingHidden(loadingTimeout);
+    }
   }
 
   async clickPhoneVerificationSubmitIfVisible(locators) {

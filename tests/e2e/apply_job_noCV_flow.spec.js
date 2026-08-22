@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { test } = require('@playwright/test');
 const { JobApplyNoCVPage } = require('../../pages/JobApplyNoCVPage');
 const { HomePage } = require('../../pages/HomePage');
 const { OnboardingPopup } = require('../../pages/OnboardingPopup');
@@ -38,13 +38,10 @@ test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không c
       // Wait for the job list to appear instead of hard sleep
       await jobSearchPage.firstJobLink.waitFor({ state: 'visible', timeout: 15000 });
 
-      const page1Promise = page.waitForEvent('popup');
-      await jobSearchPage.clickFirstJob();
-      const newPage = await page1Promise;
-      await newPage.waitForLoadState();
+      const newPage = await jobSearchPage.clickFirstJob();
 
       jobApplyNoCVPage = new JobApplyNoCVPage(newPage);
-      await jobApplyNoCVPage.capture('after_job_detail_opened');
+      await jobApplyNoCVPage.capture('job_detail_opened', true);
       await jobApplyNoCVPage.startApplyNoCV({ otpCode: usersData[0]?.otp });
     });
 
@@ -53,12 +50,20 @@ test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không c
       await jobApplyNoCVPage.fillMiniProfile(applyData.noCVApply.job1);
       await jobApplyNoCVPage.capture('and_profile1_end');
       await jobApplyNoCVPage.submitProfile();
+      await jobApplyNoCVPage.capture('and_profile1_submitted');
     });
 
     await test.step('And Người dùng apply tất cả các công việc', async () => {
-      await jobApplyNoCVPage.bulkApply(applyData.noCVApply.job2);
-      await jobApplyNoCVPage.capture('and_finish_end');
+      const didBulkApply = await jobApplyNoCVPage.bulkApply(applyData.noCVApply.job2);
+      if (didBulkApply) {
+        await jobApplyNoCVPage.capture('and_finish_end');
+      }
     });
 
+    await test.step('Then Việc làm hiển thị trong danh sách đã ứng tuyển', async () => {
+      await jobApplyNoCVPage.openAppliedJobs();
+      await jobApplyNoCVPage.expectAppliedJobsVisible();
+      await jobApplyNoCVPage.capture('applied_jobs_list_visible', true);
+    });
   });
 });
