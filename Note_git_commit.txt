@@ -1,0 +1,12 @@
+git commit chỉ lưu code ở máy local, không phụ thuộc tài khoản GitHub. Khi git push, Git Credential Manager có thể tự chọn tài khoản theo từng remote/repository.
+Cấu hình URL remote kèm username:
+git remote set-url origin https://hadinhmis@github.com/hadinhmis/Automation_playwright_SV.git
+git remote set-url vieclam24h https://hadtv-ctrl@github.com/hadtv-ctrl/Vieclam24h-Automation_JS.git
+git config --global credential.https://github.com.useHttpPath true
+Sau đó:
+# Push về repo cũ bằng tài khoản hadinhmis
+git push origin <branch>
+
+# Push về repo Vieclam24h bằng tài khoản hadtv-ctrl
+git push vieclam24h <branch>
+Git Credential Manager sẽ lưu song song hai tài khoản và chọn credential dựa trên URL/repository. Quyền admin/write vẫn phải được cấp cho tài khoản tương ứng; việc chọn remote không tự tạo thêm quyền.
