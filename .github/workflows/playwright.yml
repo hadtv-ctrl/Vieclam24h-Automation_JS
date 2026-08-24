@@ -3,13 +3,40 @@ name: Playwright Checks
 on:
   push:
     branches: [main, master]
+
   pull_request:
     branches: [main, master]
+
   workflow_dispatch:
+    inputs:
+      suite:
+        description: Bộ test cần chạy
+        required: true
+        default: e2e
+        type: choice
+        options:
+          - e2e
+          - applyjob
+          - register
+          - profile
+          - onboarding
+          - all
 
 concurrency:
-  group: playwright-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: playwright-shared-account
+  cancel-in-progress: false
+# name: Playwright Checks
+
+# on:
+#   push:
+#     branches: [main, master]
+#   pull_request:
+#     branches: [main, master]
+#   workflow_dispatch:
+
+# concurrency:
+#   group: playwright-${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
 
 permissions:
   contents: read
