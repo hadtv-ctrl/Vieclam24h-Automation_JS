@@ -1,30 +1,11 @@
-const path = require('path');
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../core/fixtures/baseTest');
 const userData = require('../../data/users.json');
-const { LoginPopup } = require('../../pages/LoginPopup');
-const { HomePage } = require('../../pages/HomePage');
-const { ScreenshotHelper, generateRandomVNPhone, generateRandomEmail } = require('../../core/utils/commonUtils');
+const { generateRandomVNPhone, generateRandomEmail } = require('../../core/utils/commonUtils');
 
 test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Email @register @e2e', () => {
-  let page;
-  let loginPopup;
-  let homePage;
-  let randomEmail;
-
-  test.beforeEach(async ({ browser }, testInfo) => {
-    page = await browser.newPage();
-    const specName = path.basename(testInfo.file, path.extname(testInfo.file));
-    loginPopup = new LoginPopup(page, specName);
-    homePage = new HomePage(page, specName);
-    randomEmail = generateRandomEmail();
-  });
-
-  test.afterAll(async () => {
-    await page.close();
-  });
-
-  test('Kiểm tra luồng đăng ký bằng Email', async () => {
+  test('Kiểm tra luồng đăng ký bằng Email', async ({ loginPopup, homePage }) => {
     test.setTimeout(120000);
+    const randomEmail = generateRandomEmail();
 
     await test.step('Given Tôi truy cập vào trang chủ', async () => {
       await homePage.navigate();

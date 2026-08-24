@@ -1,34 +1,12 @@
-const path = require('path');
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('../../core/fixtures/baseTest');
 const userData = require('../../data/users.json');
-const { LoginPopup } = require('../../pages/LoginPopup');
-const { HomePage } = require('../../pages/HomePage');
-const { PopupConsent } = require('../../pages/PopupConsent');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../core/utils/commonUtils');
 
 test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại @register @e2e', () => {
-  let page;
-  let loginPopup;
-  let homePage;
-  let popupConsent;
-  let randomEmail;
-  let randomPhone;
-
-  test.beforeEach(async ({ browser }, testInfo) => {
-    page = await browser.newPage();
-    const specName = path.basename(testInfo.file, path.extname(testInfo.file));
-    loginPopup = new LoginPopup(page, specName);
-    homePage = new HomePage(page, specName);
-    popupConsent = new PopupConsent(page, specName);
-    randomEmail = generateRandomEmail();
-  });
-
-  test.afterAll(async () => {
-    await page.close();
-  });
-
-  test('Kiểm tra luồng đăng ký bằng Số điện thoại', async () => {
+  test('Kiểm tra luồng đăng ký bằng Số điện thoại', async ({ loginPopup, homePage, popupConsent }) => {
     test.setTimeout(120000);
+    const randomEmail = generateRandomEmail();
+    let randomPhone;
 
     await test.step('Given Tôi truy cập vào trang chủ', async () => {
       await homePage.navigate();

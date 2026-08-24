@@ -1,27 +1,18 @@
-const { test, expect } = require('@playwright/test');
-const { JobApplyPage } = require('../../pages/JobApplyPage');
-const { OnboardingPopup } = require('../../pages/OnboardingPopup');
-const { HomePage } = require('../../pages/HomePage');
-const { PopupConsent } = require('../../pages/PopupConsent');
-const { JobSearchPage } = require('../../pages/JobSearchPage');
-const { UserProfilePage } = require('../../pages/UserProfilePage');
+const { test, expect } = require('../../core/fixtures/baseTest');
 const applyData = require('../../data/userProfileData.json');
-const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 
 test.describe('Feature: Hoàn thành profile và ứng tuyển job @e2e', () => {
 
-  test('Người dùng hoàn thành tạo profile và ứng tuyển', async ({ page }) => {
+  test('Người dùng hoàn thành tạo profile và ứng tuyển', async ({
+    authenticatedUser,
+    onboardingPopup,
+    userProfilePage,
+  }) => {
     test.slow();
     test.setTimeout(600000);
 
-    let jobApplyPage;
-    const onboardingPopup = new OnboardingPopup(page);
-    const homePage = new HomePage(page);
-    let jobSearchPage;
-    const popupConsent = new PopupConsent(page);
-
     await test.step('Given Người dùng đã truy cập trang chủ và đăng nhập bằng thông tin từ authSetup', async () => {
-      await loginUserFromDataForPrecondition(page);
+      // authenticatedUser fixture đã hoàn tất precondition đăng nhập.
     });
 
     await test.step('And Người dùng thấy popup Onboarding và đóng popup này', async () => {
@@ -33,10 +24,7 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @e2e', () => 
       });
     });
 
-    let userProfilePage;
-
     await test.step('When Người dùng vào trang Hồ sơ của tôi', async () => {
-      userProfilePage = new UserProfilePage(page);
       await userProfilePage.navigateToMyProfile();
     });
 

@@ -1,30 +1,11 @@
-const { test, expect } = require('@playwright/test');
-const { OnboardingPopup } = require('../../pages/OnboardingPopup');
-const { PopupConsent } = require('../../pages/PopupConsent');
-const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
+const { test, expect } = require('../../core/fixtures/baseTest');
 const onboardingData = require('../../data/onboardingData.json'); // Nạp dữ liệu từ file JSON
 
 test.describe('Feature: Cập nhật thông tin Onboarding sau khi đăng nhập @onboarding @e2e', () => {
-  let page;
-  let onboardingPopup;
-  let popupConsent;
-
-  test.beforeEach(async ({ browser }) => {
-    page = await browser.newPage();
-    onboardingPopup = new OnboardingPopup(page);
-    popupConsent = new PopupConsent(page);
-  });
-
-  test.afterAll(async () => {
-    await page.close();
-  });
-
-  test('Kiểm tra luồng Onboarding của người dùng đã đăng nhập', async () => {
+  test('Kiểm tra luồng Onboarding của người dùng đã đăng nhập', async ({ authenticatedUser, onboardingPopup }) => {
     test.setTimeout(240000);
 
     await test.step('Given Người dùng thấy modal Onboarding (Bước 1) sau khi đăng nhập', async () => {
-      await loginUserFromDataForPrecondition(page);
-
       await expect(onboardingPopup.locationInput).toBeVisible({ timeout: 30000 }); // Chờ input khu vực hiển thị
       // await onboardingPopup.capture('after_login_onboarding_shown');
     });

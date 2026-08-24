@@ -1,19 +1,17 @@
-const { test } = require('@playwright/test');
-const { UserProfilePage } = require('../../pages/UserProfilePage');
-const { OnboardingPopup } = require('../../pages/OnboardingPopup');
-const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
+const { test } = require('../../core/fixtures/baseTest');
 const aiProfileData = require('../../data/aiProfileData.json');
 
 test.describe('Feature: Dùng trợ lý AI để hoàn thiện hồ sơ @profile @ai @e2e', () => {
-  test('Người dùng viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI', async ({ page }) => {
+  test('Người dùng viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI', async ({
+    authenticatedUser,
+    onboardingPopup,
+    userProfilePage,
+  }) => {
     test.slow();
     test.setTimeout(600000);
 
-    const onboardingPopup = new OnboardingPopup(page);
-    const userProfilePage = new UserProfilePage(page);
-
     await test.step('Given Người dùng đã đăng nhập và đang ở trang Hồ sơ của tôi', async () => {
-      await loginUserFromDataForPrecondition(page);
+      // authenticatedUser fixture đã hoàn tất precondition đăng nhập.
       await onboardingPopup.closeIfVisible(undefined, {
         modalTimeout: 15000,
         closeBtnTimeout: 5000,

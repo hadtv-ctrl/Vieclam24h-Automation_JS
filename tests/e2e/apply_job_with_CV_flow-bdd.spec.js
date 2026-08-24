@@ -1,37 +1,26 @@
-const path = require('path');
-const { test, expect } = require('@playwright/test');
-const { JobApplyPage } = require('../../pages/JobApplyPage');
-const { HomePage } = require('../../pages/HomePage');
-const { JobSearchPage } = require('../../pages/JobSearchPage');
-const { OnboardingPopup } = require('../../pages/OnboardingPopup');
+const { test, expect } = require('../../core/fixtures/baseTest');
 const applyData = require('../../data/applyJobData.json'); // Giả sử file này tồn tại
 const usersData = require('../../data/users.json');
-const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 
 test.describe('Feature: Ứng tuyển việc làm @applyjob @e2e', () => {
-  let page;
-  let homePage;
   let jobApplyPage;
-  let jobSearchPage;
   let newPage; // Page của tab chi tiết việc làm
-
-  test.beforeEach(async ({ page: testPage }, testInfo) => {
-    page = testPage;
-    const specName = path.basename(testInfo.file, path.extname(testInfo.file));
-    homePage = new HomePage(page, specName);
-    jobSearchPage = new JobSearchPage(page, specName);
-  });
 
   test.afterEach(async () => {
     if (newPage) await newPage.close();
   });
 
-  test('Người dùng hoàn thành tạo profile và ứng tuyển thành công', async () => {
+  test('Người dùng hoàn thành tạo profile và ứng tuyển thành công', async ({
+    authenticatedUser,
+    onboardingPopup,
+    homePage,
+    jobSearchPage,
+    createJobApplyPage,
+  }) => {
     test.setTimeout(360000); // Tăng timeout cho luồng rất dài
 
     await test.step('Given Tôi đang ở trang chủ sau khi đã đăng nhập', async () => {
-      await loginUserFromDataForPrecondition(page);
-      await new OnboardingPopup(page).closeIfVisible();
+      await onboardingPopup.closeIfVisible();
       await homePage.expectHomepageVisible();
       await expect(homePage.logo).toBeVisible();
       await homePage.capture('after_homepage_loaded');
@@ -44,8 +33,7 @@ test.describe('Feature: Ứng tuyển việc làm @applyjob @e2e', () => {
       await jobSearchPage.capture('before_click_first_job');
       newPage = await jobSearchPage.clickFirstJob();
       await newPage.waitForLoadState();
-      const specName = path.basename(test.info().file, path.extname(test.info().file));
-      jobApplyPage = new JobApplyPage(newPage, specName);
+      jobApplyPage = createJobApplyPage(newPage);
 
       await jobApplyPage.capture('after_job_detail_opened');
       await jobApplyPage.startApply({ otpCode: usersData[0]?.otp });

@@ -1,23 +1,12 @@
-const { test, expect } = require('@playwright/test');
-const { UserProfilePage } = require('../../pages/UserProfilePage');
-const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
+const { test, expect } = require('../../core/fixtures/baseTest');
 
 test.describe('Feature: Tải lên và chuyển đổi CV tại Hồ sơ của tôi @profile @e2e', () => {
-  let page;
-  let userProfilePage;
-
-  test.beforeEach(async ({ page: testPage }) => {
-    page = testPage;
-    userProfilePage = new UserProfilePage(page);
-  });
-
-  test('Người dùng tải lên và chuyển đổi CV thành công', async () => {
+  test('Người dùng tải lên và chuyển đổi CV thành công', async ({ authenticatedUser, userProfilePage }) => {
     test.setTimeout(120000); // Tăng timeout cho luồng detect CV tốn thời gian
 
     await test.step('Given Tôi đang ở trang Hồ sơ của tôi', async () => {
       // Đăng nhập trước khi vào hồ sơ
-      await loginUserFromDataForPrecondition(page);
-      await page.goto('/ho-so-cua-toi.html');
+      await userProfilePage.navigate('/ho-so-cua-toi.html');
       await userProfilePage.capture('ho_so_cua_toi_loaded', true);
     });
 

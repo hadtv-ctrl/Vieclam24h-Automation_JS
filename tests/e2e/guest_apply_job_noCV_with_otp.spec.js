@@ -1,15 +1,16 @@
-const { test } = require('@playwright/test');
-const { JobApplyNoCVPage } = require('../../pages/JobApplyNoCVPage');
-const { JobSearchPage } = require('../../pages/JobSearchPage');
-const { HomePage } = require('../../pages/HomePage');
-const { OnboardingPopup } = require('../../pages/OnboardingPopup');
-const { PopupConsent } = require('../../pages/PopupConsent');
+const { test } = require('../../core/fixtures/baseTest');
 const applyData = require('../../data/applyJobData.json');
 const usersData = require('../../data/users.json');
 const { generateRandomVNPhone } = require('../../core/utils/commonUtils');
 
 test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @applyjob @e2e', () => {
-  test('Guest đăng nhập bằng OTP khi ứng tuyển việc không cần CV thành công', async ({ page }) => {
+  test('Guest đăng nhập bằng OTP khi ứng tuyển việc không cần CV thành công', async ({
+    onboardingPopup,
+    homePage,
+    jobSearchPage,
+    createJobApplyNoCVPage,
+    createPopupConsent,
+  }) => {
     test.slow();
     test.setTimeout(600000);
 
@@ -19,9 +20,6 @@ test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @a
       ...applyData.noCVApply.guestJob,
       phone: generateRandomVNPhone(),
     };
-    const onboardingPopup = new OnboardingPopup(page);
-    const homePage = new HomePage(page);
-
     await test.step('Given Người dùng chưa đăng nhập và truy cập trang chủ', async () => {
       await homePage.navigate();
       await homePage.expectHomepageVisible();
@@ -41,13 +39,12 @@ test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @a
 
     await test.step('When Người dùng mở chi tiết một việc không cần CV', async () => {
       await homePage.clickNoCVJobLink();
-      const jobSearchPage = new JobSearchPage(page);
       await jobSearchPage.firstJobLink.waitFor({ state: 'visible', timeout: 15000 });
       await jobSearchPage.capture('nocv_jobs_list_visible', true);
 
       const jobPage = await jobSearchPage.clickFirstJob();
-      jobApplyNoCVPage = new JobApplyNoCVPage(jobPage);
-      popupConsent = new PopupConsent(jobPage, 'guest-apply-nocv');
+      jobApplyNoCVPage = createJobApplyNoCVPage(jobPage);
+      popupConsent = createPopupConsent(jobPage);
       await jobApplyNoCVPage.capture('job_detail_opened', true);
       await jobApplyNoCVPage.startGuestApplyNoCV();
       await jobApplyNoCVPage.capture('guest_nocv_form_opened');

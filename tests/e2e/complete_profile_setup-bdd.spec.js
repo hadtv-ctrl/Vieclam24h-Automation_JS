@@ -1,20 +1,18 @@
-const { test, expect } = require('@playwright/test');
-const { UserProfilePage } = require('../../pages/UserProfilePage');
+const { test, expect } = require('../../core/fixtures/baseTest');
 const profileData = require('../../data/userProfileData.json');
-const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
-const { OnboardingPopup } = require('../../pages/OnboardingPopup');
 
 test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu chí tìm việc và CV @profile @e2e', () => {
 
-  test('Người dùng cập nhật thông tin cá nhân, tiêu chí tìm việc và tải lên CV', async ({ page }) => {
+  test('Người dùng cập nhật thông tin cá nhân, tiêu chí tìm việc và tải lên CV', async ({
+    authenticatedUser,
+    onboardingPopup,
+    userProfilePage,
+  }) => {
     test.slow();
     test.setTimeout(600000);
 
-    let userProfilePage;
-    const onboardingPopup = new OnboardingPopup(page);
-
     await test.step('Given Người dùng đã truy cập trang chủ và đăng nhập bằng thông tin từ authSetup', async () => {
-      await loginUserFromDataForPrecondition(page);
+      // authenticatedUser fixture đã hoàn tất precondition đăng nhập.
     });
 
     await test.step('And Người dùng thấy popup Onboarding và đóng popup này', async () => {
@@ -27,7 +25,6 @@ test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu 
     });
 
     await test.step('When Người dùng vào trang Hồ sơ của tôi', async () => {
-      userProfilePage = new UserProfilePage(page);
       await userProfilePage.navigateToMyProfile();
     });
 

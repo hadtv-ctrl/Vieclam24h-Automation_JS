@@ -1,23 +1,22 @@
-const { test } = require('@playwright/test');
-const { JobApplyNoCVPage } = require('../../pages/JobApplyNoCVPage');
-const { HomePage } = require('../../pages/HomePage');
-const { OnboardingPopup } = require('../../pages/OnboardingPopup');
+const { test } = require('../../core/fixtures/baseTest');
 const applyData = require('../../data/applyJobData.json');
 const usersData = require('../../data/users.json');
-const { loginUserFromDataForPrecondition } = require('../../core/utils/authSetup');
 
 test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @applyjob @e2e', () => {
 
-  test('Người dùng hoàn thành tạo profile và ứng tuyển job không cần CV', async ({ page }) => {
+  test('Người dùng hoàn thành tạo profile và ứng tuyển job không cần CV', async ({
+    authenticatedUser,
+    onboardingPopup,
+    homePage,
+    jobSearchPage,
+    createJobApplyNoCVPage,
+  }) => {
     test.slow();
     test.setTimeout(600000);
 
     let jobApplyNoCVPage;
-    const onboardingPopup = new OnboardingPopup(page);
-    const homePage = new HomePage(page);
-
     await test.step('Given Người dùng đã truy cập trang chủ và đăng nhập bằng thông tin từ authSetup', async () => {
-      await loginUserFromDataForPrecondition(page);
+      // authenticatedUser fixture đã hoàn tất precondition đăng nhập.
     });
 
     await test.step('And Người dùng thấy popup Onboarding và đóng popup này', async () => {
@@ -32,15 +31,12 @@ test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không c
     await test.step('When Người dùng chọn Xem việc không cần CV và mở chi tiết việc làm', async () => {
       await homePage.closeBlockingModalIfVisible();
       await homePage.clickNoCVJobLink();
-      const { JobSearchPage } = require('../../pages/JobSearchPage');
-      const jobSearchPage = new JobSearchPage(page);
-
       // Wait for the job list to appear instead of hard sleep
       await jobSearchPage.firstJobLink.waitFor({ state: 'visible', timeout: 15000 });
 
       const newPage = await jobSearchPage.clickFirstJob();
 
-      jobApplyNoCVPage = new JobApplyNoCVPage(newPage);
+      jobApplyNoCVPage = createJobApplyNoCVPage(newPage);
       await jobApplyNoCVPage.capture('job_detail_opened', true);
       await jobApplyNoCVPage.startApplyNoCV({ otpCode: usersData[0]?.otp });
     });
