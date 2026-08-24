@@ -1,0 +1,21 @@
+{
+  "name": "automation-project",
+  "version": "1.0.0",
+  "description": "Playwright Automation Testing Project",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:e2e": "playwright test tests/e2e",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "suite:smoke": "playwright test --grep @smoke",
+    "suite:regression": "playwright test --grep-invert @smoke",
+    "suite:register": "playwright test tests/e2e/register_by_email-bdd.spec.js tests/e2e/register_by_phone-bdd.spec.js",
+    "report": "playwright show-report",
+    "check:framework": "node scripts/check-framework-structure.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "dotenv": "^16.3.1"
+  }
+}

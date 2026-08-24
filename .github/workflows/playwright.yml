@@ -1,0 +1,81 @@
+name: Playwright Checks
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: playwright-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Framework and unit tests
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run framework structure checks
+        run: npm run check:framework
+
+      - name: Run unit tests
+        run: node --test
+
+  e2e:
+    name: Internal Playwright tests
+    if: github.event_name != 'pull_request'
+    needs: validate
+    timeout-minutes: 30
+    runs-on: [self-hosted, windows, x64]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install chromium
+
+      - name: Run Playwright tests
+        run: npx playwright test --project="Desktop Chrome"
+        env:
+          CI: true
+          NODE_ENV: qc
+
+      - name: Upload Playwright report and failure artifacts
+        if: failure() && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+            evidence/
+          if-no-files-found: warn
+          retention-days: 14

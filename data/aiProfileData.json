@@ -1,0 +1,14 @@
+{
+  "introduction": {
+    "sourceText": "Có hơn 5 năm kinh nghiệm bán hàng online trên các sàn thương mại điện tử",
+    "tones": ["Chuyên nghiệp", "Thuyết phục"]
+  },
+  "experience": {
+    "company": "Công ty TNHH MTV ACB",
+    "jobTitle": "Nhân viên bán hàng",
+    "startYear": "2023",
+    "startMonth": "January",
+    "isWorkingHere": true,
+    "tones": ["Thuyết phục", "Ngắn gọn dễ đọc"]
+  }
+}

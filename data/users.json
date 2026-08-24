@@ -1,0 +1,13 @@
+[
+  {
+    "username": "0374660228",
+    "phone": "0374660228",
+    "otp": "1111",
+    "email": "test_auto_1786637273386@example.com",
+    "password": "Test@1234",
+    "fullName": "Hà JS",
+    "mobile": "0374660228",
+    "tokenAuth": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjaGFubmVsX2NvZGUiOiJ2bDI0aCIsInVzZXIiOnsiaWQiOiIyMDA0NDg2MzczIiwibmFtZSI6IkhcdTAwZTAgSnMiLCJlbWFpbCI6InRlc3RfYXV0b18xNzg2NjM3MjczMzg2QGV4YW1wbGUuY29tIiwiYXZhdGFyIjpudWxsLCJoYXNfcGFzcyI6IjA0ODI5ZTI1MDkwZmI2ZTY4YjM1NDdkZjBjZGFjZDdkIiwicm9sZSI6InNlZWtlciJ9LCJleHAiOjE4MTc3NDEyNzQsInZlcnNpb24iOjF9.y3wLmt5pM52dUKMi4_8HM2oVj0dgLKqoFk8zXwcrLmg",
+    "registeredAt": "2026-08-13T16:07:53.907Z"
+  }
+]
