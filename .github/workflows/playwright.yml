@@ -89,14 +89,44 @@ jobs:
       - name: Install Chromium
         run: npx playwright install chromium
 
-      - name: Run Playwright tests
-        run: npx playwright test --project="Desktop Chrome"
+      # - name: Run Playwright tests
+      #   run: npx playwright test --project="Desktop Chrome"
+      #   env:
+      #     CI: true
+      #     NODE_ENV: qc
+      
+      - name: Run selected Playwright suite
+        shell: pwsh
+        run: |
+          $suite = "${{ inputs.suite }}"
+      
+          switch ($suite) {
+            "applyjob" {
+              npx playwright test --grep "@applyjob" --project="Desktop Chrome"
+            }
+            "register" {
+              npx playwright test --grep "@register" --project="Desktop Chrome"
+            }
+            "profile" {
+              npx playwright test --grep "@profile" --project="Desktop Chrome"
+            }
+            "onboarding" {
+              npx playwright test --grep "@onboarding" --project="Desktop Chrome"
+            }
+            "all" {
+              npx playwright test --project="Desktop Chrome"
+            }
+            default {
+              npx playwright test --grep "@e2e" --project="Desktop Chrome"
+            }
+          }
         env:
           CI: true
           NODE_ENV: qc
 
       - name: Upload Playwright report and failure artifacts
-        if: failure() && !cancelled()
+        # if: failure() && !cancelled()
+        if: always() && !cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-artifacts-${{ github.run_id }}
@@ -106,3 +136,5 @@ jobs:
             evidence/
           if-no-files-found: warn
           retention-days: 14
+
+      
