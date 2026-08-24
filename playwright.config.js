@@ -1,7 +1,23 @@
 const { defineConfig, devices } = require('@playwright/test');
+const path = require('path');
 const envConfig = require('./core/config/env');
 
-const reportDir = `playwright-report/report-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
+const reportRunDate = new Date();
+const reportDate = [
+  String(reportRunDate.getFullYear()).slice(-2),
+  String(reportRunDate.getMonth() + 1).padStart(2, '0'),
+  String(reportRunDate.getDate()).padStart(2, '0'),
+].join('-');
+const reportTime = [
+  String(reportRunDate.getHours()).padStart(2, '0'),
+  String(reportRunDate.getMinutes()).padStart(2, '0'),
+  String(reportRunDate.getSeconds()).padStart(2, '0'),
+].join('-');
+const reportDir = path.join(
+  'playwright-report',
+  reportDate,
+  `[${reportDate} ${reportTime}] report`
+);
 
 module.exports = defineConfig({
   timeout: 60000,

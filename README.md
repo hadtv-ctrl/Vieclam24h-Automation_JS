@@ -50,7 +50,7 @@ Các URL được quản lý tập trung trong `core/config/env.js` và được
 │   ├── e2e/             # UI E2E specs
 │   └── setup/           # Setup scripts
 ├── evidence/            # Evidence sinh khi chạy test
-├── playwright-report/   # HTML reports theo timestamp
+├── playwright-report/   # HTML reports được nhóm theo ngày và lần chạy
 ├── AI_PROMPTS.md        # Quy tắc chuẩn khi viết/sửa Playwright
 ├── QA_AI_RULES.md       # Entry point trỏ tới AI_PROMPTS.md
 └── playwright.config.js # Playwright projects và runtime config
@@ -176,7 +176,7 @@ Không tạo user ngẫu nhiên rồi giả định user đã đăng ký nếu A
 
 Reporter hiện tại gồm JSON, HTML chuẩn của Playwright và dashboard tùy chỉnh.
 
-- HTML report: `playwright-report/report-YYYY-MM-DDTHH-MM-SS/`.
+- HTML report: `playwright-report/YY-MM-DD/[YY-MM-DD HH-MM-SS] report/`.
 - Failure artifacts: `test-results/`.
 - Business evidence: `evidence/YY-MM-DD/[YY-MM-DD HH-MM-SS] <spec-name>/`.
 - Trace: `on-first-retry`.
