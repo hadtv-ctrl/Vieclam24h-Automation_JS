@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playwright Automation Framework — Việc Làm 24h</title>
+  <style>
+    :root {
+      --ink: #f7f5ef;
+      --muted: #a9b1c7;
+      --night: #080b14;
+      --panel: #111725;
+      --orange: #ff6b35;
+      --cyan: #3dd6d0;
+      --line: rgba(255, 255, 255, 0.12);
+    }
+
+    html[data-theme="light"] {
+      --ink: #172033;
+      --muted: #5c667a;
+      --night: #f6f8fc;
+      --panel: #ffffff;
+      --line: rgba(23, 32, 51, 0.15);
+    }
+
+    html[data-palette="ocean"] { --orange: #ff9f1c; --cyan: #168aad; }
+    html[data-palette="violet"] { --orange: #f04e98; --cyan: #8b7cf6; }
+    html[data-palette="emerald"] { --orange: #f59e0b; --cyan: #16a085; }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--night);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 82% 18%, rgba(61, 214, 208, 0.13), transparent 28%),
+        radial-gradient(circle at 10% 85%, rgba(255, 107, 53, 0.13), transparent 30%),
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: auto, auto, 42px 42px, 42px 42px;
+    }
+
+    html[data-theme="light"] body::before {
+      background:
+        radial-gradient(circle at 82% 18%, color-mix(in srgb, var(--cyan) 15%, transparent), transparent 28%),
+        radial-gradient(circle at 10% 85%, color-mix(in srgb, var(--orange) 14%, transparent), transparent 30%),
+        linear-gradient(rgba(23,32,51,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,32,51,.045) 1px, transparent 1px);
+      background-size: auto, auto, 42px 42px, 42px 42px;
+    }
+
+    .deck { position: relative; width: 100%; height: 100%; }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: clamp(20px, 3vh, 34px);
+      padding: clamp(36px, 6vh, 72px) clamp(44px, 7vw, 110px) clamp(28px, 4vh, 48px);
+      opacity: 0;
+      transform: translateX(60px);
+      visibility: hidden;
+      transition: opacity .35s ease, transform .35s ease, visibility .35s;
+    }
+
+    .slide.active { opacity: 1; transform: translateX(0); visibility: visible; }
+    .slide.exit-left { transform: translateX(-60px); }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--cyan);
+      font: 700 13px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 980px; margin-bottom: 22px; font-size: clamp(48px, 7vw, 94px); line-height: .98; letter-spacing: -.055em; }
+    h2 { max-width: 1020px; margin-bottom: 0; font-size: clamp(36px, 4.9vw, 68px); line-height: 1.03; letter-spacing: -.045em; }
+    h3 { margin-bottom: 8px; font-size: clamp(18px, 1.6vw, 25px); }
+    p, li { font-size: clamp(16px, 1.5vw, 23px); line-height: 1.5; }
+    .lead { max-width: 800px; color: var(--muted); font-size: clamp(20px, 2vw, 29px); }
+    .accent { color: var(--orange); }
+    .cyan { color: var(--cyan); }
+
+    .topline { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .chapter { color: var(--muted); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+    .content { display: flex; min-height: 0; flex-direction: column; justify-content: center; }
+    .content.top { justify-content: flex-start; }
+
+    .two-col { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
+    .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2vw, 28px); }
+
+    .rule { height: 1px; margin: 24px 0; background: linear-gradient(90deg, var(--orange), transparent); }
+
+    .big-number {
+      color: var(--orange);
+      font-size: clamp(88px, 15vw, 220px);
+      font-weight: 800;
+      line-height: .8;
+      letter-spacing: -.08em;
+    }
+
+    .stack { position: relative; padding-left: 28px; border-left: 1px solid var(--line); }
+    .stack-item { position: relative; padding: 10px 0 20px 22px; }
+    .stack-item::before { content: ""; position: absolute; left: -35px; top: 17px; width: 12px; height: 12px; border: 3px solid var(--night); border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 1px var(--cyan); }
+    .stack-item strong { display: block; margin-bottom: 4px; font-size: clamp(18px, 1.7vw, 25px); }
+    .stack-item span { color: var(--muted); font-size: clamp(14px, 1.2vw, 18px); }
+
+    .flow { display: flex; align-items: stretch; gap: 10px; margin-top: 34px; }
+    .flow-step { position: relative; flex: 1; min-width: 0; padding: 20px 16px; border-top: 3px solid var(--cyan); background: rgba(17, 23, 37, .82); }
+    .flow-step:not(:last-child)::after { content: "→"; position: absolute; z-index: 2; right: -16px; top: 38%; color: var(--orange); font-size: 24px; }
+    .flow-step b { display: block; margin-bottom: 7px; color: var(--ink); font-size: clamp(14px, 1.25vw, 19px); }
+    .flow-step span { color: var(--muted); font-size: clamp(12px, 1vw, 16px); line-height: 1.35; }
+
+    .code {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #090d17;
+      box-shadow: 0 26px 70px rgba(0,0,0,.35);
+    }
+    .code-head { display: flex; gap: 7px; padding: 13px 16px; border-bottom: 1px solid var(--line); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; }
+    .dot:nth-child(2) { background: #febc2e; }
+    .dot:nth-child(3) { background: #28c840; }
+    pre { margin: 0; padding: 22px; overflow: hidden; color: #d7def2; font: clamp(12px, 1.05vw, 16px)/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
+    .kw { color: #ff8b66; } .fn { color: #60ded8; } .str { color: #f4d35e; } .cm { color: #6f7a94; }
+
+    .principle { min-height: 190px; padding: 24px 0; border-top: 1px solid var(--line); }
+    .principle .index { color: var(--orange); font: 700 14px ui-monospace, monospace; }
+    .principle p { margin: 12px 0 0; color: var(--muted); font-size: clamp(15px, 1.2vw, 18px); }
+
+    .pipeline { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 16px; align-items: center; margin-top: 36px; }
+    .pipe-node { padding: 26px; border: 1px solid var(--line); background: rgba(17,23,37,.86); }
+    .pipe-node small { color: var(--cyan); font: 700 12px ui-monospace, monospace; text-transform: uppercase; letter-spacing: .12em; }
+    .pipe-node p { margin: 12px 0 0; font-size: clamp(15px, 1.25vw, 19px); }
+    .arrow { color: var(--orange); font-size: 30px; }
+
+    .metric-row { display: flex; gap: 28px; margin-top: 32px; }
+    .metric { flex: 1; padding-top: 18px; border-top: 1px solid var(--line); }
+    .metric strong { display: block; color: var(--cyan); font-size: clamp(30px, 4vw, 58px); letter-spacing: -.04em; }
+    .metric span { color: var(--muted); font-size: 15px; }
+
+    .commands { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 26px; }
+    .command { display: grid; grid-template-columns: 46px 1fr; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .command-icon { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: color-mix(in srgb, var(--cyan) 10%, transparent); font-style: normal; font-size: 22px; }
+    .command code { color: var(--cyan); font: clamp(13px, 1.15vw, 17px) ui-monospace, monospace; }
+    .command span { display: block; margin-top: 7px; color: var(--muted); font-size: 14px; }
+
+    .video-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: clamp(26px, 4vw, 58px); align-items: center; }
+    .video-frame { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #03050a; box-shadow: 0 28px 80px rgba(0,0,0,.45); }
+    .video-frame::before { content: "LIVE RUN · QC"; position: absolute; z-index: 2; top: 14px; left: 14px; padding: 6px 9px; border-radius: 4px; background: rgba(8,11,20,.82); color: var(--cyan); font: 700 11px ui-monospace, monospace; letter-spacing: .1em; pointer-events: none; }
+    .video-frame::after { content: "2× SPEED"; position: absolute; z-index: 2; top: 14px; right: 14px; padding: 6px 9px; border-radius: 4px; background: rgba(8,11,20,.82); color: var(--orange); font: 700 11px ui-monospace, monospace; letter-spacing: .1em; pointer-events: none; }
+    .video-frame video { display: block; width: 100%; max-height: 62vh; aspect-ratio: 16 / 9; background: #000; }
+    .run-result { margin-bottom: 24px; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .run-result strong { display: block; color: var(--cyan); font-size: clamp(36px, 4vw, 58px); letter-spacing: -.05em; }
+    .run-result span { color: var(--muted); font-size: 15px; }
+    .evidence-button { margin-top: 14px; padding: 10px 14px; border: 1px solid var(--cyan); border-radius: 7px; background: transparent; color: var(--cyan); cursor: pointer; font: inherit; font-size: 14px; font-weight: 700; }
+    .evidence-button:hover { background: color-mix(in srgb, var(--cyan) 12%, transparent); }
+    .demo-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
+    .demo-actions .evidence-button, .demo-actions .tool-link { margin-top: 0; }
+    .evidence-dialog { width: min(1180px, 92vw); height: min(780px, 86vh); padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--night); color: var(--ink); box-shadow: 0 30px 100px rgba(0,0,0,.55); }
+    .evidence-dialog::backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(5px); }
+    .evidence-dialog__head { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 22px; border-bottom: 1px solid var(--line); background: var(--panel); }
+    .evidence-dialog__head h2 { margin: 0; font-size: clamp(22px,2vw,30px); letter-spacing: -.02em; }
+    .evidence-dialog__head p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+    .evidence-dialog__close { width: 38px; height: 38px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer; font-size: 20px; }
+    .evidence-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; height: calc(100% - 76px); padding: 18px; overflow-y: auto; }
+    .evidence-card { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); color: var(--ink); text-decoration: none; }
+    .evidence-card img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #05070c; }
+    .evidence-card span { display: block; padding: 9px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font: 12px ui-monospace, monospace; }
+
+    .anatomy { display: grid; grid-template-columns: .72fr 1.28fr; gap: clamp(28px, 5vw, 76px); align-items: center; }
+    .anatomy-row { display: grid; grid-template-columns: 42px 1fr; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .anatomy-row b { color: var(--orange); font: 700 14px ui-monospace, monospace; }
+    .anatomy-row strong { display: block; margin-bottom: 3px; font-size: clamp(17px, 1.4vw, 21px); }
+    .anatomy-row span { color: var(--muted); font-size: clamp(13px, 1.05vw, 16px); }
+    .locator-ladder { counter-reset: locator; display: grid; gap: 10px; }
+    .locator-ladder div { position: relative; padding: 15px 18px 15px 58px; border-left: 3px solid var(--cyan); background: rgba(17,23,37,.72); }
+    .locator-ladder div::before { counter-increment: locator; content: counter(locator); position: absolute; left: 20px; color: var(--orange); font: 700 14px ui-monospace, monospace; }
+    .locator-ladder code { color: var(--ink); font: clamp(13px, 1.15vw, 17px) ui-monospace, monospace; }
+    .output-tree { padding-left: 8px; font: clamp(14px, 1.2vw, 18px)/1.85 ui-monospace, monospace; color: var(--muted); }
+    .output-tree strong { color: var(--cyan); }
+    .call-map { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; margin-top: 28px; }
+    .call-node { min-width: 0; padding: 17px 18px; border-top: 3px solid var(--cyan); background: rgba(17,23,37,.82); }
+    .call-node.orange { border-top-color: var(--orange); }
+    .call-node small { display: block; margin-bottom: 7px; color: var(--orange); font: 700 11px ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+    .call-node strong { display: block; font-size: clamp(15px,1.2vw,19px); line-height: 1.25; }
+    .call-node span { display: block; margin-top: 7px; color: var(--muted); font-size: clamp(12px,.95vw,15px); line-height: 1.35; }
+    .call-arrow { align-self: center; color: var(--orange); font-size: 24px; }
+    .trace-line { display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+    .trace-line b { color: var(--orange); font: 700 13px ui-monospace, monospace; }
+    .trace-line code { display: block; color: var(--cyan); font: clamp(12px,1vw,15px) ui-monospace, monospace; }
+    .trace-line span { display: block; margin-top: 3px; color: var(--muted); font-size: clamp(12px,.95vw,15px); }
+
+    @keyframes motion-node-in {
+      from { opacity: 0; transform: translateY(14px) scale(.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes motion-signal {
+      0%, 100% { opacity: .3; text-shadow: 0 0 0 rgba(255,107,53,0); }
+      50% { opacity: 1; text-shadow: 0 0 18px rgba(255,107,53,.85); }
+    }
+    @keyframes motion-trace {
+      0% { opacity: 0; transform: translateX(18px); border-color: var(--line); }
+      55% { border-color: var(--cyan); }
+      100% { opacity: 1; transform: translateX(0); border-color: var(--line); }
+    }
+    @keyframes motion-flow {
+      from { opacity: 0; transform: translateX(-16px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .slide.active .call-node { opacity: 0; animation: motion-node-in .5s cubic-bezier(.2,.8,.2,1) forwards; }
+    .slide.active .call-map:first-of-type > .call-node:nth-child(1) { animation-delay: .15s; }
+    .slide.active .call-map:first-of-type > .call-node:nth-child(3) { animation-delay: .55s; }
+    .slide.active .call-map:first-of-type > .call-node:nth-child(5) { animation-delay: .95s; }
+    .slide.active .call-map:nth-of-type(2) > .call-node:nth-child(1) { animation-delay: 1.35s; }
+    .slide.active .call-map:nth-of-type(2) > .call-node:nth-child(3) { animation-delay: 1.75s; }
+    .slide.active .call-map:nth-of-type(2) > .call-node:nth-child(5) { animation-delay: 2.15s; }
+    .slide.active .call-arrow { animation: motion-signal .75s ease-in-out infinite; }
+    .slide.active .call-map:first-of-type > .call-arrow { animation-delay: .4s; }
+    .slide.active .call-map:nth-of-type(2) > .call-arrow { animation-delay: 1.6s; }
+
+    .slide.active .trace-line { opacity: 0; animation: motion-trace .48s ease-out forwards; }
+    .slide.active .trace-line:nth-child(1) { animation-delay: .15s; }
+    .slide.active .trace-line:nth-child(2) { animation-delay: .45s; }
+    .slide.active .trace-line:nth-child(3) { animation-delay: .75s; }
+    .slide.active .trace-line:nth-child(4) { animation-delay: 1.05s; }
+    .slide.active .trace-line:nth-child(5) { animation-delay: 1.35s; }
+    .slide.active .trace-line:nth-child(6) { animation-delay: 1.65s; }
+
+    .slide.active .flow-step, .slide.active .pipe-node { opacity: 0; animation: motion-flow .5s ease-out forwards; }
+    .slide.active .flow-step:nth-child(1), .slide.active .pipe-node:nth-child(1) { animation-delay: .12s; }
+    .slide.active .flow-step:nth-child(2) { animation-delay: .3s; }
+    .slide.active .flow-step:nth-child(3), .slide.active .pipe-node:nth-child(3) { animation-delay: .48s; }
+    .slide.active .flow-step:nth-child(4) { animation-delay: .66s; }
+    .slide.active .flow-step:nth-child(5), .slide.active .pipe-node:nth-child(5) { animation-delay: .84s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+    }
+
+    .footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--muted); font-size: 12px; }
+    .footer strong { color: var(--ink); }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-mark { width: 20px; height: 20px; transform: rotate(45deg); background: linear-gradient(135deg, var(--orange) 50%, var(--cyan) 50%); }
+
+    .controls { position: fixed; z-index: 10; right: 26px; bottom: 22px; display: flex; gap: 8px; }
+    .controls button { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; background: rgba(8,11,20,.72); color: var(--ink); cursor: pointer; font-size: 19px; backdrop-filter: blur(10px); }
+    .controls button:hover { border-color: var(--cyan); color: var(--cyan); }
+    .theme-menu { position: fixed; z-index: 12; right: 26px; bottom: 72px; width: 250px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: rgba(8,11,20,.94); box-shadow: 0 20px 55px rgba(0,0,0,.35); backdrop-filter: blur(16px); }
+    .theme-menu[hidden] { display: none; }
+    .theme-menu label { display: block; margin-bottom: 12px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .theme-menu label:last-child { margin-bottom: 0; }
+    .theme-menu select { width: 100%; margin-top: 7px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 14px; }
+    html[data-theme="light"] .theme-menu { background: rgba(255,255,255,.96); box-shadow: 0 20px 55px rgba(30,41,59,.18); }
+    html[data-theme="light"] .controls button { background: rgba(255,255,255,.82); }
+    html[data-theme="light"] .flow-step,
+    html[data-theme="light"] .pipe-node,
+    html[data-theme="light"] .call-node { background: rgba(255,255,255,.82); }
+    html[data-theme="light"] .principle,
+    html[data-theme="light"] .command,
+    html[data-theme="light"] .trace-line { border-color: rgba(23,32,51,.15); }
+    .compare-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .compare-pane { position: relative; min-height: 190px; padding: 18px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(135deg, color-mix(in srgb, var(--panel) 84%, var(--cyan)), var(--panel)); }
+    .compare-pane::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, color-mix(in srgb, var(--cyan) 18%, transparent) 50%, transparent 65%); transform: translateX(-120%); }
+    .slide.active .compare-pane::after { animation: compare-scan 2.8s ease-in-out infinite; }
+    .compare-pane small { color: var(--muted); font: 700 11px ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; }
+    .compare-pane strong { display: block; margin-top: 48px; font-size: clamp(20px,2vw,30px); }
+    .compare-pane.actual strong { color: var(--orange); }
+    .compare-modes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .compare-modes span { padding: 7px 10px; border: 1px solid var(--line); border-radius: 5px; color: var(--cyan); font: 700 12px ui-monospace, monospace; }
+    .tool-link { display: inline-block; padding: 11px 16px; border: 1px solid var(--cyan); border-radius: 7px; color: var(--cyan); font-weight: 700; text-decoration: none; }
+    .tool-link:hover { background: color-mix(in srgb, var(--cyan) 12%, transparent); }
+    @keyframes compare-scan { 0%, 18% { transform: translateX(-120%); } 72%, 100% { transform: translateX(120%); } }
+    .progress { position: fixed; z-index: 10; left: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, var(--orange), var(--cyan)); transition: width .3s ease; }
+    .hint { position: fixed; z-index: 10; left: 25px; bottom: 20px; color: rgba(255,255,255,.42); font: 12px ui-monospace, monospace; }
+
+    @media (max-width: 850px) {
+      .slide { overflow-y: auto; padding: 34px 30px 64px; }
+      .two-col, .three-col, .pipeline, .video-layout, .anatomy { grid-template-columns: 1fr; }
+      .pipeline .arrow { transform: rotate(90deg); text-align: center; }
+      .flow { display: grid; grid-template-columns: 1fr 1fr; }
+      .call-map { grid-template-columns: 1fr; }
+      .call-arrow { transform: rotate(90deg); text-align: center; }
+      .flow-step::after { display: none; }
+      .commands { grid-template-columns: 1fr; }
+      .compare-preview { grid-template-columns: 1fr; }
+      .evidence-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .hint { display: none; }
+    }
+
+    @media print {
+      html, body { overflow: visible; background: #080b14; }
+      .slide { position: relative; width: 100vw; height: 100vh; visibility: visible; opacity: 1; transform: none; break-after: page; }
+      .controls, .progress, .hint { display: none; }
+      .theme-menu { display: none !important; }
+      .evidence-dialog { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" aria-label="Bài thuyết trình Automation Testing Framework">
+    <section class="slide active">
+      <header class="topline"><p class="eyebrow">Engineering Presentation</p><span class="chapter">01 / Mở đầu</span></header>
+      <div class="content">
+        <h1>Automation Testing<br><span class="accent">Framework</span></h1>
+        <p class="lead">Playwright + JavaScript cho hệ thống Việc Làm 24h — dễ đọc, dễ mở rộng và tạo bằng chứng rõ ràng.</p>
+        <div class="rule"></div>
+        <p style="color:var(--muted);font-size:15px">Page Object Model · Custom Fixtures · API Precondition · CI/CD · HTML Report</p>
+      </div>
+      <footer class="footer"><span class="brand"><i class="brand-mark"></i><strong>Việc Làm 24h</strong></span><span>Playwright Automation</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Bài toán</p><span class="chapter">02 / Vì sao</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Test không chỉ cần chạy được — mà còn phải <span class="accent">bảo trì được</span>.</h2>
+          <p class="lead" style="margin-top:24px">Các luồng đăng ký, onboarding, profile và ứng tuyển dài, có popup, OTP, tab mới và dữ liệu phụ thuộc môi trường.</p>
+        </div>
+        <div>
+          <div class="big-number">4</div>
+          <h3>mục tiêu thiết kế</h3>
+          <div class="stack">
+            <div class="stack-item"><strong>Đọc như nghiệp vụ</strong><span>Given / When / Then trong spec</span></div>
+            <div class="stack-item"><strong>Tách chi tiết giao diện</strong><span>Locator và action ở Page Object</span></div>
+            <div class="stack-item"><strong>Chạy ổn định</strong><span>Wait theo trạng thái, không hard sleep</span></div>
+            <div class="stack-item"><strong>Truy vết được</strong><span>Evidence, trace, video và report</span></div>
+          </div>
+        </div>
+      </div>
+      <footer class="footer"><span>Framework giải quyết độ phức tạp bằng phân lớp</span><span>02</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Kiến trúc</p><span class="chapter">03 / Các lớp</span></header>
+      <div class="content top">
+        <h2>Mỗi lớp chỉ giữ <span class="cyan">một loại trách nhiệm</span>.</h2>
+        <div class="flow">
+          <div class="flow-step"><b>Test Spec</b><span>Scenario, step và assertion nghiệp vụ</span></div>
+          <div class="flow-step"><b>Fixture</b><span>Khởi tạo Page Object và precondition</span></div>
+          <div class="flow-step"><b>Page Object</b><span>Locator và hành vi từng màn hình</span></div>
+          <div class="flow-step"><b>Utilities</b><span>UI action, API, auth, screenshot</span></div>
+          <div class="flow-step"><b>Data & Config</b><span>JSON, file upload, URL môi trường</span></div>
+        </div>
+        <p class="lead" style="margin-top:34px">Khi UI thay đổi, phần lớn chỉnh sửa nằm trong Page Object — spec vẫn giữ ngôn ngữ nghiệp vụ.</p>
+      </div>
+      <footer class="footer"><span>tests → fixtures → pages → core → data</span><span>03</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Luồng thực thi</p><span class="chapter">04 / Runtime</span></header>
+      <div class="content">
+        <h2>Một scenario đi từ <span class="accent">ý định</span> đến <span class="cyan">bằng chứng</span>.</h2>
+        <div class="pipeline">
+          <div class="pipe-node"><small>Arrange</small><p>Fixture tạo Page Object, user và trạng thái đăng nhập.</p></div>
+          <span class="arrow">→</span>
+          <div class="pipe-node"><small>Act & Assert</small><p>Spec điều phối hành vi; Page Object thao tác và kiểm tra UI.</p></div>
+          <span class="arrow">→</span>
+          <div class="pipe-node"><small>Observe</small><p>ScreenshotHelper, trace, video và reporter lưu kết quả.</p></div>
+        </div>
+        <div class="metric-row">
+          <div class="metric"><strong>60s</strong><span>timeout mặc định</span></div>
+          <div class="metric"><strong>N</strong><span>workers cấu hình bằng PW_WORKERS</span></div>
+          <div class="metric"><strong>2×</strong><span>retry khi chạy trên CI</span></div>
+          <div class="metric"><strong>3</strong><span>Playwright projects</span></div>
+        </div>
+      </div>
+      <footer class="footer"><span>baseURL thay đổi theo NODE_ENV: qc · stg · prod</span><span>04</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Thiết kế spec</p><span class="chapter">05 / Mã nguồn</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Spec kể câu chuyện. Page Object xử lý <span class="accent">chi tiết</span>.</h2>
+          <p class="lead" style="margin-top:24px">Fixture mở rộng cung cấp sẵn <code class="cyan">authenticatedUser</code>, <code class="cyan">homePage</code>, <code class="cyan">jobSearchPage</code> và factory cho tab mới.</p>
+        </div>
+        <div class="code" aria-label="Ví dụ Playwright test">
+          <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <pre><span class="kw">test</span>(<span class="str">'Ứng tuyển thành công'</span>, <span class="kw">async</span> ({
+  authenticatedUser,
+  homePage,
+  jobSearchPage
+}) =&gt; {
+  <span class="kw">await</span> test.<span class="fn">step</span>(<span class="str">'Given đã đăng nhập'</span>, ...);
+  <span class="kw">await</span> test.<span class="fn">step</span>(<span class="str">'When ứng tuyển'</span>, ...);
+  <span class="kw">await</span> test.<span class="fn">step</span>(<span class="str">'Then thấy việc đã ứng tuyển'</span>, ...);
+});
+
+<span class="cm">// Không locator trực tiếp trong spec</span></pre>
+        </div>
+      </div>
+      <footer class="footer"><span>Ví dụ: tests/e2e/apply_job_with_CV_flow-bdd.spec.js</span><span>05</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Cấu trúc script</p><span class="chapter">06 / Anatomy</span></header>
+      <div class="content anatomy">
+        <div>
+          <h2>Một script run có <span class="accent">năm phần rõ ràng</span>.</h2>
+          <p class="lead" style="margin-top:22px;font-size:clamp(17px,1.45vw,22px)">Spec chỉ mô tả scenario và điều phối các object đã được fixture cung cấp.</p>
+        </div>
+        <div>
+          <div class="anatomy-row"><b>01</b><div><strong>Import</strong><span>test/expect từ baseTest, JSON data và helper cần dùng</span></div></div>
+          <div class="anatomy-row"><b>02</b><div><strong>Feature + tags</strong><span>test.describe chứa tên feature và @register / @e2e</span></div></div>
+          <div class="anatomy-row"><b>03</b><div><strong>Scenario</strong><span>Mỗi hành vi độc lập là một test()</span></div></div>
+          <div class="anatomy-row"><b>04</b><div><strong>Given / When / Then</strong><span>test.step chia luồng theo ngôn ngữ nghiệp vụ</span></div></div>
+          <div class="anatomy-row"><b>05</b><div><strong>Assertion + evidence</strong><span>Kiểm tra kết quả cuối và capture trạng thái quan trọng</span></div></div>
+        </div>
+      </div>
+      <footer class="footer"><span>Spec không chứa locator hay thao tác UI trực tiếp</span><span>06</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Fixture injection</p><span class="chapter">07 / Dependency</span></header>
+      <div class="content top">
+        <h2>Fixture biến Page Object thành <span class="cyan">tham số sẵn dùng</span>.</h2>
+        <div class="flow">
+          <div class="flow-step"><b>Worker bắt đầu</b><span>Tạo account riêng qua API</span></div>
+          <div class="flow-step"><b>Runtime JSON</b><span>timestamp + worker + pid</span></div>
+          <div class="flow-step"><b>Inject vào test</b><span>authenticatedUser đọc đúng file worker</span></div>
+          <div class="flow-step"><b>Chạy nghiệp vụ</b><span>Page Object và data không dùng chéo</span></div>
+          <div class="flow-step"><b>Cleanup tự động</b><span>Xóa runtime JSON trong finally</span></div>
+        </div>
+        <p class="lead" style="margin-top:34px"><code class="cyan">workerUserData</code> có scope worker; Page Object vẫn có scope test. Vì vậy account được tái sử dụng đúng phạm vi nhưng không bao giờ dùng chung giữa các worker.</p>
+      </div>
+      <footer class="footer"><span>Điểm vào chung: core/fixtures/baseTest.js</span><span>07</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Case study · Apply Profile</p><span class="chapter">08 / Call graph</span></header>
+      <div class="content top">
+        <h2>Khi chạy spec, Playwright đi qua <span class="accent">nhiều lớp</span> — không đọc mọi thứ trong một file.</h2>
+        <div class="call-map">
+          <div class="call-node"><small>1 · Bootstrap</small><strong>playwright.config.js</strong><span>Đọc PW_WORKERS, chọn project, runId, reporter và browser</span></div>
+          <span class="call-arrow">→</span>
+          <div class="call-node orange"><small>2 · Scenario</small><strong>apply_job_with_profile_flow-bdd.spec.js</strong><span>Đọc step, data và gọi hành vi nghiệp vụ</span></div>
+          <span class="call-arrow">→</span>
+          <div class="call-node"><small>3 · Dependency</small><strong>core/fixtures/baseTest.js</strong><span>Tạo workerUserData rồi inject authenticatedUser và Page Object</span></div>
+        </div>
+        <div class="call-map" style="margin-top:12px">
+          <div class="call-node"><small>4 · Precondition</small><strong>authSetup.js → registrationApiHelper.js</strong><span>Tạo account riêng, ghi runtime JSON, đọc lại rồi login</span></div>
+          <span class="call-arrow">→</span>
+          <div class="call-node orange"><small>5 · UI behavior</small><strong>HomePage · JobSearchPage · JobApplyPage</strong><span>Locator và method thao tác từng màn hình</span></div>
+          <span class="call-arrow">→</span>
+          <div class="call-node"><small>6 · Shared engine</small><strong>BasePage → UiActions → Playwright</strong><span>Wait visible, click, fill, assertion và điều khiển Chromium</span></div>
+        </div>
+      </div>
+      <footer class="footer"><span>Command → config → spec → fixture → helper/Page Object → browser</span><span>08</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Một câu lệnh cụ thể</p><span class="chapter">09 / Trace</span></header>
+      <div class="content two-col">
+        <div>
+          <h2><code class="cyan">fillExperience()</code> được thực thi như thế nào?</h2>
+          <div class="code" style="margin-top:26px">
+            <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+            <pre><span class="cm">// spec</span>
+<span class="kw">await</span> jobApplyPage.<span class="fn">fillExperience</span>(
+  applyData.experience
+);</pre>
+          </div>
+        </div>
+        <div>
+          <div class="trace-line"><b>01</b><div><code>data/applyJobData.json</code><span>Cấp company, jobTitle, thời gian và description.</span></div></div>
+          <div class="trace-line"><b>02</b><div><code>core/fixtures/baseTest.js</code><span>Factory tạo JobApplyPage gắn với tab chi tiết việc làm.</span></div></div>
+          <div class="trace-line"><b>03</b><div><code>pages/JobApplyPage.js</code><span>fillExperience() ánh xạ từng field vào locator tương ứng.</span></div></div>
+          <div class="trace-line"><b>04</b><div><code>pages/BasePage.js</code><span>fillInput()/clickElement() cuộn, chờ và gọi action chung.</span></div></div>
+          <div class="trace-line"><b>05</b><div><code>core/utils/commonUtils.js</code><span>UiActions.waitForVisible() rồi fill/click bằng Playwright.</span></div></div>
+          <div class="trace-line"><b>06</b><div><code>ScreenshotHelper → evidence/</code><span>capture() lưu trạng thái trước và sau khi Save section.</span></div></div>
+        </div>
+      </div>
+      <footer class="footer"><span>Spec ra lệnh “làm gì”; Page Object và utilities quyết định “làm thế nào”</span><span>09</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Test data</p><span class="chapter">10 / Worker isolation</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Mỗi worker sở hữu <span class="accent">một user runtime riêng</span>.</h2>
+          <div class="stack" style="margin-top:30px">
+            <div class="stack-item"><strong>Tạo duy nhất</strong><span>Email và phone ngẫu nhiên được đăng ký qua API cho từng parallelIndex.</span></div>
+            <div class="stack-item"><strong>File tạm có định danh</strong><span>Timestamp đến mili-giây + worker + PID ngăn trùng tên.</span></div>
+            <div class="stack-item"><strong>Dọn sau khi chạy</strong><span>Fixture xóa đúng file trong finally; không lưu credential vào repository.</span></div>
+          </div>
+        </div>
+        <div class="code" aria-label="Ví dụ lấy test data">
+          <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <pre><span class="cm">// baseTest.js · worker scope</span>
+workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
+  <span class="kw">const</span> runtime = <span class="kw">await</span> <span class="fn">createRuntimeUserData</span>(
+    info.parallelIndex
+  );
+  <span class="kw">try</span> {
+    <span class="kw">await</span> <span class="fn">use</span>(runtime);
+  } <span class="kw">finally</span> {
+    <span class="kw">await</span> <span class="fn">removeRuntimeUserData</span>(runtime.filePath);
+  }
+}, { scope: <span class="str">'worker'</span> }]</pre>
+        </div>
+      </div>
+      <footer class="footer"><span>test-results/runtime-users/[timestamp]-worker-[index]-pid-[pid].json</span><span>10</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Element & locator</p><span class="chapter">11 / Inspect</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Nhìn element theo <span class="cyan">ý nghĩa người dùng</span>, không theo CSS trang trí.</h2>
+          <p class="lead" style="margin-top:22px;font-size:clamp(17px,1.45vw,22px)">Mở DevTools bằng F12 hoặc dùng Pick Locator trong Playwright UI Mode; kiểm tra role, accessible name, label, placeholder và test id.</p>
+          <div class="rule"></div>
+          <p style="color:var(--muted);font-size:16px">Sau khi xác nhận locator ổn định, đặt nó trong constructor của Page Object và bọc thao tác thành method nghiệp vụ.</p>
+        </div>
+        <div class="locator-ladder">
+          <div><code>getByRole('button', { name: ... })</code></div>
+          <div><code>getByLabel() / getByPlaceholder()</code></div>
+          <div><code>getByTestId()</code></div>
+          <div><code>getByText()</code></div>
+          <div><code>CSS ngắn, có scope rõ ràng</code></div>
+          <div><code>XPath — chỉ khi không có lựa chọn tốt hơn</code></div>
+        </div>
+      </div>
+      <footer class="footer"><span>Ví dụ: LoginPopup.phoneInput → fillPhone()</span><span>11</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">AI-assisted QA</p><span class="chapter">12 / Prompt governance</span></header>
+      <div class="content top">
+        <h2>AI viết nhanh, nhưng phải đi trong <span class="cyan">đường ray chất lượng</span>.</h2>
+        <div class="three-col" style="margin-top:38px">
+          <article class="principle"><span class="index">01</span><h3>AGENTS.md</h3><p>Điểm vào cho coding agent: bắt buộc đọc quy tắc QA trước khi sửa Playwright.</p></article>
+          <article class="principle"><span class="index">02</span><h3>QA_AI_RULES.md</h3><p>Lớp tương thích, dẫn mọi AI tool về một nguồn quy tắc thống nhất.</p></article>
+          <article class="principle"><span class="index">03</span><h3>AI_PROMPTS.md</h3><p>Nguồn chuẩn về POM, BDD, locator, synchronization, evidence và Definition of Done.</p></article>
+          <article class="principle"><span class="index">04</span><h3>Đọc context trước</h3><p>AI phải đọc spec, config, fixture, Page Object, helper và data liên quan.</p></article>
+          <article class="principle"><span class="index">05</span><h3>Guardrails khi code</h3><p>Không hard sleep, không locator trong spec, không private API hoặc nuốt lỗi.</p></article>
+          <article class="principle"><span class="index">06</span><h3>Verify trước khi báo pass</h3><p>Static check → unit test → targeted Playwright run; tối đa 3 vòng tự sửa.</p></article>
+        </div>
+      </div>
+      <footer class="footer"><span>AGENTS.md → QA_AI_RULES.md → AI_PROMPTS.md → code → verify</span><span>12</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Phạm vi</p><span class="chapter">13 / Test suites</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Tag biến repository thành các <span class="accent">bộ test có mục đích</span>.</h2>
+          <p class="lead" style="margin-top:24px">Một spec có thể tham gia nhiều suite; project và grep quyết định phạm vi thực thi.</p>
+        </div>
+        <div class="stack">
+          <div class="stack-item"><strong>@e2e</strong><span>Toàn bộ UI end-to-end</span></div>
+          <div class="stack-item"><strong>@applyjob</strong><span>Business flow ứng tuyển thực sự</span></div>
+          <div class="stack-item"><strong>@register · @profile · @onboarding</strong><span>Các nhóm chức năng theo hành trình người dùng</span></div>
+          <div class="stack-item"><strong>@ai · @api</strong><span>Tính năng AI trong profile và API-only scenarios</span></div>
+        </div>
+      </div>
+      <footer class="footer"><span>Lưu ý: npm test có thể chạy lặp test qua nhiều project</span><span>13</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">CI & Báo cáo</p><span class="chapter">14 / Feedback loop</span></header>
+      <div class="content">
+        <h2>Pipeline biến mỗi lần chạy thành một <span class="cyan">kết quả có thể kiểm chứng</span>.</h2>
+        <div class="pipeline">
+          <div class="pipe-node"><small>Validate</small><p>npm ci → check cấu trúc → Node unit tests</p></div>
+          <span class="arrow">→</span>
+          <div class="pipe-node"><small>Execute</small><p>N workers chạy song song với account và artifact tách biệt</p></div>
+          <span class="arrow">→</span>
+          <div class="pipe-node"><small>Publish</small><p>Upload report, test-results và evidence trong 14 ngày</p></div>
+        </div>
+        <p class="lead" style="margin-top:34px">Report tổng vẫn cho góc nhìn toàn run; <code class="cyan">workerHtmlReporter</code> đồng thời tạo một HTML report riêng cho mỗi parallelIndex.</p>
+      </div>
+      <footer class="footer"><span>GitHub Actions · Chromium · artifacts luôn được upload</span><span>14</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Output</p><span class="chapter">15 / Artifacts</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Mỗi loại output trả lời <span class="accent">một câu hỏi khác nhau</span>.</h2>
+          <div class="stack" style="margin-top:28px">
+            <div class="stack-item"><strong>RunId không trùng</strong><span>Timestamp đến mili-giây kết hợp 6 ký tự ngẫu nhiên.</span></div>
+            <div class="stack-item"><strong>Report theo worker</strong><span>Mỗi parallelIndex có index.html riêng, ngoài report tổng.</span></div>
+            <div class="stack-item"><strong>Evidence theo worker</strong><span>Ảnh nằm trong worker-[parallelIndex] nên không còn ghi đè.</span></div>
+            <div class="stack-item"><strong>Trace / video / failure artifacts</strong><span>Điều gì xảy ra trước khi lỗi xuất hiện?</span></div>
+          </div>
+          <div class="demo-actions">
+            <a class="tool-link" href="demo/reports/register-by-phone/index.html" target="_blank" rel="noopener">Report Register ↗</a>
+            <a class="tool-link" href="demo/reports/apply-job-with-profile/index.html" target="_blank" rel="noopener">Report Apply Profile ↗</a>
+          </div>
+        </div>
+        <div class="output-tree">
+          <strong>playwright-report/</strong><br>
+          └─ YY-MM-DD/[time-ms random] report/<br>
+          &nbsp;&nbsp;├─ index.html <span style="color:var(--muted)">· tổng</span><br>
+          &nbsp;&nbsp;└─ workers/<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;├─ [runId]-worker-0/index.html<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;└─ [runId]-worker-(N-1)/index.html<br><br>
+          <strong>evidence/</strong><br>
+          └─ YY-MM-DD/[runId] spec-name/<br>
+          &nbsp;&nbsp;├─ worker-0/step001_*.png<br>
+          &nbsp;&nbsp;└─ worker-(N-1)/step001_*.png<br><br>
+          <strong>test-results/</strong><br>
+          ├─ runtime-users/ <span style="color:var(--orange)">· tự xóa</span><br>
+          └─ trace · screenshot · video khi lỗi
+        </div>
+      </div>
+      <footer class="footer"><span>CI upload playwright-report, test-results và evidence trong 14 ngày</span><span>15</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Demo</p><span class="chapter">16 / Chạy thực tế</span></header>
+      <div class="content video-layout">
+        <div class="video-frame">
+          <video controls preload="metadata" playsinline>
+            <source src="demo/assets/register-by-phone-demo.webm" type="video/webm">
+            Trình duyệt của bạn không hỗ trợ video WebM.
+          </video>
+        </div>
+        <div>
+          <p class="eyebrow">Recorded execution</p>
+          <h2 style="font-size:clamp(34px,4vw,58px)">Đăng ký bằng <span class="accent">số điện thoại</span></h2>
+          <div class="run-result"><strong>PASS</strong><span>Video: 1 scenario · Framework hỗ trợ N workers / N accounts</span></div>
+          <p class="lead" style="font-size:clamp(16px,1.35vw,21px)">Video vẫn minh họa đúng luồng của <code class="cyan">register_by_phone-bdd.spec.js</code>. Số instance song song được điều khiển bằng PW_WORKERS và mỗi worker tách riêng evidence.</p>
+          <div class="demo-actions">
+            <button class="evidence-button" type="button" data-evidence="register">Xem 9 ảnh evidence ↗</button>
+            <a class="tool-link" href="demo/reports/register-by-phone/index.html" target="_blank" rel="noopener">Mở report Register ↗</a>
+          </div>
+        </div>
+      </div>
+      <footer class="footer"><span>Nhấn Play để xem luồng đăng ký hoàn chỉnh</span><span>16</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Demo</p><span class="chapter">17 / Apply Profile</span></header>
+      <div class="content video-layout">
+        <div class="video-frame">
+          <video controls preload="metadata" playsinline>
+            <source src="demo/assets/apply-job-with-profile-demo.webm" type="video/webm">
+            Trình duyệt của bạn không hỗ trợ video WebM.
+          </video>
+        </div>
+        <div>
+          <p class="eyebrow">Recorded execution</p>
+          <h2 style="font-size:clamp(32px,3.8vw,56px)">Ứng tuyển bằng <span class="accent">profile hoàn chỉnh</span></h2>
+          <div class="run-result"><strong>PASS</strong><span>authenticatedUser · runtime account riêng theo worker</span></div>
+          <p class="lead" style="font-size:clamp(16px,1.3vw,20px)">Video ghi tab chi tiết việc làm: chọn Apply by Profile, điền 7 section, submit và kiểm tra danh sách đã ứng tuyển.</p>
+          <p style="color:var(--muted);font-size:14px">Script: <code class="cyan">apply_job_with_profile_flow-bdd.spec.js</code> · 5,2 phút</p>
+          <div class="demo-actions">
+            <button class="evidence-button" type="button" data-evidence="profile">Xem 34 ảnh evidence ↗</button>
+            <a class="tool-link" href="demo/reports/apply-job-with-profile/index.html" target="_blank" rel="noopener">Mở report Apply Profile ↗</a>
+          </div>
+        </div>
+      </div>
+      <footer class="footer"><span>Demo luồng dài sử dụng applyData, JobApplyPage và ScreenshotHelper</span><span>17</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Demo</p><span class="chapter">18 / Lệnh chạy multi-worker</span></header>
+      <div class="content top">
+        <h2>Chạy targeted spec và <span class="accent">quan sát N worker độc lập</span>.</h2>
+        <div class="commands" style="margin-top:34px">
+          <div class="command"><i class="command-icon" aria-hidden="true">🧱</i><div><code>npm run check:framework</code><span>Kiểm tra cấu trúc và quy ước repository</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">🧪</i><div><code>node --test core/reporters/*.test.js</code><span>Kiểm tra report tổng và report tách theo worker</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">🌐</i><div><code>$env:PW_WORKERS=4; npx playwright test ... --repeat-each=4</code><span>Ví dụ phân 4 instance cho tối đa 4 worker độc lập</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">💼</i><div><code>npx playwright test --project="Apply Job Tests"</code><span>Chạy riêng business flow ứng tuyển</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">🧭</i><div><code>npm run test:ui</code><span>Quan sát, lọc và debug bằng Playwright UI Mode</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">📊</i><div><code>npm run report</code><span>Mở report tổng; thư mục workers chứa report riêng</span></div></div>
+        </div>
+      </div>
+      <footer class="footer"><span>N là cấu hình runtime; mỗi worker có account, report và evidence riêng</span><span>18</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Tool Compare</p><span class="chapter">19 / Evidence review</span></header>
+      <div class="content two-col">
+        <div>
+          <h2><code class="cyan">visual_compare.html</code> biến output demo thành <span class="accent">phiên review trực quan</span>.</h2>
+          <div class="stack" style="margin-top:28px">
+            <div class="stack-item"><strong>1 · Chọn hai folder</strong><span>Folder 1 là Expected/Baseline; Folder 2 là Actual của lần chạy mới.</span></div>
+            <div class="stack-item"><strong>2 · Ghép theo tên file</strong><span>Tool đánh dấu giống nhau, khác biệt hoặc thiếu ở một phía.</span></div>
+            <div class="stack-item"><strong>3 · Review và quyết định</strong><span>Lọc file khác biệt, kiểm tra trực quan rồi Approve Baseline khi thay đổi hợp lệ.</span></div>
+          </div>
+          <a class="tool-link" href="../tools/visual_compare.html" target="_blank" rel="noopener">Mở Visual Compare ↗</a>
+        </div>
+        <div>
+          <div class="compare-preview" aria-label="Minh họa so sánh baseline và actual">
+            <div class="compare-pane"><small>Folder 1 · Baseline</small><strong>Expected image</strong></div>
+            <div class="compare-pane actual"><small>Folder 2 · Actual</small><strong>Changed area</strong></div>
+          </div>
+          <div class="compare-modes"><span>Side</span><span>Diff</span><span>Slider</span><span>Blink</span></div>
+          <p style="color:var(--muted);font-size:16px">Có thêm Fit/1:1, đồng bộ scroll, Light/Dark và bộ lọc “chỉ hiện file có khác biệt”.</p>
+          <p style="color:var(--orange);font-size:14px">Approve Baseline sẽ ghi Actual đè lên Expected sau khi người dùng xác nhận.</p>
+        </div>
+      </div>
+      <footer class="footer"><span>Tool chạy cục bộ bằng File System Access API · phù hợp Chrome/Edge</span><span>19</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Kết luận</p><span class="chapter">20 / Takeaway</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Framework tốt làm cho <span class="accent">thay đổi trở nên rẻ hơn</span>.</h2>
+          <p class="lead" style="margin-top:24px">Kiến trúc phân lớp giữ spec gần nghiệp vụ; cơ chế đồng bộ, evidence và CI giữ kết quả đáng tin cậy.</p>
+        </div>
+        <div>
+          <div class="stack">
+            <div class="stack-item"><strong>Dễ mở rộng</strong><span>Thêm Page Object, fixture và dữ liệu theo đúng lớp</span></div>
+            <div class="stack-item"><strong>Dễ bảo trì</strong><span>UI đổi không kéo theo việc sửa hàng loạt spec</span></div>
+            <div class="stack-item"><strong>Dễ điều tra</strong><span>Report, evidence, trace và video tạo ngữ cảnh lỗi</span></div>
+          </div>
+          <p style="margin:30px 0 0;color:var(--cyan);font-weight:700">Câu hỏi & thảo luận</p>
+        </div>
+      </div>
+      <footer class="footer"><span class="brand"><i class="brand-mark"></i><strong>Playwright Automation Framework</strong></span><span>20</span></footer>
+    </section>
+  </main>
+
+  <dialog class="evidence-dialog" id="evidence-dialog">
+    <div class="evidence-dialog__head">
+      <div>
+        <h2 id="evidence-title">Evidence</h2>
+        <p id="evidence-summary">Chọn một ảnh để mở kích thước đầy đủ.</p>
+      </div>
+      <button class="evidence-dialog__close" id="evidence-close" type="button" aria-label="Đóng evidence">×</button>
+    </div>
+    <div class="evidence-grid" id="evidence-grid"></div>
+  </dialog>
+
+  <div class="hint">← → / Space để chuyển slide · F toàn màn hình · T đổi sáng/tối</div>
+  <div class="theme-menu" id="theme-menu" hidden>
+    <label for="theme-mode">Chế độ hiển thị
+      <select id="theme-mode">
+        <option value="dark">Tối</option>
+        <option value="light">Sáng</option>
+      </select>
+    </label>
+    <label for="theme-palette">Bảng màu
+      <select id="theme-palette">
+        <option value="sunset">Cam &amp; Cyan</option>
+        <option value="ocean">Ocean</option>
+        <option value="violet">Violet</option>
+        <option value="emerald">Emerald</option>
+      </select>
+    </label>
+  </div>
+  <div class="controls" aria-label="Điều khiển slide">
+    <button id="theme-settings" type="button" aria-label="Chỉnh giao diện" aria-expanded="false">◐</button>
+    <button id="prev" type="button" aria-label="Slide trước">←</button>
+    <button id="next" type="button" aria-label="Slide tiếp theo">→</button>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    const progress = document.querySelector('.progress');
+    const root = document.documentElement;
+    const themeMenu = document.getElementById('theme-menu');
+    const themeSettings = document.getElementById('theme-settings');
+    const themeMode = document.getElementById('theme-mode');
+    const themePalette = document.getElementById('theme-palette');
+    const evidenceDialog = document.getElementById('evidence-dialog');
+    const evidenceTitle = document.getElementById('evidence-title');
+    const evidenceSummary = document.getElementById('evidence-summary');
+    const evidenceGrid = document.getElementById('evidence-grid');
+    let current = Math.max(0, Math.min(slides.length - 1, Number(location.hash.slice(1)) - 1 || 0));
+
+    const evidenceGalleries = {
+      register: {
+        title: 'Evidence · Register by Phone',
+        base: 'demo/evidence/register-by-phone/',
+        files: [
+          'step001_after_homepage_loaded.png',
+          'step002_after_close_popup.png',
+          'step003_after_login_modal_opened.png',
+          'step004_after_fill_phone.png',
+          'step005_before_fill_otp.png',
+          'step006_after_register_form_opened.png',
+          'step007_after_fill_register_details.png',
+          'step008_popup_consent_visible.png',
+          'step009_after_agree_consent_successfully.png'
+        ]
+      },
+      profile: {
+        title: 'Evidence · Apply Job with Profile',
+        base: 'demo/evidence/apply-job-with-profile/',
+        files: [
+          'step001_after_homepage_loaded.png',
+          'step002_before_click_first_job.png',
+          'step003_after_job_detail_opened.png',
+          'step004_phone_verification_visible.png',
+          'step005_phone_verification_code_step.png',
+          'step006_after_continue_to_profile_form.png',
+          'step007_before_fill_introduction.png',
+          'step008_before_save_introduction.png',
+          'step009_after_save_introduction.png',
+          'step010_before_fill_experience.png',
+          'step011_before_save_experience.png',
+          'step012_after_save_experience.png',
+          'step013_before_fill_education.png',
+          'step014_before_save_education.png',
+          'step015_after_save_education.png',
+          'step016_before_fill_skill.png',
+          'step017_before_save_skill.png',
+          'step018_after_save_skill.png',
+          'step019_before_fill_achievement.png',
+          'step020_before_save_achievement.png',
+          'step021_after_save_achievement.png',
+          'step022_before_fill_certificate.png',
+          'step023_before_save_certificate.png',
+          'step024_after_save_certificate.png',
+          'step025_before_fill_language.png',
+          'step026_before_save_language.png',
+          'step027_after_save_language.png',
+          'step028_before_bulk_apply.png',
+          'step029_after_bulk_apply.png',
+          'step030_after_click_apply_all.png',
+          'step031_after_click_submit_all.png',
+          'step032_after_bulk_apply.png',
+          'step033_account_menu_opened.png',
+          'step034_applied_jobs_list_visible.png'
+        ]
+      }
+    };
+
+    function openEvidenceGallery(key) {
+      const gallery = evidenceGalleries[key];
+      if (!gallery) return;
+      evidenceTitle.textContent = gallery.title;
+      evidenceSummary.textContent = `${gallery.files.length} ảnh · Chọn ảnh để mở kích thước đầy đủ.`;
+      evidenceGrid.replaceChildren(...gallery.files.map((file) => {
+        const link = document.createElement('a');
+        link.className = 'evidence-card';
+        link.href = gallery.base + file;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        const img = document.createElement('img');
+        img.src = gallery.base + file;
+        img.alt = file.replace(/_/g, ' ').replace('.png', '');
+        img.loading = 'lazy';
+        const label = document.createElement('span');
+        label.textContent = file;
+        link.append(img, label);
+        return link;
+      }));
+      evidenceDialog.showModal();
+    }
+
+    function readPreference(key, fallback) {
+      try { return localStorage.getItem(key) || fallback; } catch { return fallback; }
+    }
+
+    function savePreference(key, value) {
+      try { localStorage.setItem(key, value); } catch { /* File mode may block storage. */ }
+    }
+
+    function applyTheme(mode, palette) {
+      root.dataset.theme = mode;
+      root.dataset.palette = palette;
+      themeMode.value = mode;
+      themePalette.value = palette;
+      savePreference('framework-presentation-theme', mode);
+      savePreference('framework-presentation-palette', palette);
+    }
+
+    const preferredMode = readPreference(
+      'framework-presentation-theme',
+      matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+    );
+    const preferredPalette = readPreference('framework-presentation-palette', 'sunset');
+    applyTheme(preferredMode, preferredPalette);
+
+    document.querySelectorAll('video').forEach((video) => {
+      const setDemoSpeed = () => {
+        video.defaultPlaybackRate = 2;
+        video.playbackRate = 2;
+      };
+      setDemoSpeed();
+      video.addEventListener('loadedmetadata', setDemoSpeed, { once: true });
+    });
+
+    document.querySelectorAll('[data-evidence]').forEach((button) => {
+      button.addEventListener('click', () => openEvidenceGallery(button.dataset.evidence));
+    });
+    document.getElementById('evidence-close').addEventListener('click', () => evidenceDialog.close());
+
+    themeSettings.addEventListener('click', () => {
+      const willOpen = themeMenu.hidden;
+      themeMenu.hidden = !willOpen;
+      themeSettings.setAttribute('aria-expanded', String(willOpen));
+    });
+    themeMode.addEventListener('change', () => applyTheme(themeMode.value, themePalette.value));
+    themePalette.addEventListener('change', () => applyTheme(themeMode.value, themePalette.value));
+
+    function showSlide(nextIndex) {
+      const previous = current;
+      current = (nextIndex + slides.length) % slides.length;
+      slides.forEach((slide, index) => {
+        slide.classList.toggle('active', index === current);
+        slide.classList.toggle('exit-left', index < current);
+      });
+      progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+      history.replaceState(null, '', `#${current + 1}`);
+      if (previous !== current) slides[current].focus({ preventScroll: true });
+    }
+
+    document.getElementById('prev').addEventListener('click', () => showSlide(current - 1));
+    document.getElementById('next').addEventListener('click', () => showSlide(current + 1));
+    document.addEventListener('keydown', (event) => {
+      if (evidenceDialog.open) return;
+      if (['ArrowRight', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); showSlide(current + 1); }
+      if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); showSlide(current - 1); }
+      if (event.key === 'Home') showSlide(0);
+      if (event.key === 'End') showSlide(slides.length - 1);
+      if (event.key.toLowerCase() === 'f') document.documentElement.requestFullscreen?.();
+      if (event.key.toLowerCase() === 't') applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark', root.dataset.palette || 'sunset');
+      if (event.key === 'Escape') { themeMenu.hidden = true; themeSettings.setAttribute('aria-expanded', 'false'); }
+    });
+    window.addEventListener('hashchange', () => showSlide(Number(location.hash.slice(1)) - 1 || 0));
+    showSlide(current);
+  </script>
+</body>
+</html>

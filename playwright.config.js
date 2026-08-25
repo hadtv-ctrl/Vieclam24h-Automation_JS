@@ -1,5 +1,6 @@
 const { defineConfig, devices } = require('@playwright/test');
 const path = require('path');
+const { randomBytes } = require('crypto');
 const envConfig = require('./core/config/env');
 
 const reportRunDate = new Date();
@@ -12,20 +13,29 @@ const reportTime = [
   String(reportRunDate.getHours()).padStart(2, '0'),
   String(reportRunDate.getMinutes()).padStart(2, '0'),
   String(reportRunDate.getSeconds()).padStart(2, '0'),
+  String(reportRunDate.getMilliseconds()).padStart(3, '0'),
 ].join('-');
+const runRandomId = randomBytes(3).toString('hex');
+const runId = `${reportDate}-${reportTime}-${runRandomId}`;
+process.env.QA_RUN_ID = runId;
+const requestedWorkers = Number.parseInt(process.env.PW_WORKERS || '2', 10);
+const workerCount = Number.isInteger(requestedWorkers) && requestedWorkers > 0
+  ? requestedWorkers
+  : 2;
 const reportDir = path.join(
   'playwright-report',
   reportDate,
-  `[${reportDate} ${reportTime}] report`
+  `[${reportDate} ${reportTime} ${runRandomId}] report`
 );
 
 module.exports = defineConfig({
+  metadata: { runId },
   timeout: 60000,
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: 1,
+  retries: process.env.CI ? 2 : 0, // Chạy lại các test thất bại 2 lần trên CI, không chạy lại trên local
+  workers: workerCount,
   reporter: [
     ['json'],
     [
@@ -39,6 +49,13 @@ module.exports = defineConfig({
       './core/reporters/htmlSummaryReporter.js',
       {
         outputFolder: reportDir,
+      },
+    ],
+    [
+      './core/reporters/workerHtmlReporter.js',
+      {
+        outputFolder: path.join(reportDir, 'workers'),
+        runId,
       },
     ],
   ],

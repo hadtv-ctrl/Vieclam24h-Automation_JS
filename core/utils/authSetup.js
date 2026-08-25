@@ -18,6 +18,49 @@ function loadUserData() {
   }
 }
 
+function getRuntimeUserDirectory() {
+  return path.join(__dirname, '../../test-results/runtime-users');
+}
+
+function buildRuntimeUserFileName(parallelIndex) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `${timestamp}-worker-${parallelIndex}-pid-${process.pid}.json`;
+}
+
+async function createRuntimeUserData(parallelIndex) {
+  const user = await createRegisteredUserForPrecondition();
+  if (!user) {
+    throw new Error(`Worker ${parallelIndex} could not create an isolated registered user`);
+  }
+
+  const runtimeDirectory = getRuntimeUserDirectory();
+  const filePath = path.join(runtimeDirectory, buildRuntimeUserFileName(parallelIndex));
+  await fs.promises.mkdir(runtimeDirectory, { recursive: true });
+  await fs.promises.writeFile(filePath, JSON.stringify(user, null, 2), {
+    encoding: 'utf8',
+    flag: 'wx',
+  });
+
+  const persistedUser = JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
+  return { user: persistedUser, filePath };
+}
+
+async function removeRuntimeUserData(filePath) {
+  if (!filePath) return;
+
+  const runtimeDirectory = path.resolve(getRuntimeUserDirectory());
+  const resolvedFilePath = path.resolve(filePath);
+  if (path.dirname(resolvedFilePath) !== runtimeDirectory) {
+    throw new Error(`Refusing to remove runtime user data outside ${runtimeDirectory}`);
+  }
+
+  try {
+    await fs.promises.unlink(resolvedFilePath);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+}
+
 async function createRegisteredUserForPrecondition() {
   const requestContext = await playwrightRequest.newContext();
   const apiHelper = new RegistrationApiHelper(requestContext);
@@ -59,12 +102,12 @@ async function createRegisteredUserForPrecondition() {
   }
 }
 
-async function loginUserFromDataForPrecondition(page) {
+async function loginUserFromDataForPrecondition(page, providedUser = null) {
   const loginPopup = new LoginPopup(page);
   const homePage = new HomePage(page);
   const popupConsent = new PopupConsent(page);
 
-  const createdUser = await createRegisteredUserForPrecondition();
+  const createdUser = providedUser || await createRegisteredUserForPrecondition();
   await homePage.navigate();
   await page.waitForLoadState('domcontentloaded');
   await homePage.closeAdsIfVisible();
@@ -167,4 +210,6 @@ module.exports = {
   registerUserByPhoneForPrecondition,
   saveGeneratedUser,
   createRegisteredUserForPrecondition,
+  createRuntimeUserData,
+  removeRuntimeUserData,
 };

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { randomBytes } = require('crypto');
 
 let globalScreenshotSequence = 0;
 
@@ -18,6 +19,7 @@ function getFormattedDate(date) {
 
 let globalRunDateInfo = getFormattedDate(new Date());
 let currentTestFile = '';
+const fallbackRunId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${randomBytes(3).toString('hex')}`;
 
 class ScreenshotHelper {
   /**
@@ -45,11 +47,15 @@ class ScreenshotHelper {
 
   getEvidenceDir() {
     let scriptName = '';
+    let parallelIndex = 0;
+    let configuredRunId = '';
     try {
       const { test } = require('@playwright/test');
       const info = test.info();
       if (info && info.file) {
         scriptName = path.basename(info.file).replace(/\.spec\.js$|\.js$/, '');
+        parallelIndex = info.parallelIndex;
+        configuredRunId = info.config?.metadata?.runId || '';
       }
     } catch(e) {}
 
@@ -59,9 +65,10 @@ class ScreenshotHelper {
 
     const safeName = scriptName.replace(/[^a-zA-Z0-9-_\s]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').trim();
     const dateStr = this.runDateInfo.dateStr;
-    const timeStr = this.runDateInfo.timeStr;
+    const runId = String(configuredRunId || process.env.QA_RUN_ID || fallbackRunId)
+      .replace(/[^a-zA-Z0-9-_]+/g, '-');
 
-    return `evidence/${dateStr}/[${dateStr} ${timeStr}] ${safeName}`;
+    return `evidence/${dateStr}/[${runId}] ${safeName}/worker-${parallelIndex}`;
   }
 
   async waitForPageStable(options = {}) {

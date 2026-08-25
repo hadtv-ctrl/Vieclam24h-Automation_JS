@@ -9,11 +9,23 @@ const { JobSearchPage } = require('../../pages/JobSearchPage');
 const { JobApplyPage } = require('../../pages/JobApplyPage');
 const { JobApplyNoCVPage } = require('../../pages/JobApplyNoCVPage');
 const { UserProfilePage } = require('../../pages/UserProfilePage');
-const { loginUserFromDataForPrecondition } = require('../utils/authSetup');
+const {
+  createRuntimeUserData,
+  loginUserFromDataForPrecondition,
+  removeRuntimeUserData,
+} = require('../utils/authSetup');
 
 // Page Objects for the default page are injected directly. Factories bind a
 // Page Object to a popup/new tab without leaking construction into the spec.
 const test = base.extend({
+  workerUserData: [async ({}, use, workerInfo) => {
+    const runtimeUserData = await createRuntimeUserData(workerInfo.parallelIndex);
+    try {
+      await use(runtimeUserData);
+    } finally {
+      await removeRuntimeUserData(runtimeUserData.filePath);
+    }
+  }, { scope: 'worker' }],
   featureName: async ({}, use, testInfo) => {
     await use(path.basename(testInfo.file, path.extname(testInfo.file)));
   },
@@ -53,9 +65,9 @@ const test = base.extend({
   createPopupConsent: async ({ featureName }, use) => {
     await use((targetPage) => new PopupConsent(targetPage, featureName));
   },
-  authenticatedUser: async ({ page }, use) => {
-    const user = await loginUserFromDataForPrecondition(page);
-    await use(user);
+  authenticatedUser: async ({ page, workerUserData }, use) => {
+    const user = await loginUserFromDataForPrecondition(page, workerUserData.user);
+    await use({ ...user, runtimeDataPath: workerUserData.filePath });
   },
 });
 
