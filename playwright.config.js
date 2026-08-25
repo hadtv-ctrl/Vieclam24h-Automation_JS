@@ -69,24 +69,28 @@ module.exports = defineConfig({
   },
   projects: [
     {
-      name: 'Desktop Chrome',
-      testMatch: /.*\.spec\.js/,
+      name: 'Smoke Tests',
+      testMatch: 'e2e/**/*.spec.js',
+      grep: /@smoke/,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },
       },
     },
     {
-      name: 'E2E Tests',
+      name: 'Regression Tests',
+      testMatch: 'e2e/**/*.spec.js',
       grep: /@e2e/, // Chỉ chạy các test có tag @e2e
+      grepInvert: /@smoke/,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },
       },
     },
     {
-      name: 'Apply Job Tests',
-      grep: /@applyjob/, // Chỉ chạy các test có tag @applyjob
+      name: 'API Tests',
+      testMatch: 'api/**/*.spec.js',
+      grep: /@api/,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },

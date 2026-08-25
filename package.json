@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "playwright test",
-    "test:e2e": "playwright test tests/e2e",
+    "test:e2e": "playwright test --project=\"Smoke Tests\" --project=\"Regression Tests\"",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
-    "suite:smoke": "playwright test --grep @smoke",
-    "suite:regression": "playwright test --grep-invert @smoke",
-    "suite:register": "playwright test tests/e2e/register_by_email-bdd.spec.js tests/e2e/register_by_phone-bdd.spec.js",
+    "suite:smoke": "playwright test --project=\"Smoke Tests\"",
+    "suite:regression": "playwright test --project=\"Smoke Tests\" --project=\"Regression Tests\"",
+    "suite:api": "playwright test --project=\"API Tests\"",
+    "suite:register": "playwright test --project=\"Smoke Tests\"",
     "report": "playwright show-report",
     "check:framework": "node scripts/check-framework-structure.js"
   },

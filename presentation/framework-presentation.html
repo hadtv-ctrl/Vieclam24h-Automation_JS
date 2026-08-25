@@ -379,7 +379,7 @@
           <div class="metric"><strong>60s</strong><span>timeout mặc định</span></div>
           <div class="metric"><strong>N</strong><span>workers cấu hình bằng PW_WORKERS</span></div>
           <div class="metric"><strong>2×</strong><span>retry khi chạy trên CI</span></div>
-          <div class="metric"><strong>3</strong><span>Playwright projects</span></div>
+          <div class="metric"><strong>3</strong><span>projects không chồng lặp</span></div>
         </div>
       </div>
       <footer class="footer"><span>baseURL thay đổi theo NODE_ENV: qc · stg · prod</span><span>04</span></footer>
@@ -419,7 +419,7 @@
         </div>
         <div>
           <div class="anatomy-row"><b>01</b><div><strong>Import</strong><span>test/expect từ baseTest, JSON data và helper cần dùng</span></div></div>
-          <div class="anatomy-row"><b>02</b><div><strong>Feature + tags</strong><span>test.describe chứa tên feature và @register / @e2e</span></div></div>
+          <div class="anatomy-row"><b>02</b><div><strong>Feature + tags</strong><span>test.describe chứa tên feature và các tag @smoke / @e2e / @api</span></div></div>
           <div class="anatomy-row"><b>03</b><div><strong>Scenario</strong><span>Mỗi hành vi độc lập là một test()</span></div></div>
           <div class="anatomy-row"><b>04</b><div><strong>Given / When / Then</strong><span>test.step chia luồng theo ngôn ngữ nghiệp vụ</span></div></div>
           <div class="anatomy-row"><b>05</b><div><strong>Assertion + evidence</strong><span>Kiểm tra kết quả cuối và capture trạng thái quan trọng</span></div></div>
@@ -562,16 +562,16 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
       <div class="content two-col">
         <div>
           <h2>Tag biến repository thành các <span class="accent">bộ test có mục đích</span>.</h2>
-          <p class="lead" style="margin-top:24px">Một spec có thể tham gia nhiều suite; project và grep quyết định phạm vi thực thi.</p>
+          <p class="lead" style="margin-top:24px">Cấu hình tại <code>playwright.config.js → projects</code>; các suite được tách để không chạy trùng test.</p>
         </div>
         <div class="stack">
-          <div class="stack-item"><strong>@e2e</strong><span>Toàn bộ UI end-to-end</span></div>
-          <div class="stack-item"><strong>@applyjob</strong><span>Business flow ứng tuyển thực sự</span></div>
-          <div class="stack-item"><strong>@register · @profile · @onboarding</strong><span>Các nhóm chức năng theo hành trình người dùng</span></div>
-          <div class="stack-item"><strong>@ai · @api</strong><span>Tính năng AI trong profile và API-only scenarios</span></div>
+          <div class="stack-item"><strong>Smoke Tests · @smoke · 2 tests</strong><span>Hai luồng đăng ký cốt lõi, phản hồi nhanh sau deploy.</span></div>
+          <div class="stack-item"><strong>Regression Tests · @e2e − @smoke · 9 tests</strong><span>Các UI flow còn lại: onboarding, profile và apply job.</span></div>
+          <div class="stack-item"><strong>API Tests · @api · 2 tests</strong><span>Scenario API độc lập trong thư mục <code>tests/api</code>.</span></div>
+          <div class="stack-item"><strong>Full UI regression</strong><span>Chạy Smoke Tests + Regression Tests, không lặp test.</span></div>
         </div>
       </div>
-      <footer class="footer"><span>Lưu ý: npm test có thể chạy lặp test qua nhiều project</span><span>13</span></footer>
+      <footer class="footer"><span>npm run suite:smoke · npm run suite:regression · npm run suite:api</span><span>13</span></footer>
     </section>
 
     <section class="slide">
@@ -680,7 +680,7 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
           <div class="command"><i class="command-icon" aria-hidden="true">🧱</i><div><code>npm run check:framework</code><span>Kiểm tra cấu trúc và quy ước repository</span></div></div>
           <div class="command"><i class="command-icon" aria-hidden="true">🧪</i><div><code>node --test core/reporters/*.test.js</code><span>Kiểm tra report tổng và report tách theo worker</span></div></div>
           <div class="command"><i class="command-icon" aria-hidden="true">🌐</i><div><code>$env:PW_WORKERS=4; npx playwright test ... --repeat-each=4</code><span>Ví dụ phân 4 instance cho tối đa 4 worker độc lập</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">💼</i><div><code>npx playwright test --project="Apply Job Tests"</code><span>Chạy riêng business flow ứng tuyển</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">💼</i><div><code>npx playwright test --grep="@applyjob" --project="Regression Tests"</code><span>Chạy riêng business flow ứng tuyển</span></div></div>
           <div class="command"><i class="command-icon" aria-hidden="true">🧭</i><div><code>npm run test:ui</code><span>Quan sát, lọc và debug bằng Playwright UI Mode</span></div></div>
           <div class="command"><i class="command-icon" aria-hidden="true">📊</i><div><code>npm run report</code><span>Mở report tổng; thư mục workers chứa report riêng</span></div></div>
         </div>

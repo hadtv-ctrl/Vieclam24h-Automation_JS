@@ -90,7 +90,7 @@ jobs:
         run: npx playwright install chromium
 
       # - name: Run Playwright tests
-      #   run: npx playwright test --project="Desktop Chrome"
+      #   run: npm run suite:regression
       #   env:
       #     CI: true
       #     NODE_ENV: qc
@@ -102,22 +102,22 @@ jobs:
       
           switch ($suite) {
             "applyjob" {
-              npx playwright test --grep "@applyjob" --project="Desktop Chrome"
+              npx playwright test --grep "@applyjob" --project="Regression Tests"
             }
             "register" {
-              npx playwright test --grep "@register" --project="Desktop Chrome"
+              npx playwright test --project="Smoke Tests"
             }
             "profile" {
-              npx playwright test --grep "@profile" --project="Desktop Chrome"
+              npx playwright test --grep "@profile" --project="Regression Tests"
             }
             "onboarding" {
-              npx playwright test --grep "@onboarding" --project="Desktop Chrome"
+              npx playwright test --grep "@onboarding" --project="Regression Tests"
             }
             "all" {
-              npx playwright test --project="Desktop Chrome"
+              npx playwright test --project="Smoke Tests" --project="Regression Tests" --project="API Tests"
             }
             default {
-              npx playwright test --grep "@e2e" --project="Desktop Chrome"
+              npx playwright test --project="Smoke Tests" --project="Regression Tests"
             }
           }
         env:

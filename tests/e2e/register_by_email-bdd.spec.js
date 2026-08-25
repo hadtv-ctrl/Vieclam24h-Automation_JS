@@ -2,7 +2,7 @@ const { test, expect } = require('../../core/fixtures/baseTest');
 const userData = require('../../data/users.json');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../core/utils/commonUtils');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Email @register @e2e', () => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Email @register @smoke @e2e', () => {
   test('Kiểm tra luồng đăng ký bằng Email', async ({ loginPopup, homePage }) => {
     test.setTimeout(120000);
     const randomEmail = generateRandomEmail();

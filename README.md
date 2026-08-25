@@ -22,13 +22,13 @@ PowerShell:
 
 ```powershell
 $env:NODE_ENV = 'qc'
-npx playwright test --project='E2E Tests'
+npm run suite:regression
 ```
 
 Bash:
 
 ```bash
-NODE_ENV=qc npx playwright test --project='E2E Tests'
+NODE_ENV=qc npm run suite:regression
 ```
 
 Các URL được quản lý tập trung trong `core/config/env.js` và được đưa vào Playwright qua `baseURL`. Không hard-code domain trong spec hoặc Page Object.
@@ -99,38 +99,38 @@ Ví dụ, một spec ứng tuyển chỉ điều phối các bước. `JobSearch
 
 | Project | Bộ lọc | Mục đích |
 |---|---|---|
-| `Desktop Chrome` | Tất cả `*.spec.js` | Chạy toàn bộ UI và API specs trên Desktop Chrome |
-| `E2E Tests` | `@e2e` | Chạy toàn bộ UI E2E |
-| `Apply Job Tests` | `@applyjob` | Chạy các business flow ứng tuyển |
+| `Smoke Tests` | `e2e/**/*.spec.js` + `@smoke` | Chạy nhanh các luồng đăng ký cốt lõi |
+| `Regression Tests` | `e2e/**/*.spec.js` + `@e2e`, loại `@smoke` | Chạy các UI E2E còn lại mà không lặp smoke |
+| `API Tests` | `api/**/*.spec.js` + `@api` | Chạy các scenario API độc lập |
 
-Các project dùng viewport `1920x1080`, `workers: 1`, không chạy song song và retry 2 lần trên CI.
+Các project dùng Desktop Chrome với viewport `1920x1080`, số worker lấy từ `PW_WORKERS` và retry tối đa 2 lần trên CI.
 
-Lưu ý: `npm test` không chỉ định project nên các test có tag có thể được chạy lại ở nhiều project. Khi chạy targeted suite, luôn truyền `--project`.
+Ba project có phạm vi không chồng lặp. `npm test` chạy Smoke, Regression và API; `npm run suite:regression` chạy toàn bộ UI gồm Smoke + Regression.
 
 ## Lệnh thường dùng
 
 Chạy toàn bộ E2E:
 
 ```bash
-npx playwright test --project="E2E Tests"
+npm run suite:regression
 ```
 
 Chạy toàn bộ business Apply Job:
 
 ```bash
-npx playwright test --project="Apply Job Tests"
+npx playwright test --grep "@applyjob" --project="Regression Tests"
 ```
 
 Chạy một spec trong đúng project:
 
 ```bash
-npx playwright test tests/e2e/guest_apply_job_noCV_with_otp.spec.js --project="Apply Job Tests"
+npx playwright test tests/e2e/guest_apply_job_noCV_with_otp.spec.js --project="Regression Tests"
 ```
 
 Chạy API test:
 
 ```bash
-npx playwright test tests/api/register_api.spec.js --project="Desktop Chrome"
+npx playwright test tests/api/register_api.spec.js --project="API Tests"
 ```
 
 Chạy suite đăng ký UI:
@@ -161,7 +161,7 @@ node --test
 Liệt kê test mà không thực thi:
 
 ```bash
-npx playwright test --project="Apply Job Tests" --list
+npx playwright test --project="Regression Tests" --list
 ```
 
 Mở HTML report:
