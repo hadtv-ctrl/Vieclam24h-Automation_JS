@@ -58,6 +58,43 @@ Các URL được quản lý tập trung trong `core/config/env.js` và được
 
 `evidence/`, `playwright-report/` và `test-results/` là thư mục sinh tự động, không phải source test.
 
+### Vai trò của từng lớp
+
+| Lớp | Vị trí | Trách nhiệm |
+|---|---|---|
+| Test specification | `tests/e2e/`, `tests/api/` | Mô tả scenario, chia Given/When/Then, gọi fixture/Page Object và kiểm tra kết quả nghiệp vụ |
+| Fixture | `core/fixtures/baseTest.js` | Khởi tạo Page Object, cung cấp precondition đăng nhập và factory cho popup/tab mới |
+| Page Object | `pages/` | Chứa locator và hành vi UI của từng trang hoặc popup |
+| Common utilities | `core/utils/` | Cung cấp UI actions, screenshot/evidence, API registration và authentication setup dùng chung |
+| Test data | `data/` | Lưu dữ liệu đầu vào JSON và tài nguyên upload như CV |
+| Environment config | `core/config/env.js` | Ánh xạ `NODE_ENV` sang web/API base URL |
+| Runtime config | `playwright.config.js` | Khai báo timeout, browser projects, reporters, retry và artifacts |
+| Reporter | `core/reporters/` | Bổ sung dashboard tổng hợp vào HTML report của Playwright |
+| CI workflow | `.github/workflows/playwright.yml` | Cài dependency, kiểm tra framework, chạy unit test/E2E và upload artifacts |
+
+### Luồng thực thi một E2E test
+
+```text
+Spec trong tests/e2e
+    -> lấy Page Object/precondition từ baseTest fixture
+    -> Page Object sử dụng BasePage hoặc UiActions
+    -> đọc dữ liệu nghiệp vụ từ data/
+    -> thao tác với website theo baseURL của môi trường
+    -> assertion kiểm tra kết quả nghiệp vụ
+    -> ScreenshotHelper lưu evidence
+    -> Playwright và custom reporter tạo report/artifacts
+```
+
+Ví dụ, một spec ứng tuyển chỉ điều phối các bước. `JobSearchPage` phụ trách tìm việc, `JobApplyPage` phụ trách form ứng tuyển, `PopupConsent` xử lý consent, còn `BasePage` cung cấp thao tác và kiểm tra dùng chung. Cách phân lớp này giúp thay đổi locator trong Page Object mà không làm spec chứa chi tiết giao diện.
+
+### Quan hệ giữa các thành phần chính
+
+- `core/fixtures/baseTest.js` là điểm vào chung của UI specs và export `test`, `expect` đã mở rộng.
+- Fixture tạo sẵn `HomePage`, `LoginPopup`, `OnboardingPopup`, `JobSearchPage`, `JobApplyPage`, `JobApplyNoCVPage`, `UserProfilePage` và các object dùng chung khác.
+- `authenticatedUser` gọi `authSetup` để chuẩn bị user và đăng nhập trước scenario cần authentication.
+- Các Page Object kế thừa hoặc kết hợp `BasePage`; thao tác phổ biến được chuyển xuống `UiActions` để thống nhất cơ chế wait/click/fill.
+- `ScreenshotHelper` tạo evidence theo ngày, lần chạy và tên spec; reporter tổng hợp kết quả vào thư mục report tương ứng.
+
 ## Playwright projects
 
 | Project | Bộ lọc | Mục đích |
@@ -115,10 +152,10 @@ Kiểm tra cấu trúc framework:
 npm run check:framework
 ```
 
-Chạy unit tests hiện có:
+Chạy unit tests giống CI:
 
 ```bash
-node --test core/utils/commonUtils.test.js core/reporters/htmlSummaryReporter.test.js
+node --test
 ```
 
 Liệt kê test mà không thực thi:
