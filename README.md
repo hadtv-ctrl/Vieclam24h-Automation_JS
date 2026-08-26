@@ -109,6 +109,31 @@ Ba project có phạm vi không chồng lặp. `npm test` chạy Smoke, Regressi
 
 ## Lệnh thường dùng
 
+Khởi động giao diện điều khiển local:
+
+```bash
+npm run dashboard
+```
+
+Lệnh trên chạy foreground và tắt bằng `Ctrl+C`. Để chạy ngầm và tắt lại bằng lệnh:
+
+```bash
+npm run dashboard:start
+npm run dashboard:stop
+```
+
+Đóng tab trình duyệt không tắt dashboard server.
+
+Sau đó mở `http://127.0.0.1:4173`. Dashboard cho phép chọn environment, project, spec, tag, workers, theo dõi log trực tiếp và mở report mới nhất. Server chỉ lắng nghe trên máy local và chỉ nhận các lựa chọn đã được kiểm soát.
+
+Tab **Artifacts & Files** cho phép duyệt toàn bộ Playwright reports, evidence screenshots, `AI_PROMPTS.md`, hướng dẫn framework và các file JSON trong `data/`. Chọn một mục trong danh sách để mở report, ảnh hoặc nội dung file ngay ở vùng chi tiết bên phải. Các trường dữ liệu nhạy cảm được che mặc định và chỉ hiển thị khi người dùng chủ động chọn xem dữ liệu gốc. Nút **Open Playwright UI** khởi chạy UI Mode chính thức trong cửa sổ riêng để debug test.
+
+`AI_PROMPTS.md` và các file `data/*.json` có thể được chỉnh sửa trong tab này; JSON được validate trước khi lưu và bản cũ được sao lưu vào `.dashboard-backups/`. Evidence và report có thể xóa sau bước xác nhận; khi xóa report, toàn bộ thư mục artifact của đúng lần chạy đó sẽ bị xóa.
+
+Evidence được hiển thị theo cây `ngày → lần chạy → spec → worker → ảnh`; trạng thái folder được giữ khi chọn hoặc chuyển ảnh bằng nút Previous/Next. Có thể xóa từng ảnh hoặc cả folder sau bước xác nhận. Tab **Compare Evidence** nhúng visual comparison tool từ `tools/visual_compare.html` để so sánh screenshot.
+
+Tab **Framework Code** cung cấp cây source cho `tests/`, `pages/` và `core/`, bộ lọc theo lớp, tìm kiếm, xem và chỉnh sửa trực tiếp. JavaScript/JSON được kiểm tra cú pháp và file cũ được backup trước khi lưu.
+
 Chạy toàn bộ E2E:
 
 ```bash
