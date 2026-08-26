@@ -439,7 +439,7 @@
           <div class="flow-step"><b>Chạy nghiệp vụ</b><span>Page Object và data không dùng chéo</span></div>
           <div class="flow-step"><b>Cleanup tự động</b><span>Xóa runtime JSON trong finally</span></div>
         </div>
-        <p class="lead" style="margin-top:34px"><code class="cyan">workerUserData</code> có scope worker; Page Object vẫn có scope test. Vì vậy account được tái sử dụng đúng phạm vi nhưng không bao giờ dùng chung giữa các worker.</p>
+        <p class="lead" style="margin-top:34px"><code class="cyan">workerUserData</code> có scope worker; Page Object vẫn có scope test. Account không dùng chéo giữa các worker; token mới chỉ tồn tại trong runtime và được dùng ngay cho API consent.</p>
       </div>
       <footer class="footer"><span>Điểm vào chung: core/fixtures/baseTest.js</span><span>07</span></footer>
     </section>
@@ -497,9 +497,10 @@
         <div>
           <h2>Mỗi worker sở hữu <span class="accent">một user runtime riêng</span>.</h2>
           <div class="stack" style="margin-top:30px">
-            <div class="stack-item"><strong>Tạo duy nhất</strong><span>Email và phone ngẫu nhiên được đăng ký qua API cho từng parallelIndex.</span></div>
-            <div class="stack-item"><strong>File tạm có định danh</strong><span>Timestamp đến mili-giây + worker + PID ngăn trùng tên.</span></div>
-            <div class="stack-item"><strong>Dọn sau khi chạy</strong><span>Fixture xóa đúng file trong finally; không lưu credential vào repository.</span></div>
+            <div class="stack-item"><strong>Data tĩnh tối thiểu</strong><span>users.json chỉ giữ OTP, password test và fullName dùng chung.</span></div>
+            <div class="stack-item"><strong>Danh tính tạo động</strong><span>Email và phone ngẫu nhiên được đăng ký qua API cho từng parallelIndex.</span></div>
+            <div class="stack-item"><strong>Token runtime-only</strong><span>Token mới dùng ngay cho consent; không ghi vào users.json hoặc report.</span></div>
+            <div class="stack-item"><strong>File tạm tự dọn</strong><span>Timestamp + worker + PID ngăn trùng tên; fixture xóa đúng file trong finally.</span></div>
           </div>
         </div>
         <div class="code" aria-label="Ví dụ lấy test data">
@@ -675,17 +676,17 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
     <section class="slide">
       <header class="topline"><p class="eyebrow">Demo</p><span class="chapter">18 / Lệnh chạy multi-worker</span></header>
       <div class="content top">
-        <h2>Chạy targeted spec và <span class="accent">quan sát N worker độc lập</span>.</h2>
+        <h2>Worker chạy song song <span class="accent">test instance</span> — không chia nhỏ một test().</h2>
         <div class="commands" style="margin-top:34px">
           <div class="command"><i class="command-icon" aria-hidden="true">🧱</i><div><code>npm run check:framework</code><span>Kiểm tra cấu trúc và quy ước repository</span></div></div>
           <div class="command"><i class="command-icon" aria-hidden="true">🧪</i><div><code>node --test core/reporters/*.test.js</code><span>Kiểm tra report tổng và report tách theo worker</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">🌐</i><div><code>$env:PW_WORKERS=4; npx playwright test ... --repeat-each=4</code><span>Ví dụ phân 4 instance cho tối đa 4 worker độc lập</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">🌐</i><div><code>$env:PW_WORKERS=4; npx playwright test ... --repeat-each=4</code><span>Tạo 4 test instance để tối đa 4 worker thực thi đồng thời</span></div></div>
           <div class="command"><i class="command-icon" aria-hidden="true">💼</i><div><code>npx playwright test --grep="@applyjob" --project="Regression Tests"</code><span>Chạy riêng business flow ứng tuyển</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">🧭</i><div><code>npm run test:ui</code><span>Quan sát, lọc và debug bằng Playwright UI Mode</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">🧭</i><div><code>npm run test:ui</code><span>Nhiều file có thể chạy song song; cùng file cần fullyParallel hoặc parallel mode</span></div></div>
           <div class="command"><i class="command-icon" aria-hidden="true">📊</i><div><code>npm run report</code><span>Mở report tổng; thư mục workers chứa report riêng</span></div></div>
         </div>
       </div>
-      <footer class="footer"><span>N là cấu hình runtime; mỗi worker có account, report và evidence riêng</span><span>18</span></footer>
+      <footer class="footer"><span>PW_WORKERS=N đặt mức đồng thời tối đa; một test() luôn chạy trọn vẹn trên một worker</span><span>18</span></footer>
     </section>
 
     <section class="slide">

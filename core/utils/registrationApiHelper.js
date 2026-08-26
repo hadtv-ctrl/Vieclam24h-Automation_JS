@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const envConfig = require('../config/env');
 const { randomUUID } = require('crypto');
 
@@ -121,7 +119,7 @@ class RegistrationApiHelper {
     return userRecord;
   }
 
-  persistUserState(payload = {}, responseBody = {}, options = {}) {
+  persistUserState(payload = {}, responseBody = {}) {
     const extractToken = (body) => {
       if (!body || typeof body !== 'object') return null;
       const possibleKeys = ['token_auth', 'tokenAuth', 'token', 'access_token', 'accessToken'];
@@ -155,34 +153,6 @@ class RegistrationApiHelper {
     };
 
     this.setRuntimeCache(userRecord);
-
-    if (options.writeFile === false) {
-      return userRecord;
-    }
-
-    const usersFilePath = path.join(__dirname, '../../data/users.json');
-    let usersData = [];
-
-    try {
-      usersData = JSON.parse(fs.readFileSync(usersFilePath, 'utf8'));
-    } catch (error) {
-      usersData = [];
-    }
-
-    if (!Array.isArray(usersData)) {
-      usersData = [];
-    }
-
-    if (usersData.length === 0) {
-      usersData.push(userRecord);
-    } else {
-      usersData[0] = {
-        ...usersData[0],
-        ...userRecord,
-      };
-    }
-
-    fs.writeFileSync(usersFilePath, JSON.stringify(usersData, null, 2), 'utf8');
     return userRecord;
   }
 }

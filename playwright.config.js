@@ -18,10 +18,10 @@ const reportTime = [
 const runRandomId = randomBytes(3).toString('hex');
 const runId = `${reportDate}-${reportTime}-${runRandomId}`;
 process.env.QA_RUN_ID = runId;
-const requestedWorkers = Number.parseInt(process.env.PW_WORKERS || '2', 10);
+const requestedWorkers = Number.parseInt(process.env.PW_WORKERS || '2', 10); // Lấy số lượng worker từ biến môi trường PW_WORKERS, mặc định là 2 nếu không có giá trị hợp lệ được cung cấp
 const workerCount = Number.isInteger(requestedWorkers) && requestedWorkers > 0
   ? requestedWorkers
-  : 2;
+  : 2; // Số lượng worker mặc định là 2 nếu không có giá trị hợp lệ được cung cấp qua biến môi trường PW_WORKERS
 const reportDir = path.join(
   'playwright-report',
   reportDate,
@@ -32,8 +32,8 @@ module.exports = defineConfig({
   metadata: { runId },
   timeout: 60000,
   testDir: './tests',
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
+  fullyParallel: false, // Chạy các test trong cùng một file theo tuần tự, nhưng các file test khác nhau có thể chạy song song
+  forbidOnly: !!process.env.CI, // Không cho phép sử dụng test.only trên CI
   retries: process.env.CI ? 2 : 0, // Chạy lại các test thất bại 2 lần trên CI, không chạy lại trên local
   workers: workerCount,
   reporter: [

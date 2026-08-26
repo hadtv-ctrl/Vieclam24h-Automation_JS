@@ -7,17 +7,6 @@ const { LoginPopup } = require('../../pages/LoginPopup');
 const { HomePage } = require('../../pages/HomePage');
 const { PopupConsent } = require('../../pages/PopupConsent');
 
-function loadUserData() {
-  const usersFilePath = path.join(__dirname, '../../data/users.json');
-  try {
-    const usersData = JSON.parse(fs.readFileSync(usersFilePath, 'utf8'));
-    return Array.isArray(usersData) ? usersData : [];
-  } catch (error) {
-    console.error('Error reading users.json:', error);
-    return [];
-  }
-}
-
 function getRuntimeUserDirectory() {
   return path.join(__dirname, '../../test-results/runtime-users');
 }
@@ -80,7 +69,7 @@ async function createRegisteredUserForPrecondition() {
       return null;
     }
 
-    const savedUser = apiHelper.persistUserState(payload, body, { writeFile: false });
+    const savedUser = apiHelper.persistUserState(payload, body);
 
     if (savedUser.tokenAuth) {
       const authHeaders = apiHelper.buildHeaders({
@@ -115,7 +104,7 @@ async function loginUserFromDataForPrecondition(page, providedUser = null) {
   await loginPopup.clickLoginHeader();
   await expect(loginPopup.modalTitle).toBeVisible();
 
-  const userProfile = createdUser || loadUserData()[0] || {};
+  const userProfile = createdUser || {};
   const email = userProfile.email || '';
   const phone = userProfile.phone || userProfile.username || '';
 
@@ -177,38 +166,9 @@ async function registerUserByPhoneForPrecondition(page) {
   return loginUserFromDataForPrecondition(page);
 }
 
-function saveGeneratedUser(createdUser) {
-  if (!createdUser) return;
-  const usersFilePath = path.join(__dirname, '../../data/users.json');
-  let usersData = [];
-  try {
-    usersData = JSON.parse(fs.readFileSync(usersFilePath, 'utf8'));
-  } catch (e) {
-    console.error('Error reading users.json:', e);
-  }
-
-  if (usersData.length > 0) {
-    usersData[0].phone = createdUser.phone;
-    usersData[0].email = createdUser.email;
-    usersData[0].username = createdUser.phone;
-    if (createdUser.password) usersData[0].password = createdUser.password;
-    if (createdUser.fullName) usersData[0].fullName = createdUser.fullName;
-  } else {
-    usersData.push({
-      username: createdUser.phone,
-      password: createdUser.password || 'Test@1234',
-      fullName: createdUser.fullName || 'Automation Tester',
-      phone: createdUser.phone,
-      email: createdUser.email
-    });
-  }
-  fs.writeFileSync(usersFilePath, JSON.stringify(usersData, null, 2), 'utf8');
-}
-
 module.exports = {
   loginUserFromDataForPrecondition,
   registerUserByPhoneForPrecondition,
-  saveGeneratedUser,
   createRegisteredUserForPrecondition,
   createRuntimeUserData,
   removeRuntimeUserData,

@@ -1,5 +1,8 @@
 require('dotenv').config();
 
+// Bỏ dấu // khi cần ép số Playwright worker chạy local.
+// process.env.PW_WORKERS = '2';
+
 const ENV = process.env.NODE_ENV || 'qc';
 
 const environments = {

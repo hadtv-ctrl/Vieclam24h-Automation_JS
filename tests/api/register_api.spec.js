@@ -22,7 +22,15 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc qua API @ap
       const savedUser = apiHelper.persistUserState(payload, body);
 
       testInfo.attach('register-api-response', {
-        body: JSON.stringify({ status: response.status(), body, savedUser }, null, 2),
+        body: JSON.stringify({
+          status: response.status(),
+          user: {
+            email: savedUser.email,
+            phone: savedUser.phone,
+            registeredAt: savedUser.registeredAt,
+            hasTokenAuth: Boolean(savedUser.tokenAuth),
+          },
+        }, null, 2),
         contentType: 'application/json',
       });
 
