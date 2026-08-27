@@ -1,0 +1,52 @@
+{
+  "environments": {
+    "qc": {
+      "label": "QC",
+      "baseURL": "https://seeker.vl24hv2.qc.sieuviet-team.com",
+      "apiBaseURL": "https://api.vl24hv2.qc.sieuviet-team.com"
+    },
+    "stg": {
+      "label": "Staging",
+      "baseURL": "https://seeker.vl24hv2.staging.sieuviet-team.com",
+      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com"
+    },
+    "prod": {
+      "label": "Production",
+      "baseURL": "https://seeker.vl24hv2.staging.sieuviet-team.com",
+      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com"
+    }
+  },
+  "runtime": {
+    "defaultEnvironment": "qc",
+    "workers": 2,
+    "testTimeout": 60000,
+    "navigationTimeout": 60000,
+    "actionTimeout": 0,
+    "retriesLocal": 0,
+    "retriesCI": 2,
+    "trace": "on-first-retry",
+    "screenshot": "only-on-failure",
+    "video": "retain-on-failure",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "showEnvBanner": false,
+    "debugOptionalPopups": false
+  },
+  "api": {
+    "registrationBearerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaGFubmVsX2NvZGUiOiJ2bDI0aCIsInVzZXIiOm51bGx9.b_GBXepcnCjRzAc9I5OdamF0Mx2K1rEg9sZVYpNx_rU",
+    "branch": "vl24h.north",
+    "lang": "vi",
+    "registerRetries": 2,
+    "registerTimeout": 30000,
+    "consentRetries": 2,
+    "consentTimeout": 30000
+  },
+  "artifacts": {
+    "retentionDays": 14,
+    "maxReportsPerDay": 20,
+    "autoCleanupEvidence": false,
+    "autoCleanupReports": false
+  }
+}

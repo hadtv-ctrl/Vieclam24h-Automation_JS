@@ -2,6 +2,21 @@ const { defineConfig, devices } = require('@playwright/test');
 const path = require('path');
 const { randomBytes } = require('crypto');
 const envConfig = require('./core/config/env');
+const { getDashboardConfig } = require('./core/config/dashboardConfig');
+
+const dashboardConfig = getDashboardConfig();
+const runtimeConfig = dashboardConfig.runtime;
+
+function readIntegerEnv(name, fallback, min = 0, max = Number.MAX_SAFE_INTEGER) {
+  const value = Number.parseInt(process.env[name] || '', 10);
+  if (!Number.isInteger(value) || value < min || value > max) return fallback;
+  return value;
+}
+
+function readOptionEnv(name, fallback, allowed) {
+  const value = process.env[name];
+  return allowed.includes(value) ? value : fallback;
+}
 
 const reportRunDate = new Date();
 const reportDate = [
@@ -18,10 +33,18 @@ const reportTime = [
 const runRandomId = randomBytes(3).toString('hex');
 const runId = `${reportDate}-${reportTime}-${runRandomId}`;
 process.env.QA_RUN_ID = runId;
-const requestedWorkers = Number.parseInt(process.env.PW_WORKERS || '2', 10); // Lấy số lượng worker từ biến môi trường PW_WORKERS, mặc định là 2 nếu không có giá trị hợp lệ được cung cấp
-const workerCount = Number.isInteger(requestedWorkers) && requestedWorkers > 0
-  ? requestedWorkers
-  : 2; // Số lượng worker mặc định là 2 nếu không có giá trị hợp lệ được cung cấp qua biến môi trường PW_WORKERS
+const workerCount = readIntegerEnv('PW_WORKERS', runtimeConfig.workers, 1, 8);
+const retries = readIntegerEnv('PW_RETRIES', process.env.CI ? runtimeConfig.retriesCI : runtimeConfig.retriesLocal, 0, 5);
+const testTimeout = readIntegerEnv('PW_TEST_TIMEOUT', runtimeConfig.testTimeout, 5000, 600000);
+const navigationTimeout = readIntegerEnv('PW_NAVIGATION_TIMEOUT', runtimeConfig.navigationTimeout, 5000, 600000);
+const actionTimeout = readIntegerEnv('PW_ACTION_TIMEOUT', runtimeConfig.actionTimeout, 0, 600000);
+const viewport = {
+  width: readIntegerEnv('PW_VIEWPORT_WIDTH', runtimeConfig.viewport.width, 320, 7680),
+  height: readIntegerEnv('PW_VIEWPORT_HEIGHT', runtimeConfig.viewport.height, 320, 4320),
+};
+const trace = readOptionEnv('PW_TRACE', runtimeConfig.trace, ['off', 'on', 'retain-on-failure', 'on-first-retry']);
+const screenshot = readOptionEnv('PW_SCREENSHOT', runtimeConfig.screenshot, ['off', 'on', 'only-on-failure']);
+const video = readOptionEnv('PW_VIDEO', runtimeConfig.video, ['off', 'on', 'retain-on-failure', 'on-first-retry']);
 const reportDir = path.join(
   'playwright-report',
   reportDate,
@@ -30,11 +53,11 @@ const reportDir = path.join(
 
 module.exports = defineConfig({
   metadata: { runId },
-  timeout: 60000,
+  timeout: testTimeout,
   testDir: './tests',
   fullyParallel: false, // Chạy các test trong cùng một file theo tuần tự, nhưng các file test khác nhau có thể chạy song song
   forbidOnly: !!process.env.CI, // Không cho phép sử dụng test.only trên CI
-  retries: process.env.CI ? 2 : 0, // Chạy lại các test thất bại 2 lần trên CI, không chạy lại trên local
+  retries,
   workers: workerCount,
   reporter: [
     ['json'],
@@ -61,11 +84,11 @@ module.exports = defineConfig({
   ],
   use: {
     baseURL: envConfig.baseURL,
-    navigationTimeout: 60000,
-    actionTimeout: 0,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    navigationTimeout,
+    actionTimeout,
+    trace,
+    screenshot,
+    video,
   },
   projects: [
     {
@@ -74,7 +97,7 @@ module.exports = defineConfig({
       grep: /@smoke/,
       use: {
         ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 },
+        viewport,
       },
     },
     {
@@ -84,7 +107,7 @@ module.exports = defineConfig({
       grepInvert: /@smoke/,
       use: {
         ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 },
+        viewport,
       },
     },
     {
@@ -93,7 +116,7 @@ module.exports = defineConfig({
       grep: /@api/,
       use: {
         ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 },
+        viewport,
       },
     },
   ],

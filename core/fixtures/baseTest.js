@@ -18,14 +18,14 @@ const {
 // Page Objects for the default page are injected directly. Factories bind a
 // Page Object to a popup/new tab without leaking construction into the spec.
 const test = base.extend({
-  workerUserData: [async ({}, use, workerInfo) => {
-    const runtimeUserData = await createRuntimeUserData(workerInfo.parallelIndex);
+  workerUserData: async ({}, use, testInfo) => {
+    const runtimeUserData = await createRuntimeUserData(testInfo.parallelIndex ?? testInfo.workerIndex ?? 0);
     try {
       await use(runtimeUserData);
     } finally {
       await removeRuntimeUserData(runtimeUserData.filePath);
     }
-  }, { scope: 'worker' }],
+  },
   featureName: async ({}, use, testInfo) => {
     await use(path.basename(testInfo.file, path.extname(testInfo.file)));
   },

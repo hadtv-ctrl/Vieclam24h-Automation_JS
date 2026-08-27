@@ -2,6 +2,12 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const {
+  CONFIG_PATH,
+  getDashboardConfig,
+  publicDashboardConfig,
+  saveDashboardConfig,
+} = require('../core/config/dashboardConfig');
 
 const ROOT = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -12,7 +18,6 @@ const TOOLS_DIR = path.join(ROOT, 'tools');
 const CODE_ROOTS = ['tests', 'pages', 'core'];
 const PORT = Number.parseInt(process.env.DASHBOARD_PORT || '4173', 10);
 const PROJECTS = ['all', 'Smoke Tests', 'Regression Tests', 'API Tests'];
-const ENVIRONMENTS = ['qc', 'stg', 'prod'];
 const DOCUMENT_RESOURCES = ['AI_PROMPTS.md', 'QA_AI_RULES.md', 'README.md'];
 
 let activeRun = null;
@@ -64,6 +69,7 @@ function resolveCodeFile(filePath) {
 }
 
 function listResources() {
+  cleanupArtifacts();
   const documents = DOCUMENT_RESOURCES.filter((file) => fs.existsSync(path.join(ROOT, file)));
   const dataDirectory = path.join(ROOT, 'data');
   const data = fs.existsSync(dataDirectory)
@@ -129,6 +135,75 @@ function createBackup(resourcePath, absolutePath) {
   fs.mkdirSync(path.dirname(backupPath), { recursive: true });
   fs.copyFileSync(absolutePath, backupPath);
   return path.relative(ROOT, backupPath).split(path.sep).join('/');
+}
+
+function removeInside(base, target) {
+  const resolvedBase = path.resolve(base);
+  const resolvedTarget = path.resolve(target);
+  if (resolvedTarget === resolvedBase || !resolvedTarget.startsWith(`${resolvedBase}${path.sep}`)) {
+    throw new Error('Cleanup target is outside the allowed artifact directory.');
+  }
+  fs.rmSync(resolvedTarget, { recursive: true, force: false });
+}
+
+function collectReportFolders() {
+  if (!fs.existsSync(REPORT_DIR)) return [];
+  const reports = [];
+  const visit = (directory, depth = 0) => {
+    if (depth > 3) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolutePath = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(absolutePath, depth + 1);
+      if (entry.isFile() && entry.name === 'index.html' && !absolutePath.includes(`${path.sep}workers${path.sep}`)) {
+        const reportFolder = path.dirname(absolutePath);
+        reports.push({
+          folder: reportFolder,
+          dateFolder: path.basename(path.dirname(reportFolder)),
+          modifiedAt: fs.statSync(absolutePath).mtimeMs,
+        });
+      }
+    }
+  };
+  visit(REPORT_DIR);
+  return reports;
+}
+
+function cleanupArtifacts() {
+  const settings = getDashboardConfig().artifacts;
+  const cutoff = Date.now() - settings.retentionDays * 24 * 60 * 60 * 1000;
+
+  if (settings.autoCleanupEvidence && fs.existsSync(EVIDENCE_DIR)) {
+    for (const entry of fs.readdirSync(EVIDENCE_DIR, { withFileTypes: true })) {
+      const target = path.join(EVIDENCE_DIR, entry.name);
+      if (entry.isDirectory() && fs.statSync(target).mtimeMs < cutoff) removeInside(EVIDENCE_DIR, target);
+    }
+  }
+
+  if (settings.autoCleanupReports && fs.existsSync(REPORT_DIR)) {
+    const reports = collectReportFolders();
+    reports
+      .filter((report) => report.modifiedAt < cutoff)
+      .forEach((report) => removeInside(REPORT_DIR, report.folder));
+
+    const remaining = collectReportFolders()
+      .reduce((groups, report) => {
+        groups[report.dateFolder] = groups[report.dateFolder] || [];
+        groups[report.dateFolder].push(report);
+        return groups;
+      }, {});
+
+    for (const reportsByDate of Object.values(remaining)) {
+      reportsByDate
+        .sort((a, b) => b.modifiedAt - a.modifiedAt)
+        .slice(settings.maxReportsPerDay)
+        .forEach((report) => removeInside(REPORT_DIR, report.folder));
+    }
+
+    for (const entry of fs.readdirSync(REPORT_DIR, { withFileTypes: true })) {
+      const dateFolder = path.join(REPORT_DIR, entry.name);
+      if (entry.isDirectory() && fs.readdirSync(dateFolder).length === 0) fs.rmdirSync(dateFolder);
+    }
+  }
 }
 
 function countFolderArtifacts(directory) {
@@ -226,20 +301,48 @@ function parseBody(request) {
 }
 
 function validateOptions(input) {
+  const settings = getDashboardConfig();
+  const environments = Object.keys(settings.environments);
   const specs = listSpecs();
   const project = String(input.project || 'all');
-  const environment = String(input.environment || 'qc');
+  const environment = String(input.environment || settings.runtime.defaultEnvironment);
   const spec = String(input.spec || 'all');
   const grep = String(input.grep || '').trim();
-  const workers = Number(input.workers || 2);
+  const workers = Number(input.workers || settings.runtime.workers);
 
   if (!PROJECTS.includes(project)) throw new Error('Project không hợp lệ.');
-  if (!ENVIRONMENTS.includes(environment)) throw new Error('Environment không hợp lệ.');
+  if (!environments.includes(environment)) throw new Error('Environment không hợp lệ.');
   if (spec !== 'all' && !specs.includes(spec)) throw new Error('Spec không hợp lệ.');
-  if (!Number.isInteger(workers) || workers < 1 || workers > 8) throw new Error('Workers phải từ 1 đến 8.');
+  if (!Number.isInteger(workers) || workers < 1 || workers > 8) throw new Error('Luồng chạy phải từ 1 đến 8.');
   if (grep.length > 80 || /[\r\n\0]/.test(grep)) throw new Error('Tag/grep không hợp lệ.');
 
   return { project, environment, spec, grep, workers, headed: input.headed === true };
+}
+
+function runtimeEnv(options) {
+  const settings = getDashboardConfig();
+  const runtime = settings.runtime;
+  const api = settings.api;
+  const retries = process.env.CI ? runtime.retriesCI : runtime.retriesLocal;
+
+  return {
+    NODE_ENV: options.environment,
+    PW_WORKERS: String(options.workers),
+    PW_RETRIES: String(retries),
+    PW_TEST_TIMEOUT: String(runtime.testTimeout),
+    PW_NAVIGATION_TIMEOUT: String(runtime.navigationTimeout),
+    PW_ACTION_TIMEOUT: String(runtime.actionTimeout),
+    PW_TRACE: runtime.trace,
+    PW_SCREENSHOT: runtime.screenshot,
+    PW_VIDEO: runtime.video,
+    PW_VIEWPORT_WIDTH: String(runtime.viewport.width),
+    PW_VIEWPORT_HEIGHT: String(runtime.viewport.height),
+    SHOW_ENV_BANNER: runtime.showEnvBanner ? '1' : '0',
+    DEBUG_OPTIONAL_POPUPS: runtime.debugOptionalPopups ? '1' : '0',
+    REGISTRATION_BEARER_TOKEN: api.registrationBearerToken || '',
+    REGISTRATION_BRANCH: api.branch,
+    REGISTRATION_LANG: api.lang,
+  };
 }
 
 function startRun(options, uiMode = false) {
@@ -254,7 +357,7 @@ function startRun(options, uiMode = false) {
   const playwrightCli = require.resolve('@playwright/test/cli');
   const child = spawn(process.execPath, [playwrightCli, ...args], {
     cwd: ROOT,
-    env: { ...process.env, NODE_ENV: options.environment, PW_WORKERS: String(options.workers) },
+    env: { ...process.env, ...runtimeEnv(options) },
     shell: false,
   });
   activeRun = {
@@ -311,7 +414,29 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
 
   if (request.method === 'GET' && url.pathname === '/api/config') {
-    return sendJson(response, 200, { projects: PROJECTS, environments: ENVIRONMENTS, specs: listSpecs() });
+    const settings = getDashboardConfig();
+    return sendJson(response, 200, {
+      projects: PROJECTS,
+      environments: Object.keys(settings.environments),
+      specs: listSpecs(),
+      defaults: {
+        environment: settings.runtime.defaultEnvironment,
+        workers: settings.runtime.workers,
+      },
+    });
+  }
+  if (request.method === 'GET' && url.pathname === '/api/settings') {
+    return sendJson(response, 200, publicDashboardConfig());
+  }
+  if (request.method === 'PUT' && url.pathname === '/api/settings') {
+    try {
+      const body = await parseBody(request);
+      const backup = createBackup('core/config/dashboardConfig.json', CONFIG_PATH);
+      const saved = saveDashboardConfig(body);
+      return sendJson(response, 200, { message: 'Đã lưu cấu hình.', backup, settings: publicDashboardConfig(saved) });
+    } catch (error) {
+      return sendJson(response, 400, { error: `Không thể lưu cấu hình: ${error.message}` });
+    }
   }
   if (request.method === 'GET' && url.pathname === '/api/resources') {
     return sendJson(response, 200, listResources());
@@ -322,8 +447,8 @@ const server = http.createServer(async (request, response) => {
   if (request.method === 'GET' && url.pathname === '/api/code') {
     const filePath = url.searchParams.get('path') || '';
     const absolutePath = resolveCodeFile(filePath);
-    if (!absolutePath) return sendJson(response, 404, { error: 'Source file không hợp lệ.' });
-    if (fs.statSync(absolutePath).size > 1_048_576) return sendJson(response, 413, { error: 'Source file lớn hơn giới hạn 1 MB.' });
+    if (!absolutePath) return sendJson(response, 404, { error: 'File mã nguồn không hợp lệ.' });
+    if (fs.statSync(absolutePath).size > 1_048_576) return sendJson(response, 413, { error: 'File mã nguồn lớn hơn giới hạn 1 MB.' });
     return sendJson(response, 200, { path: filePath, content: fs.readFileSync(absolutePath, 'utf8'), editable: true });
   }
   if (request.method === 'PUT' && url.pathname === '/api/code') {
@@ -331,7 +456,7 @@ const server = http.createServer(async (request, response) => {
       const body = await parseBody(request);
       const filePath = String(body.path || '');
       const absolutePath = resolveCodeFile(filePath);
-      if (!absolutePath) return sendJson(response, 403, { error: 'Source file này không được phép chỉnh sửa.' });
+      if (!absolutePath) return sendJson(response, 403, { error: 'File mã nguồn này không được phép chỉnh sửa.' });
       const content = String(body.content ?? '');
       if (Buffer.byteLength(content, 'utf8') > 1_048_576) return sendJson(response, 413, { error: 'Nội dung lớn hơn giới hạn 1 MB.' });
       if (filePath.endsWith('.json')) JSON.parse(content);
@@ -391,12 +516,12 @@ const server = http.createServer(async (request, response) => {
         const indexPath = safeChildPath(REPORT_DIR, `/${artifactPath}`);
         const reportFolder = indexPath ? path.dirname(indexPath) : null;
         const relativeFolder = reportFolder ? path.relative(REPORT_DIR, reportFolder) : '';
-        if (!reportFolder || !reportFolder.startsWith(`${REPORT_DIR}${path.sep}`) || relativeFolder.split(path.sep).length < 2) throw new Error('Report không hợp lệ.');
+        if (!reportFolder || !reportFolder.startsWith(`${REPORT_DIR}${path.sep}`) || relativeFolder.split(path.sep).length < 2) throw new Error('Báo cáo không hợp lệ.');
         const deleted = countFolderArtifacts(reportFolder);
         const dateFolder = path.dirname(reportFolder);
         fs.rmSync(reportFolder, { recursive: true, force: false });
         if (dateFolder !== REPORT_DIR && fs.existsSync(dateFolder) && fs.readdirSync(dateFolder).length === 0) fs.rmdirSync(dateFolder);
-        return sendJson(response, 200, { message: `Đã xóa toàn bộ folder report (${deleted.files} file, ${deleted.traceAndVideo} trace/video).` });
+        return sendJson(response, 200, { message: `Đã xóa toàn bộ folder báo cáo (${deleted.files} file, ${deleted.traceAndVideo} trace/video).` });
       }
       return sendJson(response, 404, { error: 'Artifact không tồn tại hoặc không hợp lệ.' });
     } catch (error) {

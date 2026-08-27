@@ -17,6 +17,8 @@ class UserProfilePage extends BasePage {
     // Section Add Buttons
     this.btnAddExperience = this.page.locator('[data-test-id="user-profile__experience"] [data-test-id="user-profile__add-button"]').first();
     this.btnAddIntro = this.page.locator('[data-test-id="user-profile__introduce"] [data-test-id="user-profile__add-button"]').first();
+    this.btnEditIntro = this.page.locator('[data-test-id="user-profile__introduce"] [data-test-id="user-profile__edit-button"]').first();
+    this.btnIntroIconAction = this.page.locator('[data-test-id="user-profile__introduce"] > *').first();
     this.btnAddEdu = this.page.locator('[data-test-id="user-profile__education"] [data-test-id="user-profile__add-button"]').first();
     this.btnAddAchievement = this.page.locator('[data-test-id="user-profile__achievement"] [data-test-id="user-profile__add-button"]').first();
     this.btnAddSkill = this.page.locator('[data-test-id="user-profile__skills"] [data-test-id="user-profile__add-button"]').first();
@@ -69,7 +71,28 @@ class UserProfilePage extends BasePage {
     await this.actions.waitForVisible(this.btnAddExperience, { timeout: 30000 });
   }
 
-  async saveSection() {
+  async completeOtpIfVisible(code = '1111') {
+    const otpTitle = this.page.getByText(/X\u00e1c th\u1ef1c(?: OTP)?|M\u00e3 x\u00e1c th\u1ef1c|OTP/i).first();
+    try {
+      await otpTitle.waitFor({ state: 'visible', timeout: 5000 });
+    } catch {
+      return false;
+    }
+
+    const otpInputs = this.page.locator(
+      [
+        'input[type="tel"]:visible',
+        'input[maxlength="1"]:visible',
+        'input[autocomplete="one-time-code"]:visible',
+      ].join(', ')
+    );
+    await this.fillCodeInputs(otpInputs, code);
+    await this.waitForGlobalLoadingHidden(15000).catch(() => null);
+    await otpTitle.waitFor({ state: 'hidden', timeout: 30000 }).catch(() => null);
+    return true;
+  }
+
+  async saveSection(options = {}) {
     await this.clickElement(this.btnCommonSave);
     await expect(this.btnCommonSave).toBeHidden({ timeout: 60000 });
   }
@@ -120,7 +143,7 @@ class UserProfilePage extends BasePage {
 
   // --- Giới thiệu ---
   async clickAddIntroduction() {
-    await this.clickElement(this.btnAddIntro);
+    await this.clickElement(this.btnAddIntro.or(this.btnEditIntro).or(this.btnIntroIconAction).first());
   }
 
   async fillIntroduction(text) {
@@ -320,6 +343,18 @@ class UserProfilePage extends BasePage {
     await this.clickElement(linkAddJobGoal);
   }
 
+  escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  async clickVisibleSelectMenuHeading(optionName, options = {}) {
+    const timeout = options.timeout ?? 10000;
+    const menu = this.page.locator('[data-test-id="common__select-menu"]:visible').last();
+    await menu.waitFor({ state: 'visible', timeout });
+    const option = menu.getByRole('heading', { name: new RegExp(`^${this.escapeRegExp(optionName)}$`, 'i') }).first();
+    await this.clickElement(option, { timeout });
+  }
+
   async fillJobGoal(data) {
     // Select experience level
     await this.clickElement(this.page.getByRole('button', { name: new RegExp(data.experienceLevel, 'i') }).first());
@@ -335,13 +370,13 @@ class UserProfilePage extends BasePage {
 
     // Select industry
     await this.clickElement(this.page.getByText('Chọn ngành nghề').first());
-    await this.clickElement(this.page.getByRole('heading', { name: new RegExp(data.industry, 'i') }).first());
+    await this.clickVisibleSelectMenuHeading(data.industry);
     const removeIndustryBtn = this.page.locator('[data-test-id="user-profile__job-goal-modal"]').getByRole('heading', { name: 'Tiêu chí tìm việc' }).first();
     await this.clickElement(removeIndustryBtn);
 
     // Select location
     await this.clickElement(this.page.getByText('Chọn địa điểm').first());
-    await this.clickElement(this.page.getByRole('heading', { name: data.workLocation }).first());
+    await this.clickVisibleSelectMenuHeading(data.workLocation);
     const removeLocationBtn = this.page.locator('[data-test-id="common__actions-button"]').first();
     await this.clickElement(removeLocationBtn);
 
@@ -367,11 +402,11 @@ class UserProfilePage extends BasePage {
 
     // Select current level
     await this.clickElement(this.page.getByText('Chọn cấp bậc hiện tại').first());
-    await this.clickElement(this.page.locator('[data-test-id="common__select-menu"] div').filter({ hasText: data.currentLevel }).nth(3).first());
+    await this.clickVisibleSelectMenuHeading(data.currentLevel);
 
     // Select work type
     await this.clickElement(this.page.getByText('Chọn hình thức làm việc').first());
-    await this.clickElement(this.page.getByRole('heading', { name: data.workType }).first());
+    await this.clickVisibleSelectMenuHeading(data.workType);
     const removeWorkTypeBtn = this.page.locator('[data-test-id="common__actions-button"]').first();
     await this.clickElement(removeWorkTypeBtn);
 
@@ -392,13 +427,35 @@ class UserProfilePage extends BasePage {
     await this.clickElement(cvSearchSwitch);
   }
 
+  async isAllowSearchVisible(timeout = 1000) {
+    const btnAllowSearch = this.page.getByRole('button', { name: /Cho ph\u00e9p t\u00ecm ki\u1ebfm/i }).first();
+    try {
+      await btnAllowSearch.waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async clickContinueButton() {
-    const btnContinue = this.page.getByRole('button', { name: 'Tiếp tục' }).first();
+    if (await this.isAllowSearchVisible()) {
+      return;
+    }
+
+    const btnContinue = this.page.getByRole('button', { name: /Ti\u1ebfp t\u1ee5c/i }).first();
     await this.clickElement(btnContinue);
   }
 
   async fillVerificationCode(code) {
     const verificationInputs = this.page.getByRole('textbox', { name: /Digit|Please enter verification/i });
+    try {
+      await verificationInputs.first().waitFor({ state: 'visible', timeout: 5000 });
+    } catch (error) {
+      if (await this.isAllowSearchVisible()) {
+        return;
+      }
+      throw error;
+    }
     await this.fillCodeInputs(verificationInputs, code);
   }
 
@@ -420,7 +477,7 @@ class UserProfilePage extends BasePage {
   }
 
   async clickAllowSearch() {
-    const btnAllowSearch = this.page.getByRole('button', { name: 'Cho phép tìm kiếm' }).first();
+    const btnAllowSearch = this.page.getByRole('button', { name: /Cho ph\u00e9p t\u00ecm ki\u1ebfm/i }).first();
     await this.clickElement(btnAllowSearch);
   }
 

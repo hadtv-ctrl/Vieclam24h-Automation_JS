@@ -1,4 +1,5 @@
 const { BasePage } = require('./BasePage');
+const { getDashboardConfig } = require('../core/config/dashboardConfig');
 
 class PopupConsent extends BasePage {
   /**
@@ -17,7 +18,7 @@ class PopupConsent extends BasePage {
       await this.capture('popup_consent_visible');
       await this.actions.click(this.agreeBtn);
     } catch (error) {
-      if (process.env.DEBUG_OPTIONAL_POPUPS === '1') {
+      if (process.env.DEBUG_OPTIONAL_POPUPS === '1' || getDashboardConfig().runtime.debugOptionalPopups) {
         console.log('Popup Consent không xuất hiện, bỏ qua bước này.');
       }
     }

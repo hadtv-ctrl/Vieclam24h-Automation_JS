@@ -1,4 +1,5 @@
 const envConfig = require('../config/env');
+const { getDashboardConfig } = require('../config/dashboardConfig');
 const { randomUUID } = require('crypto');
 
 class RegistrationApiHelper {
@@ -7,7 +8,8 @@ class RegistrationApiHelper {
   }
 
   buildHeaders(overrides = {}) {
-    const rawAuthorizationToken = process.env.REGISTRATION_BEARER_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaGFubmVsX2NvZGUiOiJ2bDI0aCIsInVzZXIiOm51bGx9.b_GBXepcnCjRzAc9I5OdamF0Mx2K1rEg9sZVYpNx_rU';
+    const apiConfig = getDashboardConfig().api;
+    const rawAuthorizationToken = process.env.REGISTRATION_BEARER_TOKEN || apiConfig.registrationBearerToken || '';
     const authorization = /^bearer\s+/i.test(rawAuthorizationToken)
       ? rawAuthorizationToken
       : `Bearer ${rawAuthorizationToken}`;
@@ -17,9 +19,9 @@ class RegistrationApiHelper {
       'accept-language': 'vi-VN,vi;q=0.9',
       authorization,
       'content-type': 'application/json',
-      origin: 'https://seeker.vl24hv2.qc.sieuviet-team.com',
+      origin: envConfig.baseURL,
       priority: 'u=1, i',
-      referer: 'https://seeker.vl24hv2.qc.sieuviet-team.com/',
+      referer: `${envConfig.baseURL}/`,
       'sec-ch-ua': '"Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"',
       'sec-ch-ua-mobile': '?0',
       'sec-ch-ua-platform': '"Windows"',
@@ -27,9 +29,9 @@ class RegistrationApiHelper {
       'sec-fetch-mode': 'cors',
       'sec-fetch-site': 'same-site',
       'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
-      'x-branch': 'vl24h.north',
+      'x-branch': process.env.REGISTRATION_BRANCH || apiConfig.branch,
       'x-correlation-id': randomUUID(),
-      'x-lang': 'vi',
+      'x-lang': process.env.REGISTRATION_LANG || apiConfig.lang,
       'x-request-id': randomUUID(),
       ...overrides,
     };
@@ -51,9 +53,10 @@ class RegistrationApiHelper {
   }
 
   async register(payload, headers = {}, options = {}) {
+    const apiConfig = getDashboardConfig().api;
     const endpoint = `${envConfig.apiBaseURL}/seeker/fe/register`;
-    const retries = options.retries ?? 2;
-    const timeout = options.timeout ?? 30000;
+    const retries = options.retries ?? apiConfig.registerRetries;
+    const timeout = options.timeout ?? apiConfig.registerTimeout;
 
     let lastError;
     for (let attempt = 1; attempt <= retries; attempt += 1) {
@@ -79,14 +82,15 @@ class RegistrationApiHelper {
   }
 
   async acceptConsent(headers = {}, options = {}) {
+    const apiConfig = getDashboardConfig().api;
     const endpoint = `${envConfig.apiBaseURL}/seeker/fe/me/personal-data-consent/accept`;
     const payload = {
       platform: 'web',
       source: 'login',
       login_method: 'email',
     };
-    const retries = options.retries ?? 2;
-    const timeout = options.timeout ?? 30000;
+    const retries = options.retries ?? apiConfig.consentRetries;
+    const timeout = options.timeout ?? apiConfig.consentTimeout;
 
     let lastError;
     for (let attempt = 1; attempt <= retries; attempt += 1) {
