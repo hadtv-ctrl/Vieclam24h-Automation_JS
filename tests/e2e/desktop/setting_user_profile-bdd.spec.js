@@ -1,5 +1,5 @@
-const { test, expect } = require('../../core/fixtures/baseTest');
-const applyData = require('../../data/userProfileData.json');
+const { test, expect } = require('../../../core/fixtures/baseTest');
+const applyData = require('../../../data/userProfileData.json');
 
 test.describe('Feature: Hoàn thành profile và ứng tuyển job @e2e', () => {
 

@@ -22,8 +22,8 @@ test('worker reporter writes an isolated html report for every parallel index', 
 
   await reporter.onEnd();
 
-  const workerZero = path.join(tempDir, 'run-123-abc-worker-0', 'index.html');
-  const workerOne = path.join(tempDir, 'run-123-abc-worker-1', 'index.html');
+  const workerZero = path.join(tempDir, 'worker-0', 'index.html');
+  const workerOne = path.join(tempDir, 'worker-1', 'index.html');
   assert.equal(fs.existsSync(workerZero), true);
   assert.equal(fs.existsSync(workerOne), true);
   assert.match(fs.readFileSync(workerZero, 'utf8'), /worker zero test/);

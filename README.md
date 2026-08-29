@@ -99,17 +99,25 @@ Ví dụ, một spec ứng tuyển chỉ điều phối các bước. `JobSearch
 
 | Project | Bộ lọc | Mục đích |
 |---|---|---|
-| `Smoke Tests` | `e2e/**/*.spec.js` + `@smoke` | Chạy nhanh các luồng đăng ký cốt lõi |
-| `Regression Tests` | `e2e/**/*.spec.js` + `@e2e`, loại `@smoke` | Chạy các UI E2E còn lại mà không lặp smoke |
+| `Smoke Tests` | `e2e/desktop/**/*.spec.js` + `@smoke` | Chạy nhanh các luồng desktop cốt lõi |
+| `Regression Tests` | `e2e/desktop/**/*.spec.js` + `@e2e`, loại `@smoke` | Chạy các UI desktop E2E còn lại |
+| `Mobile Chrome Smoke Tests` | `e2e/mobile-web/**/*.spec.js` + `@smoke` | Smoke mobile web với profile Pixel 7/Chromium |
+| `Mobile Chrome Regression Tests` | `e2e/mobile-web/**/*.spec.js` + `@e2e`, loại `@smoke` | Regression mobile web với profile Pixel 7/Chromium |
+| `Mobile Safari Smoke Tests` | `e2e/mobile-web/**/*.spec.js` + `@smoke` | Smoke mobile web với profile iPhone 13/WebKit |
+| `Mobile Safari Regression Tests` | `e2e/mobile-web/**/*.spec.js` + `@e2e`, loại `@smoke` | Regression mobile web với profile iPhone 13/WebKit |
 | `API Tests` | `api/**/*.spec.js` + `@api` | Chạy các scenario API độc lập |
 
-Các project dùng Desktop Chrome với viewport `1920x1080`, số worker lấy từ `PW_WORKERS` và retry tối đa 2 lần trên CI.
+Các project desktop dùng Desktop Chrome với viewport `1920x1080`. Project mobile dùng device profile chuẩn của Playwright để mô phỏng viewport, user agent, touch và browser engine tương ứng. Số worker lấy từ `PW_WORKERS` và retry tối đa 2 lần trên CI.
+
+Page Object desktop nằm trực tiếp trong `pages/desktop/`; Page Object mobile nằm trong `pages/mobile-web/` và chỉ override behavior khác biệt. Spec desktop nằm trong `tests/e2e/desktop/`, còn spec mobile nằm trong `tests/e2e/mobile-web/`. Hai nhóm được lọc riêng ở cấp Playwright project để dễ chạy và debug độc lập.
 
 Ba project có phạm vi không chồng lặp. `npm test` chạy Smoke, Regression và API; `npm run suite:regression` chạy toàn bộ UI gồm Smoke + Regression.
 
 ## Lệnh thường dùng
 
 Khởi động giao diện điều khiển local:
+
+Dashboard là ứng dụng local nhẹ, được xây dựng bằng Node.js (`http`), HTML, CSS và JavaScript thuần, không dùng frontend framework hoặc bước build riêng. Backend gọi Playwright CLI để chạy test và dùng Server-Sent Events (SSE) để cập nhật log, trạng thái theo thời gian thực.
 
 ```bash
 npm run dashboard
@@ -140,6 +148,26 @@ Chạy toàn bộ E2E:
 npm run suite:regression
 ```
 
+Chạy mobile web trên cả Android/Chromium và iOS/WebKit:
+
+```bash
+npx playwright install chromium webkit
+npm run suite:mobile
+```
+
+Chạy riêng từng nền tảng:
+
+```bash
+npm run suite:mobile:android
+npm run suite:mobile:ios
+```
+
+Chạy một spec mobile cụ thể:
+
+```bash
+npx playwright test tests/e2e/mobile-web/apply_job_noCV_flow.mobile.spec.js --project="Mobile Chrome Regression Tests"
+```
+
 Chạy toàn bộ business Apply Job:
 
 ```bash
@@ -149,7 +177,7 @@ npx playwright test --grep "@applyjob" --project="Regression Tests"
 Chạy một spec trong đúng project:
 
 ```bash
-npx playwright test tests/e2e/guest_apply_job_noCV_with_otp.spec.js --project="Regression Tests"
+npx playwright test tests/e2e/desktop/guest_apply_job_noCV_with_otp.spec.js --project="Regression Tests"
 ```
 
 Chạy API test:
@@ -238,9 +266,11 @@ Không tạo user ngẫu nhiên rồi giả định user đã đăng ký nếu A
 
 Reporter hiện tại gồm JSON, HTML chuẩn của Playwright và dashboard tùy chỉnh.
 
-- HTML report: `playwright-report/YY-MM-DD/[YY-MM-DD HH-MM-SS] report/`.
+- HTML report: `playwright-report/YY-MM-DD/<platform>/[run-id] report/`.
 - Failure artifacts: `test-results/`.
-- Business evidence: `evidence/YY-MM-DD/[YY-MM-DD HH-MM-SS] <spec-name>/`.
+- Business evidence: `evidence/YY-MM-DD/<platform>/[run-id] <spec-name>/worker-<index>/`.
+- Worker report: `playwright-report/YY-MM-DD/<platform>/[run-id] report/workers/worker-<index>/`.
+- Platform hiện hỗ trợ: `desktop`, `mobile-web`, `mobile-app`; run chứa nhiều platform được đặt trong `multi-platform`.
 - Trace: `on-first-retry`.
 - Screenshot tự động: `only-on-failure`.
 - Video: `retain-on-failure`.

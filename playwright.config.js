@@ -45,13 +45,31 @@ const viewport = {
 const trace = readOptionEnv('PW_TRACE', runtimeConfig.trace, ['off', 'on', 'retain-on-failure', 'on-first-retry']);
 const screenshot = readOptionEnv('PW_SCREENSHOT', runtimeConfig.screenshot, ['off', 'on', 'only-on-failure']);
 const video = readOptionEnv('PW_VIDEO', runtimeConfig.video, ['off', 'on', 'retain-on-failure', 'on-first-retry']);
+let platformDir = 'all';
+const argsStr = process.argv.join(' ').toLowerCase();
+if (argsStr.includes('desktop')) {
+  platformDir = 'desktop';
+} else if (argsStr.includes('mobile-web') || argsStr.includes('mobile chrome') || argsStr.includes('mobile safari')) {
+  platformDir = 'mobile-web';
+} else if (argsStr.includes('mobile-app')) {
+  platformDir = 'mobile-app';
+} else if (process.env.TEST_PLATFORM) {
+  platformDir = process.env.TEST_PLATFORM;
+}
+
+const specArg = process.argv.find(arg => arg.endsWith('.spec.js'));
+const scriptFolder = specArg ? path.basename(specArg).replace(/\.spec\.js$/, '') : 'all-scripts';
+
 const reportDir = path.join(
   'playwright-report',
   reportDate,
+  platformDir,
+  scriptFolder,
   `[${reportDate} ${reportTime} ${runRandomId}] report`
 );
 
 module.exports = defineConfig({
+  outputDir: path.join('test-results', reportDate, platformDir, scriptFolder),
   metadata: { runId },
   timeout: testTimeout,
   testDir: './tests',
@@ -92,8 +110,8 @@ module.exports = defineConfig({
   },
   projects: [
     {
-      name: 'Smoke Tests',
-      testMatch: 'e2e/**/*.spec.js',
+      name: 'Desktop Smoke Tests',
+      testMatch: 'e2e/desktop/**/*.spec.js',
       grep: /@smoke/,
       use: {
         ...devices['Desktop Chrome'],
@@ -101,13 +119,47 @@ module.exports = defineConfig({
       },
     },
     {
-      name: 'Regression Tests',
-      testMatch: 'e2e/**/*.spec.js',
-      grep: /@e2e/, // Chỉ chạy các test có tag @e2e
+      name: 'Desktop Regression Tests',
+      testMatch: 'e2e/desktop/**/*.spec.js',
+      grep: /@e2e/,
       grepInvert: /@smoke/,
       use: {
         ...devices['Desktop Chrome'],
         viewport,
+      },
+    },
+    {
+      name: 'Mobile Chrome Smoke Tests',
+      testMatch: 'e2e/mobile-web/**/*.spec.js',
+      grep: /@smoke/,
+      use: {
+        ...devices['Pixel 7'],
+      },
+    },
+    {
+      name: 'Mobile Chrome Regression Tests',
+      testMatch: 'e2e/mobile-web/**/*.spec.js',
+      grep: /@e2e/,
+      grepInvert: /@smoke/,
+      use: {
+        ...devices['Pixel 7'],
+      },
+    },
+    {
+      name: 'Mobile Safari Smoke Tests',
+      testMatch: 'e2e/mobile-web/**/*.spec.js',
+      grep: /@smoke/,
+      use: {
+        ...devices['iPhone 13'],
+      },
+    },
+    {
+      name: 'Mobile Safari Regression Tests',
+      testMatch: 'e2e/mobile-web/**/*.spec.js',
+      grep: /@e2e/,
+      grepInvert: /@smoke/,
+      use: {
+        ...devices['iPhone 13'],
       },
     },
     {

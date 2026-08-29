@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trung tâm điều khiển Playwright</title>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <main class="shell">
@@ -100,7 +103,7 @@
       <section class="code-workspace">
         <div class="code-toolbar">
           <div><span id="code-language">MÃ NGUỒN</span><strong id="code-file-name">Chọn file để xem hoặc chỉnh sửa</strong></div>
-          <div><button id="code-format-button" class="ghost" type="button" hidden>Định dạng</button><button id="code-edit-button" class="ghost" type="button" hidden>Chỉnh sửa</button><button id="code-cancel-button" class="ghost" type="button" hidden>Hủy</button><button id="code-save-button" class="primary" type="button" hidden>Lưu file</button></div>
+          <div><div class="code-zoom" role="group" aria-label="Thu phóng nội dung file"><button id="code-zoom-out" class="ghost" type="button" title="Thu nhỏ" aria-label="Thu nhỏ nội dung">−</button><button id="code-zoom-reset" class="ghost" type="button" title="Trở về kích thước mặc định">100%</button><button id="code-zoom-in" class="ghost" type="button" title="Phóng to" aria-label="Phóng to nội dung">+</button></div><button id="code-format-button" class="ghost" type="button" hidden>Định dạng</button><button id="code-edit-button" class="ghost" type="button" hidden>Chỉnh sửa</button><button id="code-cancel-button" class="ghost" type="button" hidden>Hủy</button><button id="code-save-button" class="primary" type="button" hidden>Lưu file</button></div>
         </div>
         <div id="code-empty" class="resource-empty"><span>&lt;/&gt;</span><strong>Chọn source file</strong><p>Tests, Page Objects và core helpers sẽ hiển thị tại đây.</p></div>
         <div id="code-editor-stage" class="code-editor-stage" hidden>

@@ -3,9 +3,9 @@ const path = require('path');
 const { expect, request: playwrightRequest } = require('@playwright/test');
 const { generateRandomVNPhone, generateRandomEmail } = require('./commonUtils');
 const { RegistrationApiHelper } = require('./registrationApiHelper');
-const { LoginPopup } = require('../../pages/LoginPopup');
-const { HomePage } = require('../../pages/HomePage');
-const { PopupConsent } = require('../../pages/PopupConsent');
+const { LoginPopup } = require('../../pages/desktop/LoginPopup');
+const { HomePage } = require('../../pages/desktop/HomePage');
+const { PopupConsent } = require('../../pages/desktop/PopupConsent');
 
 function getRuntimeUserDirectory() {
   return path.join(__dirname, '../../test-results/runtime-users');
@@ -117,10 +117,14 @@ async function trustRuntimeEmailVerification(page) {
   await page.route('**/seeker/fe/me?*', markEmailVerified);
 }
 
-async function loginUserFromDataForPrecondition(page, providedUser = null) {
-  const loginPopup = new LoginPopup(page);
-  const homePage = new HomePage(page);
-  const popupConsent = new PopupConsent(page);
+async function loginUserFromDataForPrecondition(page, providedUser = null, pageClasses = {}) {
+  const LoginPopupClass = pageClasses.LoginPopupClass || LoginPopup;
+  const HomePageClass = pageClasses.HomePageClass || HomePage;
+  const PopupConsentClass = pageClasses.PopupConsentClass || PopupConsent;
+
+  const loginPopup = new LoginPopupClass(page);
+  const homePage = new HomePageClass(page);
+  const popupConsent = new PopupConsentClass(page);
 
   const createdUser = providedUser || await createRegisteredUserForPrecondition();
   await homePage.navigate();

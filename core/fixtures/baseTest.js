@@ -1,14 +1,14 @@
 const path = require('path');
 const { test: base, expect } = require('@playwright/test');
 const { BasePage } = require('../../pages/BasePage');
-const { HomePage } = require('../../pages/HomePage');
-const { LoginPopup } = require('../../pages/LoginPopup');
-const { OnboardingPopup } = require('../../pages/OnboardingPopup');
-const { PopupConsent } = require('../../pages/PopupConsent');
-const { JobSearchPage } = require('../../pages/JobSearchPage');
-const { JobApplyPage } = require('../../pages/JobApplyPage');
-const { JobApplyNoCVPage } = require('../../pages/JobApplyNoCVPage');
-const { UserProfilePage } = require('../../pages/UserProfilePage');
+const { HomePage } = require('../../pages/desktop/HomePage');
+const { LoginPopup } = require('../../pages/desktop/LoginPopup');
+const { OnboardingPopup } = require('../../pages/desktop/OnboardingPopup');
+const { PopupConsent } = require('../../pages/desktop/PopupConsent');
+const { JobSearchPage } = require('../../pages/desktop/JobSearchPage');
+const { JobApplyPage } = require('../../pages/desktop/JobApplyPage');
+const { JobApplyNoCVPage } = require('../../pages/desktop/JobApplyNoCVPage');
+const { UserProfilePage } = require('../../pages/desktop/UserProfilePage');
 const {
   createRuntimeUserData,
   loginUserFromDataForPrecondition,

@@ -1,6 +1,6 @@
 const { expect } = require('@playwright/test');
-const { BasePage } = require('./BasePage');
-const { ScreenshotHelper } = require('../core/utils/commonUtils');
+const { BasePage } = require('../BasePage');
+const { ScreenshotHelper } = require('../../core/utils/commonUtils');
 
 class UserProfilePage extends BasePage {
   constructor(page) {

@@ -1,6 +1,6 @@
 const { expect } = require('@playwright/test');
-const { BasePage } = require('./BasePage');
-const { ScreenshotHelper } = require('../core/utils/commonUtils');
+const { BasePage } = require('../BasePage');
+const { ScreenshotHelper } = require('../../core/utils/commonUtils');
 
 class OnboardingPopup extends BasePage {
   /**
@@ -18,27 +18,27 @@ class OnboardingPopup extends BasePage {
     this.closeBtn = page.locator('#common__modal [data-test-id="common__close-button"], [data-test-id="common__form-modal"] [data-test-id="common__close-button"], [role="dialog"] [data-test-id="common__close-button"]').first();
     this.overlayLoading = page.locator('.overlay-loading'); // Thêm locator cho overlay loading
 
-    this.step1Title = page.getByText('Bạn đang tìm việc ở khu vực nào?').first();
-    this.locationInput = page.getByText('Tìm khu vực tỉnh thành').first();
-    this.hcmLocationBtn = page.getByRole('button', { name: 'TP.HCM', exact: true }).first();
-    this.hnLocationBtn = page.getByRole('button', { name: 'Hà Nội' }).first();
-    this.anGiangLocationOption = page.locator('.custom-scrollbar').getByText('An Giang').first();
+    this.step1Title = this.modal.getByText('Bạn đang tìm việc ở khu vực nào?');
+    this.locationInput = this.modal.getByText('Tìm khu vực tỉnh thành');
+    this.hcmLocationBtn = this.modal.getByRole('button', { name: 'TP.HCM', exact: true });
+    this.hnLocationBtn = this.modal.getByRole('button', { name: 'Hà Nội' });
+    this.anGiangLocationOption = page.locator('.custom-scrollbar').getByRole('heading', { name: 'An Giang' });
 
-    this.step2Title = page.getByText('Bạn đang quan tâm đến ngành nghề nào?').first();
-    this.industryDropdown = page.getByText(/Chọn ngành nghề/i).first();
-    this.adminIndustryOption = page.locator('[data-test-id="common__select-menu"]').getByRole('heading', { name: 'Hành chính - Thư ký' }).first();
+    this.step2Title = this.modal.getByText('Bạn đang quan tâm đến ngành nghề nào?');
+    this.industryDropdown = this.modal.getByText(/Chọn ngành nghề/i);
+    this.adminIndustryOption = page.locator('[data-test-id="common__select-menu"]').getByRole('heading', { name: 'Hành chính - Thư ký' });
 
-    this.step3Title = page.getByText('Bạn đang muốn tìm công việc gì?').first();
-    this.jobTitleInput = page.getByPlaceholder('VD: Nhân viên bán hàng; Thu ngân,...').first();
-    this.selectItem = page.locator('[data-test-id="common__select-dropdown"]').getByText('nhân viên văn phòng').first();
+    this.step3Title = this.modal.getByText('Bạn đang muốn tìm công việc gì?');
+    this.jobTitleInput = this.modal.getByPlaceholder('VD: Nhân viên bán hàng; Thu ngân,...');
+    this.selectItem = page.locator('[data-test-id="common__select-dropdown"] li').filter({ hasText: /^nhân viên văn phòng$/i });
 
-    this.step4Title = page.getByText('Mức lương mong muốn của bạn?').first();
-    this.salaryOption1 = page.getByRole('button', { name: '10 - 15 triệu', exact: true }).first();
-    this.salaryOption2 = page.getByRole('button', { name: '15 - 20 triệu', exact: true }).first();
+    this.step4Title = this.modal.getByText('Mức lương mong muốn của bạn?');
+    this.salaryOption1 = this.modal.getByRole('button', { name: '10 - 15 triệu', exact: true });
+    this.salaryOption2 = this.modal.getByRole('button', { name: '15 - 20 triệu', exact: true });
 
-    this.step5Title = page.getByText('Bạn đã có bao nhiêu năm kinh nghiệm?').first();
-    this.yearsOption1 = page.getByRole('button', { name: '1 năm', exact: true }).first();
-    this.yearsOption2 = page.getByRole('button', { name: '2 năm', exact: true }).first();
+    this.step5Title = this.modal.getByText('Bạn đã có bao nhiêu năm kinh nghiệm?');
+    this.yearsOption1 = this.modal.getByRole('button', { name: '1 năm', exact: true });
+    this.yearsOption2 = this.modal.getByRole('button', { name: '2 năm', exact: true });
   }
 
   async clickLocationInput() {
@@ -135,7 +135,7 @@ class OnboardingPopup extends BasePage {
   async selectLocationButton(location) {
     await expect(this.step1Title).toBeVisible({ timeout: 15000 });
     await this.actions.waitForVisible(this.step1Title);
-    const locationBtn = this.page.getByRole('button', { name: location }).first();
+    const locationBtn = this.modal.getByRole('button', { name: location });
     return this.clickElement(locationBtn);
   }
 
@@ -143,14 +143,14 @@ class OnboardingPopup extends BasePage {
     await this.actions.waitForVisible(this.step1Title);
     await expect(this.locationInput).toBeVisible({ timeout: 15000 });
     await this.clickElement(this.locationInput, { force: true });
-    const locationOption = this.page.locator('.custom-scrollbar').getByText(location).first();
+    const locationOption = this.page.locator('.custom-scrollbar').getByRole('heading', { name: location });
     return this.clickElement(locationOption);
   }
 
   async selectIndustry(industry) {
     await this.actions.waitForVisible(this.step2Title);
     await this.clickElement(this.industryDropdown);
-    const industryOption = this.page.locator('[data-test-id="common__select-menu"]').getByRole('heading', { name: industry }).first();
+    const industryOption = this.page.locator('[data-test-id="common__select-menu"]').getByRole('heading', { name: industry });
     return this.clickElement(industryOption);
   }
 
@@ -169,14 +169,14 @@ class OnboardingPopup extends BasePage {
   async selectSalary(salary) {
     await expect(this.step4Title).toBeVisible({ timeout: 15000 });
     await this.actions.waitForVisible(this.step4Title);
-    const salaryBtn = this.page.getByRole('button', { name: salary }).first();
+    const salaryBtn = this.modal.getByRole('button', { name: salary });
     return this.clickElement(salaryBtn);
   }
 
   async selectYears(years) {
     await expect(this.step5Title).toBeVisible({ timeout: 15000 });
     await this.actions.waitForVisible(this.step5Title);
-    const yearsBtn = this.page.getByRole('button', { name: years }).first();
+    const yearsBtn = this.modal.getByRole('button', { name: years });
     return this.clickElement(yearsBtn);
   }
 

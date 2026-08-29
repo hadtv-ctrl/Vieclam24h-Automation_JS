@@ -1,7 +1,7 @@
-const { test } = require('../../core/fixtures/baseTest');
-const applyData = require('../../data/applyJobData.json');
-const usersData = require('../../data/users.json');
-const { generateRandomVNPhone } = require('../../core/utils/commonUtils');
+const { test } = require('../../../core/fixtures/baseTest');
+const applyData = require('../../../data/applyJobData.json');
+const usersData = require('../../../data/users.json');
+const { generateRandomVNPhone } = require('../../../core/utils/commonUtils');
 
 test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @applyjob @e2e', () => {
   test('Guest đăng nhập bằng OTP khi ứng tuyển việc không cần CV thành công', async ({

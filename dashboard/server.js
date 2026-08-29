@@ -17,7 +17,16 @@ const BACKUP_DIR = path.join(ROOT, '.dashboard-backups');
 const TOOLS_DIR = path.join(ROOT, 'tools');
 const CODE_ROOTS = ['tests', 'pages', 'core'];
 const PORT = Number.parseInt(process.env.DASHBOARD_PORT || '4173', 10);
-const PROJECTS = ['all', 'Smoke Tests', 'Regression Tests', 'API Tests'];
+const PROJECTS = [
+  'all', 
+  'Desktop Smoke Tests', 
+  'Desktop Regression Tests', 
+  'Mobile Chrome Smoke Tests',
+  'Mobile Chrome Regression Tests',
+  'Mobile Safari Smoke Tests',
+  'Mobile Safari Regression Tests',
+  'API Tests'
+];
 const DOCUMENT_RESOURCES = ['AI_PROMPTS.md', 'QA_AI_RULES.md', 'README.md'];
 
 let activeRun = null;
@@ -43,6 +52,28 @@ function listSpecs(directory = path.join(ROOT, 'tests')) {
     if (!entry.name.endsWith('.spec.js')) return [];
     return [path.relative(ROOT, absolutePath).split(path.sep).join('/')];
   }).sort();
+}
+
+function projectsForSpec(spec) {
+  const content = fs.readFileSync(path.join(ROOT, spec), 'utf8');
+  if (spec.startsWith('tests/api/')) return /@api\b/.test(content) ? ['API Tests'] : [];
+  if (!spec.startsWith('tests/e2e/')) return [];
+  const isMobileSpec = spec.startsWith('tests/e2e/mobile-web/') || spec.startsWith('tests/e2e/mobile-app/') || spec.startsWith('tests/e2e/mobile/');
+  const isDesktopSpec = spec.startsWith('tests/e2e/desktop/');
+  if (!isMobileSpec && !isDesktopSpec) return [];
+  if (/@smoke\b/.test(content)) {
+    return isMobileSpec
+      ? ['Mobile Chrome Smoke Tests', 'Mobile Safari Smoke Tests']
+      : ['Desktop Smoke Tests'];
+  }
+  if (!/@e2e\b/.test(content)) return [];
+  return isMobileSpec
+    ? ['Mobile Chrome Regression Tests', 'Mobile Safari Regression Tests']
+    : ['Desktop Regression Tests'];
+}
+
+function specProjects() {
+  return Object.fromEntries(listSpecs().map((spec) => [spec, projectsForSpec(spec)]));
 }
 
 function listCodeFiles() {
@@ -150,15 +181,19 @@ function collectReportFolders() {
   if (!fs.existsSync(REPORT_DIR)) return [];
   const reports = [];
   const visit = (directory, depth = 0) => {
-    if (depth > 3) return;
+    if (depth > 5) return;
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const absolutePath = path.join(directory, entry.name);
       if (entry.isDirectory()) visit(absolutePath, depth + 1);
       if (entry.isFile() && entry.name === 'index.html' && !absolutePath.includes(`${path.sep}workers${path.sep}`)) {
         const reportFolder = path.dirname(absolutePath);
+        const relativeParts = path.relative(REPORT_DIR, reportFolder).split(path.sep);
+        const dateFolder = relativeParts.length >= 4 
+          ? relativeParts.slice(0, 3).join('/')
+          : relativeParts.slice(0, Math.max(1, relativeParts.length - 1)).join('/');
         reports.push({
           folder: reportFolder,
-          dateFolder: path.basename(path.dirname(reportFolder)),
+          dateFolder,
           modifiedAt: fs.statSync(absolutePath).mtimeMs,
         });
       }
@@ -173,9 +208,47 @@ function cleanupArtifacts() {
   const cutoff = Date.now() - settings.retentionDays * 24 * 60 * 60 * 1000;
 
   if (settings.autoCleanupEvidence && fs.existsSync(EVIDENCE_DIR)) {
-    for (const entry of fs.readdirSync(EVIDENCE_DIR, { withFileTypes: true })) {
-      const target = path.join(EVIDENCE_DIR, entry.name);
-      if (entry.isDirectory() && fs.statSync(target).mtimeMs < cutoff) removeInside(EVIDENCE_DIR, target);
+    const evidenceFolders = new Set();
+    const visitEvidence = (directory, depth = 0) => {
+      if (depth > 10) return;
+      for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        const absolutePath = path.join(directory, entry.name);
+        if (entry.isDirectory()) visitEvidence(absolutePath, depth + 1);
+        if (entry.isFile() && /\.(png|jpe?g|webp|webm)$/i.test(entry.name)) {
+          evidenceFolders.add(directory);
+        }
+      }
+    };
+    visitEvidence(EVIDENCE_DIR);
+    
+    Array.from(evidenceFolders).forEach((target) => {
+      if (fs.existsSync(target) && fs.statSync(target).mtimeMs < cutoff) {
+        removeInside(EVIDENCE_DIR, target);
+      }
+    });
+
+    for (const depth of [3, 2, 1, 0]) {
+      const getParentDirs = (dir, currentDepth) => {
+        if (!fs.existsSync(dir)) return [];
+        if (currentDepth === depth) return [dir];
+        let dirs = [];
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+          if (entry.isDirectory()) dirs = dirs.concat(getParentDirs(path.join(dir, entry.name), currentDepth + 1));
+        }
+        return dirs;
+      };
+      
+      const parentDirs = getParentDirs(EVIDENCE_DIR, 0);
+      parentDirs.forEach(parent => {
+        if (!fs.existsSync(parent)) return;
+        for (const entry of fs.readdirSync(parent, { withFileTypes: true })) {
+          if (!entry.isDirectory()) continue;
+          const targetDir = path.join(parent, entry.name);
+          if (fs.readdirSync(targetDir).length === 0) {
+            fs.rmSync(targetDir, { recursive: true, force: true });
+          }
+        }
+      });
     }
   }
 
@@ -257,7 +330,7 @@ function newestReport() {
   if (!fs.existsSync(REPORT_DIR)) return null;
   const indexes = [];
   const visit = (directory, depth = 0) => {
-    if (depth > 3) return;
+    if (depth > 5) return;
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const absolutePath = path.join(directory, entry.name);
       if (entry.isDirectory()) visit(absolutePath, depth + 1);
@@ -313,6 +386,9 @@ function validateOptions(input) {
   if (!PROJECTS.includes(project)) throw new Error('Project không hợp lệ.');
   if (!environments.includes(environment)) throw new Error('Environment không hợp lệ.');
   if (spec !== 'all' && !specs.includes(spec)) throw new Error('Spec không hợp lệ.');
+  if (spec !== 'all' && project !== 'all' && !projectsForSpec(spec).includes(project)) {
+    throw new Error('Test script không thuộc test group này.');
+  }
   if (!Number.isInteger(workers) || workers < 1 || workers > 8) throw new Error('Luồng chạy phải từ 1 đến 8.');
   if (grep.length > 80 || /[\r\n\0]/.test(grep)) throw new Error('Tag/grep không hợp lệ.');
 
@@ -324,9 +400,19 @@ function runtimeEnv(options) {
   const runtime = settings.runtime;
   const api = settings.api;
   const retries = process.env.CI ? runtime.retriesCI : runtime.retriesLocal;
+  const selectedSpec = String(options.spec || '');
+  const selectedProject = String(options.project || '');
+  const platform = selectedSpec.startsWith('tests/e2e/mobile-web/') || selectedSpec.startsWith('tests/e2e/mobile/') || /^Mobile (?:Chrome|Safari)/.test(selectedProject)
+    ? 'mobile-web'
+    : selectedSpec.startsWith('tests/e2e/mobile-app/')
+      ? 'mobile-app'
+      : selectedProject === 'all' && selectedSpec === 'all'
+        ? 'multi-platform'
+        : 'desktop';
 
   return {
     NODE_ENV: options.environment,
+    QA_PLATFORM: platform,
     PW_WORKERS: String(options.workers),
     PW_RETRIES: String(retries),
     PW_TEST_TIMEOUT: String(runtime.testTimeout),
@@ -419,6 +505,7 @@ const server = http.createServer(async (request, response) => {
       projects: PROJECTS,
       environments: Object.keys(settings.environments),
       specs: listSpecs(),
+      specProjects: specProjects(),
       defaults: {
         environment: settings.runtime.defaultEnvironment,
         workers: settings.runtime.workers,

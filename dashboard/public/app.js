@@ -39,6 +39,38 @@ function fillSelect(selector, values, allLabel) {
   ).join('');
 }
 
+let testCatalog = { specs: [], specProjects: {} };
+
+function refreshSpecOptions() {
+  const project = $('#project').value;
+  const selectedSpec = $('#spec').value;
+  const hasProjectMapping = Object.keys(testCatalog.specProjects).length > 0;
+  const specs = project === 'all' || !hasProjectMapping
+    ? testCatalog.specs
+    : testCatalog.specs.filter((spec) => testCatalog.specProjects[spec]?.includes(project));
+  fillSelect('#spec', ['all', ...specs], 'Tất cả file test');
+  if (specs.includes(selectedSpec)) $('#spec').value = selectedSpec;
+  updateWorkersForSpec();
+}
+
+function updateWorkersForSpec() {
+  const spec = $('#spec').value;
+  const workersInput = $('#workers');
+  if (spec !== 'all') {
+    if (!workersInput.disabled) workersInput.dataset.previousValue = workersInput.value;
+    workersInput.value = '1';
+    workersInput.disabled = true;
+  } else {
+    workersInput.disabled = false;
+    if (workersInput.dataset.previousValue) {
+      workersInput.value = workersInput.dataset.previousValue;
+    }
+  }
+}
+
+$('#project').addEventListener('change', refreshSpecOptions);
+$('#spec').addEventListener('change', updateWorkersForSpec);
+
 function fillSettingSelect(selector, values, selected) {
   $(selector).innerHTML = values.map((value) =>
     `<option value="${escapeHtml(value)}"${value === selected ? ' selected' : ''}>${escapeHtml(value)}</option>`
@@ -331,7 +363,7 @@ function renderEvidenceTree(files) {
       return `<details class="evidence-folder" data-folder="${escapeHtml(folderPath)}"${open}><summary><span class="folder-icon">▸</span><strong>${escapeHtml(folder)}</strong><small>${childFiles}</small><button class="delete-folder-button" type="button" data-folder="${escapeHtml(folderPath)}" title="Xóa folder">×</button></summary><div>${renderBranch(child, depth + 1, folderPath)}${renderFiles(child.__files || [])}</div></details>`;
     }).join('');
 
-  const renderFiles = (items) => items.map((file) => {
+  const renderFiles = (items) => [...items].reverse().map((file) => {
     const detail = resourceCatalog.evidenceDetails.find((item) => item.path === file);
     const createdAt = detail?.modifiedAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(detail.modifiedAt)) : 'Không rõ thời gian';
     return `<button class="resource-item evidence-file${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="evidence"><span>▧</span><div><strong>${escapeHtml(file.split('/').pop())}</strong><small>${escapeHtml(createdAt)}</small></div></button>`;
@@ -808,7 +840,8 @@ async function initialize() {
     const [config, state] = await Promise.all([request('/api/config'), request('/api/state')]);
     fillSelect('#environment', config.environments, '');
     fillSelect('#project', config.projects, 'Tất cả nhóm test');
-    fillSelect('#spec', ['all', ...config.specs], 'Tất cả file test');
+    testCatalog = { specs: config.specs, specProjects: config.specProjects || {} };
+    refreshSpecOptions();
     if (config.defaults?.environment) $('#environment').value = config.defaults.environment;
     if (config.defaults?.workers) $('#workers').value = config.defaults.workers;
     state.logs.forEach((entry) => appendLog(entry.payload));

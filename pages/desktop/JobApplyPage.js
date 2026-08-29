@@ -1,5 +1,5 @@
-const { BasePage } = require('./BasePage');
-const { ScreenshotHelper } = require('../core/utils/commonUtils');
+const { BasePage } = require('../BasePage');
+const { ScreenshotHelper } = require('../../core/utils/commonUtils');
 
 class JobApplyPage extends BasePage {
   constructor(page) {

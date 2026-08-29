@@ -1,4 +1,4 @@
-const { test, expect } = require('../../core/fixtures/baseTest');
+const { test, expect } = require('../../../core/fixtures/baseTest');
 
 test.describe('Feature: Tải lên và chuyển đổi CV tại Hồ sơ của tôi @profile @e2e', () => {
   test('Người dùng tải lên và chuyển đổi CV thành công', async ({ authenticatedUser, userProfilePage }) => {

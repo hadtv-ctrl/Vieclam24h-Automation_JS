@@ -6,7 +6,7 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc qua API @ap
   test('POST /seeker/fe/register trả về status 200 với payload động', async ({ request }, testInfo) => {
     const apiHelper = new RegistrationApiHelper(request);
     const email = generateRandomEmail();
-    const phone = generateRandomVNPhone();
+    const phone = generateRandomVNPhone(); // lấy phone random
     const password = 'Test@1234';
     const payload = apiHelper.buildPayload(email, password, phone, 'Hà JS');
     const headers = apiHelper.buildHeaders();

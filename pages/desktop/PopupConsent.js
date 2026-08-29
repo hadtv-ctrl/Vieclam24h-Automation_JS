@@ -1,5 +1,5 @@
-const { BasePage } = require('./BasePage');
-const { getDashboardConfig } = require('../core/config/dashboardConfig');
+const { BasePage } = require('../BasePage');
+const { getDashboardConfig } = require('../../core/config/dashboardConfig');
 
 class PopupConsent extends BasePage {
   /**
