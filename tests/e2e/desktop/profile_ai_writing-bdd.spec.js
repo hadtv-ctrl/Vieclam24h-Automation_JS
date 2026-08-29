@@ -1,5 +1,5 @@
-const { test } = require('../../core/fixtures/baseTest');
-const aiProfileData = require('../../data/aiProfileData.json');
+const { test } = require('../../../core/fixtures/baseTest');
+const aiProfileData = require('../../../data/aiProfileData.json');
 
 test.describe('Feature: Dùng trợ lý AI để hoàn thiện hồ sơ @profile @ai @e2e', () => {
   test('Người dùng viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI', async ({

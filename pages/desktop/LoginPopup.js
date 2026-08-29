@@ -1,4 +1,4 @@
-const { BasePage } = require('./BasePage');
+const { BasePage } = require('../BasePage');
 
 class LoginPopup extends BasePage {
   /**
@@ -72,6 +72,15 @@ class LoginPopup extends BasePage {
     await this.otpModalTitle.or(this.otpInputs.first()).first().waitFor({ state: 'visible', timeout });
   }
 
+  async isRegisterFormVisible(timeout = 1000) {
+    try {
+      await this.registerFormTitle.waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async clickContinueUntilOtpVisible(options = {}) {
     const {
       maxAttempts = 3,
@@ -90,6 +99,10 @@ class LoginPopup extends BasePage {
         return;
       } catch (error) {
         lastOtpError = error;
+      }
+
+      if (await this.isRegisterFormVisible(1000)) {
+        throw new Error('Login precondition account was not found; register form appeared instead of OTP screen.');
       }
 
       await this.waitForGlobalLoadingHidden(loadingTimeout);

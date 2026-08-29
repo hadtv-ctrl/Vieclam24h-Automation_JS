@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trung tâm điều khiển Playwright</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar">
+      <a class="brand" href="/" aria-label="Trung tâm điều khiển Playwright">
+        <span class="brand-mark">PW</span>
+        <span><strong>Trung tâm điều khiển</strong><small>Không gian automation</small></span>
+      </a>
+      <div class="view-tabs" role="tablist" aria-label="Các khu vực trong dashboard">
+        <button class="view-tab active" type="button" role="tab" aria-selected="true" data-view="runner-view">Chạy test</button>
+        <button class="view-tab" type="button" role="tab" aria-selected="false" data-view="resources-view">Báo cáo & dữ liệu</button>
+        <button class="view-tab" type="button" role="tab" aria-selected="false" data-view="code-view">Mã framework</button>
+        <button class="view-tab" type="button" role="tab" aria-selected="false" data-view="compare-view">So sánh evidence</button>
+        <button class="view-tab" type="button" role="tab" aria-selected="false" data-view="settings-view">Cấu hình</button>
+      </div>
+      <div class="header-actions">
+        <button id="theme-button" class="theme-button" type="button" aria-label="Đổi giao diện sáng tối" aria-pressed="false">
+          <span class="theme-icon" aria-hidden="true">☀</span>
+          <span id="theme-label">Sáng</span>
+        </button>
+        <a class="report-link" href="/report/latest" target="_blank" rel="noreferrer">Mở report mới nhất ↗</a>
+      </div>
+    </nav>
+
+    <div id="runner-view" class="dashboard-view active" role="tabpanel">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">CHẠY TEST</p>
+        <h1>Chạy test rõ ràng.</h1>
+        <p class="subtitle">Điều khiển suite, quan sát tiến trình và truy cập artifacts từ một workspace duy nhất.</p>
+      </div>
+      <div class="hero-actions">
+        <button id="ui-button" class="ui-mode-button" type="button"><span>◫</span> Mở Playwright UI</button>
+        <small>Debug trực quan trong cửa sổ riêng</small>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <form id="run-form" class="panel controls-panel">
+        <div class="panel-heading"><div><p>CẤU HÌNH</p><h2>Thiết lập test run</h2></div><span class="step">01</span></div>
+        <div class="controls">
+          <label>Môi trường<select id="environment" name="environment"></select></label>
+          <label>Nhóm test<select id="project" name="project"></select></label>
+          <label>File test<select id="spec" name="spec"></select></label>
+          <div class="inline-fields">
+            <label>Tag / grep<input id="grep" name="grep" placeholder="Ví dụ: @profile"></label>
+            <label class="workers">Luồng chạy<input id="workers" name="workers" type="number" min="1" max="8" value="2"></label>
+          </div>
+          <label class="toggle"><input id="headed" name="headed" type="checkbox"><span></span><div>Hiện browser<small>Mở trình duyệt thật khi chạy test</small></div></label>
+        </div>
+        <div class="actions">
+          <button id="run-button" class="primary" type="submit">▶ Chạy test</button>
+          <button id="stop-button" class="danger" type="button" disabled>■ Dừng</button>
+        </div>
+      </form>
+
+      <section class="panel run-panel">
+        <div class="panel-heading"><div><p>TỔNG QUAN</p><h2>Trạng thái thực thi</h2></div><span class="step">02</span></div>
+        <div id="status-card" class="status-card idle">
+          <div class="status-indicator"><i></i></div>
+          <div><strong id="status-label">Sẵn sàng</strong><p id="status-detail">Chưa có test run trong phiên này.</p></div>
+        </div>
+        <div class="metrics">
+          <div><span>BẮT ĐẦU</span><strong id="started-at">—</strong></div>
+          <div><span>THỜI LƯỢNG</span><strong id="duration">—</strong></div>
+          <div><span>EXIT CODE</span><strong id="exit-code">—</strong></div>
+        </div>
+        <div class="command-wrap"><span>LỆNH CHẠY</span><code id="command">npx playwright test</code></div>
+        <div class="run-tip"><span>i</span><p>Dùng <strong>Playwright UI</strong> khi cần xem từng step, DOM snapshot hoặc debug locator.</p></div>
+      </section>
+    </section>
+    <section class="panel console-panel">
+      <div class="console-head">
+        <div class="console-title"><span class="terminal-dots"><i></i><i></i><i></i></span><div><p>LIVE OUTPUT</p><h2>Playwright console</h2></div></div>
+        <div class="console-actions"><span class="live-badge">● LIVE</span><button id="clear-button" class="ghost" type="button">Xóa log</button></div>
+      </div>
+      <pre id="console" aria-live="polite"><span class="muted">Log của Playwright sẽ xuất hiện tại đây...</span></pre>
+    </section>
+    </div>
+
+    <section id="code-view" class="dashboard-view code-view" role="tabpanel" hidden>
+      <aside class="code-sidebar">
+        <div class="code-sidebar-head"><div><span>PHÁT TRIỂN</span><strong>Mã framework</strong></div><small id="code-file-count">0 tệp</small></div>
+        <label class="code-search">Tìm mã nguồn<input id="code-search" type="search" placeholder="Spec, Page Object, helper..."></label>
+        <div class="code-root-filters">
+          <button class="code-root-filter active" type="button" data-root="all">Tất cả</button>
+          <button class="code-root-filter" type="button" data-root="tests">Test</button>
+          <button class="code-root-filter" type="button" data-root="pages">Page Object</button>
+          <button class="code-root-filter" type="button" data-root="core">Core</button>
+        </div>
+        <div id="code-tree" class="code-tree"></div>
+      </aside>
+      <section class="code-workspace">
+        <div class="code-toolbar">
+          <div><span id="code-language">MÃ NGUỒN</span><strong id="code-file-name">Chọn file để xem hoặc chỉnh sửa</strong></div>
+          <div><div class="code-zoom" role="group" aria-label="Thu phóng nội dung file"><button id="code-zoom-out" class="ghost" type="button" title="Thu nhỏ" aria-label="Thu nhỏ nội dung">−</button><button id="code-zoom-reset" class="ghost" type="button" title="Trở về kích thước mặc định">100%</button><button id="code-zoom-in" class="ghost" type="button" title="Phóng to" aria-label="Phóng to nội dung">+</button></div><button id="code-format-button" class="ghost" type="button" hidden>Định dạng</button><button id="code-edit-button" class="ghost" type="button" hidden>Chỉnh sửa</button><button id="code-cancel-button" class="ghost" type="button" hidden>Hủy</button><button id="code-save-button" class="primary" type="button" hidden>Lưu file</button></div>
+        </div>
+        <div id="code-empty" class="resource-empty"><span>&lt;/&gt;</span><strong>Chọn source file</strong><p>Tests, Page Objects và core helpers sẽ hiển thị tại đây.</p></div>
+        <div id="code-editor-stage" class="code-editor-stage" hidden>
+          <pre id="code-preview" class="code-preview"><code></code></pre>
+          <textarea id="code-editor" class="code-editor" wrap="off" spellcheck="false" aria-label="Framework source editor" hidden></textarea>
+        </div>
+        <footer class="code-status"><span id="code-status-text">Sẵn sàng</span><span>Backup tự động trước khi lưu</span></footer>
+      </section>
+    </section>
+
+    <section id="resources-view" class="dashboard-view resources-view" role="tabpanel" hidden>
+      <header class="resources-hero">
+        <div><p class="eyebrow">THƯ VIỆN FRAMEWORK</p><h1>Báo cáo & dữ liệu</h1><p class="subtitle">Duyệt toàn bộ báo cáo, evidence, tài liệu và dữ liệu test của framework.</p></div>
+        <div id="resource-summary" class="resource-summary"></div>
+      </header>
+      <div class="panel explorer-page">
+        <nav class="resource-nav">
+          <label class="resource-search">Tìm file<input id="resource-search" type="search" placeholder="Báo cáo, evidence, users..."></label>
+          <div class="resource-filters" role="tablist">
+            <button class="resource-filter" type="button" data-category="reports">Báo cáo</button>
+            <button class="resource-filter active" type="button" data-category="evidence">Evidence</button>
+            <button class="resource-filter" type="button" data-category="documents">Tài liệu</button>
+            <button class="resource-filter" type="button" data-category="data">Dữ liệu</button>
+          </div>
+          <div id="resource-list"></div>
+        </nav>
+        <section class="resource-viewer">
+          <div class="resource-toolbar">
+            <div><span id="resource-type">TÀI NGUYÊN</span><strong id="resource-name">Chọn một mục để xem chi tiết</strong></div>
+            <div class="resource-actions">
+              <button id="reveal-button" class="ghost" type="button" hidden>Hiện dữ liệu gốc</button>
+              <button id="edit-button" class="ghost" type="button" hidden>Chỉnh sửa</button>
+              <button id="delete-button" class="delete-button" type="button" hidden>Xóa</button>
+            </div>
+          </div>
+          <div class="resource-empty" id="resource-empty"><span>⌘</span><strong>Chọn một artifact hoặc file</strong><p>Nội dung chi tiết sẽ hiển thị tại đây.</p></div>
+          <div id="resource-content" hidden></div>
+          <div id="resource-editor" class="resource-editor" hidden>
+            <textarea id="resource-edit-content" spellcheck="false" aria-label="Nội dung file"></textarea>
+            <div><button id="format-resource-button" class="ghost" type="button">Định dạng</button><button id="cancel-edit-button" class="ghost" type="button">Hủy</button><button id="save-resource-button" class="primary" type="button">Lưu thay đổi</button></div>
+          </div>
+          <div id="evidence-preview" class="evidence-preview" hidden>
+            <div class="evidence-stage">
+              <button id="previous-evidence" class="evidence-arrow" type="button" aria-label="Ảnh evidence trước">‹</button>
+              <img id="evidence-image" alt="Test evidence preview">
+              <button id="next-evidence" class="evidence-arrow" type="button" aria-label="Ảnh evidence tiếp theo">›</button>
+            </div>
+            <div class="evidence-footer"><span id="evidence-position">—</span><a id="evidence-open" href="#" target="_blank" rel="noreferrer">Mở ảnh kích thước gốc ↗</a></div>
+          </div>
+          <div id="report-preview" class="report-preview" hidden>
+            <iframe id="report-frame" title="Báo cáo HTML của Playwright"></iframe>
+            <a id="report-open" href="#" target="_blank" rel="noreferrer">Mở report trong tab riêng ↗</a>
+          </div>
+        </section>
+      </div>
+    </section>
+    <section id="compare-view" class="dashboard-view compare-view" role="tabpanel" hidden>
+      <div class="compare-panel"><iframe src="/tools/visual_compare.html" title="Visual Evidence Comparison Tool"></iframe></div>
+    </section>
+    <section id="settings-view" class="dashboard-view settings-view" role="tabpanel" hidden>
+      <header class="resources-hero">
+        <div><p class="eyebrow">CẤU HÌNH</p><h1>Cấu hình</h1><p class="subtitle">Quản lý môi trường, cách chạy test, API chuẩn bị dữ liệu và chính sách lưu artifact.</p></div>
+        <div class="settings-actions"><button id="reload-settings-button" class="ghost" type="button">Tải lại</button><button id="save-settings-button" class="primary" type="button">Lưu cấu hình</button></div>
+      </header>
+      <form id="settings-form" class="settings-page">
+        <section class="panel settings-panel settings-environments">
+          <div class="panel-heading"><div><p>MÔI TRƯỜNG</p><h2>Đường dẫn hệ thống</h2></div></div>
+          <div id="environment-settings" class="settings-body"></div>
+        </section>
+        <section class="panel settings-panel settings-runtime">
+          <div class="panel-heading"><div><p>PLAYWRIGHT</p><h2>Mặc định khi chạy test</h2></div></div>
+          <div class="settings-body settings-grid">
+            <label>Môi trường mặc định<small>Môi trường được chọn sẵn khi mở dashboard hoặc chạy không truyền NODE_ENV.</small><select id="settings-default-environment"></select></label>
+            <label>Luồng chạy<small>Số worker Playwright chạy song song. Cao hơn sẽ nhanh hơn nhưng dễ tranh chấp dữ liệu.</small><input id="settings-workers" type="number" min="1" max="8"></label>
+            <label>Timeout test<small>Thời gian tối đa cho một test case, tính bằng mili giây.</small><input id="settings-test-timeout" type="number" min="5000" max="600000" step="1000"></label>
+            <label>Timeout điều hướng<small>Thời gian tối đa cho thao tác mở trang hoặc đổi URL.</small><input id="settings-navigation-timeout" type="number" min="5000" max="600000" step="1000"></label>
+            <label>Timeout thao tác<small>Thời gian tối đa cho action mặc định. Giá trị 0 nghĩa là không giới hạn ở cấp Playwright.</small><input id="settings-action-timeout" type="number" min="0" max="600000" step="1000"></label>
+            <label>Retry local<small>Số lần chạy lại test lỗi khi chạy trên máy local.</small><input id="settings-retries-local" type="number" min="0" max="5"></label>
+            <label>Retry CI<small>Số lần chạy lại test lỗi khi chạy trong CI.</small><input id="settings-retries-ci" type="number" min="0" max="5"></label>
+            <label>Lưu trace<small>Cách lưu trace để debug từng step trong Playwright report.</small><select id="settings-trace"></select></label>
+            <label>Ảnh tự động<small>Cách Playwright tự lưu ảnh chụp khi test chạy.</small><select id="settings-screenshot"></select></label>
+            <label>Video<small>Cách Playwright tự lưu video trình duyệt khi test chạy.</small><select id="settings-video"></select></label>
+            <label>Chiều rộng viewport<small>Chiều rộng cửa sổ browser dùng khi chạy test.</small><input id="settings-viewport-width" type="number" min="320" max="7680"></label>
+            <label>Chiều cao viewport<small>Chiều cao cửa sổ browser dùng khi chạy test.</small><input id="settings-viewport-height" type="number" min="320" max="4320"></label>
+            <label class="toggle settings-toggle"><input id="settings-show-env-banner" type="checkbox"><span></span><div>In môi trường khi chạy<small>Ghi log môi trường đang chạy trước khi test bắt đầu.</small></div></label>
+            <label class="toggle settings-toggle"><input id="settings-debug-optional-popups" type="checkbox"><span></span><div>Debug popup optional<small>Ghi log khi popup optional không xuất hiện.</small></div></label>
+          </div>
+        </section>
+        <section class="panel settings-panel settings-api">
+          <div class="panel-heading"><div><p>API</p><h2>Chuẩn bị tài khoản test</h2></div></div>
+          <div class="settings-body settings-grid">
+            <label class="wide">Token đăng ký<small>Bearer token dùng cho API đăng ký. Để trống nếu muốn giữ token hiện tại.</small><input id="settings-registration-token" type="password" autocomplete="off" placeholder="Để trống để giữ token hiện tại"></label>
+            <label>Branch<small>Giá trị header x-branch gửi lên API.</small><input id="settings-api-branch" type="text"></label>
+            <label>Ngôn ngữ API<small>Giá trị header x-lang gửi lên API.</small><input id="settings-api-lang" type="text"></label>
+            <label>Retry đăng ký<small>Số lần thử lại khi API đăng ký lỗi mạng hoặc timeout.</small><input id="settings-register-retries" type="number" min="1" max="5"></label>
+            <label>Timeout đăng ký<small>Thời gian tối đa cho request đăng ký, tính bằng mili giây.</small><input id="settings-register-timeout" type="number" min="5000" max="120000" step="1000"></label>
+            <label>Retry consent<small>Số lần thử lại khi API chấp nhận consent lỗi mạng hoặc timeout.</small><input id="settings-consent-retries" type="number" min="1" max="5"></label>
+            <label>Timeout consent<small>Thời gian tối đa cho request chấp nhận consent, tính bằng mili giây.</small><input id="settings-consent-timeout" type="number" min="5000" max="120000" step="1000"></label>
+            <p id="settings-token-status" class="settings-note wide"></p>
+          </div>
+        </section>
+        <section class="panel settings-panel settings-artifacts">
+          <div class="panel-heading"><div><p>ARTIFACT</p><h2>Chính sách lưu trữ</h2></div></div>
+          <div class="settings-body settings-grid">
+            <label>Số ngày giữ lại<small>Artifact cũ hơn số ngày này sẽ bị dọn khi bật tự động dọn.</small><input id="settings-retention-days" type="number" min="1" max="365"></label>
+            <label>Số báo cáo tối đa/ngày<small>Giới hạn số report giữ lại trong mỗi thư mục ngày.</small><input id="settings-max-reports-per-day" type="number" min="1" max="200"></label>
+            <label class="toggle settings-toggle"><input id="settings-auto-cleanup-evidence" type="checkbox"><span></span><div>Tự dọn evidence<small>Dọn ảnh evidence theo số ngày giữ lại.</small></div></label>
+            <label class="toggle settings-toggle"><input id="settings-auto-cleanup-reports" type="checkbox"><span></span><div>Tự dọn báo cáo<small>Dọn Playwright report theo số ngày giữ lại và giới hạn theo ngày.</small></div></label>
+          </div>
+        </section>
+      </form>
+    </section>
+    <div id="toast" role="alert"></div>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
-const { test, expect } = require('../../core/fixtures/baseTest');
-const applyData = require('../../data/applyJobData.json'); // Giả sử file này tồn tại
-const usersData = require('../../data/users.json');
+const { test, expect } = require('../../../core/fixtures/baseTest');
+const applyData = require('../../../data/applyJobData.json'); // Giả sử file này tồn tại
+const usersData = require('../../../data/users.json');
 
 test.describe('Feature: Ứng tuyển việc làm @applyjob @e2e', () => {
   let jobApplyPage;
@@ -25,7 +25,7 @@ test.describe('Feature: Ứng tuyển việc làm @applyjob @e2e', () => {
       await expect(homePage.logo).toBeVisible();
       await homePage.capture('after_homepage_loaded');
     });
-    
+
     await test.step('When Tôi mở một việc làm chi tiết và bấm "Ứng tuyển ngay"', async () => {
       await homePage.closeBlockingModalIfVisible();
       await homePage.openJobSearch();
@@ -37,7 +37,9 @@ test.describe('Feature: Ứng tuyển việc làm @applyjob @e2e', () => {
 
       await jobApplyPage.capture('after_job_detail_opened');
       await jobApplyPage.startApply({ otpCode: usersData[0]?.otp });
+      await jobApplyPage.capture('after_start_apply');
       await jobApplyPage.applyByProfile();
+      await jobApplyPage.capture('after_apply_by_profile');
       await jobApplyPage.continueApply();
       await jobApplyPage.capture('after_continue_to_profile_form');
     });
@@ -107,13 +109,14 @@ test.describe('Feature: Ứng tuyển việc làm @applyjob @e2e', () => {
 
     await test.step('Then Tôi xác nhận nộp hồ sơ và thấy thông báo thành công', async () => {
       await jobApplyPage.submitApplication();
+      await jobApplyPage.capture('after_submit_application');
       await jobApplyPage.confirmAndFinishApplication();
       await expect(jobApplyPage.msgSuccess).toBeVisible({ timeout: 15000 });
     });
 
     await test.step('Then Tôi click bulk apply', async () => {
       await jobApplyPage.bulkApply();
-      await jobApplyPage.capture('after_bulk_apply',true);
+      await jobApplyPage.capture('after_bulk_apply', true);
     });
 
     await test.step('Then Việc làm hiển thị trong danh sách đã ứng tuyển', async () => {

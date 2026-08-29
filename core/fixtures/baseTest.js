@@ -1,14 +1,14 @@
 const path = require('path');
 const { test: base, expect } = require('@playwright/test');
 const { BasePage } = require('../../pages/BasePage');
-const { HomePage } = require('../../pages/HomePage');
-const { LoginPopup } = require('../../pages/LoginPopup');
-const { OnboardingPopup } = require('../../pages/OnboardingPopup');
-const { PopupConsent } = require('../../pages/PopupConsent');
-const { JobSearchPage } = require('../../pages/JobSearchPage');
-const { JobApplyPage } = require('../../pages/JobApplyPage');
-const { JobApplyNoCVPage } = require('../../pages/JobApplyNoCVPage');
-const { UserProfilePage } = require('../../pages/UserProfilePage');
+const { HomePage } = require('../../pages/desktop/HomePage');
+const { LoginPopup } = require('../../pages/desktop/LoginPopup');
+const { OnboardingPopup } = require('../../pages/desktop/OnboardingPopup');
+const { PopupConsent } = require('../../pages/desktop/PopupConsent');
+const { JobSearchPage } = require('../../pages/desktop/JobSearchPage');
+const { JobApplyPage } = require('../../pages/desktop/JobApplyPage');
+const { JobApplyNoCVPage } = require('../../pages/desktop/JobApplyNoCVPage');
+const { UserProfilePage } = require('../../pages/desktop/UserProfilePage');
 const {
   createRuntimeUserData,
   loginUserFromDataForPrecondition,
@@ -18,14 +18,14 @@ const {
 // Page Objects for the default page are injected directly. Factories bind a
 // Page Object to a popup/new tab without leaking construction into the spec.
 const test = base.extend({
-  workerUserData: [async ({}, use, workerInfo) => {
-    const runtimeUserData = await createRuntimeUserData(workerInfo.parallelIndex);
+  workerUserData: async ({}, use, testInfo) => {
+    const runtimeUserData = await createRuntimeUserData(testInfo.parallelIndex ?? testInfo.workerIndex ?? 0);
     try {
       await use(runtimeUserData);
     } finally {
       await removeRuntimeUserData(runtimeUserData.filePath);
     }
-  }, { scope: 'worker' }],
+  },
   featureName: async ({}, use, testInfo) => {
     await use(path.basename(testInfo.file, path.extname(testInfo.file)));
   },

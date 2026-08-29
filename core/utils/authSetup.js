@@ -3,9 +3,9 @@ const path = require('path');
 const { expect, request: playwrightRequest } = require('@playwright/test');
 const { generateRandomVNPhone, generateRandomEmail } = require('./commonUtils');
 const { RegistrationApiHelper } = require('./registrationApiHelper');
-const { LoginPopup } = require('../../pages/LoginPopup');
-const { HomePage } = require('../../pages/HomePage');
-const { PopupConsent } = require('../../pages/PopupConsent');
+const { LoginPopup } = require('../../pages/desktop/LoginPopup');
+const { HomePage } = require('../../pages/desktop/HomePage');
+const { PopupConsent } = require('../../pages/desktop/PopupConsent');
 
 function getRuntimeUserDirectory() {
   return path.join(__dirname, '../../test-results/runtime-users');
@@ -91,10 +91,40 @@ async function createRegisteredUserForPrecondition() {
   }
 }
 
-async function loginUserFromDataForPrecondition(page, providedUser = null) {
-  const loginPopup = new LoginPopup(page);
-  const homePage = new HomePage(page);
-  const popupConsent = new PopupConsent(page);
+async function trustRuntimeEmailVerification(page) {
+  const markEmailVerified = async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.pathname !== '/seeker/fe/me') {
+      await route.continue();
+      return;
+    }
+
+    const response = await route.fetch();
+    const body = await response.json().catch(() => null);
+    if (!body) {
+      await route.fulfill({ response });
+      return;
+    }
+
+    if (body?.data?.token_email === 'no_verified') {
+      body.data.token_email = 'verified';
+    }
+
+    await route.fulfill({ response, json: body });
+  };
+
+  await page.route('**/seeker/fe/me', markEmailVerified);
+  await page.route('**/seeker/fe/me?*', markEmailVerified);
+}
+
+async function loginUserFromDataForPrecondition(page, providedUser = null, pageClasses = {}) {
+  const LoginPopupClass = pageClasses.LoginPopupClass || LoginPopup;
+  const HomePageClass = pageClasses.HomePageClass || HomePage;
+  const PopupConsentClass = pageClasses.PopupConsentClass || PopupConsent;
+
+  const loginPopup = new LoginPopupClass(page);
+  const homePage = new HomePageClass(page);
+  const popupConsent = new PopupConsentClass(page);
 
   const createdUser = providedUser || await createRegisteredUserForPrecondition();
   await homePage.navigate();
@@ -108,20 +138,20 @@ async function loginUserFromDataForPrecondition(page, providedUser = null) {
   const email = userProfile.email || '';
   const phone = userProfile.phone || userProfile.username || '';
 
-  if (!email) {
-    throw new Error('No email found in user data for email login precondition');
+  if (!phone && !email) {
+    throw new Error('No phone or email found in user data for login precondition');
   }
 
-  // Click email login option
-  await loginPopup.clickEmailLoginOption();
-
-  // Wait for email input to be visible after clicking email login option
-  await loginPopup.emailInput.waitFor({ state: 'visible', timeout: 10000 });
-
-  // Fill email
-  await loginPopup.fillEmail(email);
-
-  await expect(loginPopup.emailInput).toHaveValue(email);
+  if (phone) {
+    await loginPopup.phoneInput.waitFor({ state: 'visible', timeout: 10000 });
+    await loginPopup.fillPhone(phone);
+    await expect(loginPopup.phoneInput).toHaveValue(phone);
+  } else {
+    await loginPopup.clickEmailLoginOption();
+    await loginPopup.emailInput.waitFor({ state: 'visible', timeout: 10000 });
+    await loginPopup.fillEmail(email);
+    await expect(loginPopup.emailInput).toHaveValue(email);
+  }
 
   // Verify continue button is enabled before clicking
   await loginPopup.continueBtn.waitFor({ state: 'visible', timeout: 5000 });
@@ -152,6 +182,8 @@ async function loginUserFromDataForPrecondition(page, providedUser = null) {
     console.warn('Modal hide timeout, waiting for network idle...');
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => null);
   }
+
+  await trustRuntimeEmailVerification(page);
 
   return {
     email,

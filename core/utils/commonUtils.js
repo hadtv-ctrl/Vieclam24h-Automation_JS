@@ -67,8 +67,19 @@ class ScreenshotHelper {
     const dateStr = this.runDateInfo.dateStr;
     const runId = String(configuredRunId || process.env.QA_RUN_ID || fallbackRunId)
       .replace(/[^a-zA-Z0-9-_]+/g, '-');
+    
+    let runFolder = `[${runId}] evidence`;
+    const parts = runId.split('-');
+    if (parts.length >= 8) {
+      const d = parts.slice(0, 3).join('-');
+      const t = parts.slice(3, 7).join('-');
+      const r = parts.slice(7).join('-');
+      runFolder = `[${d} ${t} ${r}] evidence`;
+    }
 
-    return `evidence/${dateStr}/[${runId}] ${safeName}/worker-${parallelIndex}`;
+    const platformStr = process.env.QA_PLATFORM || 'desktop';
+
+    return `evidence/${dateStr}/${platformStr}/${safeName}/${runFolder}`;
   }
 
   async waitForPageStable(options = {}) {

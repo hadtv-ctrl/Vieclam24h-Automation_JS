@@ -1,6 +1,6 @@
-const { test, expect } = require('../../core/fixtures/baseTest');
-const applyData = require('../../data/applyJobData.json'); // Giả sử file này tồn tại
-const usersData = require('../../data/users.json');
+const { test, expect } = require('../../../core/fixtures/baseTest');
+const applyData = require('../../../data/applyJobData.json'); // Giả sử file này tồn tại
+const usersData = require('../../../data/users.json');
 
 test.describe('Feature: Ứng tuyển việc làm @applyjob @e2e', () => {
   let jobApplyPage;

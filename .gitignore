@@ -17,6 +17,7 @@
 # Các file log
 *.log
 debug.log
+/.dashboard-backups/
 
 # IDE và editor
 .vscode/*

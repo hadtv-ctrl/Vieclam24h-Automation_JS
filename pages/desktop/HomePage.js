@@ -1,4 +1,4 @@
-const { BasePage } = require('./BasePage');
+const { BasePage } = require('../BasePage');
 
 class HomePage extends BasePage {
   /**
@@ -15,6 +15,7 @@ class HomePage extends BasePage {
     ).first();
     this.allLinks = page.locator('a[href]');
     this.logo = page.locator('a[href="/"] svg').first();
+    this.privacyConsentAgreeBtn = page.getByRole('button', { name: 'Đồng ý', exact: true });
 
     this.jobMenuBtn = page.getByRole('button', { name: /Việc làm/ });
     this.findJobSubMenuBtn = page.getByRole('button', { name: 'Tìm việc làm' });
@@ -47,10 +48,15 @@ class HomePage extends BasePage {
   }
 
   async closeBlockingModalIfVisible() {
-    if (!(await this.genericModalCloseBtn.isVisible({ timeout: 2000 }))) return;
+    if (await this.privacyConsentAgreeBtn.isVisible({ timeout: 2000 })) {
+      await this.actions.click(this.privacyConsentAgreeBtn, { force: true });
+      await this.privacyConsentAgreeBtn.waitFor({ state: 'hidden', timeout: 5000 });
+    }
 
-    await this.actions.click(this.genericModalCloseBtn, { force: true });
-    await this.genericModalCloseBtn.waitFor({ state: 'hidden', timeout: 5000 });
+    if (await this.genericModalCloseBtn.isVisible({ timeout: 2000 })) {
+      await this.actions.click(this.genericModalCloseBtn, { force: true });
+      await this.genericModalCloseBtn.waitFor({ state: 'hidden', timeout: 5000 });
+    }
   }
 
   async navigate() {

@@ -182,7 +182,7 @@ class BasePage {
     const locator = await this.actions.waitForVisible(locatorOrSelector, { timeout: 30000 });
     // Cuộn đến element nếu cần thiết, phương thức này đã tự kiểm tra
     await this.scrollToElementIfOutsideViewport(locator);
-    return this.actions.click(locator, options);
+    return this.actions.click(locator, { timeout: 15000, ...options });
   }
 
   /**

@@ -1,6 +1,6 @@
-const { test } = require('../../core/fixtures/baseTest');
-const applyData = require('../../data/applyJobData.json');
-const usersData = require('../../data/users.json');
+const { test } = require('../../../core/fixtures/baseTest');
+const applyData = require('../../../data/applyJobData.json');
+const usersData = require('../../../data/users.json');
 
 test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @applyjob @e2e', () => {
 

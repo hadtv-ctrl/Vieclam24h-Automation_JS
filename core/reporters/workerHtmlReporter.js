@@ -32,7 +32,7 @@ class WorkerHtmlReporter {
     await fs.promises.mkdir(this.outputDir, { recursive: true });
 
     for (const [parallelIndex, results] of this.resultsByWorker) {
-      const workerDir = path.join(this.outputDir, `${this.runId}-worker-${parallelIndex}`);
+      const workerDir = path.join(this.outputDir, `worker-${parallelIndex}`);
       await fs.promises.mkdir(workerDir, { recursive: true });
       await fs.promises.writeFile(
         path.join(workerDir, 'index.html'),

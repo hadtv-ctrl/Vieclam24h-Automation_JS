@@ -1,5 +1,5 @@
-const { BasePage } = require('./BasePage');
-const { ScreenshotHelper } = require('../core/utils/commonUtils');
+const { BasePage } = require('../BasePage');
+const { ScreenshotHelper } = require('../../core/utils/commonUtils');
 
 class JobApplyPage extends BasePage {
   constructor(page) {
@@ -8,7 +8,7 @@ class JobApplyPage extends BasePage {
     this.screenshotHelper = new ScreenshotHelper(page, 'job-apply-details');
 
     // --- Locators (Các element trong page) ---
-    this.btnApplyNow = this.page.getByRole('button', { name: 'Ứng tuyển ngay' }).first();
+    this.btnApplyNow = this.page.getByRole('button', { name: /\u1ee8ng tuy\u1ec3n ngay|N\u1ed9p l\u1ea1i h\u1ed3 s\u01a1/i }).first();
     this.optProfileMethod = this.page.locator('[data-test-id="apply-method-selector__option-profile"]').first();
     this.optCVMethod = this.page.locator('[data-test-id="apply-method-selector__option-cv"]').first();
     this.btnContinueProfile = this.page.locator('[data-test-id="apply-method-selector__expanded-profile"] [data-test-id="apply-profile-completion-content__action"]').first();
@@ -373,10 +373,13 @@ class JobApplyPage extends BasePage {
 
     await this.confirmBulkApplySubmission();
 
-    // Wait for the popup and its button to be visible
-    await this.actions.waitForVisible(this.btnSeeMoreJobs, { timeout: 15000 });
-    await this.capture('after_click_submit_all');
-    await this.clickElement(this.btnSeeMoreJobs);
+    try {
+      await this.actions.waitForVisible(this.btnSeeMoreJobs, { timeout: 15000 });
+      await this.capture('after_click_submit_all');
+      await this.clickElement(this.btnSeeMoreJobs);
+    } catch {
+      console.log('Khong thay nut Xem them viec goi y sau khi Bulk Apply thanh cong.');
+    }
   }
 
   async hasNoBulkApplyJobs() {

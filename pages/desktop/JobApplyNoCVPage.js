@@ -1,5 +1,5 @@
-const { BasePage } = require('./BasePage');
-const { ScreenshotHelper } = require('../core/utils/commonUtils');
+const { BasePage } = require('../BasePage');
+const { ScreenshotHelper } = require('../../core/utils/commonUtils');
 const { expect } = require('@playwright/test');
 
 class JobApplyNoCVPage extends BasePage {

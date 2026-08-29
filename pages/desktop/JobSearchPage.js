@@ -1,5 +1,5 @@
 const { expect } = require('@playwright/test');
-const { BasePage } = require('./BasePage');
+const { BasePage } = require('../BasePage');
 
 class JobSearchPage extends BasePage {
   /**
@@ -10,6 +10,10 @@ class JobSearchPage extends BasePage {
     super(page, specName);
 
     this.firstJobLink = page.locator('[data-job-id]').first();
+    this.firstUnappliedJobLink = page
+      .locator('[data-job-id]')
+      .filter({ hasNotText: /\u0110\u00e3 \u1ee9ng tuy\u1ec3n|B\u1ea1n v\u1eeba \u1ee9ng tuy\u1ec3n/i })
+      .first();
     this.jobSearchResultTitle = page.getByRole('heading', { level: 1, name: /việc làm/i });
     this.jobCheckboxes = page.locator('.job-item-checkbox'); // Giả định selector cho checkbox
     this.bulkApplyBtn = page.getByRole('button', { name: 'Ứng tuyển hàng loạt' });
@@ -19,7 +23,10 @@ class JobSearchPage extends BasePage {
 
   async clickFirstJob() {
     const pagePromise = this.page.waitForEvent('popup');
-    await this.clickElement(this.firstJobLink);
+    const targetJob = await this.firstUnappliedJobLink.isVisible({ timeout: 5000 })
+      ? this.firstUnappliedJobLink
+      : this.firstJobLink;
+    await this.clickElement(targetJob);
     const jobPage = await pagePromise;
     await jobPage.waitForLoadState('domcontentloaded');
     return jobPage;
