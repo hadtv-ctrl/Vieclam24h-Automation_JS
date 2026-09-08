@@ -1846,72 +1846,300 @@ pre .muted {
   box-shadow: var(--shadow);
 }
 .explorer-page .resource-nav {
-  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px 14px 12px;
+  border-right: 1px solid var(--line);
+  background: var(--surface-2);
+  overflow: hidden;
+  box-sizing: border-box;
 }
-.results-orientation {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
+
+/* Header của Sidebar Artifacts */
+.resource-nav-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
-.results-orientation-item {
-  width: 100%;
-  border-width: 1px;
-  font: inherit;
-  text-align: left;
+.resource-nav-title {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-2);
-  color: var(--muted);
+  gap: 7px;
 }
-.results-orientation-item.active {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  color: var(--text);
-}
-.results-orientation-item > i {
-  flex: 0 0 auto;
+.resource-nav-title i {
   color: var(--accent);
-  font-size: 18px;
+  font-size: 16px;
 }
-.results-orientation-item strong,
-.results-orientation-item small {
-  display: block;
+
+/* Unified Segmented Control Switcher (Thay thế nút trùng lặp) */
+.resource-segmented-control {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--input);
+  border: 1px solid var(--line);
+  margin-bottom: 12px;
 }
-.results-orientation-item strong {
-  font-size: 12px;
-}
-.results-orientation-item small {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.35;
-}
-.resource-filters {
+.resource-seg-btn {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin: -7px 0 18px;
-}
-.resource-filter {
-  min-height: 29px;
-  padding: 0 9px;
-  border-color: var(--line);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
-  font-size: 9px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.resource-filter:hover,
-.resource-filter.active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 9%, transparent);
+.resource-seg-btn:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+.resource-seg-btn:hover i {
   color: var(--accent);
 }
-.resource-filter i {
-  margin-right: 3px;
+.resource-seg-btn.active {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+.resource-seg-btn i {
+  font-size: 18px;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+.resource-seg-btn.active i {
+  color: var(--accent);
+}
+.resource-seg-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 0;
+}
+.resource-seg-name {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: inherit;
+}
+.resource-seg-btn.active .resource-seg-name {
+  color: var(--accent);
+  font-weight: 800;
+}
+.resource-seg-desc {
+  font-size: 9.5px;
+  color: var(--muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resource-seg-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 80%, var(--line));
+  color: var(--muted);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.resource-seg-btn.active .resource-seg-count {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Search Container & Platform Pills */
+.resource-search-container {
+  margin-bottom: 10px;
+}
+.resource-search-container .pm-sidebar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.resource-search-container .pm-sidebar-search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 28px 0 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11.5px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.resource-search-container .pm-sidebar-search input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.resource-search-container .pm-sidebar-search i {
+  position: absolute;
+  left: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+.resource-search-clear {
+  position: absolute;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 0;
+  background: color-mix(in srgb, var(--muted) 20%, transparent);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.resource-search-clear:hover {
+  background: var(--danger);
+  color: #fff;
+}
+.resource-platform-pills {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 2px 0;
+}
+.resource-plat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 25px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.resource-plat-pill:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: var(--text);
+}
+.resource-plat-pill.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* List Toolbar */
+.resource-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 2px 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+}
+.resource-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.resource-list-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.resource-list-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.resource-tree-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.resource-tree-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Scrollable Tree Container */
+.resource-list-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  margin-top: 2px;
+}
+.resource-list-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.resource-list-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--line) 80%, transparent);
+  border-radius: 3px;
+}
+
+/* Empty State */
+.resource-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+.resource-empty-state i {
+  font-size: 28px;
+  opacity: 0.6;
+}
+.resource-empty-state p {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* Backward compatibility fallbacks */
+.results-orientation,
+.resource-filters {
+  display: none !important;
 }
 .explorer-page .resource-viewer {
   height: 100%;

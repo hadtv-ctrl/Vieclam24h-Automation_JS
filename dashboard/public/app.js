@@ -86,6 +86,8 @@ let timer = null;
 let resourceCatalog = { documents: [], data: [], evidence: [], evidenceDetails: [], reports: [], reportDetails: [] };
 let currentResource = null;
 let activeResourceCategory = 'reports';
+let activeEvidencePlatform = 'all';
+let areFoldersExpanded = false;
 let currentResourceCategory = '';
 let evidenceNavigation = [];
 const openEvidenceFolders = new Set();
@@ -395,25 +397,66 @@ async function request(url, options) {
 
 function renderResourceList(filter = '') {
   const query = filter.trim().toLowerCase();
+  let totalMatches = 0;
   const groups = [
     ['Báo cáo', 'reports', resourceCatalog.reports],
     ['Evidence', 'evidence', resourceCatalog.evidence],
   ];
-  $('#resource-list').innerHTML = groups.map(([label, category, files]) => {
+
+  // Tự động mở thư mục ngày gần nhất khi khởi tạo
+  if (!query && openReportFolders.size === 0 && resourceCatalog.reports.length) {
+    const firstReport = resourceCatalog.reports[0];
+    const firstFolder = firstReport.split('/')[0];
+    if (firstFolder) openReportFolders.add(firstFolder);
+  }
+  if (!query && openEvidenceFolders.size === 0 && resourceCatalog.evidence.length) {
+    const firstEv = resourceCatalog.evidence[0];
+    const parts = firstEv.split('/');
+    if (parts.length > 0) openEvidenceFolders.add(parts[0]);
+    if (parts.length > 1) openEvidenceFolders.add(`${parts[0]}/${parts[1]}`);
+  }
+
+  const html = groups.map(([label, category, files]) => {
     if (activeResourceCategory !== 'all' && activeResourceCategory !== category) return '';
-    const matches = files.filter((file) => file.toLowerCase().includes(query));
+    let matches = files.filter((file) => file.toLowerCase().includes(query));
+    if (category === 'evidence' && activeEvidencePlatform !== 'all') {
+      if (activeEvidencePlatform === 'desktop') {
+        matches = matches.filter((file) => file.toLowerCase().includes('/desktop/'));
+      } else if (activeEvidencePlatform === 'mobile') {
+        matches = matches.filter((file) => file.toLowerCase().includes('/mobile-web/') || file.toLowerCase().includes('/mobile/'));
+      }
+    }
+    totalMatches += matches.length;
     if (!matches.length) return '';
     if (category === 'reports') {
-      return `<section class="resource-group report-group"><h3>${label}<span>${matches.length}</span></h3>${renderReportTree(matches)}</section>`;
+      return `<section class="resource-group report-group">${renderReportTree(matches, !!query)}</section>`;
     }
     if (category === 'evidence') {
       evidenceNavigation = matches;
-      return `<section class="resource-group evidence-group"><h3>${label}<span>${matches.length}</span></h3>${renderEvidenceTree(matches)}</section>`;
+      return `<section class="resource-group evidence-group">${renderEvidenceTree(matches, !!query)}</section>`;
     }
-    return `<section class="resource-group"><h3>${label}<span>${matches.length}</span></h3>${matches.map((file) =>
+    return `<section class="resource-group">${matches.map((file) =>
       `<button class="resource-item${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="${category}"><span>${category === 'reports' ? 'R' : file.endsWith('.json') ? '{}' : /\.(png|jpe?g|webp)$/i.test(file) ? '▧' : 'M↓'}</span><div><strong>${escapeHtml(category === 'reports' ? file.split('/').slice(-2,-1)[0] || 'Báo cáo' : file.split('/').pop())}</strong><small>${escapeHtml(file)}</small></div></button>`
     ).join('')}</section>`;
-  }).join('') || '<p class="empty-resource">Không tìm thấy file.</p>';
+  }).join('');
+
+  $('#resource-list').innerHTML = html || `
+    <div class="resource-empty-state">
+      <i class="ph ph-magnifying-glass"></i>
+      <p>Không tìm thấy file nào phù hợp.</p>
+    </div>
+  `;
+
+  // Cập nhật toolbar tiêu đề & số lượng
+  const countEl = $('#resource-list-count');
+  const titleEl = $('#resource-list-title');
+  if (countEl) {
+    countEl.textContent = `${totalMatches} ${activeResourceCategory === 'reports' ? 'báo cáo' : 'ảnh'}`;
+  }
+  if (titleEl) {
+    titleEl.textContent = activeResourceCategory === 'reports' ? 'DANH MỤC BÁO CÁO' : 'DANH MỤC ẢNH EVIDENCE';
+  }
+
   document.querySelectorAll('.resource-item').forEach((button) => button.addEventListener('click', () => loadResource(button.dataset.path, false, button.dataset.category)));
   document.querySelectorAll('.evidence-folder').forEach((folder) => folder.addEventListener('toggle', () => {
     if (folder.classList.contains('report-folder')) return;
@@ -433,7 +476,7 @@ function renderResourceList(filter = '') {
   }));
 }
 
-function renderReportTree(files) {
+function renderReportTree(files, isSearching = false) {
   const root = {};
   files.forEach((file) => {
     let branch = root;
@@ -453,19 +496,19 @@ function renderReportTree(files) {
   const reportItems = (items) => items.map((file) => {
     const detail = resourceCatalog.reportDetails.find((item) => item.path === file);
     const createdAt = detail?.modifiedAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(detail.modifiedAt)) : 'Không rõ thời gian';
-    return `<button class="resource-item report-file${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="reports"><span>R</span><div><strong>Báo cáo Playwright</strong><small>${escapeHtml(createdAt)}</small></div></button>`;
+    return `<button class="resource-item report-file${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="reports"><span class="res-item-icon-report"><i class="ph-bold ph-file-html"></i></span><div><strong>Báo cáo Playwright</strong><small>${escapeHtml(createdAt)}</small></div></button>`;
   }).join('');
   const branchHtml = (branch, parentPath = '') => Object.entries(branch)
     .filter(([key]) => key !== '__reports')
     .map(([folder, child]) => {
       const folderPath = parentPath ? `${parentPath}/${folder}` : folder;
-      const open = openReportFolders.has(folderPath) ? ' open' : '';
+      const open = (isSearching || areFoldersExpanded || openReportFolders.has(folderPath)) ? ' open' : '';
       return `<details class="evidence-folder report-folder" data-report-folder="${escapeHtml(folderPath)}"${open}><summary><span class="folder-icon">▸</span><strong>${escapeHtml(folder)}</strong><small>${countReports(child)}</small><button class="delete-folder-button" type="button" data-folder="${escapeHtml(folderPath)}" data-type="report-folder" title="Xóa folder báo cáo">×</button></summary><div>${branchHtml(child, folderPath)}${reportItems(child.__reports || [])}</div></details>`;
     }).join('');
   return branchHtml(root) + reportItems(root.__reports || []);
 }
 
-function renderEvidenceTree(files) {
+function renderEvidenceTree(files, isSearching = false) {
   const root = {};
   files.forEach((file) => {
     let branch = root;
@@ -485,14 +528,14 @@ function renderEvidenceTree(files) {
     .map(([folder, child]) => {
       const childFiles = countTreeFiles(child);
       const folderPath = parentPath ? `${parentPath}/${folder}` : folder;
-      const open = openEvidenceFolders.has(folderPath) ? ' open' : '';
+      const open = (isSearching || areFoldersExpanded || openEvidenceFolders.has(folderPath)) ? ' open' : '';
       return `<details class="evidence-folder" data-folder="${escapeHtml(folderPath)}"${open}><summary><span class="folder-icon">▸</span><strong>${escapeHtml(folder)}</strong><small>${childFiles}</small><button class="delete-folder-button" type="button" data-folder="${escapeHtml(folderPath)}" data-type="evidence-folder" title="Xóa folder">×</button></summary><div>${renderBranch(child, depth + 1, folderPath)}${renderFiles(child.__files || [])}</div></details>`;
     }).join('');
 
   const renderFiles = (items) => [...items].reverse().map((file) => {
     const detail = resourceCatalog.evidenceDetails.find((item) => item.path === file);
     const createdAt = detail?.modifiedAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(detail.modifiedAt)) : 'Không rõ thời gian';
-    return `<button class="resource-item evidence-file${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="evidence"><span>▧</span><div><strong>${escapeHtml(file.split('/').pop())}</strong><small>${escapeHtml(createdAt)}</small></div></button>`;
+    return `<button class="resource-item evidence-file${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="evidence"><span class="res-item-icon-evidence"><i class="ph-bold ph-image"></i></span><div><strong>${escapeHtml(file.split('/').pop())}</strong><small>${escapeHtml(createdAt)}</small></div></button>`;
   }).join('');
 
   return renderBranch(root) + renderFiles(root.__files || []);
@@ -725,7 +768,14 @@ async function openExplorer() {
       <div class="hero-stat-card"><strong>${resourceCatalog.evidence.length}</strong><small>Ảnh evidence</small></div>
       <div class="hero-stat-card"><strong>${resourceCatalog.documents.length}</strong><small>Tài liệu</small></div>
     `;
-    renderResourceList();
+
+    // Cập nhật số lượng trên các tab chuyển đổi Segmented Switcher
+    const reportsBadge = $('#badge-reports-count');
+    const evidenceBadge = $('#badge-evidence-count');
+    if (reportsBadge) reportsBadge.textContent = resourceCatalog.reports?.length || 0;
+    if (evidenceBadge) evidenceBadge.textContent = resourceCatalog.evidence?.length || 0;
+
+    renderResourceList($('#resource-search')?.value || '');
   } catch (error) { notify(error.message); }
 }
 
@@ -6511,17 +6561,120 @@ document.querySelectorAll('.view-tab').forEach((button) => button.addEventListen
   if (button.dataset.view === 'builder-view') await initVisualBuilder();
   if (button.dataset.view === 'git-view') await openGitStudio();
 }));
+function switchResourceCategory(category) {
+  activeResourceCategory = category;
+  document.querySelectorAll('.resource-seg-btn').forEach((btn) => {
+    const isActive = btn.dataset.category === category;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', String(isActive));
+  });
+
+  // Tương thích ngược nếu có phần tử cũ
+  document.querySelectorAll('.resource-filter').forEach((filter) => filter.classList.toggle('active', filter.dataset.category === category));
+  document.querySelectorAll('.results-orientation-item').forEach((item) => item.classList.toggle('active', item.dataset.resultsCategory === category));
+
+  const searchInput = $('#resource-search');
+  const platformPills = $('#resource-platform-pills');
+  const titleEl = $('#resource-list-title');
+
+  if (category === 'reports') {
+    if (searchInput) searchInput.placeholder = 'Tìm báo cáo theo ngày, lần chạy...';
+    if (platformPills) platformPills.style.display = 'none';
+    if (titleEl) titleEl.textContent = 'DANH MỤC BÁO CÁO';
+  } else if (category === 'evidence') {
+    if (searchInput) searchInput.placeholder = 'Tìm ảnh theo ngày, platform, spec...';
+    if (platformPills) platformPills.style.display = 'flex';
+    if (titleEl) titleEl.textContent = 'DANH MỤC ẢNH EVIDENCE';
+  }
+
+  renderResourceList(searchInput ? searchInput.value : '');
+}
+
+document.querySelectorAll('.resource-seg-btn').forEach((btn) => {
+  btn.addEventListener('click', () => switchResourceCategory(btn.dataset.category));
+});
+
+// Fallback handlers cho tương thích
 document.querySelectorAll('.resource-filter').forEach((button) => button.addEventListener('click', () => {
-  activeResourceCategory = button.dataset.category;
-  document.querySelectorAll('.resource-filter').forEach((filter) => filter.classList.toggle('active', filter === button));
-  document.querySelectorAll('.results-orientation-item').forEach((item) => item.classList.toggle('active', item.dataset.resultsCategory === activeResourceCategory));
-  renderResourceList($('#resource-search').value);
+  switchResourceCategory(button.dataset.category);
 }));
 document.querySelectorAll('.results-orientation-item').forEach((item) => item.addEventListener('click', () => {
-  const filter = document.querySelector(`.resource-filter[data-category="${item.dataset.resultsCategory}"]`);
-  if (filter) filter.click();
+  switchResourceCategory(item.dataset.resultsCategory);
 }));
-$('#resource-search').addEventListener('input', (event) => renderResourceList(event.target.value));
+
+const resSearchInput = $('#resource-search');
+const resSearchClearBtn = $('#resource-search-clear-btn');
+if (resSearchInput) {
+  resSearchInput.addEventListener('input', (event) => {
+    if (resSearchClearBtn) resSearchClearBtn.hidden = !event.target.value;
+    renderResourceList(event.target.value);
+  });
+}
+if (resSearchClearBtn && resSearchInput) {
+  resSearchClearBtn.addEventListener('click', () => {
+    resSearchInput.value = '';
+    resSearchClearBtn.hidden = true;
+    resSearchInput.focus();
+    renderResourceList('');
+  });
+}
+
+document.querySelectorAll('.resource-plat-pill').forEach((pill) => {
+  pill.addEventListener('click', () => {
+    activeEvidencePlatform = pill.dataset.platform;
+    document.querySelectorAll('.resource-plat-pill').forEach((p) => p.classList.toggle('active', p === pill));
+    renderResourceList($('#resource-search')?.value || '');
+  });
+});
+
+$('#resource-toggle-tree-btn')?.addEventListener('click', () => {
+  areFoldersExpanded = !areFoldersExpanded;
+  const folders = document.querySelectorAll('#resource-list details');
+  folders.forEach((f) => {
+    f.open = areFoldersExpanded;
+    if (f.dataset.folder) {
+      if (areFoldersExpanded) openEvidenceFolders.add(f.dataset.folder);
+      else openEvidenceFolders.delete(f.dataset.folder);
+    }
+    if (f.dataset.reportFolder) {
+      if (areFoldersExpanded) openReportFolders.add(f.dataset.reportFolder);
+      else openReportFolders.delete(f.dataset.reportFolder);
+    }
+  });
+  const btn = $('#resource-toggle-tree-btn');
+  if (btn) {
+    if (areFoldersExpanded) {
+      btn.innerHTML = '<i class="ph-bold ph-arrows-in-simple"></i><span>Thu gọn</span>';
+      btn.title = 'Thu gọn tất cả thư mục';
+    } else {
+      btn.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i><span>Mở tất cả</span>';
+      btn.title = 'Mở rộng tất cả thư mục';
+    }
+  }
+});
+
+$('#resource-refresh-btn')?.addEventListener('click', async () => {
+  const btn = $('#resource-refresh-btn');
+  if (btn) btn.classList.add('rotating');
+  await openExplorer();
+  if (btn) setTimeout(() => btn.classList.remove('rotating'), 500);
+});
+
+// Điều hướng ảnh bằng bàn phím mũi tên Trái / Phải
+window.addEventListener('keydown', (e) => {
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+  const resourcesView = $('#resources-view');
+  if (!resourcesView || resourcesView.hidden) return;
+  const evidencePreview = $('#evidence-preview');
+  if (!evidencePreview || evidencePreview.hidden) return;
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    navigateEvidence(-1);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    navigateEvidence(1);
+  }
+});
 $('#reveal-button').addEventListener('click', () => loadResource(currentResource, $('#reveal-button').dataset.revealed !== 'true'));
 $('#edit-button').addEventListener('click', editCurrentResource);
 $('#save-resource-button').addEventListener('click', saveCurrentResource);

@@ -2539,17 +2539,68 @@
         <div id="resource-summary" class="hero-stats-group"></div>
       </header>
       <div class="panel explorer-page">
-        <nav class="resource-nav">
-          <div class="results-orientation">
-            <button type="button" class="results-orientation-item active" data-results-category="reports"><i class="ph-bold ph-chart-bar"></i><div><strong>Báo cáo</strong><small>Kết quả pass/fail, thời lượng, lỗi</small></div></button>
-            <button type="button" class="results-orientation-item" data-results-category="evidence"><i class="ph-bold ph-image"></i><div><strong>Evidence</strong><small>Ảnh chụp trạng thái sau mỗi bước</small></div></button>
+        <nav class="resource-nav" id="resource-nav">
+          <!-- Header của Sidebar Artifacts -->
+          <div class="resource-nav-head">
+            <div>
+              <span class="pm-section-tag">01 · KHO ARTIFACTS</span>
+              <h2 class="resource-nav-title"><i class="ph-bold ph-archive"></i> Báo cáo & Ảnh</h2>
+            </div>
+            <button id="resource-refresh-btn" type="button" class="btn-icon-subtle" title="Làm mới danh sách artifacts">
+              <i class="ph-bold ph-arrows-clockwise"></i>
+            </button>
           </div>
-          <label class="resource-search">Tìm báo cáo hoặc ảnh<input id="resource-search" type="search" placeholder="Tên run, ngày, tên ảnh..."></label>
-          <div class="resource-filters" role="tablist">
-            <button class="resource-filter active" type="button" data-category="reports"><i class="ph-bold ph-chart-bar"></i> Báo cáo</button>
-            <button class="resource-filter" type="button" data-category="evidence"><i class="ph-bold ph-image"></i> Evidence</button>
+
+          <!-- Chuyển đổi Báo cáo / Evidence duy nhất (Segmented Switcher) -->
+          <div class="resource-segmented-control" role="tablist" aria-label="Chọn loại kết quả kiểm thử">
+            <button type="button" class="resource-seg-btn active" data-category="reports" role="tab" aria-selected="true" id="seg-btn-reports">
+              <i class="ph-bold ph-chart-bar"></i>
+              <div class="resource-seg-info">
+                <span class="resource-seg-name">Báo cáo</span>
+                <small class="resource-seg-desc">Playwright HTML</small>
+              </div>
+              <span class="resource-seg-count" id="badge-reports-count">0</span>
+            </button>
+            <button type="button" class="resource-seg-btn" data-category="evidence" role="tab" aria-selected="false" id="seg-btn-evidence">
+              <i class="ph-bold ph-image"></i>
+              <div class="resource-seg-info">
+                <span class="resource-seg-name">Evidence</span>
+                <small class="resource-seg-desc">Ảnh từng bước</small>
+              </div>
+              <span class="resource-seg-count" id="badge-evidence-count">0</span>
+            </button>
           </div>
-          <div id="resource-list"></div>
+
+          <!-- Hộp Tìm kiếm & Lọc Nền tảng -->
+          <div class="resource-search-container">
+            <div class="pm-sidebar-search">
+              <i class="ph ph-magnifying-glass"></i>
+              <input id="resource-search" type="search" placeholder="Tìm theo tên run, ngày, file..." autocomplete="off">
+              <button type="button" id="resource-search-clear-btn" class="resource-search-clear" hidden title="Xóa tìm kiếm">×</button>
+            </div>
+            
+            <!-- Quick Platform Pills (hiển thị khi chọn Evidence để lọc nhanh) -->
+            <div class="resource-platform-pills" id="resource-platform-pills" style="display: none;">
+              <button type="button" class="resource-plat-pill active" data-platform="all">Tất cả</button>
+              <button type="button" class="resource-plat-pill" data-platform="desktop"><i class="ph-bold ph-desktop"></i> Desktop</button>
+              <button type="button" class="resource-plat-pill" data-platform="mobile"><i class="ph-bold ph-device-mobile"></i> Mobile</button>
+            </div>
+          </div>
+
+          <!-- Thanh Tiêu đề Danh mục & Điều khiển cây thư mục -->
+          <div class="resource-list-toolbar">
+            <div class="resource-list-meta">
+              <span id="resource-list-title" class="resource-list-title">DANH MỤC BÁO CÁO</span>
+              <span id="resource-list-count" class="resource-list-count">0 mục</span>
+            </div>
+            <button type="button" id="resource-toggle-tree-btn" class="resource-tree-toggle-btn" title="Mở rộng / Thu gọn tất cả thư mục">
+              <i class="ph-bold ph-arrows-out-simple"></i>
+              <span>Mở tất cả</span>
+            </button>
+          </div>
+
+          <!-- Cây Thư mục Danh mục Cuộn Dọc -->
+          <div id="resource-list" class="resource-list-scroll"></div>
         </nav>
         <section class="resource-viewer">
           <div class="resource-toolbar">
