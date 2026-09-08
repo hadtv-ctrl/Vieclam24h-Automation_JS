@@ -11845,12 +11845,6 @@ button.data-file-item.active,
   gap: 16px;
 }
 
-.shell:has(> .page-manager-view.active) {
-  width: 100%;
-  max-width: 1880px;
-  padding: 0 16px 40px;
-}
-
 .page-manager-view {
   min-height: calc(100vh - 64px);
 }
@@ -13307,7 +13301,8 @@ button.data-file-item.active,
     padding-inline: 18px;
   }
 
-  .page-manager-workspace {
+  .page-manager-workspace,
+  .script-workspace-panel {
     padding-inline: 18px;
   }
 

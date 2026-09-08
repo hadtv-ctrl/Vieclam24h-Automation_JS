@@ -3681,6 +3681,147 @@ function selectSuite(id) {
   updateSuiteRunButtonState();
 }
 
+function updateSuitePlatformContext(platform, currentValues = {}) {
+  const isMob = platform === 'mobile';
+
+  // 1. Emulation field: Hide entirely for Desktop, Show for Mobile
+  const deviceLabel = $('#suite-platform-device-label');
+  const deviceSelect = $('#suite-platform-device');
+  const row1 = $('#suite-platform-row1');
+  if (deviceLabel) {
+    deviceLabel.style.display = isMob ? 'flex' : 'none';
+  }
+  if (row1) {
+    row1.style.gridTemplateColumns = isMob ? '1.2fr 1fr 1fr' : '1.5fr 1fr';
+  }
+  if (deviceSelect) {
+    if (!isMob) {
+      deviceSelect.value = '';
+    } else if (currentValues.device !== undefined) {
+      deviceSelect.value = currentValues.device;
+    }
+  }
+
+  // 2. Browser Project dropdown: filter desktop vs mobile projects
+  const projSelect = $('#suite-platform-project') || $('#suite-field-project');
+  if (projSelect) {
+    const rawProjects = testCatalog?.projects || ['chromium', 'mobile-chrome'];
+    const filteredProjects = rawProjects.filter(p => {
+      const pLower = p.toLowerCase();
+      if (isMob) {
+        return pLower.includes('mobile') || pLower.includes('android') || pLower.includes('ios');
+      } else {
+        return !pLower.includes('mobile') && !pLower.includes('android') && !pLower.includes('ios');
+      }
+    });
+
+    // Fallback if none found
+    if (filteredProjects.length === 0) {
+      filteredProjects.push(isMob ? 'mobile-chrome' : 'chromium');
+    }
+
+    projSelect.innerHTML = filteredProjects.map(p =>
+      `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`
+    ).join('');
+
+    if (currentValues.project && filteredProjects.includes(currentValues.project)) {
+      projSelect.value = currentValues.project;
+    } else {
+      projSelect.value = filteredProjects[0];
+    }
+  }
+
+  // 3. Viewport Presets dropdown: filter desktop vs mobile presets
+  const vpPresetSelect = $('#suite-platform-viewport-preset') || $('#suite-field-viewport-preset');
+  if (vpPresetSelect) {
+    let presetsHtml = '';
+    if (isMob) {
+      presetsHtml = `
+        <option value="default">📱 Mặc định theo thiết bị</option>
+        <option value="390x844">📱 Mobile iPhone 14/13 (390 x 844)</option>
+        <option value="393x851">📱 Mobile Pixel 7 (393 x 851)</option>
+        <option value="360x800">📱 Mobile Android Chuẩn (360 x 800)</option>
+        <option value="412x915">📱 Mobile Galaxy S20/S21 (412 x 915)</option>
+        <option value="custom">⚙️ Tự nhập kích thước (Custom)</option>
+      `;
+    } else {
+      presetsHtml = `
+        <option value="default">🖥️ Mặc định theo hệ thống</option>
+        <option value="1920x1080">🖥️ Desktop Full HD (1920 x 1080)</option>
+        <option value="1366x768">💻 Desktop Laptop (1366 x 768)</option>
+        <option value="1440x900">🖥️ Desktop HD+ (1440 x 900)</option>
+        <option value="2560x1440">🖥️ Desktop 2K Quad HD (2560 x 1440)</option>
+        <option value="custom">⚙️ Tự nhập kích thước (Custom)</option>
+      `;
+    }
+    vpPresetSelect.innerHTML = presetsHtml;
+
+    if (currentValues.preset) {
+      const match = vpPresetSelect.querySelector(`option[value="${currentValues.preset}"]`);
+      if (match) {
+        vpPresetSelect.value = currentValues.preset;
+      } else {
+        vpPresetSelect.value = isMob ? (currentValues.preset === '1920x1080' ? 'default' : currentValues.preset) : (currentValues.preset.includes('x') && parseInt(currentValues.preset) < 800 ? '1920x1080' : currentValues.preset);
+      }
+    } else {
+      vpPresetSelect.value = isMob ? 'default' : '1920x1080';
+    }
+  }
+
+  // 4. Custom Viewport Dimension Inputs
+  const vpWidthInput = $('#suite-platform-vp-width') || $('#suite-field-vp-width');
+  const vpHeightInput = $('#suite-platform-vp-height') || $('#suite-field-vp-height');
+  if (vpWidthInput && vpHeightInput) {
+    if (currentValues.width && currentValues.height) {
+      vpWidthInput.value = currentValues.width;
+      vpHeightInput.value = currentValues.height;
+    } else {
+      vpWidthInput.value = isMob ? 393 : 1920;
+      vpHeightInput.value = isMob ? 851 : 1080;
+    }
+  }
+
+  // 5. Spec Checklist: filter specs belonging to the platform
+  const allSpecs = testCatalog?.specs || [];
+  const checklistContainer = $('#suite-specs-checklist-container');
+  const selectedSpecs = Array.isArray(currentValues.specs) ? currentValues.specs : [];
+
+  if (checklistContainer) {
+    const platformSpecs = allSpecs.filter(s => {
+      const sLower = s.toLowerCase();
+      const isMobileSpec = sLower.includes('/mobile/') || sLower.includes('/mobile-web/') || sLower.includes('.mobile.') || sLower.includes('-mobile') || sLower.includes('_mobile');
+      return isMob ? isMobileSpec : !isMobileSpec;
+    });
+
+    if (platformSpecs.length === 0) {
+      checklistContainer.innerHTML = `<p style="color:var(--muted); font-size:11.5px; padding:8px 4px;">Không tìm thấy file spec nào cho nền tảng <strong>${isMob ? 'Mobile Web' : 'Desktop Web'}</strong>.</p>`;
+    } else {
+      checklistContainer.innerHTML = platformSpecs.map((s) => {
+        const parts = s.split('/');
+        const fileName = parts.pop();
+        const dirPath = parts.length > 0 ? parts.join('/') + '/' : '';
+        const isChecked = selectedSpecs.includes(s);
+        return `
+          <label class="suite-card-fields suite-spec-item" style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:5px; cursor:pointer;">
+            <input type="checkbox" class="suite-spec-cb" value="${escapeHtml(s)}" ${isChecked ? 'checked' : ''}>
+            <span class="suite-spec-name" style="font-size:11.5px; font-family:var(--font-mono);"><span style="color:var(--muted);">${escapeHtml(dirPath)}</span><strong>${escapeHtml(fileName)}</strong></span>
+          </label>
+        `;
+      }).join('');
+
+      checklistContainer.querySelectorAll('.suite-spec-cb').forEach((cb) => {
+        cb.addEventListener('change', () => {
+          syncCurrentSuiteFromInputs();
+        });
+      });
+    }
+
+    const countLabel = $('#suite-specs-count-label');
+    const checkedCount = checklistContainer.querySelectorAll('.suite-spec-cb:checked').length;
+    if (countLabel) countLabel.textContent = `Đã chọn: ${checkedCount} file`;
+  }
+}
+
 function loadSuiteIntoEditor(id, suite) {
   const emptyBox = $('#suite-middle-empty');
   const formInner = $('#suite-editor-form');
@@ -3803,28 +3944,12 @@ function loadSuiteIntoEditor(id, suite) {
       if ($('#platform-scope-title-text')) $('#platform-scope-title-text').textContent = 'Desktop Web';
     }
 
-    const projSelect = $('#suite-platform-project') || $('#suite-field-project');
-    if (projSelect) projSelect.value = suite.project || (platform === 'mobile' ? 'mobile-chrome' : 'chromium');
-
-    const deviceSelect = $('#suite-platform-device');
-    if (deviceSelect) deviceSelect.value = suite.device || '';
-
     const workersInput = $('#suite-platform-workers') || $('#suite-field-workers');
     if (workersInput) workersInput.value = suite.workers || 2;
 
     const vpPreset = suite.viewport?.preset || 'default';
-    const vpPresetSelect = $('#suite-platform-viewport-preset') || $('#suite-field-viewport-preset');
-    if (vpPresetSelect) vpPresetSelect.value = vpPreset;
-
     const vpWidth = suite.viewport?.width || (platform === 'mobile' ? 393 : 1920);
     const vpHeight = suite.viewport?.height || (platform === 'mobile' ? 851 : 1080);
-    const vpWidthInput = $('#suite-platform-vp-width') || $('#suite-field-vp-width');
-    const vpHeightInput = $('#suite-platform-vp-height') || $('#suite-field-vp-height');
-    if (vpWidthInput) vpWidthInput.value = vpWidth;
-    if (vpHeightInput) vpHeightInput.value = vpHeight;
-
-    const customVpBox = $('#suite-platform-custom-vp-box') || $('#suite-custom-vp-box');
-    if (customVpBox) customVpBox.style.display = vpPreset === 'custom' ? 'grid' : 'none';
 
     // Scope mode
     let selectedSpecs = [];
@@ -3850,36 +3975,18 @@ function loadSuiteIntoEditor(id, suite) {
     const grepInput = $('#suite-field-grep');
     if (grepInput) grepInput.value = suite.grep || '';
 
-    // Render spec checklist
-    const allSpecs = testCatalog?.specs || [];
-    const checklistContainer = $('#suite-specs-checklist-container');
-    if (checklistContainer) {
-      if (allSpecs.length === 0) {
-        checklistContainer.innerHTML = '<p style="color:var(--muted); font-size:11px; padding:4px;">Chưa có file spec nào trong framework.</p>';
-      } else {
-        checklistContainer.innerHTML = allSpecs.map((s) => {
-          const parts = s.split('/');
-          const fileName = parts.pop();
-          const dirPath = parts.length > 0 ? parts.join('/') + '/' : '';
-          const isChecked = selectedSpecs.includes(s);
-          return `
-            <label class="suite-card-fields suite-spec-item" style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:5px; cursor:pointer;">
-              <input type="checkbox" class="suite-spec-cb" value="${escapeHtml(s)}" ${isChecked ? 'checked' : ''}>
-              <span class="suite-spec-name" style="font-size:11.5px; font-family:var(--font-mono);"><span style="color:var(--muted);">${escapeHtml(dirPath)}</span><strong>${escapeHtml(fileName)}</strong></span>
-            </label>
-          `;
-        }).join('');
+    // Dynamically update platform context (emulation, projects, presets, specs)
+    updateSuitePlatformContext(platform, {
+      project: suite.project,
+      device: suite.device,
+      preset: vpPreset,
+      width: vpWidth,
+      height: vpHeight,
+      specs: selectedSpecs
+    });
 
-        checklistContainer.querySelectorAll('.suite-spec-cb').forEach((cb) => {
-          cb.addEventListener('change', () => {
-            syncCurrentSuiteFromInputs();
-          });
-        });
-      }
-    }
-
-    const countLabel = $('#suite-specs-count-label');
-    if (countLabel) countLabel.textContent = `Đã chọn: ${selectedSpecs.length} file`;
+    const customVpBox = $('#suite-platform-custom-vp-box') || $('#suite-custom-vp-box');
+    if (customVpBox) customVpBox.style.display = vpPreset === 'custom' ? 'grid' : 'none';
   }
 
   updateSuiteRunButtonState();
@@ -4270,11 +4377,24 @@ function initSuitesView() {
   document.querySelectorAll('input[name="suite-single-platform"]').forEach((radio) => {
     radio.addEventListener('change', () => {
       const isMob = radio.value === 'mobile';
+      const plat = isMob ? 'mobile' : 'desktop';
       $('#single-plat-mobile-label')?.classList.toggle('active', isMob);
       $('#single-plat-desktop-label')?.classList.toggle('active', !isMob);
       if ($('#platform-scope-title-text')) {
         $('#platform-scope-title-text').textContent = isMob ? 'Mobile Web' : 'Desktop Web';
       }
+
+      // Collect current selected specs if any
+      const currentCheckedSpecs = Array.from(document.querySelectorAll('#suite-specs-checklist-container .suite-spec-cb:checked')).map((cb) => cb.value);
+
+      // Re-render context options for the newly chosen platform
+      updateSuitePlatformContext(plat, {
+        preset: isMob ? 'default' : '1920x1080',
+        width: isMob ? 393 : 1920,
+        height: isMob ? 851 : 1080,
+        specs: currentCheckedSpecs
+      });
+
       syncCurrentSuiteFromInputs();
     });
   });
@@ -4302,9 +4422,38 @@ function initSuitesView() {
   // Viewport preset change
   const vpSelect = $('#suite-platform-viewport-preset') || $('#suite-field-viewport-preset');
   vpSelect?.addEventListener('change', (e) => {
+    const val = e.target.value;
     const customBox = $('#suite-platform-custom-vp-box') || $('#suite-custom-vp-box');
     if (customBox) {
-      customBox.style.display = e.target.value === 'custom' ? 'grid' : 'none';
+      customBox.style.display = val === 'custom' ? 'grid' : 'none';
+    }
+    if (val && val.includes('x') && val !== 'custom') {
+      const [w, h] = val.split('x').map((n) => parseInt(n, 10));
+      if (w && h) {
+        const wInp = $('#suite-platform-vp-width') || $('#suite-field-vp-width');
+        const hInp = $('#suite-platform-vp-height') || $('#suite-field-vp-height');
+        if (wInp) wInp.value = w;
+        if (hInp) hInp.value = h;
+      }
+    }
+    syncCurrentSuiteFromInputs();
+  });
+
+  // Device select change (auto select default preset or update viewport)
+  $('#suite-platform-device')?.addEventListener('change', (e) => {
+    const dev = e.target.value;
+    const devMap = {
+      'iPhone 14': [390, 844],
+      'iPhone 13': [390, 844],
+      'Pixel 7': [393, 851],
+      'Galaxy S9+': [360, 740]
+    };
+    if (devMap[dev]) {
+      const [w, h] = devMap[dev];
+      const wInp = $('#suite-platform-vp-width') || $('#suite-field-vp-width');
+      const hInp = $('#suite-platform-vp-height') || $('#suite-field-vp-height');
+      if (wInp) wInp.value = w;
+      if (hInp) hInp.value = h;
     }
     syncCurrentSuiteFromInputs();
   });
