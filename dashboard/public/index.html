@@ -688,6 +688,25 @@
               <!-- Render động bởi updateSuitePreview -->
             </div>
 
+            <!-- KHUNG HIỂN THỊ DANH SÁCH TEST SCRIPTS (SPECS PREVIEW) -->
+            <div class="suite-scripts-card" id="suite-scripts-card" style="margin-top: 14px;">
+              <div class="suite-scripts-header">
+                <div class="suite-scripts-title">
+                  <i class="ph-bold ph-file-code"></i>
+                  <span>DANH SÁCH TEST SCRIPTS</span>
+                </div>
+                <div class="suite-scripts-header-actions">
+                  <span class="suite-scripts-count-badge" id="suite-scripts-count">0 kịch bản</span>
+                  <button type="button" class="btn-icon-subtle" id="suite-btn-copy-all-specs" title="Sao chép toàn bộ đường dẫn test scripts">
+                    <i class="ph-bold ph-copy"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="suite-scripts-list" id="suite-scripts-list">
+                <!-- Danh sách test scripts render động -->
+              </div>
+            </div>
+
             <!-- CLI Command Box -->
             <div class="suite-cli-card" style="margin-top: 14px;">
               <div class="suite-cli-header">
@@ -3944,6 +3963,41 @@
         </div>
         <div class="app-modal-foot" style="display: flex; justify-content: flex-end; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--line);">
           <button type="button" class="btn-secondary-sm" onclick="document.getElementById('modal-view-page-code').close()">Đóng</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Modal: Xem mã nguồn Test Script trong Test Suites -->
+    <dialog id="modal-suite-spec-viewer" class="app-modal" style="max-width: 860px; width: 92vw;">
+      <div class="app-modal-box" style="max-width: 100%; width: 100%;">
+        <div class="app-modal-head">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:36px; height:36px; border-radius:8px; background:color-mix(in srgb, var(--accent) 14%, transparent); display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:20px;">
+              <i class="ph-bold ph-file-code"></i>
+            </div>
+            <div>
+              <h3 id="suite-spec-modal-title" style="margin:0; font-size:14.5px; font-weight:700; color:var(--text);">Tên file spec</h3>
+              <p id="suite-spec-modal-path" style="margin:2px 0 0; font-size:11.5px; color:var(--muted); font-family:var(--font-mono);">tests/e2e/desktop/spec.js</p>
+            </div>
+          </div>
+          <button type="button" class="btn-icon-subtle" onclick="document.getElementById('modal-suite-spec-viewer').close()"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="app-modal-body" style="padding:16px 20px; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="suite-script-badge desktop" id="suite-spec-modal-badge">DESKTOP</span>
+              <span id="suite-spec-modal-meta" style="font-size:11.5px; color:var(--muted); font-family:var(--font-mono);">0 dòng</span>
+            </div>
+            <button type="button" class="btn-secondary-sm" id="suite-spec-modal-copy-btn">
+              <i class="ph-bold ph-copy"></i> Sao chép mã
+            </button>
+          </div>
+          <div style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--code-bg, #0f172a); max-height: 60vh; overflow-y: auto;">
+            <pre class="shared-code-inline-preview" style="margin:0; padding:14px; font-family:var(--font-mono); font-size:12px; line-height:1.5;"><code id="suite-spec-modal-code" class="language-javascript"></code></pre>
+          </div>
+        </div>
+        <div class="app-modal-foot" style="display:flex; justify-content:flex-end; padding:12px 20px; border-top:1px solid var(--line);">
+          <button type="button" class="btn-secondary-sm" onclick="document.getElementById('modal-suite-spec-viewer').close()">Đóng</button>
         </div>
       </div>
     </dialog>
