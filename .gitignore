@@ -44,3 +44,5 @@ Thumbs.db
 
 # AI Temporary Workspace
 .ai/learning/scratch/
+/scratch/
+.dashboard-server.json

@@ -21,6 +21,7 @@ const PERMITTED_PREFIXES = [
 ];
 
 const PERMITTED_EXACT_FILES = [
+  '.gitignore',
   'dashboardConfig.json',
   'qa-engine.config.json',
   'package.json',
@@ -170,8 +171,11 @@ function parseGitArgs(command) {
 const GIT_EXECUTABLE = (() => {
   if (process.platform === 'win32') {
     const candidates = [
+      'C:\\Program Files\\Git\\cmd\\git.exe',
       'C:\\Program Files\\Git\\mingw64\\bin\\git.exe',
+      'C:\\Program Files (x86)\\Git\\cmd\\git.exe',
       'C:\\Program Files (x86)\\Git\\mingw64\\bin\\git.exe',
+      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'cmd', 'git.exe'),
       path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'mingw64', 'bin', 'git.exe'),
     ];
     for (const c of candidates) {
@@ -182,12 +186,18 @@ const GIT_EXECUTABLE = (() => {
 })();
 
 /**
- * Chạy lệnh git với spawnSync trực tiếp vào binary Git thật (không qua wrapper cmd.exe),
- * windowsHide: true tuyệt đối không bao giờ chớp tắt console.
+ * Chạy lệnh git với spawnSync trực tiếp,
+ * windowsHide: true tuyệt đối không bao giờ chớp tắt console,
+ * GIT_TERMINAL_PROMPT: '0' tránh việc git đứng chờ terminal prompt.
  */
 function runGit(command, options = {}) {
   const timeout = options.timeout || 30000;
-  const env = { ...process.env, PAGER: 'cat' };
+  const env = {
+    ...process.env,
+    PAGER: 'cat',
+    GIT_PAGER: 'cat',
+    GIT_TERMINAL_PROMPT: '0',
+  };
 
   try {
     const args = Array.isArray(command) ? command : parseGitArgs(command);
@@ -365,12 +375,12 @@ function getGitStatus() {
     trackingBranch,
     ahead,
     behind,
-    hasChanges: (permittedFiles.length + blockedFiles.length + otherFiles.length) > 0,
+    hasChanges: (permittedFiles.length + otherFiles.length) > 0,
     hasPermittedChanges: permittedFiles.length > 0,
     permittedFiles,
     blockedFiles,
     otherFiles,
-    totalChangedCount: permittedFiles.length + blockedFiles.length + otherFiles.length,
+    totalChangedCount: permittedFiles.length + otherFiles.length,
     recentCommits: commits,
     branches: branchData.branches || [],
   };
