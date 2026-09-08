@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QA Automation Studio</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='20' font-size='20'>⚡</text></svg>" id="favicon">
-  <link rel="stylesheet" href="/styles.css?v=4.6">
+  <link rel="stylesheet" href="/styles.css?v=4.7">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -505,13 +505,22 @@
 
                   <!-- Thông số chi tiết của Suite đơn lẻ -->
                   <div class="suite-platform-content-card">
-                    <div class="platform-specific-settings">
-                      <div class="inline-fields" id="suite-platform-row1" style="grid-template-columns: 1.2fr 1fr 1fr;">
-                        <label>Nhóm browser / Project Playwright
+                    <!-- Phần 1: Cấu hình Môi trường & Thiết bị -->
+                    <div class="suite-card-subgroup">
+                      <div class="suite-card-subgroup-title">
+                        <i class="ph-bold ph-sliders"></i>
+                        <span>Cấu hình môi trường & thiết bị</span>
+                      </div>
+                      
+                      <div class="suite-fields-grid" id="suite-platform-row1">
+                        <div class="suite-field-item">
+                          <label for="suite-platform-project">Nhóm Browser / Playwright Project</label>
                           <select id="suite-platform-project"></select>
-                          <small>Profile thiết bị & browser thực thi.</small>
-                        </label>
-                        <label id="suite-platform-device-label">Thiết bị mô phỏng
+                          <small>Profile thiết bị &amp; browser thực thi.</small>
+                        </div>
+                        
+                        <div class="suite-field-item" id="suite-platform-device-label">
+                          <label for="suite-platform-device">Thiết bị mô phỏng</label>
                           <select id="suite-platform-device">
                             <option value="">(Không dùng emulation)</option>
                             <option value="Pixel 7">Pixel 7 (Android)</option>
@@ -519,16 +528,19 @@
                             <option value="iPhone 13">iPhone 13 (iOS)</option>
                             <option value="Galaxy S9+">Galaxy S9+ (Android)</option>
                           </select>
-                          <small>User-Agent & kích thước màn hình.</small>
-                        </label>
-                        <label>Số luồng chạy (Workers)
+                          <small>User-Agent &amp; kích thước màn hình.</small>
+                        </div>
+
+                        <div class="suite-field-item suite-field-workers-item">
+                          <label for="suite-platform-workers">Số luồng chạy (Workers)</label>
                           <input id="suite-platform-workers" type="number" min="1" max="8" value="2">
                           <small>Trình duyệt song song (1 - 8).</small>
-                        </label>
+                        </div>
                       </div>
 
-                      <div class="inline-fields" style="grid-template-columns: 1.4fr 1fr;">
-                        <label>Độ phân giải hiển thị (Viewport)
+                      <div class="suite-fields-grid suite-viewport-grid">
+                        <div class="suite-field-item">
+                          <label for="suite-platform-viewport-preset">Độ phân giải hiển thị (Viewport)</label>
                           <select id="suite-platform-viewport-preset">
                             <option value="default">🖥️ Mặc định theo hệ thống</option>
                             <option value="1920x1080">🖥️ Desktop Full HD (1920 x 1080)</option>
@@ -540,20 +552,29 @@
                             <option value="custom">⚙️ Tự nhập kích thước (Custom)</option>
                           </select>
                           <small>Kích thước cửa sổ browser mô phỏng.</small>
-                        </label>
-                        <div id="suite-platform-custom-vp-box" class="suite-custom-vp-box inline-fields" style="display:none; grid-template-columns: 1fr 1fr;">
-                          <label>Rộng (px)<input type="number" id="suite-platform-vp-width" value="1920" min="320" max="7680"></label>
-                          <label>Cao (px)<input type="number" id="suite-platform-vp-height" value="1080" min="320" max="4320"></label>
+                        </div>
+
+                        <div id="suite-platform-custom-vp-box" class="suite-custom-vp-box inline-fields" style="display:none;">
+                          <div class="suite-field-item">
+                            <label for="suite-platform-vp-width">Rộng (px)</label>
+                            <input type="number" id="suite-platform-vp-width" value="1920" min="320" max="7680">
+                          </div>
+                          <div class="suite-field-item">
+                            <label for="suite-platform-vp-height">Cao (px)</label>
+                            <input type="number" id="suite-platform-vp-height" value="1080" min="320" max="4320">
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <!-- Phạm vi bài test -->
-                    <div class="suite-scope-section" style="margin-top: 14px;">
-                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <label style="font-weight: 700; font-size: 12.5px; margin: 0; color: var(--text);">
-                          <i class="ph-bold ph-files"></i> Phạm vi kịch bản cho <span id="platform-scope-title-text" style="color: var(--accent);">Desktop Web</span>:
-                        </label>
+                    <!-- Phần 2: Phạm vi bài test -->
+                    <div class="suite-card-subgroup suite-scope-subgroup">
+                      <div class="suite-scope-header">
+                        <div class="suite-scope-title-wrap">
+                          <i class="ph-bold ph-files"></i>
+                          <span>Phạm vi kịch bản:</span>
+                          <span class="suite-scope-platform-badge" id="platform-scope-title-text">Desktop Web</span>
+                        </div>
                         <div class="suite-scope-modes">
                           <label class="scope-mode-option active" id="scope-opt-all">
                             <input type="radio" name="suite-scope-mode" value="all" checked>
@@ -574,17 +595,15 @@
                       </div>
 
                       <!-- Grep Box -->
-                      <div id="suite-grep-box" class="suite-scope-grep-box" style="display:none; margin-top: 10px;">
-                        <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px;">
-                          Biểu thức Tag hoặc từ khóa cần lọc (@grep)
-                          <input type="text" id="suite-field-grep" placeholder="Ví dụ: @smoke hoặc @e2e" style="width: 100%; margin-top: 4px;">
-                          <small style="color: var(--muted); font-size: 11px; font-weight: 400; margin-top: 4px; display: block;">
-                            Playwright sẽ lọc các test case có gắn tag này.
-                          </small>
-                        </label>
-                        <div style="margin-top: 8px;">
-                          <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Tag gợi ý:</span>
-                          <div id="suite-tag-suggestions" class="suite-tag-suggestions" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+                      <div id="suite-grep-box" class="suite-scope-grep-box" style="display:none;">
+                        <div class="suite-field-item">
+                          <label for="suite-field-grep">Biểu thức Tag hoặc từ khóa cần lọc (@grep)</label>
+                          <input type="text" id="suite-field-grep" placeholder="Ví dụ: @smoke hoặc @e2e">
+                          <small>Playwright sẽ lọc các test case có gắn tag này.</small>
+                        </div>
+                        <div class="suite-tag-suggestions-wrap">
+                          <span class="suite-tag-hint-label">Tag gợi ý:</span>
+                          <div id="suite-tag-suggestions" class="suite-tag-suggestions">
                             <button type="button" class="btn-tag-chip" data-tag="@smoke">@smoke</button>
                             <button type="button" class="btn-tag-chip" data-tag="@e2e">@e2e</button>
                             <button type="button" class="btn-tag-chip" data-tag="@regression">@regression</button>
@@ -595,7 +614,7 @@
                       </div>
 
                       <!-- Files Box -->
-                      <div id="suite-files-box" class="suite-scope-files-box" style="display:none; margin-top: 10px;">
+                      <div id="suite-files-box" class="suite-scope-files-box" style="display:none;">
                         <div class="suite-specs-actions">
                           <span class="suite-selected-count" id="suite-specs-count-label">Đã chọn: 0 file</span>
                           <div class="suite-specs-actions-btns">
@@ -603,8 +622,8 @@
                             <button type="button" class="btn-specs-action" id="btn-suite-deselect-all">Bỏ chọn</button>
                           </div>
                         </div>
-                        <div class="suite-specs-search-bar" style="margin-bottom: 8px;">
-                          <input type="text" id="suite-specs-search-input" placeholder="Lọc file test cho nền tảng này..." style="width: 100%; font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface);">
+                        <div class="suite-specs-search-bar">
+                          <input type="text" id="suite-specs-search-input" placeholder="Lọc file test cho nền tảng này...">
                         </div>
                         <div class="suite-specs-checklist" id="suite-specs-checklist-container">
                           <!-- Checkboxes rendered dynamically -->
@@ -4182,7 +4201,7 @@
 
     <div id="toast" role="alert"></div>
   </main>
-  <script src="/app.js?v=5.4"></script>
+  <script src="/app.js?v=5.5"></script>
   <script src="/agent.js?v=1"></script>
 </body>
 </html>

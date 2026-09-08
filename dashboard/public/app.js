@@ -3692,7 +3692,9 @@ function updateSuitePlatformContext(platform, currentValues = {}) {
     deviceLabel.style.display = isMob ? 'flex' : 'none';
   }
   if (row1) {
-    row1.style.gridTemplateColumns = isMob ? '1.2fr 1fr 1fr' : '1.5fr 1fr';
+    row1.classList.toggle('is-mobile', isMob);
+    row1.classList.toggle('is-desktop', !isMob);
+    row1.style.gridTemplateColumns = '';
   }
   if (deviceSelect) {
     if (!isMob) {
