@@ -6351,6 +6351,20 @@ let recorderState = {
 };
 
 async function openRecorderStudio() {
+  if (!settingsCache) {
+    try {
+      const settings = await request('/api/settings');
+      settingsCache = settings;
+    } catch (_) {}
+  }
+  const defaultEnvKey = $('#environment')?.value || settingsCache?.runtime?.defaultEnvironment || 'qc';
+  const defaultUrl = settingsCache?.environments?.[defaultEnvKey]?.baseURL;
+  const recUrlInput = $('#rec-url');
+  if (recUrlInput && defaultUrl && (!recUrlInput.value || recUrlInput.value === 'https://example.com')) {
+    recUrlInput.value = defaultUrl;
+    recUrlInput.placeholder = defaultUrl;
+  }
+
   await Promise.all([
     checkRecorderStatus(),
     refreshPagesForPlatform(),
@@ -6708,7 +6722,7 @@ $('#rec-copy-raw-btn')?.addEventListener('click', () => {
 });
 
 $('#rec-start-btn')?.addEventListener('click', async () => {
-  const currentEnvKey = $('#filter-env')?.value || settingsCache?.runtime?.defaultEnvironment || 'qc';
+  const currentEnvKey = $('#filter-env')?.value || $('#environment')?.value || settingsCache?.runtime?.defaultEnvironment || 'qc';
   const defaultUrl = settingsCache?.environments?.[currentEnvKey]?.baseURL || 'https://example.com';
   const url = $('#rec-url')?.value.trim() || defaultUrl;
   const platform = $('#rec-platform')?.value || 'desktop';
