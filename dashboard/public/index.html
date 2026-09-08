@@ -463,7 +463,7 @@
                     </div>
                   </div>
 
-                  <div class="inline-fields" style="grid-template-columns: 1.4fr 1fr; margin-top: 12px;">
+                  <div class="inline-fields" style="grid-template-columns: 1.4fr 1fr; margin-top: 12px; margin-bottom: 14px;">
                     <label>Tên hiển thị kịch bản (Label)
                       <input id="suite-field-label" required placeholder="Ví dụ: Regression Desktop Web">
                       <small>Tên nhận diện trên Runner, báo cáo và thông báo Discord.</small>
@@ -514,7 +514,7 @@
                       
                       <div class="suite-fields-grid" id="suite-platform-row1">
                         <div class="suite-field-item">
-                          <label for="suite-platform-project">Nhóm Browser / Playwright Project</label>
+                          <label for="suite-platform-project">Nhóm Browser / Project</label>
                           <select id="suite-platform-project"></select>
                           <small>Profile thiết bị &amp; browser thực thi.</small>
                         </div>
@@ -532,9 +532,9 @@
                         </div>
 
                         <div class="suite-field-item suite-field-workers-item">
-                          <label for="suite-platform-workers">Số luồng chạy (Workers)</label>
+                          <label for="suite-platform-workers">Số luồng (Workers)</label>
                           <input id="suite-platform-workers" type="number" min="1" max="8" value="2">
-                          <small>Trình duyệt song song (1 - 8).</small>
+                          <small>1 - 8 browser</small>
                         </div>
                       </div>
 

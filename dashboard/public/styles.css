@@ -17491,45 +17491,49 @@ select.wizard-field-error,
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .suite-card-subgroup-title {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
+  padding-bottom: 2px;
 }
 
 .suite-card-subgroup-title i {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--accent);
 }
 
 .suite-fields-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   align-items: flex-start;
 }
 
 #suite-platform-row1.is-mobile {
-  grid-template-columns: minmax(200px, 1.4fr) minmax(180px, 1.2fr) minmax(130px, 0.8fr);
+  grid-template-columns: minmax(160px, 1.3fr) minmax(150px, 1.1fr) 96px;
+  gap: 12px;
 }
 
 #suite-platform-row1.is-desktop {
-  grid-template-columns: minmax(240px, 1.8fr) minmax(140px, 1fr);
+  grid-template-columns: 1fr 100px;
+  gap: 12px;
 }
 
 .suite-viewport-grid {
   grid-template-columns: minmax(240px, 1.6fr) auto;
+  gap: 12px;
 }
 
 .suite-field-item {
@@ -17540,12 +17544,16 @@ select.wizard-field-error,
 }
 
 .suite-field-item > label {
-  display: block;
+  display: flex;
+  align-items: flex-end;
+  min-height: 30px;
   color: var(--text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  line-height: 1.35;
+  margin: 0;
 }
 
 .suite-field-item > small {
@@ -17553,19 +17561,29 @@ select.wizard-field-error,
   font-size: 11px;
   font-weight: 400;
   line-height: 1.4;
+  min-height: 16px;
+  display: block;
 }
 
 .suite-field-item select,
 .suite-field-item input {
   width: 100%;
-  min-height: 38px;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
   padding: 0 12px;
   border-radius: 8px;
   border: 1px solid var(--line);
   background: var(--surface-1);
   color: var(--text);
   font-size: 13px;
+  font-weight: 500;
+  box-sizing: border-box;
   transition: all 0.15s ease;
+}
+
+.suite-field-item select {
+  cursor: pointer;
 }
 
 .suite-field-item select:focus,
@@ -17573,6 +17591,22 @@ select.wizard-field-error,
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
   outline: none;
+}
+
+.suite-field-workers-item input {
+  text-align: center;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.suite-field-workers-item > label {
+  justify-content: center;
+  text-align: center;
+}
+
+.suite-field-workers-item > small {
+  text-align: center;
+  white-space: nowrap;
 }
 
 .suite-custom-vp-box {
