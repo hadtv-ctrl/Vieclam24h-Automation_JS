@@ -3148,10 +3148,18 @@ function renderRunnerSuiteOptions(suites, activeId = '') {
     return;
   }
   select.innerHTML = entries.map(([id, suite]) => {
+    const isComposite = suite.type === 'composite';
     let fileLabel = 'Tất cả file';
-    if (Array.isArray(suite.specs) && suite.specs.length > 0) fileLabel = `${suite.specs.length} file`;
-    else if (suite.spec && suite.spec !== 'all') fileLabel = '1 file';
-    return `<option value="${escapeHtml(id)}" ${activeId === id ? 'selected' : ''}>${escapeHtml(suite.label || id)} (${fileLabel})</option>`;
+    if (isComposite) {
+      const childCount = Array.isArray(suite.suites) ? suite.suites.length : 0;
+      fileLabel = `⚡ Tổng hợp ${childCount} suite con`;
+    } else if (Array.isArray(suite.specs) && suite.specs.length > 0) {
+      fileLabel = `${suite.specs.length} file`;
+    } else if (suite.spec && suite.spec !== 'all') {
+      fileLabel = '1 file';
+    }
+    const platIcon = isComposite ? '⚡' : (suite.platform === 'mobile' || suite.project === 'mobile-chrome' ? '📱' : '🖥️');
+    return `<option value="${escapeHtml(id)}" ${activeId === id ? 'selected' : ''}>${platIcon} ${escapeHtml(suite.label || id)} (${fileLabel})</option>`;
   }).join('');
 
   const targetId = (activeId && entries.some(([id]) => id === activeId)) ? activeId : entries[0][0];
@@ -3168,20 +3176,48 @@ function updateSuiteSummaryBox(suiteId) {
     return;
   }
   $('#test-suite').value = suiteId;
-  if ($('#suite-sum-project')) $('#suite-sum-project').textContent = suite.project === 'all' ? 'Tất cả nhóm' : suite.project;
+
+  const isComposite = suite.type === 'composite';
+  if ($('#suite-sum-project')) {
+    if (isComposite) {
+      $('#suite-sum-project').textContent = 'Đa nền tảng (Composite)';
+    } else {
+      $('#suite-sum-project').textContent = suite.project === 'all' ? 'Tất cả nhóm' : (suite.project || 'Mặc định');
+    }
+  }
   
   const vp = suite.viewport || { preset: 'default', width: 1920, height: 1080 };
-  const vpText = vp.preset === 'default' ? 'Mặc định' : `${vp.width}x${vp.height}`;
+  const vpText = isComposite ? 'Tự động theo Suite con' : (vp.preset === 'default' ? 'Mặc định' : `${vp.width}x${vp.height}`);
   $('#suite-sum-viewport').textContent = vpText;
 
-  $('#suite-sum-grep').textContent = suite.grep ? suite.grep : 'Không tag';
+  $('#suite-sum-grep').textContent = isComposite ? 'Theo từng Suite' : (suite.grep ? suite.grep : 'Không tag');
   $('#suite-sum-workers').textContent = `${suite.workers || 2} luồng`;
-
-  let specs = suite.specs;
-  if (!specs && suite.spec) specs = suite.spec === 'all' ? 'all' : [suite.spec];
 
   const filesList = $('#suite-sum-files-list');
   const filesCount = $('#suite-sum-count');
+
+  if (isComposite) {
+    const childIds = Array.isArray(suite.suites) ? suite.suites : [];
+    const allChildSuites = window.dashboardSuites || {};
+    window.activeSuiteSpecs = null;
+    if (filesCount) filesCount.textContent = `${childIds.length} suites con`;
+    if (filesList) {
+      filesList.innerHTML = childIds.map((cid) => {
+        const child = allChildSuites[cid] || {};
+        const isMob = child.platform === 'mobile' || child.project === 'mobile-chrome';
+        const icon = isMob ? 'ph-device-mobile' : 'ph-desktop';
+        return `
+          <span class="suite-summary-pill" title="${escapeHtml(child.label || cid)}" style="border-color:var(--accent);">
+            <i class="ph-bold ${icon}"></i> ${escapeHtml(child.label || cid)}
+          </span>
+        `;
+      }).join('');
+    }
+    return;
+  }
+
+  let specs = suite.specs;
+  if (!specs && suite.spec) specs = suite.spec === 'all' ? 'all' : [suite.spec];
 
   if (Array.isArray(specs) && specs.length > 0) {
     window.activeSuiteSpecs = specs;
@@ -3358,36 +3394,56 @@ function setRunnerMode(mode) {
 }
 
 /* ==============================================================================
-   TEST SUITES STUDIO - 3-FRAME CONTROLLER
+   TEST SUITES STUDIO - PARENT-CHILD (COMPOSITE) ARCHITECTURE CONTROLLER
 ============================================================================== */
 let currentSelectedSuiteId = null;
-let currentSuiteFilter = 'desktop';
+let currentSuiteFilter = 'all';
 let currentSuiteSearch = '';
 let suitesCache = {};
 let savedSuitesCache = {};
 let suitesViewInitialized = false;
+
+function normalizeSuiteInMemory(suite = {}) {
+  const isComposite = suite.type === 'composite';
+  if (isComposite) {
+    return {
+      type: 'composite',
+      label: (suite.label || '').trim(),
+      description: (suite.description || '').trim(),
+      suites: Array.isArray(suite.suites) ? suite.suites.filter(Boolean) : [],
+      workers: parseInt(suite.workers, 10) || 2
+    };
+  }
+
+  const rawProject = (suite.project || '').trim();
+  const rawPlatform = suite.platform || (rawProject === 'mobile-chrome' ? 'mobile' : 'desktop');
+  const platform = rawPlatform === 'mobile' ? 'mobile' : 'desktop';
+
+  return {
+    type: 'single',
+    platform,
+    label: (suite.label || '').trim(),
+    description: (suite.description || '').trim(),
+    project: rawProject || (platform === 'mobile' ? 'mobile-chrome' : 'chromium'),
+    device: (suite.device || '').trim(),
+    workers: parseInt(suite.workers, 10) || 2,
+    viewport: {
+      preset: suite.viewport?.preset || 'default',
+      width: parseInt(suite.viewport?.width, 10) || (platform === 'mobile' ? 393 : 1920),
+      height: parseInt(suite.viewport?.height, 10) || (platform === 'mobile' ? 851 : 1080)
+    },
+    spec: typeof suite.spec === 'string' ? suite.spec : 'all',
+    specs: Array.isArray(suite.specs) ? [...suite.specs].sort() : (suite.specs === 'all' ? 'all' : []),
+    grep: (suite.grep || '').trim()
+  };
+}
 
 function isCurrentSuiteDirty() {
   if (!currentSelectedSuiteId || !suitesCache[currentSelectedSuiteId]) return false;
   const saved = savedSuitesCache[currentSelectedSuiteId];
   if (!saved) return true;
   const current = suitesCache[currentSelectedSuiteId];
-
-  const norm = (s) => ({
-    label: (s.label || '').trim(),
-    project: (s.project || 'all').trim(),
-    workers: parseInt(s.workers, 10) || 2,
-    viewport: {
-      preset: s.viewport?.preset || 'default',
-      width: parseInt(s.viewport?.width, 10) || 1920,
-      height: parseInt(s.viewport?.height, 10) || 1080
-    },
-    spec: typeof s.spec === 'string' ? s.spec : 'all',
-    specs: Array.isArray(s.specs) ? [...s.specs].sort() : (s.specs === 'all' ? 'all' : []),
-    grep: (s.grep || '').trim()
-  });
-
-  return JSON.stringify(norm(current)) !== JSON.stringify(norm(saved));
+  return JSON.stringify(normalizeSuiteInMemory(current)) !== JSON.stringify(normalizeSuiteInMemory(saved));
 }
 
 function updateSuiteRunButtonState() {
@@ -3416,11 +3472,12 @@ function renderSuitesView(suites) {
     savedSuitesCache = JSON.parse(JSON.stringify(suitesCache));
   }
 
-  // Populate project options in editor
-  const projSelect = $('#suite-field-project');
+  // Populate projects in single-suite editor
+  const projSelect = $('#suite-platform-project') || $('#suite-field-project');
   if (projSelect) {
-    const projects = Array.from(new Set(['all', ...(testCatalog?.projects || ['chromium', 'mobile-chrome'])]));
-    projSelect.innerHTML = projects.map((p) =>
+    const rawProjects = testCatalog?.projects || ['chromium', 'mobile-chrome'];
+    const projectList = Array.from(new Set(['all', ...rawProjects]));
+    projSelect.innerHTML = projectList.map((p) =>
       `<option value="${escapeHtml(p)}">${p === 'all' ? 'Tất cả nhóm browser (all)' : escapeHtml(p)}</option>`
     ).join('');
   }
@@ -3428,45 +3485,31 @@ function renderSuitesView(suites) {
   // Update Hero Stats
   const entries = Object.entries(suitesCache);
   const total = entries.length;
+  const compositeCount = entries.filter(([_, s]) => s.type === 'composite').length;
   const desktopCount = entries.filter(([_, s]) => {
-    const p = (s.project || '').toLowerCase();
-    const l = (s.label || '').toLowerCase();
-    return p !== 'mobile-chrome' && !l.includes('mobile');
+    if (s.type === 'composite') return false;
+    const plat = s.platform || (s.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+    return plat !== 'mobile';
   }).length;
   const mobileCount = entries.filter(([_, s]) => {
-    const p = (s.project || '').toLowerCase();
-    const l = (s.label || '').toLowerCase();
-    return p === 'mobile-chrome' || l.includes('mobile');
+    if (s.type === 'composite') return false;
+    const plat = s.platform || (s.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+    return plat === 'mobile';
   }).length;
 
-  const statTotal = $('#suites-stat-total');
-  const statDesktop = $('#suites-stat-desktop');
-  const statMobile = $('#suites-stat-mobile');
-  const sidebarCount = $('#suites-total-count');
-  const railCount = $('#suites-rail-count');
+  if ($('#suites-stat-total')) $('#suites-stat-total').textContent = total;
+  if ($('#suites-stat-composite')) $('#suites-stat-composite').textContent = compositeCount;
+  if ($('#suites-stat-desktop')) $('#suites-stat-desktop').textContent = desktopCount;
+  if ($('#suites-stat-mobile')) $('#suites-stat-mobile').textContent = mobileCount;
 
-  if (statTotal) statTotal.textContent = total;
-  if (statDesktop) statDesktop.textContent = desktopCount;
-  if (statMobile) statMobile.textContent = mobileCount;
-  if (sidebarCount) sidebarCount.textContent = total;
-  if (railCount) railCount.textContent = total;
-
-  // Render sidebar items
+  // Render Sidebar List & Dropdown selector
   renderSuitesSidebarList();
+  renderSuiteDropdown();
 
-  // If no suite selected or selected doesn't exist, pick first matching filter
+  // If no suite selected or selected does not exist, select first
   const keys = Object.keys(suitesCache);
   if (!currentSelectedSuiteId || !suitesCache[currentSelectedSuiteId]) {
-    const firstMatching = keys.find((k) => {
-      const suite = suitesCache[k];
-      const p = (suite?.project || '').toLowerCase();
-      const l = (suite?.label || '').toLowerCase();
-      if (currentSuiteFilter === 'desktop') return p !== 'mobile-chrome' && !l.includes('mobile');
-      if (currentSuiteFilter === 'mobile') return p === 'mobile-chrome' || l.includes('mobile');
-      if (currentSuiteFilter === 'tag') return suite?.grep && suite.grep.trim();
-      return true;
-    });
-    currentSelectedSuiteId = firstMatching || (keys.length > 0 ? keys[0] : null);
+    currentSelectedSuiteId = keys.length > 0 ? keys[0] : null;
   }
 
   if (currentSelectedSuiteId) {
@@ -3477,130 +3520,160 @@ function renderSuitesView(suites) {
   updateSuiteRunButtonState();
 }
 
+
 function renderSuitesSidebarList() {
   const container = $('#suites-sidebar-list');
+  const countEl = $('#suites-total-count');
+  const railCountEl = $('#suites-rail-count');
   if (!container) return;
 
   const entries = Object.entries(suitesCache);
-  if (entries.length === 0) {
-    container.innerHTML = `
-      <div class="suite-empty-state" style="padding: 24px 12px; font-size: 11.5px; border-radius: 8px;">
-        <i class="ph-bold ph-folder-notch-open" style="font-size: 26px; color: var(--muted);"></i>
-        <p style="margin: 6px 0 2px; font-weight: 600;">Chưa có kịch bản nào</p>
-        <small style="color: var(--muted);">Bấm "+ Tạo mới" để thêm suite đầu tiên.</small>
-      </div>
-    `;
-    return;
-  }
+  if (countEl) countEl.textContent = entries.length;
+  if (railCountEl) railCountEl.textContent = entries.length;
 
-  const filtered = entries.filter(([key, suite]) => {
-    if (currentSuiteFilter === 'desktop') {
-      const p = (suite.project || '').toLowerCase();
-      const l = (suite.label || '').toLowerCase();
-      if (p === 'mobile-chrome' || l.includes('mobile')) return false;
-    } else if (currentSuiteFilter === 'mobile') {
-      const p = (suite.project || '').toLowerCase();
-      const l = (suite.label || '').toLowerCase();
-      if (p !== 'mobile-chrome' && !l.includes('mobile')) return false;
-    } else if (currentSuiteFilter === 'tag') {
-      if (!suite.grep || !suite.grep.trim()) return false;
+  const query = (currentSuiteSearch || '').toLowerCase().trim();
+  const filter = currentSuiteFilter || 'all';
+
+  const filtered = entries.filter(([id, suite]) => {
+    const isComp = suite.type === 'composite';
+    const plat = isComp ? 'composite' : (suite.platform || (suite.project === 'mobile-chrome' ? 'mobile' : 'desktop'));
+
+    if (filter === 'composite' && !isComp) return false;
+    if (filter === 'desktop' && (isComp || plat === 'mobile')) return false;
+    if (filter === 'mobile' && (isComp || plat !== 'mobile')) return false;
+
+    if (query) {
+      const matchKey = id.toLowerCase().includes(query);
+      const matchLabel = (suite.label || '').toLowerCase().includes(query);
+      const matchGrep = (suite.grep || '').toLowerCase().includes(query);
+      const matchDesc = (suite.description || '').toLowerCase().includes(query);
+      const matchProject = (suite.project || '').toLowerCase().includes(query);
+      if (!matchKey && !matchLabel && !matchGrep && !matchDesc && !matchProject) return false;
     }
-
-    if (currentSuiteSearch) {
-      const txt = `${key} ${suite.label || ''} ${suite.project || ''} ${suite.grep || ''}`.toLowerCase();
-      if (!txt.includes(currentSuiteSearch)) return false;
-    }
-
     return true;
   });
 
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div style="padding: 20px 12px; text-align: center; color: var(--muted); font-size: 11.5px;">
-        Không tìm thấy kịch bản nào khớp bộ lọc.
+      <div style="padding: 24px 12px; text-align: center; color: var(--muted); font-size: 12px;">
+        <i class="ph-bold ph-stack" style="font-size: 24px; display: block; margin-bottom: 6px; opacity: 0.6;"></i>
+        Không tìm thấy Test Suite phù hợp
       </div>
     `;
     return;
   }
 
-  container.innerHTML = filtered.map(([key, suite]) => {
-    const isActive = key === currentSelectedSuiteId;
-    const project = suite.project || 'all';
-    const isMobile = project === 'mobile-chrome' || (suite.label || '').toLowerCase().includes('mobile');
-    const platformClass = isMobile ? 'mobile' : 'desktop';
-    const projIcon = isMobile ? 'ph-device-mobile' : 'ph-desktop';
-    const tag = suite.grep ? suite.grep.trim() : '';
+  container.innerHTML = filtered.map(([id, suite]) => {
+    const isSelected = id === currentSelectedSuiteId;
+    const isComp = suite.type === 'composite';
+    const plat = isComp ? 'composite' : (suite.platform || (suite.project === 'mobile-chrome' ? 'mobile' : 'desktop'));
+    const label = suite.label || id;
+    const workers = suite.workers || 2;
 
-    let countStr = 'All specs';
-    if (Array.isArray(suite.specs) && suite.specs.length > 0) {
-      countStr = `${suite.specs.length} file`;
-    } else if (typeof suite.spec === 'string' && suite.spec !== 'all') {
-      countStr = '1 file';
+    let badgeHtml = '';
+    let detailMeta = '';
+
+    if (isComp) {
+      const childCount = Array.isArray(suite.suites) ? suite.suites.length : 0;
+      badgeHtml = `<span class="suite-nav-badge suite-badge-composite"><i class="ph-bold ph-lightning"></i> Suite Cha</span>`;
+      detailMeta = `
+        <span class="suite-nav-badge suite-badge-proj"><i class="ph-bold ph-stack"></i> ${childCount} con</span>
+        <span class="suite-nav-badge suite-badge-count"><i class="ph-bold ph-cpu"></i> ${workers}W</span>
+      `;
+    } else if (plat === 'mobile') {
+      badgeHtml = `<span class="suite-nav-badge suite-badge-mobile"><i class="ph-bold ph-device-mobile"></i> Mobile</span>`;
+      const specCount = Array.isArray(suite.specs) ? suite.specs.length : (suite.specs === 'all' || !suite.specs ? 'All specs' : '1 spec');
+      detailMeta = `
+        <span class="suite-nav-badge suite-badge-proj"><i class="ph-bold ph-files"></i> ${specCount}</span>
+        <span class="suite-nav-badge suite-badge-count"><i class="ph-bold ph-cpu"></i> ${workers}W</span>
+      `;
+    } else {
+      badgeHtml = `<span class="suite-nav-badge suite-badge-desktop"><i class="ph-bold ph-desktop"></i> Desktop</span>`;
+      const specCount = Array.isArray(suite.specs) ? suite.specs.length : (suite.specs === 'all' || !suite.specs ? 'All specs' : '1 spec');
+      detailMeta = `
+        <span class="suite-nav-badge suite-badge-proj"><i class="ph-bold ph-files"></i> ${specCount}</span>
+        <span class="suite-nav-badge suite-badge-count"><i class="ph-bold ph-cpu"></i> ${workers}W</span>
+      `;
+    }
+
+    if (suite.grep) {
+      detailMeta += `<span class="suite-nav-badge suite-badge-tag"><i class="ph-bold ph-tag"></i> ${escapeHtml(suite.grep)}</span>`;
     }
 
     return `
-      <div class="dashboard-list-card suite-nav-item script-card-item ${isActive ? 'is-selected active' : ''}" data-suite-id="${escapeHtml(key)}">
-        <span class="dashboard-list-card__icon script-card-platform-icon ${platformClass}"><i class="ph-bold ${projIcon}"></i></span>
-        <div class="dashboard-list-card__body">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
-            <div class="script-card-title">${escapeHtml(suite.label || key)}</div>
-            <button type="button" class="btn-icon-subtle item-delete-hover-btn suite-item-delete-btn" data-suite-id="${escapeHtml(key)}" title="Xóa Test Suite này" style="padding: 2px; font-size: 14px; flex-shrink: 0;">
-              <i class="ph ph-trash"></i>
-            </button>
-          </div>
-          <div class="script-card-file">
-            <i class="ph ph-file-code"></i> ${escapeHtml(key)}
-          </div>
-          <div class="script-card-pills">
-            <span class="script-card-badge-platform ${platformClass}">
-              <i class="ph ${projIcon}"></i> ${escapeHtml(project)}
-            </span>
-            <span class="script-card-badge-pages">
-              <i class="ph ph-cpu"></i> ${suite.workers || 2} Luồng
-            </span>
-            ${tag ? `
-            <span class="script-card-badge-data" title="${escapeHtml(tag)}">
-              <i class="ph ph-tag"></i> ${escapeHtml(tag)}
-            </span>` : `
-            <span class="script-card-badge-data">
-              <i class="ph ph-stack"></i> ${countStr}
-            </span>`}
-          </div>
+      <div class="suite-nav-item ${isSelected ? 'active' : ''}" data-suite-id="${escapeHtml(id)}">
+        <div class="suite-nav-top">
+          <div class="suite-nav-title" title="${escapeHtml(label)}">${escapeHtml(label)}</div>
+          ${badgeHtml}
+        </div>
+        <div class="suite-nav-meta">
+          ${detailMeta}
         </div>
       </div>
     `;
   }).join('');
 
-  container.querySelectorAll('.suite-nav-item').forEach((item) => {
-    item.addEventListener('click', (e) => {
-      if (e.target.closest('.suite-item-delete-btn')) return;
+  container.querySelectorAll('.suite-nav-item').forEach(item => {
+    item.addEventListener('click', () => {
       const suiteId = item.dataset.suiteId;
-      if (suiteId && suiteId !== currentSelectedSuiteId) {
-        selectSuite(suiteId);
-      }
-    });
-  });
-
-  container.querySelectorAll('.suite-item-delete-btn').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const suiteId = btn.dataset.suiteId;
       if (suiteId && suitesCache[suiteId]) {
         selectSuite(suiteId);
-        deleteCurrentSuite();
       }
     });
   });
+}
+
+function renderSuiteDropdown() {
+  const select = $('#suite-picker-select');
+  if (!select) return;
+
+  const entries = Object.entries(suitesCache);
+  if (entries.length === 0) {
+    select.innerHTML = '<option value="">(Chưa có Test Suite nào)</option>';
+    return;
+  }
+
+  const compositeSuites = entries.filter(([_, s]) => s.type === 'composite');
+  const singleSuites = entries.filter(([_, s]) => s.type !== 'composite');
+
+  let html = '';
+  if (compositeSuites.length > 0) {
+    html += `<optgroup label="⚡ Test Suite Cha (Tổng hợp đa nền tảng)">`;
+    html += compositeSuites.map(([id, s]) => {
+      const childCount = Array.isArray(s.suites) ? s.suites.length : 0;
+      return `<option value="${escapeHtml(id)}">⚡ ${escapeHtml(s.label || id)} (${childCount} suite con)</option>`;
+    }).join('');
+    html += `</optgroup>`;
+  }
+
+  if (singleSuites.length > 0) {
+    html += `<optgroup label="📦 Test Suite Con (Đơn lẻ theo nền tảng)">`;
+    html += singleSuites.map(([id, s]) => {
+      const plat = s.platform || (s.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+      const icon = plat === 'mobile' ? '📱' : '🖥️';
+      return `<option value="${escapeHtml(id)}">${icon} ${escapeHtml(s.label || id)} [${plat.toUpperCase()}]</option>`;
+    }).join('');
+    html += `</optgroup>`;
+  }
+
+  select.innerHTML = html;
+  if (currentSelectedSuiteId && suitesCache[currentSelectedSuiteId]) {
+    select.value = currentSelectedSuiteId;
+  }
 }
 
 function selectSuite(id) {
   if (!suitesCache[id]) return;
   currentSelectedSuiteId = id;
 
-  document.querySelectorAll('#suites-sidebar-list .suite-nav-item').forEach((item) => {
-    const isThis = item.dataset.suiteId === id;
-    item.classList.toggle('active', isThis);
-    item.classList.toggle('is-selected', isThis);
+  const select = $('#suite-picker-select');
+  if (select && select.value !== id) {
+    select.value = id;
+  }
+
+  // Update active state in sidebar list
+  document.querySelectorAll('#suites-sidebar-list .suite-nav-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.suiteId === id);
   });
 
   loadSuiteIntoEditor(id, suitesCache[id]);
@@ -3608,90 +3681,122 @@ function selectSuite(id) {
   updateSuiteRunButtonState();
 }
 
-function loadSuiteIntoEditor(id, suite) {
-  const emptyBox = $('#suite-middle-empty');
-  const formInner = $('#suite-editor-form');
+function updateSuitePlatformContext(platform, currentValues = {}) {
+  const isMob = platform === 'mobile';
 
-  if (!suite) {
-    if (emptyBox) emptyBox.style.display = 'flex';
-    if (formInner) formInner.style.display = 'none';
-    const title = $('#suite-active-title');
-    if (title) title.textContent = 'Chưa chọn kịch bản';
-    return;
+  // 1. Emulation field: Hide entirely for Desktop, Show for Mobile
+  const deviceLabel = $('#suite-platform-device-label');
+  const deviceSelect = $('#suite-platform-device');
+  const row1 = $('#suite-platform-row1');
+  if (deviceLabel) {
+    deviceLabel.style.display = isMob ? 'flex' : 'none';
+  }
+  if (row1) {
+    row1.style.gridTemplateColumns = isMob ? '1.2fr 1fr 1fr' : '1.5fr 1fr';
+  }
+  if (deviceSelect) {
+    if (!isMob) {
+      deviceSelect.value = '';
+    } else if (currentValues.device !== undefined) {
+      deviceSelect.value = currentValues.device;
+    }
   }
 
-  if (emptyBox) emptyBox.style.display = 'none';
-  if (formInner) formInner.style.display = 'flex';
+  // 2. Browser Project dropdown: filter desktop vs mobile projects
+  const projSelect = $('#suite-platform-project') || $('#suite-field-project');
+  if (projSelect) {
+    const rawProjects = testCatalog?.projects || ['chromium', 'mobile-chrome'];
+    const filteredProjects = rawProjects.filter(p => {
+      const pLower = p.toLowerCase();
+      if (isMob) {
+        return pLower.includes('mobile') || pLower.includes('android') || pLower.includes('ios');
+      } else {
+        return !pLower.includes('mobile') && !pLower.includes('android') && !pLower.includes('ios');
+      }
+    });
 
-  const title = $('#suite-active-title');
-  if (title) title.textContent = suite.label || id;
+    // Fallback if none found
+    if (filteredProjects.length === 0) {
+      filteredProjects.push(isMob ? 'mobile-chrome' : 'chromium');
+    }
 
-  const labelInput = $('#suite-field-label');
-  if (labelInput) labelInput.value = suite.label || '';
+    projSelect.innerHTML = filteredProjects.map(p =>
+      `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`
+    ).join('');
 
-  const keyInput = $('#suite-field-key');
-  if (keyInput) keyInput.value = id;
-
-  const projSelect = $('#suite-field-project');
-  if (projSelect) projSelect.value = suite.project || 'all';
-
-  const workersInput = $('#suite-field-workers');
-  if (workersInput) workersInput.value = suite.workers || 2;
-
-  // Viewport preset
-  const vpPreset = suite.viewport?.preset || 'default';
-  const vpWidth = suite.viewport?.width || 1920;
-  const vpHeight = suite.viewport?.height || 1080;
-
-  const vpPresetSelect = $('#suite-field-viewport-preset');
-  if (vpPresetSelect) vpPresetSelect.value = vpPreset;
-
-  const vpWidthInput = $('#suite-field-vp-width');
-  if (vpWidthInput) vpWidthInput.value = vpWidth;
-
-  const vpHeightInput = $('#suite-field-vp-height');
-  if (vpHeightInput) vpHeightInput.value = vpHeight;
-
-  const customVpBox = $('#suite-custom-vp-box');
-  if (customVpBox) {
-    customVpBox.style.display = vpPreset === 'custom' ? 'grid' : 'none';
+    if (currentValues.project && filteredProjects.includes(currentValues.project)) {
+      projSelect.value = currentValues.project;
+    } else {
+      projSelect.value = filteredProjects[0];
+    }
   }
 
-  // Scope mode
-  let selectedSpecs = [];
-  if (Array.isArray(suite.specs)) selectedSpecs = suite.specs;
-  else if (typeof suite.spec === 'string' && suite.spec !== 'all') selectedSpecs = [suite.spec];
+  // 3. Viewport Presets dropdown: filter desktop vs mobile presets
+  const vpPresetSelect = $('#suite-platform-viewport-preset') || $('#suite-field-viewport-preset');
+  if (vpPresetSelect) {
+    let presetsHtml = '';
+    if (isMob) {
+      presetsHtml = `
+        <option value="default">📱 Mặc định theo thiết bị</option>
+        <option value="390x844">📱 Mobile iPhone 14/13 (390 x 844)</option>
+        <option value="393x851">📱 Mobile Pixel 7 (393 x 851)</option>
+        <option value="360x800">📱 Mobile Android Chuẩn (360 x 800)</option>
+        <option value="412x915">📱 Mobile Galaxy S20/S21 (412 x 915)</option>
+        <option value="custom">⚙️ Tự nhập kích thước (Custom)</option>
+      `;
+    } else {
+      presetsHtml = `
+        <option value="default">🖥️ Mặc định theo hệ thống</option>
+        <option value="1920x1080">🖥️ Desktop Full HD (1920 x 1080)</option>
+        <option value="1366x768">💻 Desktop Laptop (1366 x 768)</option>
+        <option value="1440x900">🖥️ Desktop HD+ (1440 x 900)</option>
+        <option value="2560x1440">🖥️ Desktop 2K Quad HD (2560 x 1440)</option>
+        <option value="custom">⚙️ Tự nhập kích thước (Custom)</option>
+      `;
+    }
+    vpPresetSelect.innerHTML = presetsHtml;
 
-  let scopeMode = 'all';
-  if (suite.grep && suite.grep.trim().length > 0) {
-    scopeMode = 'grep';
-  } else if (selectedSpecs.length > 0) {
-    scopeMode = 'custom';
+    if (currentValues.preset) {
+      const match = vpPresetSelect.querySelector(`option[value="${currentValues.preset}"]`);
+      if (match) {
+        vpPresetSelect.value = currentValues.preset;
+      } else {
+        vpPresetSelect.value = isMob ? (currentValues.preset === '1920x1080' ? 'default' : currentValues.preset) : (currentValues.preset.includes('x') && parseInt(currentValues.preset) < 800 ? '1920x1080' : currentValues.preset);
+      }
+    } else {
+      vpPresetSelect.value = isMob ? 'default' : '1920x1080';
+    }
   }
 
-  const radio = document.querySelector(`input[name="suite-scope-mode"][value="${scopeMode}"]`);
-  if (radio) radio.checked = true;
+  // 4. Custom Viewport Dimension Inputs
+  const vpWidthInput = $('#suite-platform-vp-width') || $('#suite-field-vp-width');
+  const vpHeightInput = $('#suite-platform-vp-height') || $('#suite-field-vp-height');
+  if (vpWidthInput && vpHeightInput) {
+    if (currentValues.width && currentValues.height) {
+      vpWidthInput.value = currentValues.width;
+      vpHeightInput.value = currentValues.height;
+    } else {
+      vpWidthInput.value = isMob ? 393 : 1920;
+      vpHeightInput.value = isMob ? 851 : 1080;
+    }
+  }
 
-  document.querySelectorAll('.scope-mode-option').forEach((opt) => {
-    opt.classList.toggle('active', opt.querySelector('input')?.value === scopeMode);
-  });
-
-  const grepBox = $('#suite-grep-box');
-  const filesBox = $('#suite-files-box');
-  if (grepBox) grepBox.style.display = scopeMode === 'grep' ? 'block' : 'none';
-  if (filesBox) filesBox.style.display = scopeMode === 'custom' ? 'flex' : 'none';
-
-  const grepInput = $('#suite-field-grep');
-  if (grepInput) grepInput.value = suite.grep || '';
-
-  // Render spec checklist
+  // 5. Spec Checklist: filter specs belonging to the platform
   const allSpecs = testCatalog?.specs || [];
   const checklistContainer = $('#suite-specs-checklist-container');
+  const selectedSpecs = Array.isArray(currentValues.specs) ? currentValues.specs : [];
+
   if (checklistContainer) {
-    if (allSpecs.length === 0) {
-      checklistContainer.innerHTML = '<p style="color:var(--muted); font-size:11px; padding:4px;">Chưa có file spec nào trong framework.</p>';
+    const platformSpecs = allSpecs.filter(s => {
+      const sLower = s.toLowerCase();
+      const isMobileSpec = sLower.includes('/mobile/') || sLower.includes('/mobile-web/') || sLower.includes('.mobile.') || sLower.includes('-mobile') || sLower.includes('_mobile');
+      return isMob ? isMobileSpec : !isMobileSpec;
+    });
+
+    if (platformSpecs.length === 0) {
+      checklistContainer.innerHTML = `<p style="color:var(--muted); font-size:11.5px; padding:8px 4px;">Không tìm thấy file spec nào cho nền tảng <strong>${isMob ? 'Mobile Web' : 'Desktop Web'}</strong>.</p>`;
     } else {
-      checklistContainer.innerHTML = allSpecs.map((s) => {
+      checklistContainer.innerHTML = platformSpecs.map((s) => {
         const parts = s.split('/');
         const fileName = parts.pop();
         const dirPath = parts.length > 0 ? parts.join('/') + '/' : '';
@@ -3710,199 +3815,357 @@ function loadSuiteIntoEditor(id, suite) {
         });
       });
     }
+
+    const countLabel = $('#suite-specs-count-label');
+    const checkedCount = checklistContainer.querySelectorAll('.suite-spec-cb:checked').length;
+    if (countLabel) countLabel.textContent = `Đã chọn: ${checkedCount} file`;
+  }
+}
+
+function loadSuiteIntoEditor(id, suite) {
+  const emptyBox = $('#suite-middle-empty');
+  const formInner = $('#suite-editor-form');
+
+  if (!suite) {
+    if (emptyBox) emptyBox.style.display = 'flex';
+    if (formInner) formInner.style.display = 'none';
+    if ($('#suite-active-title')) $('#suite-active-title').textContent = 'Chưa chọn kịch bản';
+    return;
   }
 
-  const countLabel = $('#suite-specs-count-label');
-  if (countLabel) {
-    countLabel.textContent = `Đã chọn: ${selectedSpecs.length} file`;
-  }
+  if (emptyBox) emptyBox.style.display = 'none';
+  if (formInner) formInner.style.display = 'flex';
 
-  // Cập nhật Suite Overview Banner & Stats Card (Đồng bộ chuẩn BDD Studio)
-  const projectLabel = suite.project === 'mobile-chrome' ? 'Mobile Web' : (suite.project === 'all' ? 'Tất cả Project' : 'Desktop Web');
-  if ($('#suite-banner-project')) $('#suite-banner-project').textContent = projectLabel;
-  if ($('#suite-banner-key')) $('#suite-banner-key').textContent = id;
-  if ($('#suite-banner-title')) $('#suite-banner-title').textContent = suite.label || id;
-  
-  let scopeText = 'Toàn bộ dự án';
-  if (suite.grep && suite.grep.trim()) scopeText = `Lọc Tag: ${suite.grep.trim()}`;
-  else if (Array.isArray(suite.specs) && suite.specs.length > 0) scopeText = `Chỉ định ${suite.specs.length} files`;
-  else if (typeof suite.spec === 'string' && suite.spec !== 'all') scopeText = `File: ${suite.spec}`;
-  if ($('#suite-banner-scope')) $('#suite-banner-scope').innerHTML = `<i class="ph ph-sliders"></i> Phạm vi: ${escapeHtml(scopeText)}`;
+  const isComposite = suite.type === 'composite';
 
-  const tagContainer = $('#suite-banner-tags');
-  if (tagContainer) {
-    if (suite.grep && suite.grep.trim()) {
-      tagContainer.innerHTML = `<span class="script-tag-chip">${escapeHtml(suite.grep.trim())}</span>`;
+  // Active Key badge & Title
+  if ($('#suite-active-key-label')) $('#suite-active-key-label').textContent = id;
+  if ($('#suite-active-title')) $('#suite-active-title').textContent = suite.label || id;
+  if ($('#suite-field-label')) $('#suite-field-label').value = suite.label || '';
+  if ($('#suite-field-key')) $('#suite-field-key').value = id;
+  if ($('#suite-field-desc')) $('#suite-field-desc').value = suite.description || '';
+
+  // Type badge
+  const typeBadge = $('#suite-type-badge');
+  if (typeBadge) {
+    if (isComposite) {
+      typeBadge.className = 'suite-type-badge composite';
+      typeBadge.innerHTML = '<i class="ph-bold ph-folders"></i> Suite Cha (Tổng hợp)';
     } else {
-      tagContainer.innerHTML = `<span class="script-tag-chip" style="opacity:0.6;">Không có tag</span>`;
+      typeBadge.className = 'suite-type-badge single';
+      typeBadge.innerHTML = '<i class="ph-bold ph-file-text"></i> Suite Con (Đơn lẻ)';
     }
   }
 
-  if ($('#suite-stat-workers')) $('#suite-stat-workers').textContent = suite.workers || 2;
-  const vpText = vpPreset === 'custom'
-    ? `${vpWidth}x${vpHeight}`
-    : (vpPreset !== 'default' ? vpPreset : '1920x1080');
-  if ($('#suite-stat-viewport')) $('#suite-stat-viewport').textContent = vpText;
+  // Kind Pills (Single vs Composite)
+  const singleRadio = document.querySelector('input[name="suite-form-kind"][value="single"]');
+  const compRadio = document.querySelector('input[name="suite-form-kind"][value="composite"]');
+  if (isComposite) {
+    if (compRadio) compRadio.checked = true;
+    $('#suite-kind-pill-composite')?.classList.add('active');
+    $('#suite-kind-pill-single')?.classList.remove('active');
+    if ($('#suite-single-section')) $('#suite-single-section').style.display = 'none';
+    if ($('#suite-composite-section')) $('#suite-composite-section').style.display = 'block';
+  } else {
+    if (singleRadio) singleRadio.checked = true;
+    $('#suite-kind-pill-single')?.classList.add('active');
+    $('#suite-kind-pill-composite')?.classList.remove('active');
+    if ($('#suite-single-section')) $('#suite-single-section').style.display = 'block';
+    if ($('#suite-composite-section')) $('#suite-composite-section').style.display = 'none';
+  }
 
-  let initialSpecCount = 0;
-  if (Array.isArray(suite.specs)) initialSpecCount = suite.specs.length;
-  else if (typeof suite.spec === 'string' && suite.spec !== 'all') initialSpecCount = 1;
-  else initialSpecCount = allSpecs.length;
-  if ($('#suite-stat-specs')) $('#suite-stat-specs').textContent = initialSpecCount;
+  if (isComposite) {
+    // Render child suites checkboxes
+    if ($('#suite-composite-workers')) $('#suite-composite-workers').value = suite.workers || 2;
+    const childrenList = $('#suite-composite-children-list');
+    if (childrenList) {
+      const selectedChildren = Array.isArray(suite.suites) ? suite.suites : [];
+      const singleEntries = Object.entries(suitesCache).filter(([k, s]) => k !== id && s.type !== 'composite');
 
-  $('#suites-subnav-inspect')?.classList.add('active');
-  $('#suites-subnav-create')?.classList.remove('active');
+      if (singleEntries.length === 0) {
+        childrenList.innerHTML = `
+          <div style="padding:16px; text-align:center; color:var(--muted); font-size:12px; background:var(--surface); border-radius:8px; border:1px dashed var(--line);">
+            Chưa có kịch bản con đơn lẻ nào. Hãy tạo kịch bản con Desktop hoặc Mobile trước để gom vào Suite Cha này.
+          </div>
+        `;
+      } else {
+        childrenList.innerHTML = singleEntries.map(([cid, cs]) => {
+          const isChecked = selectedChildren.includes(cid);
+          const plat = cs.platform || (cs.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+          const isMob = plat === 'mobile';
+          const platBadgeClass = isMob ? 'mobile' : 'desktop';
+          const platIcon = isMob ? 'ph-device-mobile' : 'ph-desktop';
+          const platLabel = isMob ? 'Mobile' : 'Desktop';
+          const specsCount = Array.isArray(cs.specs) ? `${cs.specs.length} files` : (cs.grep ? `Tag: ${cs.grep}` : 'All files');
+
+          return `
+            <label class="suite-child-card-label ${isChecked ? 'selected' : ''}">
+              <div class="suite-child-card-left">
+                <input type="checkbox" class="suite-child-cb suite-child-card-checkbox" value="${escapeHtml(cid)}" ${isChecked ? 'checked' : ''}>
+                <div class="suite-child-card-info">
+                  <span class="suite-child-card-title">
+                    <i class="ph-bold ${platIcon}" style="color:${isMob ? '#10b981' : '#3b82f6'};"></i>
+                    ${escapeHtml(cs.label || cid)}
+                  </span>
+                  <span class="suite-child-card-desc">${escapeHtml(cs.description || `Kịch bản kiểm thử ${platLabel}`)}</span>
+                </div>
+              </div>
+              <div class="suite-child-card-right">
+                <span class="suite-child-badge ${platBadgeClass}">${platLabel}</span>
+                <span class="suite-child-meta">${escapeHtml(specsCount)}</span>
+              </div>
+            </label>
+          `;
+        }).join('');
+
+        childrenList.querySelectorAll('.suite-child-cb').forEach((cb) => {
+          cb.addEventListener('change', () => {
+            cb.closest('.suite-child-card-label')?.classList.toggle('selected', cb.checked);
+            syncCurrentSuiteFromInputs();
+          });
+        });
+      }
+    }
+  } else {
+    // Single suite settings
+    const platform = suite.platform || (suite.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+    const platDesktopRadio = document.querySelector('input[name="suite-single-platform"][value="desktop"]');
+    const platMobileRadio = document.querySelector('input[name="suite-single-platform"][value="mobile"]');
+
+    if (platform === 'mobile') {
+      if (platMobileRadio) platMobileRadio.checked = true;
+      $('#single-plat-mobile-label')?.classList.add('active');
+      $('#single-plat-desktop-label')?.classList.remove('active');
+      if ($('#platform-scope-title-text')) $('#platform-scope-title-text').textContent = 'Mobile Web';
+    } else {
+      if (platDesktopRadio) platDesktopRadio.checked = true;
+      $('#single-plat-desktop-label')?.classList.add('active');
+      $('#single-plat-mobile-label')?.classList.remove('active');
+      if ($('#platform-scope-title-text')) $('#platform-scope-title-text').textContent = 'Desktop Web';
+    }
+
+    const workersInput = $('#suite-platform-workers') || $('#suite-field-workers');
+    if (workersInput) workersInput.value = suite.workers || 2;
+
+    const vpPreset = suite.viewport?.preset || 'default';
+    const vpWidth = suite.viewport?.width || (platform === 'mobile' ? 393 : 1920);
+    const vpHeight = suite.viewport?.height || (platform === 'mobile' ? 851 : 1080);
+
+    // Scope mode
+    let selectedSpecs = [];
+    if (Array.isArray(suite.specs)) selectedSpecs = suite.specs;
+    else if (typeof suite.spec === 'string' && suite.spec !== 'all') selectedSpecs = [suite.spec];
+
+    let scopeMode = 'all';
+    if (suite.grep && suite.grep.trim().length > 0) scopeMode = 'grep';
+    else if (selectedSpecs.length > 0) scopeMode = 'custom';
+
+    const radio = document.querySelector(`input[name="suite-scope-mode"][value="${scopeMode}"]`);
+    if (radio) radio.checked = true;
+
+    document.querySelectorAll('.scope-mode-option').forEach((opt) => {
+      opt.classList.toggle('active', opt.querySelector('input')?.value === scopeMode);
+    });
+
+    const grepBox = $('#suite-grep-box');
+    const filesBox = $('#suite-files-box');
+    if (grepBox) grepBox.style.display = scopeMode === 'grep' ? 'block' : 'none';
+    if (filesBox) filesBox.style.display = scopeMode === 'custom' ? 'flex' : 'none';
+
+    const grepInput = $('#suite-field-grep');
+    if (grepInput) grepInput.value = suite.grep || '';
+
+    // Dynamically update platform context (emulation, projects, presets, specs)
+    updateSuitePlatformContext(platform, {
+      project: suite.project,
+      device: suite.device,
+      preset: vpPreset,
+      width: vpWidth,
+      height: vpHeight,
+      specs: selectedSpecs
+    });
+
+    const customVpBox = $('#suite-platform-custom-vp-box') || $('#suite-custom-vp-box');
+    if (customVpBox) customVpBox.style.display = vpPreset === 'custom' ? 'grid' : 'none';
+  }
+
   updateSuiteRunButtonState();
 }
 
 function updateSuitePreview(id, suite) {
   if (!suite) return;
 
-  const project = suite.project || 'all';
-  const isMobile = project === 'mobile-chrome' || (suite.label || '').toLowerCase().includes('mobile');
-  const workers = suite.workers || 2;
-  const vpPreset = suite.viewport?.preset || 'default';
-  const grep = suite.grep ? suite.grep.trim() : '';
-
-  // Update Preview Card
-  const prevProj = $('#suite-prev-project');
-  if (prevProj) prevProj.innerHTML = `<i class="ph-bold ${isMobile ? 'ph-device-mobile' : 'ph-desktop'}"></i> ${escapeHtml(project)}`;
-
-  const prevWorkers = $('#suite-prev-workers');
-  if (prevWorkers) prevWorkers.innerHTML = `<i class="ph-bold ph-cpu"></i> ${workers} workers`;
-
-  const prevViewport = $('#suite-prev-viewport');
-  if (prevViewport) prevViewport.innerHTML = `<i class="ph-bold ph-monitor"></i> ${vpPreset === 'default' ? 'Mặc định' : vpPreset}`;
-
-  let scopeText = 'Toàn bộ dự án';
-  if (grep) scopeText = `Lọc tag: ${grep}`;
-  else if (Array.isArray(suite.specs) && suite.specs.length > 0) scopeText = `Tùy chọn ${suite.specs.length} files`;
-  else if (typeof suite.spec === 'string' && suite.spec !== 'all') scopeText = `File: ${suite.spec}`;
-
-  const prevScope = $('#suite-prev-scope');
-  if (prevScope) prevScope.innerHTML = `<i class="ph-bold ph-tag"></i> ${escapeHtml(scopeText)}`;
-
-  // Đồng bộ banner Section 01
-  const projectLabel = project === 'mobile-chrome' ? 'Mobile Web' : (project === 'all' ? 'Tất cả Project' : 'Desktop Web');
-  if ($('#suite-banner-project')) $('#suite-banner-project').textContent = projectLabel;
-  if ($('#suite-banner-key')) $('#suite-banner-key').textContent = id;
-  if ($('#suite-banner-title')) $('#suite-banner-title').textContent = suite.label || id;
-  if ($('#suite-banner-scope')) $('#suite-banner-scope').innerHTML = `<i class="ph ph-sliders"></i> Phạm vi: ${escapeHtml(scopeText)}`;
-  const tagContainer = $('#suite-banner-tags');
-  if (tagContainer) {
-    if (grep) {
-      tagContainer.innerHTML = `<span class="script-tag-chip">${escapeHtml(grep)}</span>`;
-    } else {
-      tagContainer.innerHTML = `<span class="script-tag-chip" style="opacity:0.6;">Không có tag</span>`;
-    }
-  }
-  if ($('#suite-stat-workers')) $('#suite-stat-workers').textContent = workers;
-  const vpCustomText = vpPreset === 'custom'
-    ? `${suite.viewport?.width || 1920}x${suite.viewport?.height || 1080}`
-    : (vpPreset !== 'default' ? vpPreset : '1920x1080');
-  if ($('#suite-stat-viewport')) $('#suite-stat-viewport').textContent = vpCustomText;
-
-  // Determine matching spec files
-  const allSpecs = testCatalog?.specs || [];
-  let matchingSpecs = [];
-
-  const scopeRadio = document.querySelector('input[name="suite-scope-mode"]:checked');
-  const scopeMode = scopeRadio ? scopeRadio.value : (grep ? 'grep' : (Array.isArray(suite.specs) && suite.specs.length > 0 ? 'custom' : 'all'));
-
-  if (scopeMode === 'custom') {
-    const checked = Array.from(document.querySelectorAll('#suite-specs-checklist-container .suite-spec-cb:checked')).map((cb) => cb.value);
-    matchingSpecs = checked.length > 0 ? checked : (Array.isArray(suite.specs) ? suite.specs : []);
-  } else if (scopeMode === 'grep' && grep) {
-    matchingSpecs = allSpecs;
-  } else {
-    matchingSpecs = allSpecs;
-  }
-
-  if (project === 'mobile-chrome') {
-    matchingSpecs = matchingSpecs.filter((s) => s.includes('mobile'));
-  } else if (project === 'chromium') {
-    matchingSpecs = matchingSpecs.filter((s) => !s.includes('mobile'));
-  }
-
-  const execCount = $('#suite-exec-count');
-  if (execCount) execCount.textContent = `${matchingSpecs.length} file`;
-  if ($('#suite-stat-specs')) $('#suite-stat-specs').textContent = matchingSpecs.length;
-
-
-  const execList = $('#suite-exec-files-list');
-  if (execList) {
-    if (matchingSpecs.length === 0) {
-      execList.innerHTML = '<div style="color:var(--muted); font-size:11px; padding:6px;">Không có file nào khớp với cấu hình.</div>';
-    } else {
-      execList.innerHTML = matchingSpecs.map((s) => `
-        <div class="suite-exec-file-item">
-          <i class="ph-bold ph-file-js" style="color:var(--accent);"></i>
-          <span>${escapeHtml(s)}</span>
-        </div>
-      `).join('');
-    }
-  }
-
-  // CLI Command string
-  const cliParts = ['npx playwright test'];
-  if (scopeMode === 'custom' && matchingSpecs.length > 0) {
-    cliParts.push(matchingSpecs.join(' '));
-  }
-  if (project !== 'all') {
-    cliParts.push(`--project=${project}`);
-  }
-  if (grep) {
-    cliParts.push(`--grep="${grep}"`);
-  }
-  if (workers) {
-    cliParts.push(`--workers=${workers}`);
-  }
-
+  const cardsContainer = $('#suite-matrix-cards');
   const cliBox = $('#suite-cli-command');
-  if (cliBox) {
-    cliBox.textContent = cliParts.join(' ');
+  const summaryPill = $('#suite-matrix-summary-pill');
+  const isComposite = suite.type === 'composite';
+
+  if (isComposite) {
+    if (summaryPill) {
+      summaryPill.innerHTML = `<i class="ph-bold ph-folders"></i> <span>Suite Tổng Hợp</span>`;
+    }
+
+    const childIds = Array.isArray(suite.suites) ? suite.suites : [];
+    const allChildSuites = suitesCache || {};
+
+    if (cardsContainer) {
+      cardsContainer.innerHTML = `
+        <div class="suite-matrix-composite-card">
+          <div class="matrix-composite-head">
+            <div class="matrix-composite-title">
+              <i class="ph-bold ph-lightning" style="color:var(--accent);"></i>
+              <span>Kịch bản tổng hợp: <strong>${escapeHtml(suite.label || id)}</strong></span>
+            </div>
+            <span class="suite-type-badge composite">${childIds.length} Suites con</span>
+          </div>
+          <div class="matrix-composite-children-list">
+            ${childIds.length === 0 ? '<div style="color:var(--muted); font-size:11.5px; padding:8px;">Chưa chọn kịch bản con nào.</div>' : childIds.map((cid) => {
+              const cs = allChildSuites[cid] || {};
+              const plat = cs.platform || (cs.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+              const isMob = plat === 'mobile';
+              const platIcon = isMob ? 'ph-device-mobile' : 'ph-desktop';
+              return `
+                <div class="matrix-child-row">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <i class="ph-bold ${platIcon}" style="color:${isMob ? '#10b981' : '#3b82f6'};"></i>
+                    <strong>${escapeHtml(cs.label || cid)}</strong>
+                    <small>(${cs.project || 'all'})</small>
+                  </div>
+                  <span class="suite-child-badge ${isMob ? 'mobile' : 'desktop'}">${plat.toUpperCase()}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    if (cliBox) {
+      cliBox.textContent = `node scripts/run-suite.js ${id} qc`;
+    }
+  } else {
+    const platform = suite.platform || (suite.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+    const isMob = platform === 'mobile';
+
+    if (summaryPill) {
+      summaryPill.innerHTML = `<i class="ph-bold ${isMob ? 'ph-device-mobile' : 'ph-desktop'}"></i> <span>Suite ${isMob ? 'Mobile' : 'Desktop'}</span>`;
+    }
+
+    const vpPreset = suite.viewport?.preset || 'default';
+    const vpText = vpPreset === 'custom'
+      ? `${suite.viewport?.width || 1920}x${suite.viewport?.height || 1080}`
+      : (vpPreset !== 'default' ? vpPreset : (isMob ? '393x851' : '1920x1080'));
+
+    let scopeText = 'Toàn bộ dự án';
+    if (suite.grep && suite.grep.trim()) scopeText = `Tag: ${suite.grep.trim()}`;
+    else if (Array.isArray(suite.specs) && suite.specs.length > 0) scopeText = `${suite.specs.length} files`;
+
+    if (cardsContainer) {
+      cardsContainer.innerHTML = `
+        <div class="suite-matrix-platform-card">
+          <div class="matrix-card-head">
+            <div class="matrix-card-title">
+              <i class="ph-bold ${isMob ? 'ph-device-mobile' : 'ph-desktop'}"></i>
+              <strong>${escapeHtml(suite.label || id)}</strong>
+            </div>
+            <span class="matrix-card-status-tag active">${isMob ? 'Mobile Web' : 'Desktop Web'}</span>
+          </div>
+          <div class="matrix-card-grid">
+            <div><small>Browser / Project</small><span>${escapeHtml(suite.project || 'all')}</span></div>
+            <div><small>Luồng chạy</small><span>${suite.workers || 2} workers</span></div>
+            <div><small>Độ phân giải</small><span>${escapeHtml(vpText)}</span></div>
+            <div><small>Phạm vi test</small><span>${escapeHtml(scopeText)}</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    const cliParts = ['npx playwright test'];
+    if (Array.isArray(suite.specs) && suite.specs.length > 0) {
+      cliParts.push(suite.specs.join(' '));
+    }
+    if (suite.project && suite.project !== 'all') {
+      cliParts.push(`--project="${suite.project}"`);
+    }
+    if (suite.grep && suite.grep.trim()) {
+      cliParts.push(`--grep="${suite.grep.trim()}"`);
+    }
+    if (suite.workers) {
+      cliParts.push(`--workers=${suite.workers}`);
+    }
+
+    if (cliBox) {
+      cliBox.textContent = cliParts.join(' ');
+    }
   }
 }
 
 function syncCurrentSuiteFromInputs() {
   if (!currentSelectedSuiteId || !suitesCache[currentSelectedSuiteId]) return;
 
+  const kindRadio = document.querySelector('input[name="suite-form-kind"]:checked');
+  const isComposite = kindRadio ? kindRadio.value === 'composite' : (suitesCache[currentSelectedSuiteId].type === 'composite');
+
   const label = $('#suite-field-label')?.value.trim() || 'Kịch bản mới';
   const newKey = $('#suite-field-key')?.value.trim() || currentSelectedSuiteId;
-  const project = $('#suite-field-project')?.value || 'all';
-  const workers = parseInt($('#suite-field-workers')?.value, 10) || 2;
-  const vpPreset = $('#suite-field-viewport-preset')?.value || 'default';
-  const vpWidth = parseInt($('#suite-field-vp-width')?.value, 10) || 1920;
-  const vpHeight = parseInt($('#suite-field-vp-height')?.value, 10) || 1080;
+  const description = $('#suite-field-desc')?.value.trim() || '';
 
-  const scopeRadio = document.querySelector('input[name="suite-scope-mode"]:checked');
-  const scopeMode = scopeRadio ? scopeRadio.value : 'all';
+  let updatedSuite = {};
 
-  let grep = '';
-  let specs = 'all';
-  let spec = 'all';
+  if (isComposite) {
+    const workers = parseInt($('#suite-composite-workers')?.value, 10) || 2;
+    const selectedChildSuites = Array.from(document.querySelectorAll('#suite-composite-children-list .suite-child-cb:checked')).map((cb) => cb.value);
 
-  if (scopeMode === 'grep') {
-    grep = $('#suite-field-grep')?.value.trim() || '';
-  } else if (scopeMode === 'custom') {
-    const checked = Array.from(document.querySelectorAll('#suite-specs-checklist-container .suite-spec-cb:checked')).map((cb) => cb.value);
-    if (checked.length > 0) {
-      specs = checked;
-      spec = checked.length === 1 ? checked[0] : 'custom';
+    updatedSuite = {
+      type: 'composite',
+      label,
+      description,
+      suites: selectedChildSuites,
+      workers
+    };
+  } else {
+    const platRadio = document.querySelector('input[name="suite-single-platform"]:checked');
+    const platform = platRadio ? platRadio.value : 'desktop';
+    const project = ($('#suite-platform-project') || $('#suite-field-project'))?.value || (platform === 'mobile' ? 'mobile-chrome' : 'chromium');
+    const device = $('#suite-platform-device')?.value.trim() || '';
+    const workers = parseInt(($('#suite-platform-workers') || $('#suite-field-workers'))?.value, 10) || 2;
+    const vpPreset = ($('#suite-platform-viewport-preset') || $('#suite-field-viewport-preset'))?.value || 'default';
+    const vpWidth = parseInt(($('#suite-platform-vp-width') || $('#suite-field-vp-width'))?.value, 10) || (platform === 'mobile' ? 393 : 1920);
+    const vpHeight = parseInt(($('#suite-platform-vp-height') || $('#suite-field-vp-height'))?.value, 10) || (platform === 'mobile' ? 851 : 1080);
+
+    const scopeRadio = document.querySelector('input[name="suite-scope-mode"]:checked');
+    const scopeMode = scopeRadio ? scopeRadio.value : 'all';
+
+    let grep = '';
+    let specs = 'all';
+    let spec = 'all';
+
+    if (scopeMode === 'grep') {
+      grep = $('#suite-field-grep')?.value.trim() || '';
+    } else if (scopeMode === 'custom') {
+      const checked = Array.from(document.querySelectorAll('#suite-specs-checklist-container .suite-spec-cb:checked')).map((cb) => cb.value);
+      if (checked.length > 0) {
+        specs = checked;
+        spec = checked.length === 1 ? checked[0] : 'custom';
+      }
+      const countLabel = $('#suite-specs-count-label');
+      if (countLabel) countLabel.textContent = `Đã chọn: ${checked.length} file`;
     }
-    const countLabel = $('#suite-specs-count-label');
-    if (countLabel) countLabel.textContent = `Đã chọn: ${checked.length} file`;
-  }
 
-  const updatedSuite = {
-    label,
-    project,
-    workers,
-    viewport: { preset: vpPreset, width: vpWidth, height: vpHeight },
-    spec,
-    specs,
-    grep
-  };
+    updatedSuite = {
+      type: 'single',
+      platform,
+      label,
+      description,
+      project,
+      device,
+      workers,
+      viewport: { preset: vpPreset, width: vpWidth, height: vpHeight },
+      spec,
+      specs,
+      grep
+    };
+  }
 
   if (newKey !== currentSelectedSuiteId) {
     delete suitesCache[currentSelectedSuiteId];
@@ -3910,10 +4173,11 @@ function syncCurrentSuiteFromInputs() {
   }
   suitesCache[currentSelectedSuiteId] = updatedSuite;
 
-  const title = $('#suite-active-title');
-  if (title) title.textContent = label;
+  if ($('#suite-active-title')) $('#suite-active-title').textContent = label;
+  if ($('#suite-active-key-label')) $('#suite-active-key-label').textContent = currentSelectedSuiteId;
 
   renderSuitesSidebarList();
+  renderSuiteDropdown();
   updateSuitePreview(currentSelectedSuiteId, updatedSuite);
 
   if (!window.dashboardSuites) window.dashboardSuites = {};
@@ -3925,8 +4189,12 @@ function syncCurrentSuiteFromInputs() {
 function createNewSuite() {
   const newId = `suite-${Date.now().toString(36)}`;
   const newSuite = {
+    type: 'single',
+    platform: 'desktop',
     label: 'Kịch bản mới',
+    description: '',
     project: 'chromium',
+    device: '',
     workers: 2,
     viewport: { preset: '1920x1080', width: 1920, height: 1080 },
     spec: 'all',
@@ -3936,9 +4204,6 @@ function createNewSuite() {
 
   suitesCache[newId] = newSuite;
   currentSelectedSuiteId = newId;
-
-  $('#suites-subnav-inspect')?.classList.remove('active');
-  $('#suites-subnav-create')?.classList.add('active');
 
   renderSuitesView(suitesCache);
 
@@ -4011,51 +4276,10 @@ function initSuitesView() {
   if (suitesViewInitialized) return;
   suitesViewInitialized = true;
 
-  // Subnav Navigation Tabs
-  $('#suites-subnav-inspect')?.addEventListener('click', () => {
-    $('#suites-subnav-inspect')?.classList.add('active');
-    $('#suites-subnav-create')?.classList.remove('active');
-    if (currentSelectedSuiteId && suitesCache[currentSelectedSuiteId]) {
-      loadSuiteIntoEditor(currentSelectedSuiteId, suitesCache[currentSelectedSuiteId]);
-    }
-  });
 
-  $('#suites-subnav-create')?.addEventListener('click', () => {
-    createNewSuite();
-  });
-
-  // Subnav Quick Action Buttons
-  $('#suites-subnav-delete-btn')?.addEventListener('click', deleteCurrentSuite);
-  $('#suites-subnav-sync-btn')?.addEventListener('click', () => {
-    document.getElementById('sync-git-button')?.click();
-  });
-  $('#suites-subnav-run-btn')?.addEventListener('click', runCurrentSuiteNow);
-
-  // Refresh button
-  $('#suites-refresh-btn')?.addEventListener('click', async () => {
-    try {
-      const settings = await request('/api/settings');
-      renderSettings(settings);
-      notify('Đã làm mới danh sách Test Suites.');
-    } catch (err) {
-      notify(`Lỗi làm mới Test Suites: ${err.message}`);
-    }
-  });
-
-  $('#btn-collapse-suites-sidebar')?.addEventListener('click', () => {
-    $('#suites-workspace')?.classList.add('sidebar-collapsed');
-  });
-
-  $('#btn-expand-suites-sidebar')?.addEventListener('click', () => {
-    $('#suites-workspace')?.classList.remove('sidebar-collapsed');
-  });
-
-  $('#btn-toggle-suites-sidebar-head')?.addEventListener('click', () => {
-    $('#suites-workspace')?.classList.toggle('sidebar-collapsed');
-  });
-
+  // Suites Sidebar Search & Filter Pills
   $('#suites-search-input')?.addEventListener('input', (e) => {
-    currentSuiteSearch = e.target.value.toLowerCase().trim();
+    currentSuiteSearch = e.target.value;
     renderSuitesSidebarList();
   });
 
@@ -4068,14 +4292,52 @@ function initSuitesView() {
     });
   });
 
-  $('#add-suite-button')?.addEventListener('click', createNewSuite);
-  $('#suite-btn-duplicate')?.addEventListener('click', duplicateCurrentSuite);
-  $('#suite-btn-delete')?.addEventListener('click', deleteCurrentSuite);
+  $('#suites-refresh-btn')?.addEventListener('click', () => {
+    renderSuitesSidebarList();
+    notify('Đã làm mới danh sách Test Suite.');
+  });
 
+  // Suites Sidebar Collapse / Expand toggles
+  const suitesWorkspace = $('#suites-workspace');
+  const toggleSuitesSidebar = () => {
+    if (suitesWorkspace) {
+      suitesWorkspace.classList.toggle('sidebar-collapsed');
+    }
+  };
+
+  $('#btn-collapse-suites-sidebar')?.addEventListener('click', () => {
+    suitesWorkspace?.classList.add('sidebar-collapsed');
+  });
+
+  $('#btn-expand-suites-sidebar')?.addEventListener('click', () => {
+    suitesWorkspace?.classList.remove('sidebar-collapsed');
+  });
+
+  $('#btn-toggle-suites-sidebar-head')?.addEventListener('click', toggleSuitesSidebar);
+
+  // Dropdown Picker change
+  $('#suite-picker-select')?.addEventListener('change', (e) => {
+    const chosenId = e.target.value;
+    if (chosenId && suitesCache[chosenId]) {
+      selectSuite(chosenId);
+    }
+  });
+
+  // Top action buttons
+  $('#suites-subnav-create')?.addEventListener('click', createNewSuite);
+  $('#suites-subnav-duplicate-btn')?.addEventListener('click', duplicateCurrentSuite);
+  $('#suites-subnav-delete-btn')?.addEventListener('click', deleteCurrentSuite);
+  $('#suites-subnav-sync-btn')?.addEventListener('click', () => {
+    document.getElementById('sync-git-button')?.click();
+  });
+  $('#suites-subnav-run-btn')?.addEventListener('click', runCurrentSuiteNow);
+
+  // Save Settings button
   $('#suites-save-btn')?.addEventListener('click', async () => {
     const btn = $('#suites-save-btn');
     if (btn) btn.disabled = true;
     try {
+      syncCurrentSuiteFromInputs();
       await saveSettings();
       updateSuiteRunButtonState();
       notify('Đã lưu toàn bộ cấu hình Test Suites thành công!');
@@ -4099,31 +4361,104 @@ function initSuitesView() {
     }
   });
 
+  // Suite Kind radio pills (single vs composite)
+  document.querySelectorAll('input[name="suite-form-kind"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      const isComp = radio.value === 'composite';
+      $('#suite-kind-pill-composite')?.classList.toggle('active', isComp);
+      $('#suite-kind-pill-single')?.classList.toggle('active', !isComp);
+      if ($('#suite-single-section')) $('#suite-single-section').style.display = isComp ? 'none' : 'block';
+      if ($('#suite-composite-section')) $('#suite-composite-section').style.display = isComp ? 'block' : 'none';
+      syncCurrentSuiteFromInputs();
+    });
+  });
 
-  const syncFields = [
+  // Single platform radio pills (desktop vs mobile)
+  document.querySelectorAll('input[name="suite-single-platform"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      const isMob = radio.value === 'mobile';
+      const plat = isMob ? 'mobile' : 'desktop';
+      $('#single-plat-mobile-label')?.classList.toggle('active', isMob);
+      $('#single-plat-desktop-label')?.classList.toggle('active', !isMob);
+      if ($('#platform-scope-title-text')) {
+        $('#platform-scope-title-text').textContent = isMob ? 'Mobile Web' : 'Desktop Web';
+      }
+
+      // Collect current selected specs if any
+      const currentCheckedSpecs = Array.from(document.querySelectorAll('#suite-specs-checklist-container .suite-spec-cb:checked')).map((cb) => cb.value);
+
+      // Re-render context options for the newly chosen platform
+      updateSuitePlatformContext(plat, {
+        preset: isMob ? 'default' : '1920x1080',
+        width: isMob ? 393 : 1920,
+        height: isMob ? 851 : 1080,
+        specs: currentCheckedSpecs
+      });
+
+      syncCurrentSuiteFromInputs();
+    });
+  });
+
+  // Inputs live sync
+  const syncFieldSelectors = [
     '#suite-field-label',
     '#suite-field-key',
-    '#suite-field-project',
-    '#suite-field-workers',
-    '#suite-field-viewport-preset',
-    '#suite-field-vp-width',
-    '#suite-field-vp-height',
+    '#suite-field-desc',
+    '#suite-platform-project',
+    '#suite-platform-device',
+    '#suite-platform-workers',
+    '#suite-platform-viewport-preset',
+    '#suite-platform-vp-width',
+    '#suite-platform-vp-height',
+    '#suite-composite-workers',
     '#suite-field-grep'
   ];
 
-  syncFields.forEach((sel) => {
+  syncFieldSelectors.forEach((sel) => {
     $(sel)?.addEventListener('input', syncCurrentSuiteFromInputs);
     $(sel)?.addEventListener('change', syncCurrentSuiteFromInputs);
   });
 
-  $('#suite-field-viewport-preset')?.addEventListener('change', (e) => {
-    const customBox = $('#suite-custom-vp-box');
+  // Viewport preset change
+  const vpSelect = $('#suite-platform-viewport-preset') || $('#suite-field-viewport-preset');
+  vpSelect?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    const customBox = $('#suite-platform-custom-vp-box') || $('#suite-custom-vp-box');
     if (customBox) {
-      customBox.style.display = e.target.value === 'custom' ? 'grid' : 'none';
+      customBox.style.display = val === 'custom' ? 'grid' : 'none';
+    }
+    if (val && val.includes('x') && val !== 'custom') {
+      const [w, h] = val.split('x').map((n) => parseInt(n, 10));
+      if (w && h) {
+        const wInp = $('#suite-platform-vp-width') || $('#suite-field-vp-width');
+        const hInp = $('#suite-platform-vp-height') || $('#suite-field-vp-height');
+        if (wInp) wInp.value = w;
+        if (hInp) hInp.value = h;
+      }
     }
     syncCurrentSuiteFromInputs();
   });
 
+  // Device select change (auto select default preset or update viewport)
+  $('#suite-platform-device')?.addEventListener('change', (e) => {
+    const dev = e.target.value;
+    const devMap = {
+      'iPhone 14': [390, 844],
+      'iPhone 13': [390, 844],
+      'Pixel 7': [393, 851],
+      'Galaxy S9+': [360, 740]
+    };
+    if (devMap[dev]) {
+      const [w, h] = devMap[dev];
+      const wInp = $('#suite-platform-vp-width') || $('#suite-field-vp-width');
+      const hInp = $('#suite-platform-vp-height') || $('#suite-field-vp-height');
+      if (wInp) wInp.value = w;
+      if (hInp) hInp.value = h;
+    }
+    syncCurrentSuiteFromInputs();
+  });
+
+  // Scope mode radios
   document.querySelectorAll('input[name="suite-scope-mode"]').forEach((radio) => {
     radio.addEventListener('change', () => {
       document.querySelectorAll('.scope-mode-option').forEach((opt) => {
@@ -4137,6 +4472,7 @@ function initSuitesView() {
     });
   });
 
+  // Tag chip suggestions
   document.querySelectorAll('#suite-tag-suggestions .btn-tag-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
       const grepInput = $('#suite-field-grep');
@@ -4153,6 +4489,7 @@ function initSuitesView() {
     });
   });
 
+  // Select/Deselect all specs
   $('#btn-suite-select-all')?.addEventListener('click', () => {
     document.querySelectorAll('#suite-specs-checklist-container .suite-spec-cb').forEach((cb) => {
       cb.checked = true;
@@ -4167,6 +4504,7 @@ function initSuitesView() {
     syncCurrentSuiteFromInputs();
   });
 
+  // Specs search filter
   $('#suite-specs-search-input')?.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     document.querySelectorAll('#suite-specs-checklist-container .suite-spec-item').forEach((item) => {

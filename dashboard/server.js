@@ -762,13 +762,43 @@ function validateOptions(input) {
     else throw new Error('Spec không hợp lệ.');
   }
 
-  if (!getPlaywrightProjects().includes(project)) throw new Error('Project không hợp lệ.');
+  let projects = [];
+  if (Array.isArray(input.projects)) {
+    projects = input.projects.map(String).filter((p) => getPlaywrightProjects().includes(p));
+  } else if (input.project && input.project !== 'all') {
+    if (getPlaywrightProjects().includes(input.project)) projects = [input.project];
+  }
+
+  // Nếu là composite suite chạy từ dashboard, nạp các project và specs từ child suites nếu chưa có
+  if (input.suiteId && settings.suites?.[input.suiteId]) {
+    const selectedSuite = settings.suites[input.suiteId];
+    if (selectedSuite.type === 'composite' && Array.isArray(selectedSuite.suites)) {
+      const compSpecs = [];
+      const compProjects = [];
+      for (const childId of selectedSuite.suites) {
+        const child = settings.suites[childId];
+        if (!child) continue;
+        if (Array.isArray(child.specs) && child.specs.length > 0 && child.specs !== 'all') {
+          compSpecs.push(...child.specs.filter((s) => allSpecs.includes(s)));
+        } else if (child.spec && child.spec !== 'all' && allSpecs.includes(child.spec)) {
+          compSpecs.push(child.spec);
+        }
+        if (child.project && child.project !== 'all' && getPlaywrightProjects().includes(child.project)) {
+          compProjects.push(child.project);
+        }
+      }
+      if (specs.length === 0 && compSpecs.length > 0) specs = [...new Set(compSpecs)];
+      if (projects.length === 0 && compProjects.length > 0) projects = [...new Set(compProjects)];
+    }
+  }
+
+  if (!getPlaywrightProjects().includes(project) && project !== 'all') throw new Error('Project không hợp lệ.');
   if (!environments.includes(environment)) throw new Error('Environment không hợp lệ.');
   if (!Number.isInteger(workers) || workers < 1 || workers > 8) throw new Error('Luồng chạy phải từ 1 đến 8.');
   if (grep.length > 80 || /[\r\n\0]/.test(grep)) throw new Error('Tag/grep không hợp lệ.');
 
   const spec = specs.length === 1 ? specs[0] : (specs.length > 1 ? specs.join(' ') : 'all');
-  return { project, environment, spec, specs, grep, workers, headed: input.headed === true, viewport, suiteLabel };
+  return { project, projects, environment, spec, specs, grep, workers, headed: input.headed === true, viewport, suiteLabel };
 }
 
 function runtimeEnv(options) {
@@ -913,7 +943,13 @@ function startRun(options, uiMode = false) {
   } else if (options.spec && options.spec !== 'all') {
     args.push(options.spec);
   }
-  if (options.project !== 'all') args.push(`--project=${options.project}`);
+  if (Array.isArray(options.projects) && options.projects.length > 0) {
+    for (const proj of options.projects) {
+      args.push(`--project=${proj}`);
+    }
+  } else if (options.project && options.project !== 'all') {
+    args.push(`--project=${options.project}`);
+  }
   if (options.grep) args.push('--grep', options.grep);
   if (uiMode) args.push('--ui');
   else if (options.headed) args.push('--headed');

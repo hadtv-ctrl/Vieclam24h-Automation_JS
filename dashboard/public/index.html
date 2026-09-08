@@ -310,26 +310,39 @@
         <div>
           <p class="eyebrow"><i class="ph-bold ph-stack"></i> TIỆN ÍCH • KỊCH BẢN TEST SUITE</p>
           <h1>Quản lý Test Suites</h1>
-          <p class="subtitle">Bố cục 3 khung song song chuẩn Dashboard: Danh sách kịch bản bên trái · Thiết lập thông số ở giữa · Tổng quan file & Lệnh chạy bên phải.</p>
+          <p class="subtitle">Mô hình Suite Cha - Con trực quan: Tạo suite con cho từng nền tảng (Desktop/Mobile) và gom thành Suite Cha tổng hợp để chạy đồng thời.</p>
         </div>
         <div class="hero-stats-group">
-          <div class="hero-stat-card"><strong id="suites-stat-total">0</strong><small>Test Suites</small></div>
-          <div class="hero-stat-card"><strong id="suites-stat-desktop">0</strong><small>Desktop Suites</small></div>
-          <div class="hero-stat-card"><strong id="suites-stat-mobile">0</strong><small>Mobile Suites</small></div>
+          <div class="hero-stat-card"><strong id="suites-stat-total">0</strong><small>Tổng Suites</small></div>
+          <div class="hero-stat-card"><strong id="suites-stat-composite">0</strong><small>Suite Cha (Tổng hợp)</small></div>
+          <div class="hero-stat-card"><strong id="suites-stat-desktop">0</strong><small>Suite Desktop</small></div>
+          <div class="hero-stat-card"><strong id="suites-stat-mobile">0</strong><small>Suite Mobile</small></div>
         </div>
       </header>
 
-      <!-- Subtabs Navigation Bar (Đồng bộ chuẩn BDD Studio) -->
+      <!-- Subtabs Navigation Bar with Suite Dropdown Selector -->
       <div class="view-subnav script-subnav suites-subnav" role="tablist" aria-label="Các chế độ làm việc với Test Suite">
-        <div class="script-subnav-tabs">
-          <button type="button" class="view-subtab script-subtab active" id="suites-subnav-inspect">
-            <i class="ph-bold ph-sliders"></i> Chi tiết Test Suite
-          </button>
-          <button type="button" class="view-subtab script-subtab" id="suites-subnav-create">
-            <i class="ph-bold ph-plus-circle"></i> Tạo Test Suite mới
+        <div class="script-subnav-tabs" style="display: flex; align-items: center; gap: 12px;">
+          <!-- SUITE SELECTOR DROPDOWN -->
+          <div class="suite-picker-control">
+            <label for="suite-picker-select" class="suite-picker-label">
+              <i class="ph-bold ph-folder-notch-open"></i> Test Suite:
+            </label>
+            <div class="suite-picker-select-wrap">
+              <select id="suite-picker-select" class="suite-picker-select"></select>
+              <i class="ph-bold ph-caret-down suite-picker-caret"></i>
+            </div>
+          </div>
+
+          <button type="button" class="view-subtab script-subtab" id="suites-subnav-create" title="Tạo mới một kịch bản Test Suite">
+            <i class="ph-bold ph-plus-circle"></i> Tạo Suite mới
           </button>
         </div>
+
         <div class="script-subnav-actions" id="suites-subnav-actions">
+          <button id="suites-subnav-duplicate-btn" type="button" class="script-subnav-btn" title="Nhân bản kịch bản Suite này">
+            <i class="ph-bold ph-copy"></i> Nhân bản
+          </button>
           <button id="suites-subnav-delete-btn" type="button" class="script-subnav-btn script-delete-btn" title="Xóa kịch bản Test Suite này">
             <i class="ph-bold ph-trash"></i> Xóa suite
           </button>
@@ -342,9 +355,9 @@
         </div>
       </div>
 
-      <!-- 3-KHUNG WORKSPACE SEAMLESS -->
+      <!-- 3-KHUNG WORKSPACE TEST SUITE (DANH SÁCH + CẤU HÌNH + MA TRẬN) -->
       <main class="suites-workspace" id="suites-workspace">
-        <!-- KHUNG 1: DANH SÁCH TEST SUITE (290px - CÓ THỂ THU GỌN) -->
+        <!-- CỘT 1: DANH SÁCH TEST SUITE -->
         <aside class="suites-sidebar panel" id="suites-sidebar">
           <div class="sidebar-expanded-content" id="suites-sidebar-expanded-content">
             <div class="pm-sidebar-head">
@@ -354,32 +367,31 @@
               </div>
               <div style="display: flex; gap: 4px; align-items: center;">
                 <button id="suites-refresh-btn" type="button" class="btn-icon-subtle" title="Làm mới danh sách"><i class="ph-bold ph-arrows-clockwise"></i></button>
-                <button id="btn-collapse-suites-sidebar" type="button" class="btn-icon-subtle btn-sidebar-collapse" title="Thu gọn danh sách Suite (mở rộng không gian làm việc)">
+                <button id="btn-collapse-suites-sidebar" type="button" class="btn-icon-subtle btn-sidebar-collapse" title="Thu gọn danh sách Suite">
                   <i class="ph-bold ph-caret-left"></i>
                 </button>
               </div>
             </div>
 
-            <!-- Tìm kiếm & Lọc phân hệ -->
+            <!-- Tìm kiếm & Bộ lọc Suite -->
             <div class="pm-sidebar-filter-box">
               <div class="pm-sidebar-search">
                 <i class="ph ph-magnifying-glass"></i>
                 <input type="text" id="suites-search-input" placeholder="Tìm theo tên suite, tag, project...">
               </div>
               <div class="pm-sidebar-pills">
-                <button type="button" class="pm-filter-pill suite-filter-pill active" data-filter="desktop">Desktop</button>
+                <button type="button" class="pm-filter-pill suite-filter-pill active" data-filter="all">Tất cả</button>
+                <button type="button" class="pm-filter-pill suite-filter-pill" data-filter="composite">Suite Cha</button>
+                <button type="button" class="pm-filter-pill suite-filter-pill" data-filter="desktop">Desktop</button>
                 <button type="button" class="pm-filter-pill suite-filter-pill" data-filter="mobile">Mobile</button>
-                <button type="button" class="pm-filter-pill suite-filter-pill" data-filter="tag">Có Tag</button>
               </div>
             </div>
 
             <!-- Danh sách Suites cuộn dọc -->
-            <div id="suites-sidebar-list" class="page-manager-sidebar-list suites-sidebar-list">
-              <div class="data-loading-spinner"><i class="ph ph-spinner ph-spin"></i> Đang tải kịch bản...</div>
-            </div>
+            <div id="suites-sidebar-list" class="suites-sidebar-list"></div>
           </div>
 
-          <!-- Strip hiển thị khi Sidebar được thu gọn -->
+          <!-- Strip hiển thị khi Sidebar Suite được thu gọn -->
           <div class="script-sidebar-collapsed-strip" id="suites-sidebar-collapsed-strip" title="Bấm để mở rộng danh sách Test Suite">
             <button type="button" class="btn-icon-subtle btn-sidebar-expand-rail" id="btn-expand-suites-sidebar" title="Mở rộng danh sách Test Suite">
               <i class="ph-bold ph-sidebar-simple"></i>
@@ -389,27 +401,28 @@
           </div>
         </aside>
 
-        <!-- KHUNG 2: THIẾT LẬP KỊCH BẢN (CẤU HÌNH, SCOPE, THÔNG SỐ) -->
+        <!-- CỘT 2: THIẾT LẬP KỊCH BẢN (METADATA & CONFIGURATION) -->
         <section class="suites-middle-panel panel" id="suites-middle-panel">
           <div class="script-panel-head">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <button id="btn-toggle-suites-sidebar-head" type="button" class="btn-icon-subtle" title="Ẩn / Hiện danh sách kịch bản">
+              <button id="btn-toggle-suites-sidebar-head" type="button" class="btn-icon-subtle" title="Đóng / Mở danh sách Test Suite" style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px;">
                 <i class="ph-bold ph-sidebar-simple"></i>
               </button>
               <div style="display: flex; flex-direction: column;">
-                <span class="pm-section-tag">02 · THIẾT LẬP KỊCH BẢN</span>
+                <span class="pm-section-tag">02 · CẤU HÌNH KỊCH BẢN</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <h2 id="suite-active-title" style="margin: 0;">Chi tiết kịch bản</h2>
                   <span id="suite-dirty-badge" class="draft-status-pill" style="display: none; background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
                     <i class="ph-bold ph-pencil-simple"></i> Chưa lưu
                   </span>
+                  <span id="suite-type-badge" class="suite-type-badge single">
+                    <i class="ph-bold ph-file-text"></i> Suite đơn lẻ (Con)
+                  </span>
                 </div>
               </div>
             </div>
             <div class="script-panel-head-actions">
-              <button type="button" class="btn-secondary-sm" id="suite-btn-duplicate" title="Nhân bản kịch bản Suite này">
-                <i class="ph-bold ph-copy"></i> Nhân bản
-              </button>
+              <span id="suite-active-key-label" class="script-file-badge">suite-key</span>
             </div>
           </div>
 
@@ -417,151 +430,219 @@
             <div id="suite-middle-empty" class="suite-empty-state" style="display:none;">
               <i class="ph-bold ph-folder-notch-open" style="font-size: 32px; color: var(--muted);"></i>
               <p>Chưa có kịch bản test nào được chọn.</p>
-              <small>Bấm "Tạo mới" bên trái để tạo kịch bản đầu tiên.</small>
+              <small>Bấm "Tạo Suite mới" ở trên để tạo kịch bản đầu tiên.</small>
             </div>
 
             <div id="suite-editor-form" class="suite-editor-form-inner">
-              <!-- PHẦN 1: THÔNG TIN CƠ BẢN -->
+              <!-- THÔNG TIN CHUNG CỦA SUITE -->
               <div class="script-section-block pm-section-part1">
-                <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
-                  <div>
-                    <span class="pm-section-tag">01 · THÔNG TIN KỊCH BẢN & CẤU HÌNH</span>
-                    <h4>Định danh & Trình duyệt</h4>
-                  </div>
-                </div>
-
-                <!-- Suite Overview Banner (Đồng bộ chuẩn BDD Studio) -->
-                <div class="script-inspect-banner" style="margin-bottom: 12px;">
-                  <div class="script-inspect-meta">
-                    <div class="script-banner-top">
-                      <span class="script-platform-tag" id="suite-banner-project">Desktop Web</span>
-                      <span class="script-file-badge" id="suite-banner-key">smoke-test</span>
-                    </div>
-                    <h3 id="suite-banner-title" class="script-banner-title">Smoke Test Seeker</h3>
-                    <p id="suite-banner-scope" class="script-banner-feature"><i class="ph ph-sliders"></i> Phạm vi: Toàn bộ dự án</p>
-                    <div class="script-banner-tags" id="suite-banner-tags">
-                      <span class="script-tag-chip">@smoke</span>
-                    </div>
-                  </div>
-                  <div class="script-inspect-stats-card">
-                    <div class="script-inspect-stat-item"><strong id="suite-stat-workers">2</strong><small>Luồng</small></div>
-                    <div class="script-inspect-stat-item"><strong id="suite-stat-viewport">1920x1080</strong><small>Viewport</small></div>
-                    <div class="script-inspect-stat-item"><strong id="suite-stat-specs">0</strong><small>Specs</small></div>
-                  </div>
-                </div>
-
                 <div class="page-manager-fields">
-                  <div class="inline-fields" style="grid-template-columns: 1.4fr 1fr;">
+                  <!-- LOẠI SUITE: ĐƠN LẺ HAY TỔNG HỢP -->
+                  <div class="suite-kind-toggle-card">
+                    <div class="suite-kind-label">
+                      <span class="pm-section-tag" style="margin:0;">LOẠI KỊCH BẢN</span>
+                      <strong>Chọn loại Test Suite bạn muốn thiết lập:</strong>
+                    </div>
+                    <div class="suite-kind-pills">
+                      <label class="suite-kind-pill active" id="suite-kind-pill-single">
+                        <input type="radio" name="suite-form-kind" value="single" checked>
+                        <i class="ph-bold ph-device-mobile-camera"></i>
+                        <div>
+                          <strong>Test Suite Con (Đơn lẻ)</strong>
+                          <small>Chạy cho 1 nền tảng cụ thể (Desktop hoặc Mobile)</small>
+                        </div>
+                      </label>
+                      <label class="suite-kind-pill" id="suite-kind-pill-composite">
+                        <input type="radio" name="suite-form-kind" value="composite">
+                        <i class="ph-bold ph-folders"></i>
+                        <div>
+                          <strong>Test Suite Cha (Tổng hợp)</strong>
+                          <small>Gom nhiều Suite con để chạy đồng thời</small>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="inline-fields" style="grid-template-columns: 1.4fr 1fr; margin-top: 12px;">
                     <label>Tên hiển thị kịch bản (Label)
-                      <input id="suite-field-label" required placeholder="Ví dụ: Smoke Test Seeker">
-                      <small>Tên dễ nhận biết trên Runner & báo cáo.</small>
+                      <input id="suite-field-label" required placeholder="Ví dụ: Regression Desktop Web">
+                      <small>Tên nhận diện trên Runner, báo cáo và thông báo Discord.</small>
                     </label>
                     <label>Mã định danh (Key / Slug)
-                      <input id="suite-field-key" placeholder="smoke-test-seeker">
-                      <small>Dùng cho Discord Bot và tham số CLI.</small>
+                      <input id="suite-field-key" placeholder="regression-desktop">
+                      <small>Dùng cho Discord Bot và tham số dòng lệnh CLI.</small>
                     </label>
                   </div>
-
-                  <div class="inline-fields" style="grid-template-columns: 1.4fr 1fr;">
-                    <label>Nhóm browser / Project
-                      <select id="suite-field-project"></select>
-                      <small>Browser Playwright thực thi kịch bản.</small>
-                    </label>
-                    <label>Số luồng chạy (Workers)
-                      <input id="suite-field-workers" type="number" min="1" max="8" value="2">
-                      <small>Số trình duyệt chạy song song (1 - 8).</small>
-                    </label>
-                  </div>
-
-                  <label>Kích thước màn hình (Viewport)
-                    <select id="suite-field-viewport-preset">
-                      <option value="default">🖥️ Mặc định theo hệ thống</option>
-                      <option value="1920x1080">🖥️ Desktop Full HD (1920 x 1080)</option>
-                      <option value="1366x768">💻 Desktop Laptop (1366 x 768)</option>
-                      <option value="2560x1440">🖥️ Desktop 2K (2560 x 1440)</option>
-                      <option value="390x844">📱 Mobile iPhone (390 x 844)</option>
-                      <option value="360x800">📱 Mobile Android (360 x 800)</option>
-                      <option value="custom">⚙️ Tự nhập kích thước (Custom)</option>
-                    </select>
-                    <small>Độ phân giải màn hình mô phỏng khi test.</small>
+                  <label>Mô tả kịch bản (Description)
+                    <input id="suite-field-desc" placeholder="Mô tả mục đích của kịch bản này...">
                   </label>
+                </div>
+              </div>
 
-                  <div id="suite-custom-vp-box" class="suite-custom-vp-box inline-fields" style="display:none; grid-template-columns: 1fr 1fr;">
-                    <label>Chiều rộng (px)
-                      <input type="number" id="suite-field-vp-width" value="1920" min="320" max="7680">
-                    </label>
-                    <label>Chiều cao (px)
-                      <input type="number" id="suite-field-vp-height" value="1080" min="320" max="4320">
-                    </label>
+              <!-- ======================================================== -->
+              <!-- KHU VỰC 1: SUITE CON (ĐƠN LẺ - SINGLE PLATFORM)          -->
+              <!-- ======================================================== -->
+              <div id="suite-single-section" class="suite-mode-container">
+                <div class="suite-platform-matrix-wrap" style="margin-top: 14px;">
+                  <div class="suite-platform-tabs-head">
+                    <div class="suite-platform-tabs-label">
+                      <span class="pm-section-tag">02 · NỀN TẢNG THỰC THI (PLATFORM)</span>
+                      <h4>Chọn nền tảng chạy cho kịch bản con này</h4>
+                    </div>
+                    <div class="suite-single-platform-selector">
+                      <label class="single-plat-opt active" id="single-plat-desktop-label">
+                        <input type="radio" name="suite-single-platform" value="desktop" checked>
+                        <i class="ph-bold ph-desktop"></i>
+                        <span>Desktop Web</span>
+                      </label>
+                      <label class="single-plat-opt" id="single-plat-mobile-label">
+                        <input type="radio" name="suite-single-platform" value="mobile">
+                        <i class="ph-bold ph-device-mobile"></i>
+                        <span>Mobile Web</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Thông số chi tiết của Suite đơn lẻ -->
+                  <div class="suite-platform-content-card">
+                    <div class="platform-specific-settings">
+                      <div class="inline-fields" id="suite-platform-row1" style="grid-template-columns: 1.2fr 1fr 1fr;">
+                        <label>Nhóm browser / Project Playwright
+                          <select id="suite-platform-project"></select>
+                          <small>Profile thiết bị & browser thực thi.</small>
+                        </label>
+                        <label id="suite-platform-device-label">Thiết bị mô phỏng
+                          <select id="suite-platform-device">
+                            <option value="">(Không dùng emulation)</option>
+                            <option value="Pixel 7">Pixel 7 (Android)</option>
+                            <option value="iPhone 14">iPhone 14 (iOS)</option>
+                            <option value="iPhone 13">iPhone 13 (iOS)</option>
+                            <option value="Galaxy S9+">Galaxy S9+ (Android)</option>
+                          </select>
+                          <small>User-Agent & kích thước màn hình.</small>
+                        </label>
+                        <label>Số luồng chạy (Workers)
+                          <input id="suite-platform-workers" type="number" min="1" max="8" value="2">
+                          <small>Trình duyệt song song (1 - 8).</small>
+                        </label>
+                      </div>
+
+                      <div class="inline-fields" style="grid-template-columns: 1.4fr 1fr;">
+                        <label>Độ phân giải hiển thị (Viewport)
+                          <select id="suite-platform-viewport-preset">
+                            <option value="default">🖥️ Mặc định theo hệ thống</option>
+                            <option value="1920x1080">🖥️ Desktop Full HD (1920 x 1080)</option>
+                            <option value="1366x768">💻 Desktop Laptop (1366 x 768)</option>
+                            <option value="2560x1440">🖥️ Desktop 2K (2560 x 1440)</option>
+                            <option value="390x844">📱 Mobile iPhone 14/13 (390 x 844)</option>
+                            <option value="393x851">📱 Mobile Pixel 7 (393 x 851)</option>
+                            <option value="360x800">📱 Mobile Android Chuẩn (360 x 800)</option>
+                            <option value="custom">⚙️ Tự nhập kích thước (Custom)</option>
+                          </select>
+                          <small>Kích thước cửa sổ browser mô phỏng.</small>
+                        </label>
+                        <div id="suite-platform-custom-vp-box" class="suite-custom-vp-box inline-fields" style="display:none; grid-template-columns: 1fr 1fr;">
+                          <label>Rộng (px)<input type="number" id="suite-platform-vp-width" value="1920" min="320" max="7680"></label>
+                          <label>Cao (px)<input type="number" id="suite-platform-vp-height" value="1080" min="320" max="4320"></label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Phạm vi bài test -->
+                    <div class="suite-scope-section" style="margin-top: 14px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="font-weight: 700; font-size: 12.5px; margin: 0; color: var(--text);">
+                          <i class="ph-bold ph-files"></i> Phạm vi kịch bản cho <span id="platform-scope-title-text" style="color: var(--accent);">Desktop Web</span>:
+                        </label>
+                        <div class="suite-scope-modes">
+                          <label class="scope-mode-option active" id="scope-opt-all">
+                            <input type="radio" name="suite-scope-mode" value="all" checked>
+                            <i class="ph-bold ph-globe"></i>
+                            <span>Toàn bộ</span>
+                          </label>
+                          <label class="scope-mode-option" id="scope-opt-grep">
+                            <input type="radio" name="suite-scope-mode" value="grep">
+                            <i class="ph-bold ph-tag"></i>
+                            <span>Theo Tag</span>
+                          </label>
+                          <label class="scope-mode-option" id="scope-opt-custom">
+                            <input type="radio" name="suite-scope-mode" value="custom">
+                            <i class="ph-bold ph-check-square"></i>
+                            <span>Chọn File</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <!-- Grep Box -->
+                      <div id="suite-grep-box" class="suite-scope-grep-box" style="display:none; margin-top: 10px;">
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px;">
+                          Biểu thức Tag hoặc từ khóa cần lọc (@grep)
+                          <input type="text" id="suite-field-grep" placeholder="Ví dụ: @smoke hoặc @e2e" style="width: 100%; margin-top: 4px;">
+                          <small style="color: var(--muted); font-size: 11px; font-weight: 400; margin-top: 4px; display: block;">
+                            Playwright sẽ lọc các test case có gắn tag này.
+                          </small>
+                        </label>
+                        <div style="margin-top: 8px;">
+                          <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Tag gợi ý:</span>
+                          <div id="suite-tag-suggestions" class="suite-tag-suggestions" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+                            <button type="button" class="btn-tag-chip" data-tag="@smoke">@smoke</button>
+                            <button type="button" class="btn-tag-chip" data-tag="@e2e">@e2e</button>
+                            <button type="button" class="btn-tag-chip" data-tag="@regression">@regression</button>
+                            <button type="button" class="btn-tag-chip" data-tag="@desktop">@desktop</button>
+                            <button type="button" class="btn-tag-chip" data-tag="@mobile">@mobile</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Files Box -->
+                      <div id="suite-files-box" class="suite-scope-files-box" style="display:none; margin-top: 10px;">
+                        <div class="suite-specs-actions">
+                          <span class="suite-selected-count" id="suite-specs-count-label">Đã chọn: 0 file</span>
+                          <div class="suite-specs-actions-btns">
+                            <button type="button" class="btn-specs-action" id="btn-suite-select-all">Chọn tất cả</button>
+                            <button type="button" class="btn-specs-action" id="btn-suite-deselect-all">Bỏ chọn</button>
+                          </div>
+                        </div>
+                        <div class="suite-specs-search-bar" style="margin-bottom: 8px;">
+                          <input type="text" id="suite-specs-search-input" placeholder="Lọc file test cho nền tảng này..." style="width: 100%; font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface);">
+                        </div>
+                        <div class="suite-specs-checklist" id="suite-specs-checklist-container">
+                          <!-- Checkboxes rendered dynamically -->
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- PHẦN 2: PHẠM VI BÀI TEST -->
-              <div class="script-section-block pm-section-part2" style="margin-top: 14px;">
-                <div class="pm-inspect-section-head">
-                  <div>
-                    <span class="pm-section-tag">02 · PHẠM VI BÀI TEST (TEST SCOPE)</span>
-                    <h4>Chọn phạm vi kịch bản sẽ thực thi</h4>
-                  </div>
-                </div>
-
-                <div class="suite-scope-section">
-                  <div class="suite-scope-modes">
-                    <label class="scope-mode-option active" id="scope-opt-all">
-                      <input type="radio" name="suite-scope-mode" value="all" checked>
-                      <i class="ph-bold ph-globe"></i>
-                      <span>Toàn bộ dự án</span>
-                    </label>
-                    <label class="scope-mode-option" id="scope-opt-grep">
-                      <input type="radio" name="suite-scope-mode" value="grep">
-                      <i class="ph-bold ph-tag"></i>
-                      <span>Lọc theo Tag</span>
-                    </label>
-                    <label class="scope-mode-option" id="scope-opt-custom">
-                      <input type="radio" name="suite-scope-mode" value="custom">
-                      <i class="ph-bold ph-files"></i>
-                      <span>Chọn từng File</span>
-                    </label>
+              <!-- ======================================================== -->
+              <!-- KHU VỰC 2: SUITE CHA (TỔNG HỢP - COMPOSITE SUITE)         -->
+              <!-- ======================================================== -->
+              <div id="suite-composite-section" class="suite-mode-container" style="display:none;">
+                <div class="suite-platform-matrix-wrap" style="margin-top: 14px;">
+                  <div class="suite-platform-tabs-head">
+                    <div class="suite-platform-tabs-label">
+                      <span class="pm-section-tag">02 · DANH SÁCH SUITE CON KẾT HỢP</span>
+                      <h4>Đánh dấu các Test Suite con sẽ được thực thi khi chạy Suite cha này:</h4>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <label style="font-size: 12px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px;">
+                        Luồng song song:
+                        <input id="suite-composite-workers" type="number" min="1" max="8" value="2" style="width: 65px; padding: 4px 6px; font-size: 12px; border-radius: 6px; border: 1px solid var(--line);">
+                      </label>
+                    </div>
                   </div>
 
-                  <!-- Grep Box -->
-                  <div id="suite-grep-box" class="suite-scope-grep-box" style="display:none; margin-top: 12px;">
-                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px;">
-                      Biểu thức Tag hoặc từ khóa cần lọc (@grep)
-                      <input type="text" id="suite-field-grep" placeholder="Ví dụ: @smoke hoặc @regression" style="width: 100%; margin-top: 4px;">
-                      <small style="color: var(--muted); font-size: 11px; font-weight: 400; margin-top: 4px; display: block;">
-                        Playwright sẽ tự quét toàn bộ dự án và chạy các test case có gắn tag này.
-                      </small>
-                    </label>
-                    <div style="margin-top: 8px;">
-                      <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Tag gợi ý nhanh:</span>
-                      <div id="suite-tag-suggestions" class="suite-tag-suggestions" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
-                        <button type="button" class="btn-tag-chip" data-tag="@smoke">@smoke</button>
-                        <button type="button" class="btn-tag-chip" data-tag="@regression">@regression</button>
-                        <button type="button" class="btn-tag-chip" data-tag="@profile">@profile</button>
-                        <button type="button" class="btn-tag-chip" data-tag="@applyjob">@applyjob</button>
-                        <button type="button" class="btn-tag-chip" data-tag="@auth">@auth</button>
-                        <button type="button" class="btn-tag-chip" data-tag="@desktop">@desktop</button>
-                        <button type="button" class="btn-tag-chip" data-tag="@mobile">@mobile</button>
+                  <div class="suite-composite-content-card">
+                    <div id="suite-composite-children-list" class="suite-composite-children-grid">
+                      <!-- Render dynamic checkboxes for child suites -->
+                    </div>
+                    <div class="suite-composite-hint-card">
+                      <i class="ph-bold ph-info" style="font-size: 18px; color: var(--accent);"></i>
+                      <div>
+                        <strong>Mẹo vận hành:</strong>
+                        <p>Khi bạn gọi Suite cha này trên Dashboard, CLI (<code>node scripts/run-suite.js ...</code>), hoặc Discord Bot, Playwright sẽ tự động phân giải tất cả browser, viewports và danh sách spec từ các suite con đã chọn và kích hoạt song song.</p>
                       </div>
-                    </div>
-                  </div>
-
-                  <!-- Files Box -->
-                  <div id="suite-files-box" class="suite-scope-files-box" style="display:none; margin-top: 12px;">
-                    <div class="suite-specs-actions">
-                      <span class="suite-selected-count" id="suite-specs-count-label">Đã chọn: 0 file</span>
-                      <div class="suite-specs-actions-btns">
-                        <button type="button" class="btn-specs-action" id="btn-suite-select-all">Chọn tất cả</button>
-                        <button type="button" class="btn-specs-action" id="btn-suite-deselect-all">Bỏ chọn</button>
-                      </div>
-                    </div>
-                    <div class="suite-specs-search-bar" style="margin-bottom: 8px;">
-                      <input type="text" id="suite-specs-search-input" placeholder="Lọc danh sách file test..." style="width: 100%; font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface);">
-                    </div>
-                    <div class="suite-specs-checklist" id="suite-specs-checklist-container">
-                      <!-- Checkboxes rendered dynamically -->
                     </div>
                   </div>
                 </div>
@@ -570,52 +651,26 @@
           </div>
         </section>
 
-        <!-- KHUNG 3: THỰC THI & LIVE PREVIEW -->
+        <!-- CỘT 3: MA TRẬN THỰC THI (EXECUTION MATRIX & CLI PREVIEW) -->
         <section class="suites-right-panel panel" id="suites-right-panel">
           <div class="page-manager-panel-head">
             <div>
-              <span class="pm-section-tag">03 · THỰC THI & PREVIEW</span>
-              <h2>Tổng quan & Lệnh chạy</h2>
+              <span class="pm-section-tag">03 · MA TRẬN THỰC THI (EXECUTION MATRIX)</span>
+              <h2>Tổng quan thực thi</h2>
+            </div>
+            <div class="suite-right-head-pill" id="suite-matrix-summary-pill">
+              <i class="ph-bold ph-check-circle"></i> <span>Sẵn sàng</span>
             </div>
           </div>
 
           <div class="suites-right-scroll-wrap" id="suites-right-scroll">
-            <!-- Summary Card -->
-            <div class="suite-summary-preview-card">
-              <div class="suite-summary-preview-grid">
-                <div class="suite-summary-preview-item">
-                  <span class="suite-summary-preview-label">Project / Browser</span>
-                  <span class="suite-summary-preview-val" id="suite-prev-project"><i class="ph-bold ph-browser"></i> chromium</span>
-                </div>
-                <div class="suite-summary-preview-item">
-                  <span class="suite-summary-preview-label">Số luồng (Workers)</span>
-                  <span class="suite-summary-preview-val" id="suite-prev-workers"><i class="ph-bold ph-cpu"></i> 2 workers</span>
-                </div>
-                <div class="suite-summary-preview-item">
-                  <span class="suite-summary-preview-label">Độ phân giải</span>
-                  <span class="suite-summary-preview-val" id="suite-prev-viewport"><i class="ph-bold ph-desktop"></i> 1920x1080</span>
-                </div>
-                <div class="suite-summary-preview-item">
-                  <span class="suite-summary-preview-label">Phạm vi thực thi</span>
-                  <span class="suite-summary-preview-val" id="suite-prev-scope"><i class="ph-bold ph-tag"></i> Lọc theo Tag</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Executable Spec Files List -->
-            <div class="suite-exec-files-box">
-              <div class="suite-exec-files-header">
-                <i class="ph-bold ph-files"></i>
-                <span>File kịch bản khớp cấu hình</span>
-                <span style="margin-left: auto; font-size: 11px; background: var(--surface-hover); padding: 2px 8px; border-radius: 4px;" id="suite-exec-count">0 file</span>
-              </div>
-              <div id="suite-exec-files-list" class="suite-exec-files-list">
-                <!-- Populated dynamically -->
-              </div>
+            <!-- Thẻ ma trận thực thi (thay đổi linh hoạt theo single hay composite) -->
+            <div class="suite-matrix-cards-container" id="suite-matrix-cards">
+              <!-- Render động bởi updateSuitePreview -->
             </div>
 
             <!-- CLI Command Box -->
-            <div class="suite-cli-card">
+            <div class="suite-cli-card" style="margin-top: 14px;">
               <div class="suite-cli-header">
                 <span>LỆNH PLAYWRIGHT CLI TƯƠNG ĐƯƠNG</span>
                 <button type="button" class="btn-icon-subtle" id="suite-btn-copy-cli" title="Sao chép lệnh terminal">
