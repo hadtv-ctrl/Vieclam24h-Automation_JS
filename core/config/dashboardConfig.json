@@ -34,6 +34,9 @@
     "showEnvBanner": false,
     "debugOptionalPopups": false
   },
+  "server": {
+    "port": 4180
+  },
   "api": {
     "registrationBearerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaGFubmVsX2NvZGUiOiJ2bDI0aCIsInVzZXIiOm51bGx9.b_GBXepcnCjRzAc9I5OdamF0Mx2K1rEg9sZVYpNx_rU",
     "branch": "vl24h.north",
@@ -60,8 +63,13 @@
   },
   "suites": {
     "smoke-tests": {
-      "label": "Smoke Tests (Đăng ký nhanh)",
-      "project": "all",
+      "label": "⚡ Smoke Tests Toàn Hệ Thống (@smoke)",
+      "platform": "all",
+      "projects": [
+        "Desktop Smoke Tests",
+        "Mobile Chrome Smoke Tests",
+        "Mobile Safari Smoke Tests"
+      ],
       "viewport": {
         "preset": "1920x1080",
         "width": 1920,
@@ -72,9 +80,10 @@
       "grep": "@smoke",
       "workers": 2
     },
-    "desktop-regression": {
-      "label": "Desktop Regression (Toàn bộ UI)",
-      "project": "all",
+    "smoke-desktop": {
+      "label": "🖥️ Smoke Desktop Chrome (@smoke)",
+      "platform": "desktop",
+      "project": "Desktop Smoke Tests",
       "viewport": {
         "preset": "1920x1080",
         "width": 1920,
@@ -82,11 +91,29 @@
       },
       "spec": "all",
       "specs": "all",
-      "grep": "@e2e",
+      "grep": "@smoke",
+      "workers": 2
+    },
+    "smoke-mobile": {
+      "label": "📱 Smoke Mobile Web (@smoke)",
+      "platform": "mobile",
+      "projects": [
+        "Mobile Chrome Smoke Tests",
+        "Mobile Safari Smoke Tests"
+      ],
+      "viewport": {
+        "preset": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@smoke",
       "workers": 2
     },
     "apply-job-flow": {
-      "label": "Ứng tuyển việc làm (@applyjob)",
+      "label": "💼 Ứng Tuyển Việc Làm (@applyjob)",
+      "platform": "all",
       "project": "all",
       "viewport": {
         "preset": "1920x1080",
@@ -98,8 +125,40 @@
       "grep": "@applyjob",
       "workers": 2
     },
+    "apply-job-desktop": {
+      "label": "🖥️ Ứng Tuyển Desktop (@applyjob)",
+      "platform": "desktop",
+      "project": "Desktop Regression Tests",
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@applyjob",
+      "workers": 2
+    },
+    "apply-job-mobile": {
+      "label": "📱 Ứng Tuyển Mobile Web (@applyjob)",
+      "platform": "mobile",
+      "projects": [
+        "Mobile Chrome Regression Tests",
+        "Mobile Safari Regression Tests"
+      ],
+      "viewport": {
+        "preset": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@applyjob",
+      "workers": 2
+    },
     "user-profile-flow": {
-      "label": "Hồ sơ & CV (@profile)",
+      "label": "📄 Hồ Sơ & CV Ứng Viên (@profile)",
+      "platform": "all",
       "project": "all",
       "viewport": {
         "preset": "1920x1080",
@@ -111,9 +170,27 @@
       "grep": "@profile",
       "workers": 2
     },
-    "mobile-web-suite": {
-      "label": "Mobile Web Regression (Android / Chrome)",
-      "project": "all",
+    "user-profile-desktop": {
+      "label": "🖥️ Hồ Sơ & CV Desktop (@profile)",
+      "platform": "desktop",
+      "project": "Desktop Regression Tests",
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@profile",
+      "workers": 2
+    },
+    "user-profile-mobile": {
+      "label": "📱 Hồ Sơ & CV Mobile Web (@profile)",
+      "platform": "mobile",
+      "projects": [
+        "Mobile Chrome Regression Tests",
+        "Mobile Safari Regression Tests"
+      ],
       "viewport": {
         "preset": "390x844",
         "width": 390,
@@ -121,12 +198,63 @@
       },
       "spec": "all",
       "specs": "all",
-      "grep": "@mobile",
+      "grep": "@profile",
       "workers": 2
     },
-    "mobile-safari-suite": {
-      "label": "Mobile Web Safari (iOS / WebKit)",
+    "auth-flow": {
+      "label": "🔑 Đăng Ký & Xác Thực (@register)",
+      "platform": "all",
       "project": "all",
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@register",
+      "workers": 2
+    },
+    "onboarding-flow": {
+      "label": "🧭 Khảo Sát Onboarding (@onboarding)",
+      "platform": "all",
+      "project": "all",
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@onboarding",
+      "workers": 2
+    },
+    "desktop-regression": {
+      "label": "🖥️ Toàn Bộ Kịch Bản Desktop",
+      "platform": "desktop",
+      "projects": [
+        "Desktop Smoke Tests",
+        "Desktop Regression Tests"
+      ],
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@desktop",
+      "workers": 2
+    },
+    "mobile-web-suite": {
+      "label": "📱 Toàn Bộ Kịch Bản Mobile Web",
+      "platform": "mobile",
+      "projects": [
+        "Mobile Chrome Smoke Tests",
+        "Mobile Chrome Regression Tests",
+        "Mobile Safari Smoke Tests",
+        "Mobile Safari Regression Tests"
+      ],
       "viewport": {
         "preset": "390x844",
         "width": 390,
@@ -138,8 +266,9 @@
       "workers": 2
     },
     "api-suite": {
-      "label": "API Tests Suite (@api)",
-      "project": "all",
+      "label": "🔌 Backend API Tests (@api)",
+      "platform": "api",
+      "project": "API Tests",
       "viewport": {
         "preset": "default",
         "width": 1920,
@@ -148,6 +277,20 @@
       "spec": "all",
       "specs": "all",
       "grep": "@api",
+      "workers": 2
+    },
+    "full-regression": {
+      "label": "🚀 Full Regression (Tất cả 24 Specs + API)",
+      "platform": "all",
+      "project": "all",
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@e2e|@api",
       "workers": 2
     }
   },

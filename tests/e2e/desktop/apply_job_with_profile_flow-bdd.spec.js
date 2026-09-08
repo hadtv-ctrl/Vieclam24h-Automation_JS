@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/baseTest');
 const applyData = require('../../../data/applyJobData.json'); // Giả sử file này tồn tại
 const usersData = require('../../../data/users.json');
 
-test.describe('Feature: Ứng tuyển việc làm @applyjob @e2e', () => {
+test.describe('Feature: Ứng tuyển việc làm @applyjob @desktop @e2e', () => {
   let jobApplyPage;
   let newPage; // Page của tab chi tiết việc làm
 

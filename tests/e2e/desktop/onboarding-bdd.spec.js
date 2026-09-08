@@ -1,7 +1,7 @@
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const onboardingData = require('../../../data/onboardingData.json'); // Nạp dữ liệu từ file JSON
 
-test.describe('Feature: Cập nhật thông tin Onboarding sau khi đăng nhập @onboarding @e2e', () => {
+test.describe('Feature: Cập nhật thông tin Onboarding sau khi đăng nhập @onboarding @desktop @e2e', () => {
   test('Kiểm tra luồng Onboarding của người dùng đã đăng nhập', async ({ authenticatedUser, onboardingPopup }) => {
     test.setTimeout(240000);
 

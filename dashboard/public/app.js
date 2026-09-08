@@ -3138,6 +3138,26 @@ async function saveCodeFile() {
 
 let currentRunnerMode = 'suite';
 
+function getSuitePlatform(s) {
+  if (!s) return 'desktop';
+  if (s.platform && s.platform !== 'all') return s.platform;
+  if (s.type === 'composite') return 'composite';
+  const proj = String(s.project || '');
+  const projs = Array.isArray(s.projects) ? s.projects.join(' ') : '';
+  const combined = (proj + ' ' + projs).toLowerCase();
+  if (combined.includes('mobile') || combined.includes('pixel') || combined.includes('iphone') || combined.includes('safari') || combined.includes('android') || combined.includes('ios')) {
+    return 'mobile';
+  }
+  const grep = String(s.grep || '').toLowerCase();
+  if (grep.includes('@mobile') || grep.includes('@smoke-mobile')) {
+    return 'mobile';
+  }
+  if (s.viewport && Number(s.viewport.width) > 0 && Number(s.viewport.width) < 768) {
+    return 'mobile';
+  }
+  return s.platform === 'all' ? 'all' : 'desktop';
+}
+
 function renderRunnerSuiteOptions(suites, activeId = '') {
   const select = $('#runner-suite-select');
   if (!select) return;
@@ -3158,7 +3178,8 @@ function renderRunnerSuiteOptions(suites, activeId = '') {
     } else if (suite.spec && suite.spec !== 'all') {
       fileLabel = '1 file';
     }
-    const platIcon = isComposite ? '⚡' : (suite.platform === 'mobile' || suite.project === 'mobile-chrome' ? '📱' : '🖥️');
+    const plat = getSuitePlatform(suite);
+    const platIcon = isComposite ? '⚡' : (plat === 'mobile' ? '📱' : (plat === 'all' ? '🌐' : '🖥️'));
     return `<option value="${escapeHtml(id)}" ${activeId === id ? 'selected' : ''}>${platIcon} ${escapeHtml(suite.label || id)} (${fileLabel})</option>`;
   }).join('');
 
@@ -3204,7 +3225,7 @@ function updateSuiteSummaryBox(suiteId) {
     if (filesList) {
       filesList.innerHTML = childIds.map((cid) => {
         const child = allChildSuites[cid] || {};
-        const isMob = child.platform === 'mobile' || child.project === 'mobile-chrome';
+        const isMob = getSuitePlatform(child) === 'mobile';
         const icon = isMob ? 'ph-device-mobile' : 'ph-desktop';
         return `
           <span class="suite-summary-pill" title="${escapeHtml(child.label || cid)}" style="border-color:var(--accent);">
@@ -3416,7 +3437,7 @@ function normalizeSuiteInMemory(suite = {}) {
   }
 
   const rawProject = (suite.project || '').trim();
-  const rawPlatform = suite.platform || (rawProject === 'mobile-chrome' ? 'mobile' : 'desktop');
+  const rawPlatform = getSuitePlatform(suite);
   const platform = rawPlatform === 'mobile' ? 'mobile' : 'desktop';
 
   return {
@@ -3488,12 +3509,12 @@ function renderSuitesView(suites) {
   const compositeCount = entries.filter(([_, s]) => s.type === 'composite').length;
   const desktopCount = entries.filter(([_, s]) => {
     if (s.type === 'composite') return false;
-    const plat = s.platform || (s.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+    const plat = getSuitePlatform(s);
     return plat !== 'mobile';
   }).length;
   const mobileCount = entries.filter(([_, s]) => {
     if (s.type === 'composite') return false;
-    const plat = s.platform || (s.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+    const plat = getSuitePlatform(s);
     return plat === 'mobile';
   }).length;
 
@@ -3536,7 +3557,7 @@ function renderSuitesSidebarList() {
 
   const filtered = entries.filter(([id, suite]) => {
     const isComp = suite.type === 'composite';
-    const plat = isComp ? 'composite' : (suite.platform || (suite.project === 'mobile-chrome' ? 'mobile' : 'desktop'));
+    const plat = isComp ? 'composite' : getSuitePlatform(suite);
 
     if (filter === 'composite' && !isComp) return false;
     if (filter === 'desktop' && (isComp || plat === 'mobile')) return false;
@@ -3566,7 +3587,7 @@ function renderSuitesSidebarList() {
   container.innerHTML = filtered.map(([id, suite]) => {
     const isSelected = id === currentSelectedSuiteId;
     const isComp = suite.type === 'composite';
-    const plat = isComp ? 'composite' : (suite.platform || (suite.project === 'mobile-chrome' ? 'mobile' : 'desktop'));
+    const plat = isComp ? 'composite' : getSuitePlatform(suite);
     const label = suite.label || id;
     const workers = suite.workers || 2;
 
@@ -3649,8 +3670,8 @@ function renderSuiteDropdown() {
   if (singleSuites.length > 0) {
     html += `<optgroup label="📦 Test Suite Con (Đơn lẻ theo nền tảng)">`;
     html += singleSuites.map(([id, s]) => {
-      const plat = s.platform || (s.project === 'mobile-chrome' ? 'mobile' : 'desktop');
-      const icon = plat === 'mobile' ? '📱' : '🖥️';
+      const plat = getSuitePlatform(s);
+      const icon = plat === 'mobile' ? '📱' : (plat === 'all' ? '🌐' : '🖥️');
       return `<option value="${escapeHtml(id)}">${icon} ${escapeHtml(s.label || id)} [${plat.toUpperCase()}]</option>`;
     }).join('');
     html += `</optgroup>`;
@@ -3893,7 +3914,7 @@ function loadSuiteIntoEditor(id, suite) {
       } else {
         childrenList.innerHTML = singleEntries.map(([cid, cs]) => {
           const isChecked = selectedChildren.includes(cid);
-          const plat = cs.platform || (cs.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+          const plat = getSuitePlatform(cs);
           const isMob = plat === 'mobile';
           const platBadgeClass = isMob ? 'mobile' : 'desktop';
           const platIcon = isMob ? 'ph-device-mobile' : 'ph-desktop';
@@ -3930,7 +3951,7 @@ function loadSuiteIntoEditor(id, suite) {
     }
   } else {
     // Single suite settings
-    const platform = suite.platform || (suite.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+    const platform = getSuitePlatform(suite);
     const platDesktopRadio = document.querySelector('input[name="suite-single-platform"][value="desktop"]');
     const platMobileRadio = document.querySelector('input[name="suite-single-platform"][value="mobile"]');
 
@@ -4023,7 +4044,7 @@ function updateSuitePreview(id, suite) {
           <div class="matrix-composite-children-list">
             ${childIds.length === 0 ? '<div style="color:var(--muted); font-size:11.5px; padding:8px;">Chưa chọn kịch bản con nào.</div>' : childIds.map((cid) => {
               const cs = allChildSuites[cid] || {};
-              const plat = cs.platform || (cs.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+              const plat = getSuitePlatform(cs);
               const isMob = plat === 'mobile';
               const platIcon = isMob ? 'ph-device-mobile' : 'ph-desktop';
               return `
@@ -4046,11 +4067,11 @@ function updateSuitePreview(id, suite) {
       cliBox.textContent = `node scripts/run-suite.js ${id} qc`;
     }
   } else {
-    const platform = suite.platform || (suite.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+    const platform = getSuitePlatform(suite);
     const isMob = platform === 'mobile';
 
     if (summaryPill) {
-      summaryPill.innerHTML = `<i class="ph-bold ${isMob ? 'ph-device-mobile' : 'ph-desktop'}"></i> <span>Suite ${isMob ? 'Mobile' : 'Desktop'}</span>`;
+      summaryPill.innerHTML = `<i class="ph-bold ${isMob ? 'ph-device-mobile' : 'ph-desktop'}"></i> <span>Suite ${isMob ? 'Mobile' : (platform === 'all' ? 'Toàn Hệ Thống' : 'Desktop')}</span>`;
     }
 
     const vpPreset = suite.viewport?.preset || 'default';
@@ -6180,6 +6201,9 @@ function selectedOptions() {
       workers: Number(suite.workers || 2),
       headed: true,
     };
+    if (Array.isArray(suite.projects) && suite.projects.length > 0) {
+      opts.projects = suite.projects;
+    }
     if (Array.isArray(specs) && specs.length > 0) {
       opts.specs = specs;
     } else {
