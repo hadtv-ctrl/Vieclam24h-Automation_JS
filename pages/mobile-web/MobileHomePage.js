@@ -11,12 +11,14 @@ class MobileHomePage extends HomePage {
     );
     this.dialogPopup = page.locator('[role="dialog"]:visible');
     this.dialogPopupCloseBtn = this.dialogPopup.locator(
-      '[data-test-id="common__close-button"], button:has(.svicon-close), button[aria-label*="close" i]'
+      '[data-test-id="common__close-button"], [aria-label*="close" i], button:has(.svicon-close), .svicon-close, button:has-text("Để sau")'
     );
     this.fullscreenPopup = page
       .locator('.fixed.inset-0:visible')
-      .filter({ has: page.locator('button:has(.svicon-close)') });
-    this.fullscreenPopupCloseBtn = this.fullscreenPopup.locator('button:has(.svicon-close)');
+      .filter({ has: page.locator('.svicon-close, [data-test-id="common__close-button"]') });
+    this.fullscreenPopupCloseBtn = this.fullscreenPopup.locator(
+      '[data-test-id="common__close-button"], [aria-label*="close" i], button:has(.svicon-close), .svicon-close, button:has-text("Để sau")'
+    );
 
     // Mobile specific search button or link
     this.mobileSearchLink = page.getByRole('link', { name: /Tìm việc làm/i })
