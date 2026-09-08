@@ -1,9 +1,0 @@
-{
-  "projectName": "Automation Starter Project",
-  "sampleUrl": "https://example.com",
-  "testUser": {
-    "username": "tester@example.com",
-    "role": "QA Engineer"
-  },
-  "environment": "staging"
-}

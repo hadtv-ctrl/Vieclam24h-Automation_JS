@@ -8,6 +8,15 @@ class BasePage {
   constructor(page, featureName) {
     this.page = page;
     this.actions = new UiActions(page);
+    this.accountMenuButton = page.getByRole('button', { name: /avt_invalid|tài khoản/i })
+      .or(page.getByAltText('avt_invalid'))
+      .or(page.locator('figure img[alt="avt_invalid"]'))
+      .first();
+    this.appliedJobsButton = page.getByRole('button', { name: /Việc làm đã ứng tuyển/i })
+      .or(page.getByRole('link', { name: /Việc làm đã ứng tuyển/i }))
+      .or(page.getByText('Việc làm đã ứng tuyển'))
+      .first();
+    this.appliedJobsList = page.locator('[data-test-id="applied-job__list-jobs"]');
     const resolvedFeatureName = featureName || this.constructor.name.toLowerCase();
     this.screenshotHelper = new ScreenshotHelper(page, resolvedFeatureName);
   }
@@ -223,81 +232,276 @@ class BasePage {
     }
   }
 
-  /**
-   * Chụp ảnh màn hình tương thích linh hoạt: toàn trang khi không có modal, viewport khi có modal
-   */
-  async captureAdaptive(stepName, options = {}) {
-    const hasModal = await this.hasVisibleModal();
-    return this._capture(stepName, '', !hasModal, options);
+  getPhoneVerificationLocators() {
+    return {
+      title: this.page.getByText(/Xác thực số điện thoại/i).first(),
+      phoneInput: this.page.getByRole('textbox', { name: /Số điện thoại|Nhập số điện thoại/i }).first(),
+      codeInputs: this.page.locator(
+        [
+          'input[maxlength="1"]:visible',
+          'input[autocomplete="one-time-code"]:visible',
+          'input[aria-label*="Digit"]:visible',
+          'input[name*="otp"]:visible',
+          'input[id*="otp"]:visible',
+        ].join(', ')
+      ),
+      telCodeInputs: this.page.locator('input[type="tel"]:visible'),
+      codeTextboxes: this.page.getByRole('textbox', { name: /Digit|Please enter verification|OTP|Mã xác thực/i }),
+      submitButton: this.page.getByRole('button', { name: /Xác thực|Xác nhận|Tiếp tục|Hoàn tất/i }).first(),
+    };
   }
 
-  /**
-   * Phát hiện xem hiện tại có modal/dialog/popup/drawer nào đang hiển thị không
-   */
-  async hasVisibleModal() {
+  async handlePhoneVerificationAfterApplyIfVisible(otpCode) {
+    const locators = this.getPhoneVerificationLocators();
+
     try {
-      return await this.page.evaluate(() => {
-        const modalSelectors = [
-          '[role="dialog"]',
-          '[aria-modal="true"]',
-          '.MuiModal-root',
-          '.MuiDialog-root',
-          '.MuiDialog-container',
-          '.MuiDialog-paper',
-          '.MuiBackdrop-root',
-          '.modal.show',
-          '.modal-dialog',
-          '.popup',
-          '.dialog',
-        ];
-        return modalSelectors.some((selector) => {
-          const el = document.querySelector(selector);
-          if (!el) return false;
-          const style = window.getComputedStyle(el);
-          return style && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-        });
-      });
+      await locators.title.waitFor({ state: 'visible', timeout: 5000 });
+    } catch {
+      return false;
+    }
+
+    await this.capture('phone_verification_visible');
+
+    if (!otpCode) {
+      throw new Error('Phone verification appeared after clicking apply, but no otpCode was provided.');
+    }
+
+    await this.continuePhoneVerificationPhoneStepIfNeeded(locators);
+    await this.capture('phone_verification_code_step');
+    await this.fillPhoneVerificationCode(locators, otpCode);
+    await this.clickPhoneVerificationSubmitIfVisible(locators);
+    await this.waitForGlobalLoadingHidden(15000);
+    return true;
+  }
+
+  async continuePhoneVerificationPhoneStepIfNeeded(locators, options = {}) {
+    const {
+      maxAttempts = 3,
+      codeStepTimeout = 10000,
+      loadingTimeout = 15000,
+    } = options;
+
+    if (await this.isPhoneVerificationCodeInputVisible(locators, 1500)) {
+      return false;
+    }
+
+    let lastCodeStepError;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const hasPhoneStep = await this.isPhoneVerificationPhoneStepVisible(locators, 1500);
+      const hasContinueButton = await this.isPhoneVerificationSubmitVisible(locators, 1500);
+
+      if (!hasPhoneStep && !hasContinueButton) {
+        break;
+      }
+
+      await this.clickElement(locators.submitButton, { timeout: 15000 });
+
+      try {
+        await this.waitForPhoneVerificationCodeStepVisible(locators, codeStepTimeout);
+        return true;
+      } catch (error) {
+        lastCodeStepError = error;
+      }
+
+      await this.waitForGlobalLoadingHidden(loadingTimeout);
+
+      const canRetry = await this.isPhoneVerificationSubmitVisible(locators, 1500);
+      if (!canRetry || attempt === maxAttempts) {
+        break;
+      }
+
+      console.warn(`Phone verification code step did not appear after Continue attempt ${attempt}; retrying.`);
+    }
+
+    throw new Error(
+      `Phone verification code step did not appear after clicking Continue ${maxAttempts} time(s). ` +
+      `Last wait error: ${lastCodeStepError?.message || 'unknown'}`
+    );
+  }
+
+  async isPhoneVerificationPhoneStepVisible(locators, timeout = 5000) {
+    try {
+      await locators.phoneInput.waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      try {
+        await locators.telCodeInputs.first().waitFor({ state: 'visible', timeout });
+        return (await locators.telCodeInputs.count()) === 1;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  async isPhoneVerificationCodeInputVisible(locators, timeout = 5000) {
+    try {
+      await locators.codeTextboxes.first().waitFor({ state: 'visible', timeout });
+      return true;
+    } catch {
+      try {
+        await locators.codeInputs.first().waitFor({ state: 'visible', timeout });
+        return true;
+      } catch {
+        try {
+          await locators.telCodeInputs.first().waitFor({ state: 'visible', timeout });
+          return (await locators.telCodeInputs.count()) > 1;
+        } catch {
+          return false;
+        }
+      }
+    }
+  }
+
+  async isPhoneVerificationSubmitVisible(locators, timeout = 5000) {
+    try {
+      await locators.submitButton.waitFor({ state: 'visible', timeout });
+      return true;
     } catch {
       return false;
     }
   }
 
-  /**
-   * Tải tệp lên thông qua fileChooser
-   */
-  async uploadFile(locator, filePath) {
-    const fileChooserPromise = this.page.waitForEvent('filechooser');
-    await this.clickElement(locator);
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(filePath);
+  async waitForPhoneVerificationCodeStepVisible(locators, timeout = 10000) {
+    try {
+      await locators.codeTextboxes.first().waitFor({ state: 'visible', timeout });
+      return;
+    } catch {
+      // Try the next supported OTP locator shape.
+    }
+
+    try {
+      await locators.codeInputs.first().waitFor({ state: 'visible', timeout });
+      return;
+    } catch {
+      // Try grouped tel inputs as a final OTP fallback.
+    }
+
+    await locators.telCodeInputs.first().waitFor({ state: 'visible', timeout });
+    const telInputCount = await locators.telCodeInputs.count();
+    if (telInputCount <= 1) {
+      throw new Error('Phone verification code step was not visible after continuing phone verification.');
+    }
   }
 
-  /**
-   * Phương thức chung xử lý luồng Import Excel chuẩn của hệ thống:
-   * Nhấn nút Import -> Mở popup -> Chọn file -> Xác nhận
-   */
-  async importExcelData(importButtonLocator, filePath, importName = 'excel') {
-    const safeImportName = String(importName)
-      .replace(/[^a-zA-Z0-9-_]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'excel';
+  async fillPhoneVerificationCode(locators, otpCode) {
+    try {
+      await locators.codeTextboxes.first().waitFor({ state: 'visible', timeout: 10000 });
+      await this.fillCodeInputs(locators.codeTextboxes, otpCode);
+      return;
+    } catch {
+      // Try the next supported OTP locator shape.
+    }
 
-    // 1. Nhấn nút Nhập Excel ở ngoài màn hình
-    await this.clickElement(importButtonLocator);
-    await this.captureAdaptive(`${safeImportName}-after-click-import-excel`);
+    try {
+      await locators.codeInputs.first().waitFor({ state: 'visible', timeout: 10000 });
+      await this.fillCodeInputs(locators.codeInputs, otpCode);
+      return;
+    } catch {
+      // Try grouped tel inputs as a final OTP fallback.
+    }
 
-    // 2. Chờ popup tải file hiển thị và chọn file
-    const uploadInput = this.page.locator('input[type="file"]');
-    await uploadInput.setInputFiles(filePath);
-    await this.captureAdaptive(`${safeImportName}-after-file-selected`);
+    await locators.telCodeInputs.first().waitFor({ state: 'visible', timeout: 10000 });
+    const telInputCount = await locators.telCodeInputs.count();
+    if (telInputCount <= 1) {
+      throw new Error('Phone verification OTP inputs were not visible after continuing phone verification.');
+    }
 
-    // 3. Nhấn nút Tải lên / Xác nhận trong popup
-    const confirmBtn = this.page.getByRole('button', { name: /Tải lên|Xác nhận|Nhập dữ liệu|Lưu/i }).first();
-    await this.clickElement(confirmBtn);
-    await this.captureAdaptive(`${safeImportName}-after-submit`);
+    await this.fillCodeInputs(locators.telCodeInputs, otpCode);
+  }
+
+  async openAppliedJobs() {
+    try {
+      const applyModal = this.page.locator('#apply-job-modal');
+      if (await applyModal.isVisible({ timeout: 2000 }).catch(() => false)) {
+        // First check if modal has a direct link/button to applied jobs
+        const directAppliedLink = applyModal.locator('button, a').filter({ hasText: /Xem việc làm đã ứng tuyển|Việc làm đã ứng tuyển/i }).first();
+        if (await directAppliedLink.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await Promise.all([
+            this.page.waitForURL(/\/ntv-trang-quan-tri-viec-lam-da-ung-tuyen\.html(?:[?#]|$)/i, { timeout: 30000 }),
+            this.clickElement(directAppliedLink),
+          ]);
+          return;
+        }
+
+        // Otherwise close or dismiss modal
+        const modalCloseBtn = applyModal.locator('[data-test-id="common__close-button"], button:has(.svicon-close), .svicon-close, button:has-text("Đóng"), button:has-text("Xong")').first();
+        if (await modalCloseBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await modalCloseBtn.click({ force: true }).catch(() => null);
+        } else {
+          await this.page.keyboard.press('Escape');
+        }
+
+        try {
+          await applyModal.waitFor({ state: 'hidden', timeout: 5000 });
+        } catch (hideErr) {
+          await this.page.evaluate(() => {
+            const el = document.getElementById('apply-job-modal');
+            if (el) el.style.display = 'none';
+          }).catch(() => null);
+        }
+      }
+    } catch (err) {
+      console.log('Notice while handling apply modal in openAppliedJobs:', err.message);
+    }
+
+    await this.clickElement(this.accountMenuButton);
+    await this.capture('account_menu_opened');
+
+    // On mobile web, "Quản lý việc làm" is an accordion menu that needs to be expanded first
+    const jobManagementAccordion = this.page.getByRole('button', { name: /Quản lý việc làm/i })
+      .or(this.page.getByText('Quản lý việc làm', { exact: true }))
+      .first();
+    if (await jobManagementAccordion.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const isExpanded = (await jobManagementAccordion.getAttribute('aria-expanded').catch(() => 'false')) === 'true';
+      if (!isExpanded) {
+        await this.clickElement(jobManagementAccordion);
+      }
+    }
+
+    await Promise.all([
+      this.page.waitForURL(/\/ntv-trang-quan-tri-viec-lam-da-ung-tuyen\.html(?:[?#]|$)/i, {
+        timeout: 30000,
+      }),
+      this.clickElement(this.appliedJobsButton),
+    ]);
+  }
+
+  async expectAppliedJobsVisible() {
+    await expect(this.appliedJobsList).toBeVisible({ timeout: 30000 });
+  }
+
+  async submitPhoneVerificationOtp(otpCode, options = {}) {
+    if (!otpCode) {
+      throw new Error('OTP code is required to complete phone verification.');
+    }
+
+    const {
+      codeStepTimeout = 15000,
+      loadingTimeout = 15000,
+      confirmButton,
+    } = options;
+    const locators = this.getPhoneVerificationLocators();
+
+    await this.waitForPhoneVerificationCodeStepVisible(locators, codeStepTimeout);
+    await this.fillPhoneVerificationCode(locators, otpCode);
+
+    if (confirmButton) {
+      await this.clickElement(confirmButton);
+      await this.waitForGlobalLoadingHidden(loadingTimeout);
+    }
+  }
+
+  async clickPhoneVerificationSubmitIfVisible(locators) {
+    try {
+      await locators.submitButton.waitFor({ state: 'visible', timeout: 5000 });
+    } catch {
+      return false;
+    }
+
+    await this.clickElement(locators.submitButton);
+    return true;
   }
 }
 
-BasePage.BasePage = BasePage;
-module.exports = BasePage;
-
+module.exports = { BasePage };

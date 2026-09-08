@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const PAGE_ROOTS = ['pages/', 'pages/desktop/', 'pages/mobile/', 'pages/mobile-web/', 'core/fixtures/'];
+const PAGE_ROOTS = ['pages/', 'pages/desktop/', 'pages/mobile-web/', 'core/fixtures/'];
 const LOCATOR_EXPRESSION = /^(?:this\.)?page\.(?:locator|getByRole|getByLabel|getByPlaceholder|getByTestId|getByText|getByAltText|getByTitle)\s*\(/;
 
 function normalizePagePath(relativePath) {
@@ -27,16 +27,14 @@ function getReadiness({ relativePath, className, baseClass, content }) {
     try { new Function(content); return true; } catch (_) { return false; }
   })();
   if (isFixture) {
-    const exportReady = /module\.exports\s*=\s*\{[^}]*test\b/.test(content) || /exports\.test\b/.test(content);
+    const exportReady = /module\.exports\s*=\s*\{[^}]*test\b/.test(content);
     const importReady = /require\(['"][^'"]+['"]\)/.test(content);
     const platformReady = true;
     const checks = { syntax, export: exportReady, import: importReady, platform: platformReady };
     const passed = Object.values(checks).every(Boolean);
     return { status: passed ? 'ready' : 'blocked', ready: passed, checks, reason: passed ? null : Object.entries(checks).filter(([, value]) => !value).map(([key]) => key).join(', ') };
   }
-  const exportReady =
-    new RegExp(`module\\.exports\\s*=\\s*\\{[^}]*\\b${className}\\b`).test(content) ||
-    new RegExp(`module\\.exports\\s*=\\s*\\b${className}\\b`).test(content);
+  const exportReady = new RegExp(`module\\.exports\\s*=\\s*\\{[^}]*\\b${className}\\b`).test(content);
   const importReady = /require\(['"][^'"]+['"]\)/.test(content) || baseClass === 'BasePage';
   const platformReady = relativePath.startsWith('pages/') || relativePath.startsWith('core/fixtures/');
   const checks = { syntax, export: exportReady, import: importReady, platform: platformReady };
@@ -55,16 +53,114 @@ const PAGE_METADATA = {
     platform: 'base',
     category: 'Nền tảng',
   },
-  'desktop/SamplePage.js': {
-    title: 'Trang Kiểm Thử Mẫu (SamplePage)',
-    desc: 'Trang mẫu demo cách xây dựng Page Object kế thừa BasePage.',
-    icon: 'ph-browsers',
+  'desktop/HomePage.js': {
+    title: 'Trang Chủ & Menu Việc Làm',
+    desc: 'Trang chủ Việc Làm 24h, menu điều hướng, popup chào mừng và các lối tắt tìm việc.',
+    icon: 'ph-house',
     platform: 'desktop',
     category: 'Trang chính',
   },
-  'mobile/SampleMobilePage.js': {
-    title: 'Trang Mẫu Mobile Web (SampleMobilePage)',
-    desc: 'Trang mẫu demo cách xây dựng Page Object cho thiết bị di động kế thừa BasePage.',
+  'desktop/JobSearchPage.js': {
+    title: 'Trang Tìm Kiếm Việc Làm',
+    desc: 'Bộ lọc công việc, kết quả danh sách việc làm, phân trang và thông tin tin tuyển dụng.',
+    icon: 'ph-magnifying-glass',
+    platform: 'desktop',
+    category: 'Tìm việc',
+  },
+  'desktop/JobApplyNoCVPage.js': {
+    title: 'Quy Trình Ứng Tuyển Không Cần CV',
+    desc: 'Nộp đơn ứng tuyển nhanh bằng Mini-Profile, xác thực OTP điện thoại và ứng tuyển hàng loạt.',
+    icon: 'ph-paper-plane-tilt',
+    platform: 'desktop',
+    category: 'Ứng tuyển',
+  },
+  'desktop/JobApplyPage.js': {
+    title: 'Quy Trình Ứng Tuyển Với CV',
+    desc: 'Nộp đơn ứng tuyển chuẩn có đính kèm tệp CV PDF/Word hoặc CV tạo trực tuyến.',
+    icon: 'ph-file-text',
+    platform: 'desktop',
+    category: 'Ứng tuyển',
+  },
+  'desktop/UserProfilePage.js': {
+    title: 'Quản Lý Hồ Sơ & Trợ Lý AI',
+    desc: 'Cập nhật học vấn, kinh nghiệm, thông tin cá nhân và tạo nội dung bằng trợ lý AI.',
+    icon: 'ph-user-circle',
+    platform: 'desktop',
+    category: 'Người tìm việc',
+  },
+  'desktop/LoginPopup.js': {
+    title: 'Popup Đăng Nhập',
+    desc: 'Cửa sổ đăng nhập người tìm việc bằng số điện thoại, email hoặc mật khẩu.',
+    icon: 'ph-sign-in',
+    platform: 'desktop',
+    category: 'Tài khoản',
+  },
+  'desktop/OnboardingPopup.js': {
+    title: 'Popup Giới Thiệu (Onboarding)',
+    desc: 'Popup khảo sát và thiết lập tiêu chí nghề nghiệp ban đầu cho người dùng mới.',
+    icon: 'ph-sparkle',
+    platform: 'desktop',
+    category: 'Tài khoản',
+  },
+  'desktop/PopupConsent.js': {
+    title: 'Popup Đồng Ý Chính Sách',
+    desc: 'Popup chấp thuận điều khoản dịch vụ và chính sách bảo vệ dữ liệu cá nhân.',
+    icon: 'ph-shield-check',
+    platform: 'desktop',
+    category: 'Chính sách',
+  },
+  'mobile-web/MobileHomePage.js': {
+    title: 'Trang Chủ Mobile Web',
+    desc: 'Giao diện trang chủ tối ưu cho trình duyệt điện thoại Android và iOS.',
+    icon: 'ph-device-mobile',
+    platform: 'mobile-web',
+    category: 'Mobile Web',
+  },
+  'mobile-web/MobileJobSearchPage.js': {
+    title: 'Tìm Kiếm Việc Làm Mobile',
+    desc: 'Trang tìm kiếm việc làm và lọc nhanh trên thiết bị di động.',
+    icon: 'ph-device-mobile',
+    platform: 'mobile-web',
+    category: 'Mobile Web',
+  },
+  'mobile-web/MobileJobApplyNoCVPage.js': {
+    title: 'Ứng Tuyển Không Cần CV Mobile',
+    desc: 'Quy trình nộp hồ sơ nhanh không cần CV trên trình duyệt di động.',
+    icon: 'ph-device-mobile',
+    platform: 'mobile-web',
+    category: 'Mobile Web',
+  },
+  'mobile-web/MobileLoginPopup.js': {
+    title: 'Popup Đăng Nhập Mobile',
+    desc: 'Popup đăng nhập responsive trên màn hình điện thoại.',
+    icon: 'ph-device-mobile',
+    platform: 'mobile-web',
+    category: 'Mobile Web',
+  },
+  'mobile-web/MobileOnboardingPopup.js': {
+    title: 'Popup Onboarding Mobile',
+    desc: 'Cửa sổ chào mừng và hoàn thiện hồ sơ ban đầu trên mobile.',
+    icon: 'ph-device-mobile',
+    platform: 'mobile-web',
+    category: 'Mobile Web',
+  },
+  'mobile-web/MobilePopupConsent.js': {
+    title: 'Popup Chính Sách Mobile',
+    desc: 'Cửa sổ xác nhận điều khoản và chính sách riêng tư trên mobile.',
+    icon: 'ph-device-mobile',
+    platform: 'mobile-web',
+    category: 'Mobile Web',
+  },
+  'mobile-web/MobileJobApplyPage.js': {
+    title: 'Ứng Tuyển Việc Làm Mobile',
+    desc: 'Trang nộp hồ sơ ứng tuyển bằng CV hoặc Profile trực tuyến trên trình duyệt mobile.',
+    icon: 'ph-device-mobile',
+    platform: 'mobile-web',
+    category: 'Mobile Web',
+  },
+  'mobile-web/MobileUserProfilePage.js': {
+    title: 'Hồ Sơ Của Tôi Mobile',
+    desc: 'Quản lý thông tin cá nhân, tiêu chí tìm việc và CV trên thiết bị di động.',
     icon: 'ph-device-mobile',
     platform: 'mobile-web',
     category: 'Mobile Web',
@@ -84,7 +180,6 @@ const PAGE_METADATA = {
     category: 'Fixture Nền tảng',
   },
 };
-
 
 /**
  * Phân tích loại phần tử từ tên biến và biểu thức định vị

@@ -1,0 +1,33 @@
+const { test, expect } = require('../../../core/fixtures/baseTest');
+
+test.describe('Feature: Tải lên và chuyển đổi CV tại Hồ sơ của tôi @profile @e2e', () => {
+  test('Người dùng tải lên và chuyển đổi CV thành công', async ({ authenticatedUser, userProfilePage }) => {
+    test.setTimeout(120000); // Tăng timeout cho luồng detect CV tốn thời gian
+
+    await test.step('Given Tiền điều kiện: Người dùng đã đăng nhập và sẵn sàng tại trang Hồ sơ', async () => {
+      // Đăng nhập trước khi vào hồ sơ
+      await userProfilePage.navigate('/ho-so-cua-toi.html');
+      await userProfilePage.capture('precondition_ho_so_cua_toi_loaded', true);
+    });
+
+    await test.step('When Tôi nhấn nút Tải lên CV và chọn file template', async () => {
+      await userProfilePage.uploadProfileCV('data/TemplateCV.pdf');
+    });
+
+    await test.step('And Tôi xác nhận đính kèm CV', async () => {
+      await userProfilePage.confirmCVConversion();
+      await userProfilePage.capture('after_confirm_cv_conversion');
+    });
+
+    await test.step('Then Hệ thống báo Chuyển đổi thành công và cập nhật vào Hồ sơ', async () => {
+      await userProfilePage.verifyAndApplyCVData();
+      await userProfilePage.capture('after_cv_data_applied', true);
+    });
+
+    await test.step('And Tôi có thể chuyển sang cập nhật Tiêu chí tìm việc', async () => {
+      await userProfilePage.clickSearchCriteria();
+      // clickSearchCriteria opens a menu/modal
+      await userProfilePage.capture('search_criteria_opened', true);
+    });
+  });
+});

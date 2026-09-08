@@ -22,6 +22,8 @@
                     "dashboard:start":  "node dashboard/start-server.js",
                     "dashboard:stop":  "node dashboard/stop-server.js",
                     "suite:smoke":  "playwright test --project=\"Desktop Smoke Tests\" --project=\"Mobile Chrome Smoke Tests\" --project=\"Mobile Safari Smoke Tests\"",
+                    "suite:smoke:desktop":  "playwright test --project=\"Desktop Smoke Tests\"",
+                    "suite:smoke:mobile":  "playwright test --project=\"Mobile Chrome Smoke Tests\" --project=\"Mobile Safari Smoke Tests\"",
                     "suite:regression":  "playwright test --project=\"Desktop Smoke Tests\" --project=\"Desktop Regression Tests\" --project=\"Mobile Chrome Smoke Tests\" --project=\"Mobile Chrome Regression Tests\" --project=\"Mobile Safari Smoke Tests\" --project=\"Mobile Safari Regression Tests\"",
                     "suite:desktop":  "playwright test --project=\"Desktop Smoke Tests\" --project=\"Desktop Regression Tests\"",
                     "suite:mobile":  "playwright test --project=\"Mobile Chrome Smoke Tests\" --project=\"Mobile Chrome Regression Tests\" --project=\"Mobile Safari Smoke Tests\" --project=\"Mobile Safari Regression Tests\"",
