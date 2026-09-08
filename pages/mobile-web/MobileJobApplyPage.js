@@ -48,9 +48,17 @@ class MobileJobApplyPage extends JobApplyPage {
       if (await closeBtn.isVisible().catch(() => false)) {
         await this.clickElement(closeBtn);
       } else {
-        await this.page.locator('body').click({ position: { x: 10, y: 10 }, force: true }).catch(() => {});
+        try {
+          await this.page.locator('body').click({ position: { x: 10, y: 10 }, force: true });
+        } catch (_e) {
+          // ignore
+        }
       }
-      await sheet.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+      try {
+        await sheet.waitFor({ state: 'hidden', timeout: 5000 });
+      } catch (_e) {
+        // ignore
+      }
     }
   }
 
@@ -65,7 +73,6 @@ class MobileJobApplyPage extends JobApplyPage {
       await super.uploadCV(filePath);
     }
     await this.waitForGlobalLoadingHidden(15000);
-    await this.page.waitForTimeout(1000);
     await this.closeUploadMethodSheetIfVisible();
   }
 

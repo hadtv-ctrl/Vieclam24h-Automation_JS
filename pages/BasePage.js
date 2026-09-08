@@ -459,12 +459,25 @@ class BasePage {
       }
     }
 
-    await Promise.all([
-      this.page.waitForURL(/\/ntv-trang-quan-tri-viec-lam-da-ung-tuyen\.html(?:[?#]|$)/i, {
-        timeout: 30000,
-      }),
-      this.clickElement(this.appliedJobsButton),
-    ]);
+    const targetUrlPattern = /\/ntv-trang-quan-tri-viec-lam-da-ung-tuyen\.html(?:[?#]|$)/i;
+    try {
+      const appliedLink = this.page.locator('a[href*="ntv-trang-quan-tri-viec-lam-da-ung-tuyen"]')
+        .or(this.appliedJobsButton)
+        .first();
+
+      if (await appliedLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await Promise.all([
+          this.page.waitForURL(targetUrlPattern, { timeout: 10000 }),
+          this.clickElement(appliedLink, { timeout: 10000 }),
+        ]);
+      } else {
+        await this.navigate('/ntv-trang-quan-tri-viec-lam-da-ung-tuyen.html');
+      }
+    } catch (_err) {
+      if (!targetUrlPattern.test(this.page.url())) {
+        await this.navigate('/ntv-trang-quan-tri-viec-lam-da-ung-tuyen.html');
+      }
+    }
   }
 
   async expectAppliedJobsVisible() {

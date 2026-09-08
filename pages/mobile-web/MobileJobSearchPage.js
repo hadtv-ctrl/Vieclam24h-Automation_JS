@@ -22,9 +22,17 @@ class MobileJobSearchPage extends JobSearchPage {
       if (await closeBtn.isVisible().catch(() => false)) {
         await this.clickElement(closeBtn);
       } else {
-        await this.page.locator('body').click({ position: { x: 10, y: 10 }, force: true }).catch(() => {});
+        try {
+          await this.page.locator('body').click({ position: { x: 10, y: 10 }, force: true });
+        } catch (_e) {
+          // ignore
+        }
       }
-      await dialog.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+      try {
+        await dialog.waitFor({ state: 'hidden', timeout: 5000 });
+      } catch (_e) {
+        // ignore
+      }
     }
   }
 

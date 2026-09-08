@@ -137,9 +137,8 @@ class MobileUserProfilePage extends UserProfilePage {
       const statusBtn = this.page.locator('div:has-text("Trạng thái tìm việc"):visible, span:has-text("Trạng thái tìm việc"):visible').first();
       if (await statusBtn.isVisible().catch(() => false)) {
         await this.clickElement(statusBtn);
-        await this.page.waitForTimeout(1000);
         cvSearchSwitch = this.page.locator('[data-test-id="common__switch"]:visible, input[type="checkbox"]:visible, [role="switch"]:visible').first();
-        if (await cvSearchSwitch.isVisible({ timeout: 2000 }).catch(() => false)) {
+        if (await cvSearchSwitch.isVisible({ timeout: 3000 }).catch(() => false)) {
           await this.clickElement(cvSearchSwitch);
           return;
         }
@@ -208,7 +207,6 @@ class MobileUserProfilePage extends UserProfilePage {
     }
 
     await this.waitForGlobalLoadingHidden(20000);
-    await this.page.waitForTimeout(2000);
 
     // Nếu xuất hiện popup trích xuất thông tin CV ("Thêm vào Hồ sơ của tôi"), click xác nhận
     const btnAddToProfile = this.page.getByRole('button', { name: /Thêm vào Hồ sơ của tôi/i })
@@ -216,9 +214,12 @@ class MobileUserProfilePage extends UserProfilePage {
       .first();
     if (await btnAddToProfile.isVisible({ timeout: 5000 }).catch(() => false)) {
       await this.clickElement(btnAddToProfile);
-      await btnAddToProfile.waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
+      try {
+        await btnAddToProfile.waitFor({ state: 'hidden', timeout: 30000 });
+      } catch (_e) {
+        // ignore
+      }
       await this.waitForGlobalLoadingHidden(20000);
-      await this.page.waitForTimeout(1000);
     }
 
     // Chuyển sang Bước 2 nếu hiển thị nút Bước tiếp theo
@@ -228,7 +229,6 @@ class MobileUserProfilePage extends UserProfilePage {
     if (await btnNextStep.isVisible({ timeout: 5000 }).catch(() => false)) {
       await this.clickElement(btnNextStep);
       await this.waitForGlobalLoadingHidden(15000);
-      await this.page.waitForTimeout(500);
     }
   }
 
@@ -241,7 +241,11 @@ class MobileUserProfilePage extends UserProfilePage {
       .first();
     if (await btnAddToProfile.isVisible({ timeout: 3000 }).catch(() => false)) {
       await this.clickElement(btnAddToProfile);
-      await btnAddToProfile.waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {});
+      try {
+        await btnAddToProfile.waitFor({ state: 'hidden', timeout: 30000 });
+      } catch (_e) {
+        // ignore
+      }
       await this.waitForGlobalLoadingHidden(15000);
     }
 

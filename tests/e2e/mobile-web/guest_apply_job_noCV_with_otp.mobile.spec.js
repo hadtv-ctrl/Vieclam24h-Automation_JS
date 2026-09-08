@@ -8,7 +8,11 @@ test.describe('Mobile Feature: Guest ứng tuyển việc không cần CV bằng
 
   test.afterEach(async () => {
     if (newJobPage && !newJobPage.isClosed()) {
-      await newJobPage.close().catch(() => {});
+      try {
+        await newJobPage.close();
+      } catch (_e) {
+        // Page already closed or detached
+      }
     }
   });
 

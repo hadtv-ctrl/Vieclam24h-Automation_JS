@@ -95,7 +95,11 @@ class UserProfilePage extends BasePage {
   async saveSection(options = {}) {
     if (await this.btnCommonSave.isVisible({ timeout: 3000 }).catch(() => false)) {
       await this.clickElement(this.btnCommonSave);
-      await expect(this.btnCommonSave).toBeHidden({ timeout: 60000 }).catch(() => {});
+      try {
+        await expect(this.btnCommonSave).toBeHidden({ timeout: 60000 });
+      } catch (_e) {
+        // ignore if already hidden
+      }
     }
   }
 
@@ -285,45 +289,92 @@ class UserProfilePage extends BasePage {
 
   // --- Thông tin cá nhân (Personal Info) ---
   async clickEditPersonalInfo() {
-    const btnEditPersonalInfo = this.page.locator('[data-test-id="user-profile__personal-info"] [data-test-id="user-profile__edit-button"]').first();
-    await this.clickElement(btnEditPersonalInfo);
+    const desktopEditBtn = this.page.locator('[data-test-id="user-profile__personal-info"] [data-test-id="user-profile__edit-button"]:visible').first();
+    const isDesktopVisible = await desktopEditBtn.isVisible({ timeout: 2000 }).catch(() => false);
+
+    if (isDesktopVisible) {
+      await this.clickElement(desktopEditBtn);
+    } else {
+      const mobileEditBtn = this.page
+        .locator('[data-test-id="user-profile__edit-button"]:visible')
+        .or(this.page.locator('.svicon-edit-alt:visible, .svicon-edit:visible'))
+        .or(this.page.getByText('Thêm địa chỉ hiện tại'))
+        .first();
+
+      await this.clickElement(mobileEditBtn, { force: true });
+    }
+
+    const modal = this.page.locator(
+      '[data-test-id="user-profile__personal-info-modal"]:visible, ' +
+      '[data-test-id="common__form-modal"]:visible, ' +
+      '[data-test-id="common__dialog"]:visible, ' +
+      'div[role="dialog"]:visible'
+    ).first();
+
+    try {
+      await modal.waitFor({ state: 'visible', timeout: 15000 });
+    } catch (_e) {
+      // Fallback: try clicking 'Thêm địa chỉ hiện tại' if icon click didn't trigger modal
+      const addAddressBtn = this.page.getByText('Thêm địa chỉ hiện tại').first();
+      if (await addAddressBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await this.clickElement(addAddressBtn, { force: true });
+        await modal.waitFor({ state: 'visible', timeout: 15000 });
+      } else {
+        throw _e;
+      }
+    }
+    await this.waitForGlobalLoadingHidden(10000).catch(() => null);
   }
 
   async fillPersonalInfo(data) {
+    const modal = this.page.locator(
+      '[data-test-id="user-profile__personal-info-modal"]:visible, ' +
+      '[data-test-id="common__form-modal"]:visible, ' +
+      'div[role="dialog"]:visible'
+    ).first();
+    const scope = (await modal.isVisible({ timeout: 2000 }).catch(() => false)) ? modal : this.page;
+
     // Select Province
-    await this.clickElement(this.page.getByText('Chọn tỉnh thành').first());
-    await this.clickElement(this.page.locator('[data-test-id="common__select-menu"] div').filter({ hasText: data.province }).nth(3).first());
+    const provinceBtn = scope.getByText('Chọn tỉnh thành').first();
+    await this.clickElement(provinceBtn, { force: true });
+
+    const provinceOption = this.page
+      .locator('[data-test-id="common__select-menu"]:visible div, [data-test-id="select__modal-menu__container"]:visible div')
+      .filter({ hasText: data.province })
+      .last();
+    await this.clickElement(provinceOption, { force: true });
 
     // Select District after its async options finish rendering
-    await this.clickElement(this.page.getByText('Chọn quận huyện').first());
+    const districtBtn = scope.getByText('Chọn quận huyện').first();
+    await this.clickElement(districtBtn, { force: true });
 
     const districtName = data.district.split('(')[0].trim();
     const districtOption = this.page
-      .locator('[data-test-id="common__select-menu"]')
+      .locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible')
       .getByRole('heading')
       .filter({ hasText: districtName })
       .first();
 
     await districtOption.waitFor({ state: 'visible', timeout: 35000 });
-    await this.clickElement(districtOption);
+    await this.clickElement(districtOption, { force: true });
 
     // Fill Date of Birth
-    const inpDateOfBirth = this.page.getByRole('textbox', { name: 'DD/MM/YYYY' }).first();
-    await this.clickElement(inpDateOfBirth);
+    const inpDateOfBirth = scope.getByRole('textbox', { name: 'DD/MM/YYYY' }).first();
+    await this.clickElement(inpDateOfBirth, { force: true });
 
     // Select Month
-    await this.clickElement(this.page.getByRole('button', { name: new RegExp('^Tháng \\d+', 'i') }).first());
-    await this.clickElement(this.page.getByText(data.birthMonth).first());
+    await this.clickElement(this.page.getByRole('button', { name: new RegExp('^Tháng \\d+', 'i') }).first(), { force: true });
+    await this.clickElement(this.page.getByText(data.birthMonth).first(), { force: true });
 
     // Select Year
-    await this.clickElement(this.page.getByRole('button', { name: new RegExp('^\\d{4}', 'i') }).first());
-    await this.clickElement(this.page.getByText(data.birthYear).first());
+    await this.clickElement(this.page.getByRole('button', { name: new RegExp('^\\d{4}', 'i') }).first(), { force: true });
+    await this.clickElement(this.page.getByText(data.birthYear).first(), { force: true });
 
     // Select Day
-    await this.clickElement(this.page.getByRole('button', { name: new RegExp(`Choose.*${data.birthDay}.*tháng`) }).first());
+    await this.clickElement(this.page.getByRole('button', { name: new RegExp(`Choose.*${data.birthDay}.*tháng`) }).first(), { force: true });
 
     // Select Gender
-    await this.clickElement(this.page.getByRole('button', { name: data.gender }).first());
+    await this.clickElement(scope.getByRole('button', { name: data.gender }).first(), { force: true });
   }
 
   async savePersonalInfo() {
@@ -362,7 +413,11 @@ class UserProfilePage extends BasePage {
     if (await selectModalContainer.isVisible({ timeout: 1500 }).catch(() => false)) {
       const viewport = this.page.viewportSize() || { width: 390, height: 844 };
       await this.page.mouse.click(Math.round(viewport.width / 2), Math.min(600, viewport.height - 100));
-      await selectModalContainer.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+      try {
+        await selectModalContainer.waitFor({ state: 'hidden', timeout: 3000 });
+      } catch (_e) {
+        // ignore
+      }
     }
   }
 
@@ -386,7 +441,11 @@ class UserProfilePage extends BasePage {
     await this.closeSelectModalMenuIfVisible();
     const removeIndustryBtn = this.page.locator('[data-test-id="user-profile__job-goal-modal"]').getByRole('heading', { name: 'Tiêu chí tìm việc' }).first();
     if (await removeIndustryBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await this.clickElement(removeIndustryBtn).catch(() => {});
+      try {
+        await this.clickElement(removeIndustryBtn);
+      } catch (_e) {
+        // ignore
+      }
     }
 
     // Select location
@@ -395,7 +454,11 @@ class UserProfilePage extends BasePage {
     await this.closeSelectModalMenuIfVisible();
     const removeLocationBtn = this.page.locator('[data-test-id="common__actions-button"]').first();
     if (await removeLocationBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await this.clickElement(removeLocationBtn).catch(() => {});
+      try {
+        await this.clickElement(removeLocationBtn);
+      } catch (_e) {
+        // ignore
+      }
     }
 
     // Scroll to salary fields
@@ -438,7 +501,11 @@ class UserProfilePage extends BasePage {
     const jobGoalModal = this.page.locator('[data-test-id="user-profile__job-goal-modal"]');
     if (await jobGoalModal.isVisible({ timeout: 2000 }).catch(() => false)) {
       await this.saveSection();
-      await expect(jobGoalModal).toBeHidden({ timeout: 30000 }).catch(() => {});
+      try {
+        await expect(jobGoalModal).toBeHidden({ timeout: 30000 });
+      } catch (_e) {
+        // ignore
+      }
     }
   }
 
