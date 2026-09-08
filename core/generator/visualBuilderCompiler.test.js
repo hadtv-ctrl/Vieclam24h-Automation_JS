@@ -9,49 +9,56 @@ const { ASSERTION_DEFINITIONS } = require('./actionRegistry');
 
 test('PRESET_ACTIONS contains business and interaction blocks', () => {
   assert.ok(PRESET_ACTIONS.length >= 8);
-  assert.ok(PRESET_ACTIONS.some((p) => p.id === 'auth_login_precondition'));
-  assert.ok(PRESET_ACTIONS.some((p) => p.id === 'open_nocv_job_list'));
-  assert.ok(PRESET_ACTIONS.some((p) => p.id === 'verify_applied_jobs'));
+  assert.ok(PRESET_ACTIONS.some((p) => p.id === 'navigate_url'));
+  assert.ok(PRESET_ACTIONS.some((p) => p.id === 'click_element'));
+  assert.ok(PRESET_ACTIONS.some((p) => p.id === 'fill_text'));
+  assert.ok(PRESET_ACTIONS.some((p) => p.id === 'wait_visible'));
 });
 
 test('compileVisualScenario compiles blocks into BDD spec', () => {
   const scenario = {
-    featureName: 'Ứng tuyển nhanh việc làm không cần CV',
-    scenarioName: 'Người dùng nộp hồ sơ và kiểm tra danh sách',
+    featureName: 'User login flow',
+    scenarioName: 'User submits credentials',
     platform: 'desktop',
-    tags: ['@applyjob', '@e2e'],
+    tags: ['@login', '@e2e'],
     steps: [
       {
         stepType: 'Given',
-        title: 'Người dùng đã truy cập trang chủ và đăng nhập',
-        actionId: 'auth_login_precondition',
-      },
-      {
-        stepType: 'And',
-        title: 'Người dùng thấy popup Onboarding và đóng',
-        actionId: 'close_onboarding_popup',
+        title: 'User navigates to login page',
+        actionId: 'navigate_url',
+        url: 'https://example.com/login',
       },
       {
         stepType: 'When',
-        title: 'Người dùng mở việc làm không cần CV',
-        actionId: 'open_nocv_job_list',
+        title: 'User fills credentials',
+        actionId: 'fill_text',
+        locator: 'input#username',
+        value: 'tester@example.com',
+      },
+      {
+        stepType: 'And',
+        title: 'User clicks submit',
+        actionId: 'click_element',
+        locator: 'button#submit',
       },
       {
         stepType: 'Then',
-        title: 'Việc làm hiển thị trong danh sách đã ứng tuyển',
-        actionId: 'verify_applied_jobs',
+        title: 'Welcome message is visible',
+        actionId: 'assert_visible',
+        locator: 'div.welcome-msg',
       },
     ],
   };
 
   const compiled = compileVisualScenario(scenario);
-  assert.ok(compiled.specRelativePath.includes('ungtuyennhanhviec-bdd.spec.js'));
-  assert.ok(compiled.specCode.includes('Feature: Ứng tuyển nhanh việc làm không cần CV @applyjob @e2e'));
-  assert.ok(compiled.specCode.includes('await test.step("Given Người dùng đã truy cập trang chủ và đăng nhập"'));
-  assert.ok(compiled.specCode.includes('await test.step("Then Việc làm hiển thị trong danh sách đã ứng tuyển"'));
-  assert.ok(compiled.specCode.includes('authenticatedUser'));
-  assert.ok(compiled.specCode.includes('onboardingPopup'));
+  assert.ok(compiled.valid);
+  assert.ok(compiled.specRelativePath.includes('userloginflow-bdd.spec.js'));
+  assert.ok(compiled.specCode.includes('Feature: User login flow @login @e2e'));
+  assert.ok(compiled.specCode.includes('Given User navigates to login page'));
+  assert.ok(compiled.specCode.includes('await page.goto("https://example.com/login")'));
+  assert.ok(compiled.specCode.includes('Then Welcome message is visible'));
 });
+
 
 test('all registered assertions compile to executable expect statements', () => {
   for (const definition of ASSERTION_DEFINITIONS) {
@@ -90,13 +97,15 @@ test('compileVisualScenario preserves executable preset actions and step evidenc
     scenarioName: 'Submit profile',
     steps: [{
       stepType: 'And',
-      title: 'Điền profile',
-      actionId: 'fill_mini_profile',
+      title: 'Điền thông tin',
+      actionId: 'fill_text',
+      locator: 'input#name',
+      value: 'Test User',
       evidence: { name: 'profile_submitted' },
     }],
   });
   assert.equal(compiled.valid, true);
-  assert.match(compiled.specCode, /fillMiniProfile\(applyData\.noCVApply\.job1\)/);
+  assert.match(compiled.specCode, /page\.locator\("input#name"\)\.fill\("Test User"\)/);
   assert.match(compiled.specCode, /capture\("profile_submitted"\)/);
 });
 
@@ -110,36 +119,25 @@ test('compileVisualScenario rejects a step without an executable action', () => 
   assert.ok(compiled.errors.some((error) => error.includes('chưa chọn action')));
 });
 
-test('compileVisualScenario keeps runtime parity for no-CV application flow', () => {
+test('compileVisualScenario keeps runtime parity for generic application flow', () => {
   const compiled = compileVisualScenario({
-    featureName: 'Hoàn thành profile mini và ứng tuyển job không cần CV',
-    scenarioName: 'Người dùng hoàn thành tạo profile và ứng tuyển job không cần CV',
+    featureName: 'Hoàn thành tạo biểu mẫu và xác nhận thông tin',
+    scenarioName: 'Người dùng hoàn thành biểu mẫu',
     platform: 'desktop',
-    tags: ['@applyjob', '@e2e'],
+    tags: ['@smoke', '@e2e'],
     pageObjects: [
-      'pages/desktop/HomePage.js',
-      'pages/desktop/JobSearchPage.js',
-      'pages/desktop/JobApplyNoCVPage.js',
+      'pages/desktop/SamplePage.js',
     ],
-    dataSources: [{ file: 'data/applyJobData.json', variable: 'applyData', dataPath: 'noCVApply.job1' }],
-    precondition: { auth: 'authenticated', closeOnboarding: true, verifyLandingPage: true, captureInitial: true },
     steps: [
-      { stepType: 'When', title: 'Mở danh sách việc không cần CV', actionId: 'open_nocv_job_list' },
-      { stepType: 'When', title: 'Mở việc đầu tiên', actionId: 'select_first_job' },
-      { stepType: 'And', title: 'Điền profile mini', actionId: 'fill_mini_profile', evidence: { name: 'profile_submitted' } },
-      { stepType: 'And', title: 'Ứng tuyển các việc còn lại', actionId: 'bulk_apply_all' },
-      { stepType: 'Then', title: 'Kiểm tra việc đã ứng tuyển', actionId: 'verify_applied_jobs' },
+      { stepType: 'When', title: 'Mở trang web mẫu', actionId: 'navigate_url', url: 'https://example.com' },
+      { stepType: 'And', title: 'Nhập thông tin người dùng', actionId: 'fill_text', locator: 'input#username', value: 'tester@example.com', evidence: { name: 'profile_submitted' } },
+      { stepType: 'Then', title: 'Kiểm tra tiêu đề', actionId: 'assert_visible', locator: 'h1' },
     ],
   });
 
   assert.equal(compiled.valid, true);
-  assert.match(compiled.specCode, /require\('\.\.\/\.\.\/\.\.\/data\/applyJobData\.json'\)/);
-  assert.match(compiled.specCode, /jobSearchPage\.firstJobLink\.waitFor/);
-  assert.match(compiled.specCode, /createJobApplyNoCVPage\(newPage\)/);
-  assert.match(compiled.specCode, /startApplyNoCV\(\{ otpCode: usersData\[0\]\?\.otp \}\)/);
-  assert.match(compiled.specCode, /fillMiniProfile\(applyData\.noCVApply\.job1\)/);
-  assert.match(compiled.specCode, /if \(didBulkApply\)/);
-  assert.match(compiled.specCode, /expectAppliedJobsVisible/);
+  assert.match(compiled.specCode, /page\.goto\("https:\/\/example\.com"\)/);
+  assert.match(compiled.specCode, /page\.locator\("input#username"\)\.fill\("tester@example\.com"\)/);
   assert.match(compiled.specCode, /capture\("profile_submitted"\)/);
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bdd-parity-'));
@@ -148,6 +146,7 @@ test('compileVisualScenario keeps runtime parity for no-CV application flow', ()
   execFileSync(process.execPath, ['--check', tempFile], { stdio: 'pipe' });
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
+
 
 test('compileVisualScenario produces a deterministic compiled hash', () => {
   const scenario = { featureName: 'Stable flow', scenarioName: 'Stable scenario', steps: [{ actionId: 'navigate_url', url: 'https://example.com' }] };
