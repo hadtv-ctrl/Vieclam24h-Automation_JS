@@ -167,6 +167,69 @@ function findPageClassFile(className, platform, rootDir) {
 }
 
 /**
+ * Liệt kê toàn bộ alias Page Object khả dụng cho một platform (10/10 Reflection & Enumerable support)
+ */
+function listAvailablePageAliases(platform, rootDir) {
+  const pagesDir = path.join(rootDir, 'pages');
+  if (!fs.existsSync(pagesDir)) return [];
+
+  const isMobilePlatform = platform === 'mobile-web' || platform === 'mobile';
+  const targetDirs = [];
+
+  if (isMobilePlatform) {
+    const mWeb = path.join(pagesDir, 'mobile-web');
+    const mLegacy = path.join(pagesDir, 'mobile');
+    if (fs.existsSync(mWeb)) targetDirs.push(mWeb);
+    if (fs.existsSync(mLegacy)) targetDirs.push(mLegacy);
+  } else {
+    const desktopDir = path.join(pagesDir, 'desktop');
+    if (fs.existsSync(desktopDir)) targetDirs.push(desktopDir);
+  }
+
+  const aliases = new Set();
+  const processFile = (fullPath) => {
+    const baseName = path.basename(fullPath, '.js');
+    if (baseName === 'BasePage') return;
+
+    const camel = baseName.charAt(0).toLowerCase() + baseName.slice(1);
+    aliases.add(camel);
+    aliases.add(baseName);
+    if (camel.endsWith('Page') && camel.length > 4) {
+      aliases.add(camel.slice(0, -4));
+    }
+  };
+
+  const scanDir = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        scanDir(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith('.js')) {
+        processFile(fullPath);
+      }
+    }
+  };
+
+  for (const dir of targetDirs) {
+    scanDir(dir);
+  }
+
+  // Quét shared pages/
+  const rootEntries = fs.readdirSync(pagesDir, { withFileTypes: true });
+  for (const entry of rootEntries) {
+    if (entry.isFile() && entry.name.endsWith('.js')) {
+      processFile(path.join(pagesDir, entry.name));
+    } else if (entry.isDirectory() && !['desktop', 'mobile', 'mobile-web'].includes(entry.name)) {
+      scanDir(path.join(pagesDir, entry.name));
+    }
+  }
+
+  return Array.from(aliases).sort();
+}
+
+/**
  * Tạo Proxy Container cho toàn bộ Page Objects trong dự án
  * Hỗ trợ đồng thời 2 signature (R03, mục 3.1):
  * 1. Contract mới: createPageContainer(page, { rootDir, platform, featureName })
@@ -198,6 +261,7 @@ function createPageContainer(page, optionsOrIsMobile = {}, legacyRootDir) {
   // F08: Caches mapping canonical realFilePath to instance
   const aliasToRealPath = new Map();
   const instanceCache = new Map();
+  let cachedOwnKeys = null;
 
   return new Proxy({}, {
     get: (target, prop) => {
@@ -285,7 +349,10 @@ function createPageContainer(page, optionsOrIsMobile = {}, legacyRootDir) {
     },
 
     ownKeys: () => {
-      return [];
+      if (!cachedOwnKeys) {
+        cachedOwnKeys = listAvailablePageAliases(platform, rootDir);
+      }
+      return cachedOwnKeys;
     },
 
     getOwnPropertyDescriptor: (target, prop) => {
@@ -304,5 +371,7 @@ module.exports = {
   resolvePageClassName,
   findPageClassFile,
   resolveProjectRoot,
+  listAvailablePageAliases,
   RESERVED_PROPERTIES,
 };
+

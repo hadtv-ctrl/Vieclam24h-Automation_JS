@@ -71,7 +71,10 @@ const {
   scanAllPageObjects,
   parsePageObject,
   scanAllFixtures,
+  getFixtureByName,
+  validateCustomFixtureSource,
   createCustomFixture,
+  updateCustomFixture,
   deleteCustomFixture,
   updateLocatorSelector,
   getCoreCapabilities,
@@ -97,11 +100,47 @@ let pendingDashboardWrites = 0;
 const agentRoutes = createAgentRoutes({ service: agentService, parseBody, sendJson,
   isBusy: () => Boolean(activeRun || activeRecorder || pendingDashboardWrites) });
 const AGENT_SAFE_POST_ROUTES = new Set([
-  '/api/stop', '/api/shutdown', '/api/recorder/stop', '/api/recorder/scan-pages',
+  '/api/stop', '/api/shutdown', '/api/recorder/stop', '/api/recorder/reset', '/api/recorder/scan-pages',
   '/api/recorder/convert', '/api/recorder/generate-draft', '/api/ai/generate-state',
   '/api/ai/config', '/api/ai/test-connection', '/api/ai/inline-suggest',
   '/api/diagnostics/analyze', '/api/builder/compile', '/api/system/apply-update',
 ]);
+
+function isProcessAlive(pid) {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function killRecorderProcess(recorder) {
+  if (!recorder?.child) return;
+  const pid = recorder.child.pid;
+  try {
+    if (process.platform === 'win32' && pid) {
+      execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore', windowsHide: true });
+    } else if (recorder.child) {
+      recorder.child.kill('SIGTERM');
+    }
+  } catch (e) {}
+}
+
+function normalizeTargetUrl(rawUrl, fallback = 'https://example.com') {
+  let urlStr = (rawUrl || '').trim();
+  if (!urlStr) return fallback;
+  if (!/^https?:\/\//i.test(urlStr)) {
+    if (/^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(urlStr)) {
+      urlStr = 'http://' + urlStr;
+    } else {
+      urlStr = 'https://' + urlStr;
+    }
+  }
+  return urlStr;
+}
+
 
 function ensureRecordingsDir() {
   if (!fs.existsSync(RECORDINGS_DIR)) {
@@ -1566,21 +1605,34 @@ const server = http.createServer(async (request, response) => {
   }
   // RECORDER API ENDPOINTS
   if (request.method === 'POST' && url.pathname === '/api/recorder/start') {
-    if (activeRecorder) {
-      return sendJson(response, 409, { error: 'Đang có một phiên ghi UI đang chạy.' });
-    }
     try {
       const body = await parseBody(request);
       const activeConfig = getDashboardConfig();
       const defaultEnvKey = activeConfig.runtime?.defaultEnvironment || 'qc';
       const fallbackUrl = activeConfig.environments?.[defaultEnvKey]?.baseURL || 'https://example.com';
-      const targetUrl = (body.url || '').trim() || fallbackUrl;
+      const targetUrl = normalizeTargetUrl(body.url, fallbackUrl);
       const platform = body.platform === 'mobile-web' ? 'mobile-web' : 'desktop';
       const device = (body.device || '').trim();
       const browser = (body.browser || 'chromium').trim();
       const viewport = body.viewport || (platform === 'desktop' ? '1920,1080' : '390,844');
       const loadStorage = (body.loadStorage || '').trim();
       const testIdAttribute = (body.testIdAttribute || '').trim();
+      const forceRestart = body.force !== false;
+
+      // Handle existing recording session
+      if (activeRecorder) {
+        if (!isProcessAlive(activeRecorder.child?.pid)) {
+          console.warn(`[Recorder] Dọn dẹp phiên ghi cũ đã kết thúc (PID: ${activeRecorder.child?.pid}).`);
+          activeRecorder = null;
+        } else if (forceRestart) {
+          console.log(`[Recorder] Buộc dừng phiên ghi cũ (PID: ${activeRecorder.child?.pid}) để khởi chạy phiên mới.`);
+          killRecorderProcess(activeRecorder);
+          activeRecorder = null;
+          await new Promise((r) => setTimeout(r, 300));
+        } else {
+          return sendJson(response, 409, { error: 'Đang có một phiên ghi UI đang chạy.' });
+        }
+      }
 
       ensureRecordingsDir();
       const fileName = `rec_${Date.now()}.js`;
@@ -1615,8 +1667,60 @@ const server = http.createServer(async (request, response) => {
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { ...process.env },
         shell: false,
-        windowsHide: false,
+        windowsHide: true,
       });
+
+      let stdoutBuffer = '';
+      let stderrBuffer = '';
+      let earlyExitCode = null;
+
+      child.stdout?.on('data', (chunk) => {
+        stdoutBuffer = (stdoutBuffer + chunk.toString()).slice(-4000);
+      });
+
+      child.stderr?.on('data', (chunk) => {
+        const text = chunk.toString();
+        stderrBuffer = (stderrBuffer + text).slice(-4000);
+        console.warn('[Recorder Codegen stderr]', text.trim());
+      });
+
+      child.on('exit', (code) => {
+        earlyExitCode = code;
+        const finishedRecorder = activeRecorder;
+        if (activeRecorder?.child === child) {
+          activeRecorder = null;
+        }
+        publish('recorder_status', {
+          isRecording: false,
+          code,
+          error: code !== 0 ? (stderrBuffer.trim() || `Playwright Codegen kết thúc với mã lỗi ${code}`) : undefined,
+          fileName: finishedRecorder?.fileName,
+          outputPath: finishedRecorder?.outputPath,
+          recentRecordings: listRecentRecordings().slice(0, 15),
+        });
+      });
+
+      child.on('error', (err) => {
+        console.error('[Recorder Error]', err);
+        if (activeRecorder?.child === child) {
+          activeRecorder = null;
+        }
+        publish('recorder_status', {
+          isRecording: false,
+          error: err.message,
+          recentRecordings: listRecentRecordings().slice(0, 15),
+        });
+      });
+
+      // Wait 500ms grace period to verify child process launched cleanly
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      if (earlyExitCode !== null && earlyExitCode !== 0) {
+        if (activeRecorder?.child === child) activeRecorder = null;
+        return sendJson(response, 500, {
+          error: `Không thể mở trình duyệt Playwright Codegen: ${stderrBuffer.trim() || 'Tiến trình kết thúc với mã lỗi ' + earlyExitCode}`,
+        });
+      }
 
       activeRecorder = {
         child,
@@ -1629,27 +1733,18 @@ const server = http.createServer(async (request, response) => {
         startTime: new Date().toISOString(),
       };
 
-      publish('recorder_status', { isRecording: true, ...activeRecorder, child: undefined });
-
-      child.on('exit', (code) => {
-        const finishedRecorder = activeRecorder;
-        activeRecorder = null;
-        publish('recorder_status', {
-          isRecording: false,
-          code,
-          fileName: finishedRecorder?.fileName,
-          outputPath: finishedRecorder?.outputPath,
-        });
-      });
-
-      child.on('error', (err) => {
-        console.error('[Recorder Error]', err);
-        activeRecorder = null;
-        publish('recorder_status', { isRecording: false, error: err.message });
+      publish('recorder_status', {
+        isRecording: true,
+        url: activeRecorder.url,
+        platform: activeRecorder.platform,
+        device: activeRecorder.device,
+        browser: activeRecorder.browser,
+        fileName: activeRecorder.fileName,
+        startTime: activeRecorder.startTime,
       });
 
       return sendJson(response, 200, {
-        message: 'Đã khởi chạy Playwright Codegen.',
+        message: 'Đã khởi chạy Playwright Codegen thành công.',
         fileName,
         outputPath: `.tmp/recordings/${fileName}`,
         url: targetUrl,
@@ -1664,18 +1759,9 @@ const server = http.createServer(async (request, response) => {
       return sendJson(response, 400, { error: 'Không có phiên ghi nào đang chạy.' });
     }
     const current = activeRecorder;
-    try {
-      if (process.platform === 'win32' && current.child?.pid) {
-        try {
-          execSync(`taskkill /pid ${current.child.pid} /T /F`, { stdio: 'ignore', windowsHide: true });
-        } catch (e) {}
-      } else if (current.child) {
-        current.child.kill('SIGTERM');
-      }
-    } catch (e) {}
-
+    killRecorderProcess(current);
     activeRecorder = null;
-    publish('recorder_status', { isRecording: false, fileName: current.fileName });
+    publish('recorder_status', { isRecording: false, fileName: current.fileName, recentRecordings: listRecentRecordings().slice(0, 15) });
 
     await new Promise((r) => setTimeout(r, 400));
 
@@ -1698,7 +1784,19 @@ const server = http.createServer(async (request, response) => {
     });
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/recorder/reset') {
+    if (activeRecorder) {
+      killRecorderProcess(activeRecorder);
+      activeRecorder = null;
+    }
+    publish('recorder_status', { isRecording: false, recentRecordings: listRecentRecordings().slice(0, 15) });
+    return sendJson(response, 200, { message: 'Đã thiết lập lại trạng thái phiên ghi.' });
+  }
+
   if (request.method === 'GET' && (url.pathname === '/api/recorder/status' || url.pathname === '/api/recorder/state')) {
+    if (activeRecorder && !isProcessAlive(activeRecorder.child?.pid)) {
+      activeRecorder = null;
+    }
     return sendJson(response, 200, {
       isRecording: Boolean(activeRecorder),
       activeRecorder: activeRecorder
@@ -1714,6 +1812,7 @@ const server = http.createServer(async (request, response) => {
       recentRecordings: listRecentRecordings().slice(0, 15),
     });
   }
+
 
   if (request.method === 'GET' && (url.pathname === '/api/recorder/file' || url.pathname === '/api/recorder/output')) {
     const fileName = path.basename(url.searchParams.get('name') || url.searchParams.get('file') || '');
@@ -2456,6 +2555,19 @@ test.describe('Feature: ${featureName} ${tags}', () => {
     }
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/fixtures/validate') {
+    try {
+      const body = await parseBody(request);
+      const result = validateCustomFixtureSource({ ...body, rootDir: ROOT });
+      if (!result.valid) {
+        return sendJson(response, 400, result);
+      }
+      return sendJson(response, 200, result);
+    } catch (error) {
+      return sendJson(response, 400, { error: error.message });
+    }
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/fixtures') {
     try {
       const body = await parseBody(request);
@@ -2466,25 +2578,61 @@ test.describe('Feature: ${featureName} ${tags}', () => {
     }
   }
 
+  if (request.method === 'GET' && url.pathname.startsWith('/api/fixtures/')) {
+    try {
+      const fixtureName = decodeURIComponent(url.pathname.slice('/api/fixtures/'.length));
+      if (!fixtureName || fixtureName === 'validate') {
+        return sendJson(response, 400, { error: 'Tên fixture không hợp lệ.' });
+      }
+      const fixture = getFixtureByName(fixtureName, ROOT);
+      if (!fixture) {
+        return sendJson(response, 404, { error: `Không tìm thấy fixture '${fixtureName}'.` });
+      }
+      return sendJson(response, 200, fixture);
+    } catch (error) {
+      return sendJson(response, 500, { error: error.message });
+    }
+  }
+
+  if (request.method === 'PUT' && url.pathname.startsWith('/api/fixtures/')) {
+    try {
+      const fixtureName = decodeURIComponent(url.pathname.slice('/api/fixtures/'.length));
+      const body = await parseBody(request);
+      const result = updateCustomFixture({
+        name: fixtureName,
+        sourceCode: body.sourceCode || body.rawCode,
+        expectedRevision: body.expectedRevision,
+        rootDir: ROOT,
+      });
+      return sendJson(response, 200, result);
+    } catch (error) {
+      const statusCode = error.statusCode || 400;
+      return sendJson(response, statusCode, { error: error.message, code: error.code });
+    }
+  }
+
   if ((request.method === 'DELETE' || request.method === 'POST') && url.pathname.startsWith('/api/fixtures/delete')) {
     try {
       const body = request.method === 'POST' ? await parseBody(request) : {};
       const fixtureName = body.name || decodeURIComponent(url.pathname.slice('/api/fixtures/delete/'.length));
       if (!fixtureName) return sendJson(response, 400, { error: 'Thiếu tên fixture cần xóa.' });
-      const result = deleteCustomFixture(fixtureName, ROOT);
+      const result = deleteCustomFixture(fixtureName, ROOT, body.expectedRevision);
       return sendJson(response, 200, result);
     } catch (error) {
-      return sendJson(response, 400, { error: error.message });
+      const statusCode = error.statusCode || 400;
+      return sendJson(response, statusCode, { error: error.message, code: error.code });
     }
   }
 
   if (request.method === 'DELETE' && url.pathname.startsWith('/api/fixtures/')) {
     try {
       const fixtureName = decodeURIComponent(url.pathname.slice('/api/fixtures/'.length));
-      const result = deleteCustomFixture(fixtureName, ROOT);
+      const body = await parseBody(request).catch(() => ({}));
+      const result = deleteCustomFixture(fixtureName, ROOT, body.expectedRevision);
       return sendJson(response, 200, result);
     } catch (error) {
-      return sendJson(response, 400, { error: error.message });
+      const statusCode = error.statusCode || 400;
+      return sendJson(response, statusCode, { error: error.message, code: error.code });
     }
   }
 
@@ -2560,13 +2708,7 @@ function shutdown() {
   agentService.shutdown();
   if (activeRun?.child) activeRun.child.kill('SIGTERM');
   if (activeRecorder?.child) {
-    try {
-      if (process.platform === 'win32') {
-        execSync(`taskkill /pid ${activeRecorder.child.pid} /T /F`, { stdio: 'ignore', windowsHide: true });
-      } else {
-        activeRecorder.child.kill('SIGTERM');
-      }
-    } catch (e) {}
+    killRecorderProcess(activeRecorder);
   }
   if (fs.existsSync(STATE_PATH)) {
     try { fs.rmSync(STATE_PATH, { force: true }); } catch (e) {}

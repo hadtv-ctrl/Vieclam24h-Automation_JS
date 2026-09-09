@@ -234,3 +234,21 @@ test('F02: Sibling directory prefix breakout bị chặn bằng path.relative', 
 
   fs.rmSync(tempBase, { recursive: true, force: true });
 });
+
+test('10/10 Reflection & Enumerable: Object.keys(pages) returns available page aliases', () => {
+  const dummyPage = createMockPage();
+  const pages = createPageContainer(dummyPage, { platform: 'desktop' });
+
+  const keys = Object.keys(pages);
+  assert.ok(Array.isArray(keys));
+  assert.ok(keys.includes('sample'));
+  assert.ok(keys.includes('samplePage'));
+  assert.ok(keys.includes('SamplePage'));
+
+  // Kiểm tra toán tử in
+  assert.equal('sample' in pages, true);
+  assert.equal('samplePage' in pages, true);
+  assert.equal('SamplePage' in pages, true);
+  assert.equal('nonExistentPage' in pages, false);
+});
+

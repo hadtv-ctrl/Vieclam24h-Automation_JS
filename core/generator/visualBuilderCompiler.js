@@ -445,6 +445,26 @@ function parseExistingSpecFile(filePath, rootDir = process.cwd()) {
       }
     }
   }
+
+  // 5c. Nhận diện từ destructuring: const { sample } = pages; hoặc const sample = pages.sample;
+  const destructureRegex = /(?:const|let|var)\s*\{([^}]+)\}\s*=\s*pages\b/g;
+  let dStructMatch;
+  while ((dStructMatch = destructureRegex.exec(content)) !== null) {
+    const vars = dStructMatch[1].split(',').map((v) => v.trim().split(':')[0].trim()).filter(Boolean);
+    for (const v of vars) {
+      const pageInfo = fixturePageMap[v] || fixturePageMap[v.toLowerCase()];
+      if (pageInfo && !pageMap.has(pageInfo.relativePath)) {
+        pageMap.set(pageInfo.relativePath, {
+          name: pageInfo.name,
+          className: pageInfo.className,
+          relativePath: pageInfo.relativePath,
+          actions: [],
+          actionCount: 0,
+        });
+      }
+    }
+  }
+
   const pages = Array.from(pageMap.values());
 
   // 6. Trích xuất Steps từ test.step()

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QA Automation Studio</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='20' font-size='20'>⚡</text></svg>" id="favicon">
-  <link rel="stylesheet" href="/styles.css?v=4.7">
+  <link rel="stylesheet" href="/styles.css?v=4.8">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -786,7 +786,10 @@
             <div class="panel step-card-main">
               <div class="panel-heading">
                 <div><p>BƯỚC 1</p><h2>Thiết lập & Khởi động Trình duyệt ghi</h2></div>
-                <span class="step-tag-pill">01 • Thu thập</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <button id="rec-reset-btn" type="button" class="btn-text-sm" title="Khôi phục trạng thái hoặc đóng phiên ghi cũ nếu bị treo"><i class="ph ph-arrow-counter-clockwise"></i> Reset</button>
+                  <span class="step-tag-pill">01 • Thu thập</span>
+                </div>
               </div>
               <div class="recorder-form-body">
                 <label>URL khởi đầu
@@ -1668,15 +1671,18 @@
           <!-- CHẾ ĐỘ CHỈNH SỬA KỊCH BẢN (EDIT MODE) -->
           <div id="script-edit-view" style="display: none; flex-direction: column; height: 100%;">
             <div class="script-panel-head">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="pm-section-tag" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; padding: 3px 8px; border-radius: 4px; font-weight: 700;">CHẾ ĐỘ CHỈNH SỬA</span>
-                <h2 id="script-edit-panel-title" style="margin: 0; font-size: 16px;"><i class="ph-bold ph-pencil-simple-line" style="color: var(--accent);"></i> Chỉnh Sửa Kịch Bản BDD</h2>
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; overflow: hidden;">
+                <span class="pm-section-tag" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; padding: 3px 8px; border-radius: 4px; font-weight: 700; flex-shrink: 0;">CHẾ ĐỘ CHỈNH SỬA</span>
+                <h2 id="script-edit-panel-title" style="margin: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;"><i class="ph-bold ph-pencil-simple-line" style="color: var(--accent);"></i> Chỉnh Sửa Kịch Bản BDD</h2>
+                <span id="script-edit-dirty-badge" class="pm-code-status-pill" style="display: none; flex-shrink: 0;">
+                  <i class="ph-bold ph-pencil-simple"></i> Đã thay đổi (chưa lưu)
+                </span>
               </div>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <button type="button" class="btn-secondary-sm" id="btn-cancel-edit-script" title="Hủy thay đổi và quay lại xem chi tiết">
-                  <i class="ph-bold ph-arrow-counter-clockwise"></i> Hủy sửa
+              <div class="script-panel-head-actions" style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
+                <button type="button" class="btn-secondary-sm" id="btn-cancel-edit-script" title="Hủy các thay đổi và hoàn tác về bản gốc từ đĩa" style="padding: 5px 12px; font-size: 11.5px; white-space: nowrap;">
+                  <i class="ph-bold ph-arrow-counter-clockwise"></i> Hoàn tác
                 </button>
-                <button type="button" class="primary-button" id="btn-save-edit-script" title="Lưu các thay đổi vào file spec">
+                <button type="button" class="primary-button" id="btn-save-edit-script" title="Lưu các thay đổi vào file spec trên ổ đĩa" style="padding: 5px 14px; font-size: 11.5px; white-space: nowrap;">
                   <i class="ph-bold ph-floppy-disk"></i> Lưu kịch bản
                 </button>
               </div>
@@ -1709,11 +1715,78 @@
                 </div>
               </div>
 
-              <!-- Khối 02: Quản lý các bước kiểm thử BDD -->
+              <!-- Khối 02: Quản lý Dữ liệu Test (Test Data / Datasets) -->
               <div class="script-section-block">
                 <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
                   <div>
-                    <span class="pm-section-tag">02 · DANH SÁCH BƯỚC BDD (STEPS EDITOR)</span>
+                    <span class="pm-section-tag">02 · QUẢN LÝ DỮ LIỆU TEST (DATA FILES)</span>
+                    <h4>Nguồn dữ liệu kiểm thử (JSON Dataset)</h4>
+                  </div>
+                  <button type="button" class="btn-secondary-sm" id="btn-edit-open-create-data" style="padding: 5px 10px; font-size: 11.5px;">
+                    <i class="ph-bold ph-plus-circle"></i> Tạo File Data Mới
+                  </button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Chọn file dữ liệu (.json) gắn vào kịch bản:</label>
+                    <select id="edit-script-dataset" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;">
+                      <option value="">-- Không sử dụng file data ngoài --</option>
+                    </select>
+                  </div>
+                  <div id="edit-data-info-box" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); font-size: 12px; color: var(--muted);">
+                    <span><i class="ph-bold ph-file-code" style="color: #10b981;"></i> Biến import: <code id="edit-script-data-var" style="color: var(--accent); font-weight: 700;">sampleData</code></span>
+                    <small id="edit-script-data-hint" style="font-size: 11px;">Mã tự sinh: const sampleData = require('../../../data/sampleData.json')</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Khối 03: Page Objects & Fixtures Liên Kết -->
+              <div class="script-section-block">
+                <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
+                  <div>
+                    <span class="pm-section-tag">03 · DEPENDENCY: PAGE OBJECTS & FIXTURES</span>
+                    <h4>Các màn hình (Page Objects) tham gia kịch bản</h4>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <span style="font-size: 11.5px; color: var(--muted);"><i class="ph-bold ph-check-square-offset"></i> Đã chọn: <strong id="edit-pom-count" style="color: var(--accent);">0</strong></span>
+                    <button type="button" class="btn-subtle-link" id="btn-edit-pom-select-all" style="font-size: 11px;">Chọn hết</button>
+                    <span style="color: var(--line); font-size: 10px;">•</span>
+                    <button type="button" class="btn-subtle-link" id="btn-edit-pom-deselect-all" style="font-size: 11px;">Bỏ chọn</button>
+                  </div>
+                </div>
+                <div class="dependency-grid" id="edit-pom-list" style="max-height: 200px; overflow-y: auto;">
+                  <!-- Dynamic POM checkboxes rendered here -->
+                </div>
+              </div>
+
+              <!-- Khối 04: Tiền điều kiện (Precondition) -->
+              <div class="script-section-block">
+                <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
+                  <div>
+                    <span class="pm-section-tag">04 · THIẾT LẬP TIỀN ĐIỀU KIỆN (PRECONDITIONS)</span>
+                    <h4>Trạng thái ban đầu & Môi trường chạy</h4>
+                  </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 200px 1fr; gap: 12px;">
+                  <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Quyền truy cập / Auth:</label>
+                    <select id="edit-script-auth-type" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;">
+                      <option value="guest">Khách vãng lai (Guest)</option>
+                      <option value="authenticated">Đã đăng nhập ứng viên (authSetup)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Mô tả tiền điều kiện:</label>
+                    <input type="text" id="edit-script-precondition-desc" placeholder="Ví dụ: Người dùng ở trang chủ sẵn sàng thực hiện thao tác" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Khối 05: Quản lý các bước kiểm thử BDD -->
+              <div class="script-section-block">
+                <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
+                  <div>
+                    <span class="pm-section-tag">05 · DANH SÁCH BƯỚC BDD (STEPS EDITOR)</span>
                     <h4>Các bước kiểm thử (<span id="edit-step-count">0</span> bước)</h4>
                   </div>
                   <!-- Quick add step buttons -->
@@ -1722,6 +1795,9 @@
                     <button type="button" class="btn-quick-step badge-when" data-type="When" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; border: none;">+ When</button>
                     <button type="button" class="btn-quick-step badge-then" data-type="Then" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; border: none;">+ Then</button>
                     <button type="button" class="btn-quick-step badge-and" data-type="And" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; border: none;">+ And</button>
+                    <button type="button" class="btn-secondary-sm" id="btn-edit-add-step-pom" style="padding: 4px 10px; font-size: 11.5px; margin-left: 6px;">
+                      <i class="ph-bold ph-plus-circle"></i> Thêm bước từ Page
+                    </button>
                   </div>
                 </div>
 
@@ -1732,7 +1808,9 @@
 
               <!-- Nút Lưu cuối form -->
               <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--line); margin-top: 4px;">
-                <button type="button" class="btn-secondary-sm" id="btn-cancel-edit-script-2" style="padding: 9px 18px; font-size: 13px;">Hủy bỏ</button>
+                <button type="button" class="btn-secondary-sm" id="btn-cancel-edit-script-2" style="padding: 9px 18px; font-size: 13px;">
+                  <i class="ph-bold ph-arrow-counter-clockwise"></i> Hoàn tác / Hủy sửa
+                </button>
                 <button type="button" class="primary-button" id="btn-save-edit-script-2" style="padding: 10px 24px; font-size: 13px; display: inline-flex; align-items: center; gap: 8px;">
                   <i class="ph-bold ph-floppy-disk"></i> Lưu kịch bản BDD
                 </button>
@@ -2547,9 +2625,9 @@
         </div>
       </header>
 
-      <div class="workspace" style="display: grid; grid-template-columns: 340px 1fr; gap: 20px; min-height: 600px;">
-        <!-- Panel Trái: Danh mục Fixtures & Bộ lọc -->
-        <section class="panel" style="display: flex; flex-direction: column; gap: 12px; height: 100%;">
+      <div class="workspace fixtures-studio-workspace">
+        <!-- Khung 1: Danh mục Fixtures & Bộ lọc (Sidebar Rail) -->
+        <section class="panel fixtures-sidebar-panel">
           <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <p>DANH MỤC</p>
@@ -2558,62 +2636,111 @@
             <span class="badge" id="fixtures-badge-total" style="background: var(--surface-2); padding: 4px 8px; border-radius: 6px; font-size: 12px;">0</span>
           </div>
 
-          <!-- Search & Filter Pills -->
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <div class="search-input-box" style="position: relative;">
-              <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted);"></i>
-              <input type="text" id="fixtures-search-input" placeholder="Tìm kiếm fixture..." style="width: 100%; padding: 8px 12px 8px 32px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text);" />
+          <!-- Tìm kiếm & Lọc phân loại Fixtures -->
+          <div class="pm-sidebar-filter-box">
+            <div class="pm-sidebar-search">
+              <i class="ph ph-magnifying-glass"></i>
+              <input type="text" id="fixtures-search-input" placeholder="Tìm kiếm tên, mô tả fixture...">
             </div>
-            <div class="pm-sidebar-pills" id="fixtures-filter-pills" style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button type="button" class="pm-filter-pill active" data-filter="all">Tất cả</button>
-              <button type="button" class="pm-filter-pill" data-filter="precondition">Precondition</button>
-              <button type="button" class="pm-filter-pill" data-filter="teardown">Teardown / Dọn dẹp</button>
-              <button type="button" class="pm-filter-pill" data-filter="custom">Tùy biến</button>
+            <div class="pm-sidebar-pills" id="fixtures-filter-pills">
+              <button type="button" class="pm-filter-pill fx-filter-pill active" data-filter="all">Tất cả</button>
+              <button type="button" class="pm-filter-pill fx-filter-pill" data-filter="core">Cốt lõi</button>
+              <button type="button" class="pm-filter-pill fx-filter-pill" data-filter="custom">Tùy biến</button>
             </div>
           </div>
 
           <!-- Danh sách items -->
-          <div id="fixtures-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; max-height: 580px;">
+          <div class="fixtures-card-list" id="fixtures-list-container">
             <p class="empty-resource">Đang tải danh sách fixtures...</p>
           </div>
         </section>
 
-        <!-- Panel Phải: Chi tiết Fixture & Code View -->
-        <section class="panel" id="fixtures-detail-panel" style="display: flex; flex-direction: column; gap: 16px;">
-          <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-              <p id="fx-detail-category-eyebrow">CHI TIẾT FIXTURE</p>
-              <h2 id="fx-detail-name">Chọn một Fixture để xem</h2>
-              <span class="subtitle" id="fx-detail-desc" style="display: block; margin-top: 4px; color: var(--muted);">Chữ ký hàm, phạm vi và cách sử dụng trong kịch bản test.</span>
+        <!-- Khung 2: Chi tiết Cấu hình & Cách Sử Dụng (Config & Usage) -->
+        <section class="panel fixtures-config-panel" id="fixtures-detail-panel">
+          <div class="fx-panel-header">
+            <p class="eyebrow" id="fx-detail-category-eyebrow" style="margin: 0;">THIẾT LẬP & CẤU HÌNH</p>
+            <div class="fx-header-title-row">
+              <h2 id="fx-detail-name">Chọn một Fixture để xem chi tiết</h2>
+              <span id="fx-detail-revision" class="fx-rev-badge" style="display: none;"></span>
             </div>
-            <div id="fx-detail-actions" style="display: flex; gap: 8px;">
+            <span class="subtitle" id="fx-detail-desc" style="color: var(--muted); font-size: 12.5px;">Chữ ký hàm, phạm vi nạp và hướng dẫn nhúng vào kịch bản kiểm thử.</span>
+          </div>
+
+          <!-- Metadata Grid -->
+          <div class="fx-metadata-grid" id="fx-meta-grid">
+            <div class="fx-meta-card">
+              <span class="fx-meta-label">Phạm vi thực thi</span>
+              <div class="fx-meta-value mono" id="fx-grid-scope">test</div>
+            </div>
+            <div class="fx-meta-card">
+              <span class="fx-meta-label">Phân loại nghiệp vụ</span>
+              <div class="fx-meta-value" id="fx-grid-cat">—</div>
+            </div>
+            <div class="fx-meta-card">
+              <span class="fx-meta-label">Tham số nạp</span>
+              <div class="fx-meta-value mono" id="fx-grid-params">—</div>
+            </div>
+            <div class="fx-meta-card">
+              <span class="fx-meta-label">Tệp mã nguồn</span>
+              <div class="fx-meta-value mono" id="fx-grid-file">—</div>
+            </div>
+          </div>
+
+          <!-- Usage snippet -->
+          <div style="display: flex; flex-direction: column; gap: 8px; flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="font-size: 13px; font-weight: 600; margin: 0;"><i class="ph-bold ph-code" style="color: var(--primary);"></i> Cách sử dụng trong kịch bản test</h3>
+              <span style="font-size: 11px; color: var(--muted);">Mã mẫu kịch bản Playwright</span>
+            </div>
+            <div class="fx-code-card">
+              <div class="fx-code-card-header">
+                <span class="fx-lang-tag"><i class="ph-bold ph-file-js"></i> JavaScript (Playwright)</span>
+                <button type="button" class="fx-copy-btn" id="btn-copy-usage-code">
+                  <i class="ph ph-copy"></i> Sao chép mã
+                </button>
+              </div>
+              <pre class="fx-code-pre line-numbers"><code id="fx-usage-code" class="language-javascript">// Chọn fixture để xem mã mẫu</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- Khung 3: Mã Nguồn Triển Khai & Live Editor -->
+        <section class="panel fixtures-source-panel">
+          <div class="fx-source-header">
+            <div>
+              <p class="eyebrow" style="margin: 0;">MÃ NGUỒN TRIỂN KHAI</p>
+              <h2 style="font-size: 17px; font-weight: 700; margin: 2px 0 0 0;">Mã nguồn & Soạn thảo</h2>
+              <small id="fx-editor-hint" style="color: var(--muted); font-size: 11px; display: block; margin-top: 2px;"></small>
+            </div>
+            <div class="fx-source-actions" id="fx-detail-actions">
+              <button type="button" class="btn-secondary-sm" id="btn-validate-fixture" style="display: none;">
+                <i class="ph ph-check-circle"></i> Kiểm tra cú pháp
+              </button>
+              <button type="button" class="btn-primary-sm" id="btn-save-fixture" style="display: none;">
+                <i class="ph ph-floppy-disk"></i> Lưu thay đổi
+              </button>
               <button type="button" class="btn-danger-sm" id="btn-delete-fixture" style="display: none;">
                 <i class="ph ph-trash"></i> Xóa Fixture
               </button>
             </div>
           </div>
 
-          <!-- Metadata Grid -->
-          <div class="pm-meta-grid" id="fx-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; padding: 14px; background: var(--surface-2); border-radius: 8px;">
-            <div><strong style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Phạm vi (Scope)</strong><div id="fx-grid-scope" style="font-weight: 600; margin-top: 2px;">test</div></div>
-            <div><strong style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Phân loại</strong><div id="fx-grid-cat" style="font-weight: 600; margin-top: 2px;">—</div></div>
-            <div><strong style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Tham số nạp</strong><div id="fx-grid-params" style="font-weight: 600; margin-top: 2px;">—</div></div>
-            <div><strong style="font-size: 11px; color: var(--muted); text-transform: uppercase;">File nguồn</strong><div id="fx-grid-file" style="font-weight: 600; margin-top: 2px; font-family: monospace; font-size: 12px;">—</div></div>
-          </div>
-
-          <!-- Usage snippet -->
-          <div>
-            <h3 style="font-size: 14px; margin-bottom: 6px;"><i class="ph-bold ph-code"></i> Cách sử dụng trong Test Spec</h3>
-            <pre style="background: var(--surface-2); padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto;"><code id="fx-usage-code">// Chọn fixture để xem mã mẫu</code></pre>
-          </div>
-
-          <!-- Source code -->
-          <div style="flex: 1; display: flex; flex-direction: column;">
-            <h3 style="font-size: 14px; margin-bottom: 6px;"><i class="ph-bold ph-file-js"></i> Mã nguồn triển khai</h3>
-            <pre style="flex: 1; background: var(--surface-2); padding: 14px; border-radius: 6px; font-size: 12px; overflow-y: auto; max-height: 320px;"><code id="fx-source-code">// Mã nguồn fixture</code></pre>
+          <div class="fx-code-card fx-source-card">
+            <div class="fx-code-card-header">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="fx-lang-tag"><i class="ph-bold ph-file-js"></i> JavaScript Fixture</span>
+                <span id="fx-mode-badge" class="fx-mode-pill">Chỉ đọc</span>
+              </div>
+              <button type="button" class="fx-copy-btn" id="btn-copy-source-code">
+                <i class="ph ph-copy"></i> Sao chép mã
+              </button>
+            </div>
+            <pre class="fx-code-pre fx-source-pre line-numbers" id="fx-source-code-pre"><code id="fx-source-code" class="language-javascript">// Mã nguồn fixture</code></pre>
+            <textarea id="fx-source-editor" class="fx-source-textarea" style="display: none;" spellcheck="false" placeholder="// Viết mã nguồn fixture tại đây..."></textarea>
           </div>
         </section>
       </div>
+
 
       <!-- Modal Wizard Tạo Fixture Mới -->
       <dialog id="modal-create-fixture" class="app-modal" style="max-width: 680px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 0;">
@@ -4352,6 +4479,7 @@
             <button type="button" class="btn-primary-sm" id="btn-submit-pom-modal" style="background: var(--accent); color: #fff; font-weight: 700; padding: 7px 16px; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;">
               <i class="ph-bold ph-check-circle"></i> Chèn vào kịch bản BDD ngay
             </button>
+          </div>
         </div>
       </div>
     </dialog>

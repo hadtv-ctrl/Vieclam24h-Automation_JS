@@ -1921,10 +1921,9 @@ function renderPageManagerFiles() {
   container.innerHTML = filtered.map((page) => {
     const isCurrent = currentInspectedPage && currentInspectedPage.relativePath === page.relativePath;
     const isBase = page.relativePath === 'pages/BasePage.js' || page.isBase || page.platform === 'base';
-    const isFixture = page.platform === 'fixture' || page.resourceKind === 'fixture';
-    const platformLabel = isFixture ? 'Fixture' : (isBase ? 'Nền tảng (Core)' : (page.platform === 'mobile-web' ? 'Mobile' : 'Desktop'));
-    const platformClass = isFixture ? 'fixture' : (isBase ? 'setup' : (page.platform === 'mobile-web' ? 'mobile' : 'desktop'));
-    const platformIcon = isFixture ? 'ph-lightning' : (isBase ? 'ph-shield-check' : (page.icon || (page.platform === 'mobile-web' ? 'ph-device-mobile' : 'ph-browsers')));
+    const platformLabel = isBase ? 'Nền tảng (Core)' : (page.platform === 'mobile-web' ? 'Mobile' : 'Desktop');
+    const platformClass = isBase ? 'setup' : (page.platform === 'mobile-web' ? 'mobile' : 'desktop');
+    const platformIcon = isBase ? 'ph-shield-check' : (page.icon || (page.platform === 'mobile-web' ? 'ph-device-mobile' : 'ph-browsers'));
 
     return `
       <div class="dashboard-list-card page-manager-file-card script-card-item ${isCurrent ? 'is-selected active' : ''}" data-path="${escapeHtml(page.relativePath)}">
@@ -1945,7 +1944,7 @@ function renderPageManagerFiles() {
               <i class="ph ${platformIcon}"></i> ${platformLabel}
             </span>
             <span class="script-card-badge-pages">
-              <i class="ph ph-crosshair"></i> ${isFixture ? '—' : `${page.locatorCount || 0} Locators`}
+              <i class="ph ph-crosshair"></i> ${page.locatorCount || 0} Locators
             </span>
             <span class="script-card-badge-data" title="${page.methodCount || 0} Actions">
               <i class="ph ph-lightning"></i> ${page.methodCount || 0} Actions
@@ -2024,6 +2023,12 @@ async function openPageManager() {
   pageManagerLocators = [];
   pageManagerActions = [];
   initPageManagerCodeEditor();
+  // Đảm bảo filter mặc định (Desktop) luôn được kích hoạt đồng bộ
+  if (!existingPageFilter) existingPageFilter = 'desktop';
+  const pmPills = document.querySelectorAll('#pm-sidebar .pm-filter-pill');
+  if (pmPills.length > 0) {
+    pmPills.forEach((p) => p.classList.toggle('active', (p.dataset.platform || 'desktop') === existingPageFilter));
+  }
   try {
     const result = await request('/api/object-repository/pages');
     repoPages = result.pages || [];
@@ -3661,7 +3666,7 @@ function renderSuitesSidebarList() {
     }
 
     return `
-      <div class="suite-nav-item ${isSelected ? 'active' : ''}" data-suite-id="${escapeHtml(id)}">
+      <div class="dashboard-list-card script-card-item suite-nav-item ${isSelected ? 'is-selected active' : ''}" data-suite-id="${escapeHtml(id)}">
         <div class="suite-nav-top">
           <div class="suite-nav-title" title="${escapeHtml(label)}">${escapeHtml(label)}</div>
           ${badgeHtml}
@@ -3733,7 +3738,9 @@ function selectSuite(id) {
 
   // Update active state in sidebar list
   document.querySelectorAll('#suites-sidebar-list .suite-nav-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.suiteId === id);
+    const isThis = item.dataset.suiteId === id;
+    item.classList.toggle('active', isThis);
+    item.classList.toggle('is-selected', isThis);
   });
 
   loadSuiteIntoEditor(id, suitesCache[id]);
@@ -6852,9 +6859,9 @@ $('#pm-inline-act-op')?.addEventListener('change', () => {
 });
 
 $('#pm-filter-input')?.addEventListener('input', renderPageManagerFiles);
-document.querySelectorAll('.pm-filter-pill').forEach((btn) => {
+document.querySelectorAll('#pm-sidebar .pm-filter-pill').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.pm-filter-pill').forEach((p) => p.classList.toggle('active', p === btn));
+    document.querySelectorAll('#pm-sidebar .pm-filter-pill').forEach((p) => p.classList.toggle('active', p === btn));
     existingPageFilter = btn.dataset.platform || 'all';
     renderPageManagerFiles();
   });
@@ -7082,6 +7089,7 @@ let recorderState = {
   draftSpec: null,
   savedSpecPath: null,
 };
+let recorderStatusInterval = null;
 
 async function openRecorderStudio() {
   if (!settingsCache) {
@@ -7102,7 +7110,23 @@ async function openRecorderStudio() {
     checkRecorderStatus(),
     refreshPagesForPlatform(),
   ]);
+
+  if (!recorderStatusInterval) {
+    recorderStatusInterval = setInterval(() => {
+      const recorderView = $('#recorder-view');
+      if (recorderView && !recorderView.hidden && recorderView.style.display !== 'none') {
+        checkRecorderStatus();
+      }
+    }, 2500);
+  }
 }
+
+window.addEventListener('focus', () => {
+  const recorderView = $('#recorder-view');
+  if (recorderView && !recorderView.hidden && recorderView.style.display !== 'none') {
+    checkRecorderStatus();
+  }
+});
 
 async function checkRecorderStatus() {
   try {
@@ -7134,6 +7158,10 @@ function onRecorderStatusUpdate(status) {
     }
     if (startBtn) startBtn.disabled = false;
     if (stopBtn) stopBtn.disabled = true;
+  }
+
+  if (status.error) {
+    notify(`Thông báo phiên ghi: ${status.error}`);
   }
 
   if (status.recentRecordings) {
@@ -7454,30 +7482,68 @@ $('#rec-copy-raw-btn')?.addEventListener('click', () => {
   notify('Đã sao chép mã thô vào Clipboard!');
 });
 
+$('#rec-url')?.addEventListener('blur', (e) => {
+  let val = e.target.value.trim();
+  if (val && !/^https?:\/\//i.test(val)) {
+    if (/^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(val)) {
+      val = 'http://' + val;
+    } else {
+      val = 'https://' + val;
+    }
+    e.target.value = val;
+  }
+});
+
 $('#rec-start-btn')?.addEventListener('click', async () => {
   const currentEnvKey = $('#filter-env')?.value || $('#environment')?.value || settingsCache?.runtime?.defaultEnvironment || 'qc';
   const defaultUrl = settingsCache?.environments?.[currentEnvKey]?.baseURL || 'https://example.com';
-  const url = $('#rec-url')?.value.trim() || defaultUrl;
+  let inputUrl = $('#rec-url')?.value.trim() || defaultUrl;
+
+  if (inputUrl && !/^https?:\/\//i.test(inputUrl)) {
+    if (/^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/i.test(inputUrl)) {
+      inputUrl = 'http://' + inputUrl;
+    } else {
+      inputUrl = 'https://' + inputUrl;
+    }
+    const urlInput = $('#rec-url');
+    if (urlInput) urlInput.value = inputUrl;
+  }
+
+  const url = inputUrl;
   const platform = $('#rec-platform')?.value || 'desktop';
   const device = platform === 'mobile-web' ? $('#rec-device')?.value : '';
   const startBtn = $('#rec-start-btn');
 
   startBtn.disabled = true;
-  startBtn.innerHTML = '<i class="ph ph-spinner-gap"></i> Đang mở...';
+  startBtn.innerHTML = '<i class="ph ph-spinner-gap"></i> Đang mở trình duyệt...';
 
   try {
     const result = await request('/api/recorder/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, platform, device }),
+      body: JSON.stringify({ url, platform, device, force: true }),
     });
     notify(result.message || 'Playwright Codegen đang chạy. Thao tác trên trình duyệt rồi đóng hoặc bấm Dừng.');
     onRecorderStatusUpdate({ isRecording: true });
   } catch (error) {
-    notify(`Không thể bắt đầu ghi: ${error.message}`);
-    onRecorderStatusUpdate({ isRecording: false });
+    notify(`Không thể mở trình duyệt ghi: ${error.message}`);
+    await checkRecorderStatus();
   } finally {
     startBtn.innerHTML = '<i class="ph-fill ph-record"></i> Bắt đầu ghi (Codegen)';
+  }
+});
+
+$('#rec-reset-btn')?.addEventListener('click', async () => {
+  const resetBtn = $('#rec-reset-btn');
+  if (resetBtn) resetBtn.disabled = true;
+  try {
+    const res = await request('/api/recorder/reset', { method: 'POST' });
+    notify(res.message || 'Đã reset phiên ghi.');
+    await checkRecorderStatus();
+  } catch (error) {
+    notify(`Lỗi khi reset phiên ghi: ${error.message}`);
+  } finally {
+    if (resetBtn) resetBtn.disabled = false;
   }
 });
 
@@ -8288,12 +8354,15 @@ function renderFormFieldUnit(pathArray, label, value) {
     `;
   }
 
+  const labelHtml = label ? `
+    <label style="display: flex; justify-content: space-between; align-items: baseline;">
+      <span>${escapeHtml(label)}</span>
+      ${hint}
+    </label>` : '';
+
   return `
     <div class="form-field-unit">
-      <label style="display: flex; justify-content: space-between; align-items: baseline;">
-        <span>${escapeHtml(label)}</span>
-        ${hint}
-      </label>
+      ${labelHtml}
       ${inputHtml}
     </div>
   `;
@@ -8445,7 +8514,7 @@ function renderGroupedFormView() {
           `;
         }
       } else {
-        const fieldHtml = renderFormFieldUnit([key], 'Giá trị:', val);
+        const fieldHtml = renderFormFieldUnit([key], '', val);
         return `
           <div class="data-form-card">
             <div class="data-form-card-header">
@@ -9577,7 +9646,7 @@ function selectProjectScript(script, doScroll = false) {
   }
 
   // Highlight thẻ được chọn trong sidebar (đồng bộ is-selected và active)
-  document.querySelectorAll('.script-card-item').forEach((item) => {
+  document.querySelectorAll('#script-files-list .script-card-item').forEach((item) => {
     const isThis = item.dataset.id === script.id;
     item.classList.toggle('active', isThis);
     item.classList.toggle('is-selected', isThis);
@@ -10073,10 +10142,78 @@ window.jumpToDataFile = function (dataFileName) {
 
 let pomModalActiveType = 'method'; // 'method' | 'locator'
 let pomModalCurrentPageDetails = null;
+let isPomModalControlsInitialized = false;
 
-window.openInsertPomActionModal = async function (targetPageOrRelPath, preselectedActionName = null) {
+function initPomModalControls() {
+  if (isPomModalControlsInitialized) return;
   const modal = document.getElementById('modal-insert-pom-action');
   if (!modal) return;
+  isPomModalControlsInitialized = true;
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.close();
+  });
+
+  document.getElementById('btn-close-pom-modal')?.addEventListener('click', () => modal.close());
+  document.getElementById('btn-cancel-pom-modal')?.addEventListener('click', () => modal.close());
+  document.getElementById('btn-submit-pom-modal')?.addEventListener('click', () => submitPomActionToBdd());
+
+  document.querySelectorAll('.pom-type-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.pom-type-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      pomModalActiveType = tab.dataset.type;
+      const methodPanel = document.getElementById('pom-panel-method');
+      const locPanel = document.getElementById('pom-panel-locator');
+      if (pomModalActiveType === 'locator') {
+        if (methodPanel) methodPanel.style.display = 'none';
+        if (locPanel) locPanel.style.display = 'block';
+      } else {
+        if (methodPanel) methodPanel.style.display = 'block';
+        if (locPanel) locPanel.style.display = 'none';
+      }
+      updatePomCodePreview();
+    });
+  });
+
+  document.getElementById('pom-modal-script-select')?.addEventListener('change', () => updatePomCodePreview());
+  document.getElementById('pom-modal-page-select')?.addEventListener('change', () => loadPomModalPageDetails());
+  document.getElementById('pom-modal-method-select')?.addEventListener('change', () => {
+    updatePomModalParamsHint();
+    updatePomCodePreview();
+  });
+  document.getElementById('pom-modal-method-params')?.addEventListener('input', () => updatePomCodePreview());
+  document.getElementById('pom-modal-loc-select')?.addEventListener('change', () => updatePomCodePreview());
+  document.getElementById('pom-modal-loc-action')?.addEventListener('change', () => updatePomCodePreview());
+  document.getElementById('pom-modal-loc-value')?.addEventListener('input', () => updatePomCodePreview());
+  document.getElementById('pom-modal-step-keyword')?.addEventListener('change', () => updatePomCodePreview());
+  document.getElementById('pom-modal-step-title')?.addEventListener('input', () => {
+    const titleInput = document.getElementById('pom-modal-step-title');
+    if (titleInput) titleInput.dataset.autoGenerated = 'false';
+    updatePomCodePreview();
+  });
+  document.getElementById('pom-modal-include-evidence')?.addEventListener('change', () => updatePomCodePreview());
+}
+
+window.openInsertPomActionModal = async function (targetPageOrRelPath, preselectedActionName = null) {
+  initPomModalControls();
+
+  const modal = document.getElementById('modal-insert-pom-action');
+  if (!modal) return;
+
+  // Reset type to method tab on open
+  pomModalActiveType = 'method';
+  document.querySelectorAll('.pom-type-tab').forEach((t) => t.classList.toggle('active', t.dataset.type === 'method'));
+  const methodPanel = document.getElementById('pom-panel-method');
+  const locPanel = document.getElementById('pom-panel-locator');
+  if (methodPanel) methodPanel.style.display = 'block';
+  if (locPanel) locPanel.style.display = 'none';
+
+  const titleInput = document.getElementById('pom-modal-step-title');
+  if (titleInput) {
+    titleInput.value = '';
+    titleInput.dataset.autoGenerated = 'true';
+  }
 
   const scriptSelect = document.getElementById('pom-modal-script-select');
   const pageSelect = document.getElementById('pom-modal-page-select');
@@ -10380,27 +10517,90 @@ async function submitPomActionToBdd() {
   }
 }
 
+initPomModalControls();
+
 let scriptBuilderMode = 'inspect'; // 'inspect' | 'edit' | 'create'
 let editableSteps = [];
+let editSelectedPoms = new Set();
+let editSelectedDataset = '';
 
-function updateSpecCodeFromVisualEdit(originalCode, { scenarioName, featureName, tags, steps }) {
+function updateSpecCodeFromVisualEdit(originalCode, {
+  scenarioName,
+  featureName,
+  tags,
+  steps,
+  datasetFile,
+  selectedPoms,
+  precondition,
+}) {
   let code = originalCode || '';
 
-  // 1. Update Feature and Tags in test.describe
+  // 1. Update Data require statement
+  if (datasetFile !== undefined) {
+    const existingDataReqRegex = /const\s+([a-zA-Z0-9_]+)\s*=\s*require\(\s*['"][^'"]*\/data\/[^'"]+\.json['"]\s*\);?\n?/i;
+    if (datasetFile) {
+      const varName = datasetFile.replace(/\.json$/i, '').replace(/[^a-zA-Z0-9_]/g, '');
+      const dataReqLine = `const ${varName} = require('../../../data/${datasetFile}');\n`;
+      if (existingDataReqRegex.test(code)) {
+        code = code.replace(existingDataReqRegex, dataReqLine);
+      } else {
+        const firstRequire = code.indexOf('require(');
+        if (firstRequire !== -1) {
+          const firstLineEnd = code.indexOf('\n', firstRequire);
+          code = code.slice(0, firstLineEnd + 1) + dataReqLine + code.slice(firstLineEnd + 1);
+        } else {
+          code = dataReqLine + code;
+        }
+      }
+    } else {
+      code = code.replace(existingDataReqRegex, '');
+    }
+  }
+
+  // 2. Update Feature and Tags in test.describe
   if (featureName || tags) {
     code = code.replace(/test\.describe\(\s*(['"`])Feature:\s*([^'"`]+)\1/i, (match, quote) => {
       return `test.describe(${quote}Feature: ${featureName || 'Kiểm thử'} ${tags || '@e2e'}${quote}`;
     });
   }
 
-  // 2. Update Scenario name in test(...)
+  // 3. Update Scenario name in test(...)
   if (scenarioName) {
     code = code.replace(/test\(\s*(['"`])([^'"`]+)\1\s*,\s*async/i, (match, quote) => {
       return `test(${quote}${scenarioName}${quote}, async`;
     });
   }
 
-  // 3. Synchronize steps if present
+  // 4. Update Fixtures & Page Objects in test({ ... }) arguments
+  if (selectedPoms && Array.isArray(selectedPoms)) {
+    const pomFixtures = selectedPoms.map((p) => {
+      const fn = p.split('/').pop().replace(/\.js$/, '');
+      return fn.charAt(0).toLowerCase() + fn.slice(1);
+    });
+    if (precondition?.auth === 'authenticated' && !pomFixtures.includes('authenticatedUser')) {
+      pomFixtures.unshift('authenticatedUser');
+    }
+    const testArgsMatch = code.match(/test\(\s*(?:'[^']*'|"[^"]*"|`[^`]*`)\s*,\s*async\s*\(\s*\{([^}]*)\}\s*\)/);
+    if (testArgsMatch) {
+      const currentArgs = testArgsMatch[1];
+      const standardTokens = currentArgs.split(',').map((t) => t.trim()).filter(Boolean);
+      const baseTokens = standardTokens.filter((t) => ['page', 'pages', 'request', 'cleanupQueue'].includes(t));
+      if (baseTokens.length === 0) baseTokens.push('page');
+      const combined = Array.from(new Set([...baseTokens, ...pomFixtures]));
+      const newArgsStr = `\n    ${combined.join(',\n    ')},\n  `;
+      code = code.replace(testArgsMatch[0], testArgsMatch[0].replace(currentArgs, newArgsStr));
+    }
+  }
+
+  // 5. Update Precondition annotation if present
+  if (precondition?.desc) {
+    const preAnnoRegex = /testInfo\.annotations\.push\(\{\s*type:\s*['"]Precondition['"]\s*,\s*description:\s*['"][^'"]*['"]\s*\}\);/;
+    if (preAnnoRegex.test(code)) {
+      code = code.replace(preAnnoRegex, `testInfo.annotations.push({ type: 'Precondition', description: ${JSON.stringify(precondition.desc)} });`);
+    }
+  }
+
+  // 6. Synchronize steps if present
   if (steps && steps.length > 0) {
     const stepBlocksCode = steps
       .map((st) => {
@@ -10435,12 +10635,32 @@ function updateEditScriptPreview() {
   const scenarioName = document.getElementById('edit-script-title')?.value.trim();
   const featureName = document.getElementById('edit-script-feature')?.value.trim();
   const tags = document.getElementById('edit-script-tags')?.value.trim();
+  const datasetSelect = document.getElementById('edit-script-dataset');
+  const datasetFile = datasetSelect ? datasetSelect.value.trim() : editSelectedDataset;
+  const authType = document.getElementById('edit-script-auth-type')?.value || 'guest';
+  const preDesc = document.getElementById('edit-script-precondition-desc')?.value.trim() || '';
+
+  // Update data info box in UI
+  const dataVarEl = document.getElementById('edit-script-data-var');
+  const dataHintEl = document.getElementById('edit-script-data-hint');
+  const dataInfoBox = document.getElementById('edit-data-info-box');
+  if (datasetFile) {
+    const varName = datasetFile.replace(/\.json$/i, '').replace(/[^a-zA-Z0-9_]/g, '');
+    if (dataVarEl) dataVarEl.textContent = varName;
+    if (dataHintEl) dataHintEl.textContent = `Tự động nạp: const ${varName} = require('../../../data/${datasetFile}')`;
+    if (dataInfoBox) dataInfoBox.style.display = 'flex';
+  } else {
+    if (dataInfoBox) dataInfoBox.style.display = 'none';
+  }
 
   const updatedCode = updateSpecCodeFromVisualEdit(currentSelectedScript.specCode, {
     scenarioName,
     featureName,
     tags,
     steps: editableSteps,
+    datasetFile,
+    selectedPoms: Array.from(editSelectedPoms),
+    precondition: { auth: authType, desc: preDesc },
   });
 
   const codeEl = document.getElementById('script-spec-code');
@@ -10449,10 +10669,31 @@ function updateEditScriptPreview() {
   const editorEl = document.getElementById('script-spec-editor');
   if (editorEl) editorEl.value = updatedCode;
 
+  const isDirty = updatedCode !== (currentSelectedScript.specCode || '');
   const statusBadge = document.getElementById('script-spec-status-badge');
-  if (statusBadge) {
-    statusBadge.innerHTML = '<i class="ph-bold ph-pencil-simple"></i> Đã thay đổi (chưa lưu)';
-    statusBadge.classList.add('modified');
+  const editDirtyBadge = document.getElementById('script-edit-dirty-badge');
+  const revertBtn = document.getElementById('script-spec-revert-btn');
+
+  if (isDirty) {
+    if (statusBadge) {
+      statusBadge.innerHTML = '<i class="ph-bold ph-pencil-simple"></i> Đã thay đổi (chưa lưu)';
+      statusBadge.classList.add('modified');
+    }
+    if (editDirtyBadge) {
+      editDirtyBadge.innerHTML = '<i class="ph-bold ph-pencil-simple"></i> Đã thay đổi (chưa lưu)';
+      editDirtyBadge.classList.add('modified');
+      editDirtyBadge.style.display = 'inline-flex';
+    }
+    if (revertBtn) revertBtn.style.display = 'inline-flex';
+  } else {
+    if (statusBadge) {
+      statusBadge.innerHTML = '<i class="ph-bold ph-check"></i> Khớp bản gốc disk';
+      statusBadge.classList.remove('modified');
+    }
+    if (editDirtyBadge) {
+      editDirtyBadge.style.display = 'none';
+    }
+    if (revertBtn) revertBtn.style.display = 'none';
   }
 }
 
@@ -10548,6 +10789,88 @@ function renderEditableSteps() {
   });
 }
 
+function renderEditPomList() {
+  const container = document.getElementById('edit-pom-list');
+  if (!container) return;
+
+  if (!repoPages || repoPages.length === 0) {
+    container.innerHTML = '<div class="data-loading-spinner" style="padding: 12px;"><i class="ph ph-spinner ph-spin"></i> Đang tải danh sách Page Objects...</div>';
+    return;
+  }
+
+  const countBadge = document.getElementById('edit-pom-count');
+  if (countBadge) countBadge.textContent = editSelectedPoms.size;
+
+  container.innerHTML = repoPages.map((page) => {
+    const isChecked = editSelectedPoms.has(page.relativePath);
+    const title = page.title || page.className;
+    const path = page.relativePath || `${page.className}.js`;
+    return `
+      <div class="dependency-card-item ${isChecked ? 'selected' : ''}" data-path="${escapeHtml(page.relativePath)}" style="padding: 8px 10px; cursor: pointer;">
+        <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+          <input type="checkbox" class="edit-pom-checkbox" value="${escapeHtml(page.relativePath)}" ${isChecked ? 'checked' : ''} style="cursor: pointer;" />
+          <i class="ph-bold ph-browsers dependency-card-icon" style="font-size: 16px;"></i>
+          <div style="min-width: 0; flex: 1;">
+            <strong class="dependency-card-title" title="${escapeHtml(title)}" style="font-size: 12px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(title)}</strong>
+            <span class="dependency-card-path" title="${escapeHtml(path)}" style="font-size: 10.5px; color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(path)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.dependency-card-item').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      if (e.target.tagName.toLowerCase() === 'input') return;
+      const checkbox = card.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+      }
+    });
+    const cb = card.querySelector('input[type="checkbox"]');
+    cb?.addEventListener('change', () => {
+      const pPath = cb.value;
+      if (cb.checked) {
+        editSelectedPoms.add(pPath);
+        card.classList.add('selected');
+      } else {
+        editSelectedPoms.delete(pPath);
+        card.classList.remove('selected');
+      }
+      if (countBadge) countBadge.textContent = editSelectedPoms.size;
+      updateEditScriptPreview();
+    });
+  });
+}
+
+async function loadEditDatasets() {
+  const select = document.getElementById('edit-script-dataset');
+  if (!select) return;
+
+  try {
+    if (!wizardAvailableDatasets || wizardAvailableDatasets.length === 0) {
+      const res = await fetch('/api/data/datasets');
+      if (res.ok) {
+        const data = await res.json();
+        wizardAvailableDatasets = data.datasets || [];
+      }
+    }
+
+    select.innerHTML = '<option value="">-- Không sử dụng file data ngoài --</option>' +
+      (wizardAvailableDatasets || []).map((d) => {
+        const count = d.recordCount ?? d.itemCount ?? 0;
+        return `<option value="${escapeHtml(d.fileName)}">${escapeHtml(d.fileName)} (${count} mục)</option>`;
+      }).join('');
+
+    if (editSelectedDataset) {
+      select.value = editSelectedDataset;
+    }
+  } catch (err) {
+    console.error('Failed to load edit datasets:', err);
+  }
+}
+
 function switchToEditScriptMode() {
   if (!currentSelectedScript) {
     notify('Vui lòng chọn một kịch bản test trước khi chỉnh sửa.');
@@ -10590,7 +10913,36 @@ function switchToEditScriptMode() {
   if (tagsInput) tagsInput.value = currentSelectedScript.tags || '@e2e @custom';
   if (panelTitle) panelTitle.innerHTML = `<i class="ph-bold ph-pencil-simple-line" style="color: var(--accent);"></i> Chỉnh sửa: ${escapeHtml(currentSelectedScript.fileName)}`;
 
-  // Steps
+  // 1. Dataset setup
+  editSelectedDataset = currentSelectedScript.primaryDataFile || (currentSelectedScript.dataFiles && currentSelectedScript.dataFiles[0]?.name) || '';
+  loadEditDatasets();
+
+  // 2. Page Objects setup
+  editSelectedPoms = new Set();
+  if (currentSelectedScript.pages && Array.isArray(currentSelectedScript.pages)) {
+    currentSelectedScript.pages.forEach((p) => {
+      if (p.relativePath) editSelectedPoms.add(p.relativePath);
+    });
+  }
+  if (!repoPages || repoPages.length === 0) {
+    request('/api/object-repository/pages').then((res) => {
+      repoPages = res.pages || [];
+      renderEditPomList();
+    }).catch(console.error);
+  } else {
+    renderEditPomList();
+  }
+
+  // 3. Precondition setup
+  const authSelect = document.getElementById('edit-script-auth-type');
+  const preDescInput = document.getElementById('edit-script-precondition-desc');
+  const specCode = currentSelectedScript.specCode || '';
+  const hasAuth = specCode.includes('authenticatedUser') || specCode.includes('authSetup');
+  if (authSelect) authSelect.value = hasAuth ? 'authenticated' : 'guest';
+  const annoMatch = specCode.match(/testInfo\.annotations\.push\(\{\s*type:\s*['"]Precondition['"]\s*,\s*description:\s*['"]([^'"]+)['"]/);
+  if (preDescInput) preDescInput.value = annoMatch ? annoMatch[1] : '';
+
+  // 4. Steps setup
   editableSteps = currentSelectedScript.steps ? JSON.parse(JSON.stringify(currentSelectedScript.steps)) : [];
   renderEditableSteps();
 
@@ -10606,6 +10958,9 @@ function switchToEditScriptMode() {
     statusBadge.innerHTML = '<i class="ph-bold ph-pencil-simple"></i> Sẵn sàng chỉnh sửa';
     statusBadge.classList.remove('modified');
   }
+
+  const editDirtyBadge = document.getElementById('script-edit-dirty-badge');
+  if (editDirtyBadge) editDirtyBadge.style.display = 'none';
 
   const helpText = document.getElementById('script-code-help-text');
   if (helpText) {
@@ -10640,6 +10995,44 @@ function switchToEditScriptMode() {
     featInput?.addEventListener('input', () => updateEditScriptPreview());
     tagsInput?.addEventListener('input', () => updateEditScriptPreview());
   }
+
+  const datasetSelect = document.getElementById('edit-script-dataset');
+  if (datasetSelect && !datasetSelect._editBound) {
+    datasetSelect._editBound = true;
+    datasetSelect.addEventListener('change', () => {
+      editSelectedDataset = datasetSelect.value;
+      updateEditScriptPreview();
+    });
+  }
+
+  if (authSelect && !authSelect._editBound) {
+    authSelect._editBound = true;
+    authSelect.addEventListener('change', () => updateEditScriptPreview());
+  }
+  if (preDescInput && !preDescInput._editBound) {
+    preDescInput._editBound = true;
+    preDescInput.addEventListener('input', () => updateEditScriptPreview());
+  }
+
+  document.getElementById('btn-edit-pom-select-all')?.addEventListener('click', () => {
+    (repoPages || []).forEach((p) => editSelectedPoms.add(p.relativePath));
+    renderEditPomList();
+    updateEditScriptPreview();
+  });
+  document.getElementById('btn-edit-pom-deselect-all')?.addEventListener('click', () => {
+    editSelectedPoms.clear();
+    renderEditPomList();
+    updateEditScriptPreview();
+  });
+
+  document.getElementById('btn-edit-add-step-pom')?.addEventListener('click', () => {
+    openInsertPomActionModal();
+  });
+
+  document.getElementById('btn-edit-open-create-data')?.addEventListener('click', () => {
+    const dataDrawer = document.getElementById('drawer-create-data');
+    if (dataDrawer) dataDrawer.classList.add('open');
+  });
 }
 
 async function saveEditedScript() {
@@ -11912,7 +12305,7 @@ async function switchToCreateScriptMode() {
   if (subnavActions) subnavActions.style.display = 'none';
 
   // Deselect sidebar cards
-  document.querySelectorAll('.script-card-item').forEach((card) => card.classList.remove('active'));
+  document.querySelectorAll('#script-files-list .script-card-item').forEach((card) => card.classList.remove('active', 'is-selected'));
 
   // Refresh Page Objects so the Wizard does not use a stale repository snapshot.
   await loadWizardPageObjects();
@@ -11962,7 +12355,7 @@ async function switchToCreateScriptMode() {
   if (editor) editor.setAttribute('readonly', 'true');
 
   // Deselect sidebar cards
-  document.querySelectorAll('.script-card-item').forEach((item) => item.classList.remove('active'));
+  document.querySelectorAll('#script-files-list .script-card-item').forEach((item) => item.classList.remove('active', 'is-selected'));
 
   // Title & Filename Bindings
   const titleInput = document.getElementById('create-script-title');
@@ -12585,8 +12978,16 @@ function initVisualBuilderControls() {
   document.getElementById('script-edit-this-btn')?.addEventListener('click', () => switchToEditScriptMode());
   document.getElementById('btn-edit-script-info')?.addEventListener('click', () => switchToEditScriptMode());
   document.getElementById('btn-edit-script-steps')?.addEventListener('click', () => switchToEditScriptMode());
-  document.getElementById('btn-cancel-edit-script')?.addEventListener('click', () => switchToInspectScriptMode());
-  document.getElementById('btn-cancel-edit-script-2')?.addEventListener('click', () => switchToInspectScriptMode());
+  const handleCancelScriptEdit = () => {
+    const editor = document.getElementById('script-spec-editor');
+    const isDirty = editor && currentSelectedScript && editor.value !== (currentSelectedScript.specCode || '');
+    if (isDirty) {
+      notify('↩️ Đã hoàn tác mọi thay đổi chưa lưu, khôi phục kịch bản gốc từ đĩa.');
+    }
+    switchToInspectScriptMode();
+  };
+  document.getElementById('btn-cancel-edit-script')?.addEventListener('click', handleCancelScriptEdit);
+  document.getElementById('btn-cancel-edit-script-2')?.addEventListener('click', handleCancelScriptEdit);
   document.getElementById('btn-save-edit-script')?.addEventListener('click', () => saveEditedScript());
   document.getElementById('btn-save-edit-script-2')?.addEventListener('click', () => saveEditedScript());
   document.getElementById('btn-cancel-create-script')?.addEventListener('click', () => {
@@ -12672,45 +13073,8 @@ function initVisualBuilderControls() {
     }
   });
 
-  document.getElementById('btn-close-pom-modal')?.addEventListener('click', () => document.getElementById('modal-insert-pom-action')?.close());
-  document.getElementById('btn-cancel-pom-modal')?.addEventListener('click', () => document.getElementById('modal-insert-pom-action')?.close());
-  document.getElementById('btn-submit-pom-modal')?.addEventListener('click', () => submitPomActionToBdd());
+  initPomModalControls();
   document.getElementById('btn-submit-create-script')?.addEventListener('click', () => submitCreateBddScript());
-
-  document.querySelectorAll('.pom-type-tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.pom-type-tab').forEach((t) => t.classList.remove('active'));
-      tab.classList.add('active');
-      pomModalActiveType = tab.dataset.type;
-      const methodPanel = document.getElementById('pom-panel-method');
-      const locPanel = document.getElementById('pom-panel-locator');
-      if (pomModalActiveType === 'locator') {
-        if (methodPanel) methodPanel.style.display = 'none';
-        if (locPanel) locPanel.style.display = 'block';
-      } else {
-        if (methodPanel) methodPanel.style.display = 'block';
-        if (locPanel) locPanel.style.display = 'none';
-      }
-      updatePomCodePreview();
-    });
-  });
-
-  document.getElementById('pom-modal-page-select')?.addEventListener('change', () => loadPomModalPageDetails());
-  document.getElementById('pom-modal-method-select')?.addEventListener('change', () => {
-    updatePomModalParamsHint();
-    updatePomCodePreview();
-  });
-  document.getElementById('pom-modal-method-params')?.addEventListener('input', () => updatePomCodePreview());
-  document.getElementById('pom-modal-loc-select')?.addEventListener('change', () => updatePomCodePreview());
-  document.getElementById('pom-modal-loc-action')?.addEventListener('change', () => updatePomCodePreview());
-  document.getElementById('pom-modal-loc-value')?.addEventListener('input', () => updatePomCodePreview());
-  document.getElementById('pom-modal-step-keyword')?.addEventListener('change', () => updatePomCodePreview());
-  document.getElementById('pom-modal-step-title')?.addEventListener('input', () => {
-    const titleInput = document.getElementById('pom-modal-step-title');
-    if (titleInput) titleInput.dataset.autoGenerated = 'false';
-    updatePomCodePreview();
-  });
-  document.getElementById('pom-modal-include-evidence')?.addEventListener('change', () => updatePomCodePreview());
 
   // Quick add buttons
   document.querySelectorAll('.btn-quick-step').forEach((btn) => {
@@ -14484,6 +14848,12 @@ async function openFixturesStudio() {
     initFixturesStudioListeners();
     isFixturesStudioInitialized = true;
   }
+  // Đảm bảo filter mặc định (Tất cả) luôn được kích hoạt đồng bộ
+  if (!currentFixtureFilter) currentFixtureFilter = 'all';
+  const fxPills = document.querySelectorAll('#fixtures-filter-pills .pm-filter-pill, #fixtures-filter-pills .fx-filter-pill');
+  if (fxPills.length > 0) {
+    fxPills.forEach((p) => p.classList.toggle('active', (p.dataset.filter || 'all') === currentFixtureFilter));
+  }
   await loadFixturesList();
 }
 
@@ -14509,16 +14879,18 @@ function renderFixturesList() {
   const searchQuery = ($('#fixtures-search-input')?.value || '').toLowerCase().trim();
 
   const filtered = repoFixtures.filter((fx) => {
-    if (currentFixtureFilter !== 'all') {
-      if (currentFixtureFilter === 'precondition' && !fx.category.toLowerCase().includes('precondition') && !fx.category.toLowerCase().includes('xác thực')) return false;
-      if (currentFixtureFilter === 'teardown' && !fx.category.toLowerCase().includes('dọn dẹp') && !fx.category.toLowerCase().includes('teardown') && !fx.category.toLowerCase().includes('hook')) return false;
+    if (currentFixtureFilter && currentFixtureFilter !== 'all') {
+      if (currentFixtureFilter === 'core' && fx.isCustom) return false;
       if (currentFixtureFilter === 'custom' && !fx.isCustom) return false;
+      if (currentFixtureFilter === 'precondition' && !fx.category?.toLowerCase().includes('precondition') && !fx.category?.toLowerCase().includes('xác thực') && !fx.category?.toLowerCase().includes('tiền điều kiện')) return false;
+      if (currentFixtureFilter === 'teardown' && !fx.category?.toLowerCase().includes('dọn dẹp') && !fx.category?.toLowerCase().includes('teardown') && !fx.category?.toLowerCase().includes('hook') && !fx.category?.toLowerCase().includes('hậu điều kiện')) return false;
     }
     if (searchQuery) {
       const matchName = (fx.name || '').toLowerCase().includes(searchQuery);
       const matchTitle = (fx.title || '').toLowerCase().includes(searchQuery);
       const matchDesc = (fx.description || '').toLowerCase().includes(searchQuery);
-      return matchName || matchTitle || matchDesc;
+      const matchCat = (fx.category || '').toLowerCase().includes(searchQuery);
+      return matchName || matchTitle || matchDesc || matchCat;
     }
     return true;
   });
@@ -14534,28 +14906,28 @@ function renderFixturesList() {
 
   container.innerHTML = filtered.map((fx) => {
     const isSelected = currentSelectedFixture && currentSelectedFixture.name === fx.name;
-    const badgeColor = fx.isCustom ? '#10b981' : (fx.category.includes('Xác thực') || fx.category.includes('Precondition') ? '#8b5cf6' : (fx.category.includes('Dọn dẹp') ? '#ef4444' : '#6366f1'));
-    const iconClass = fx.isCustom ? 'ph-sparkle' : (fx.name === 'pages' ? 'ph-browsers' : (fx.category.includes('Xác thực') ? 'ph-user-circle' : (fx.category.includes('Dọn dẹp') ? 'ph-trash' : 'ph-gear')));
+    const badgeColor = fx.isCustom ? '#10b981' : (fx.category?.includes('Xác thực') || fx.category?.includes('Tiền điều kiện') || fx.category?.includes('Precondition') ? '#8b5cf6' : (fx.category?.includes('Dọn dẹp') || fx.category?.includes('Hậu điều kiện') ? '#ef4444' : '#6366f1'));
+    const iconClass = fx.isCustom ? 'ph-sparkle' : (fx.name === 'pages' ? 'ph-browsers' : (fx.category?.includes('Xác thực') ? 'ph-user-circle' : (fx.category?.includes('Dọn dẹp') ? 'ph-trash' : 'ph-gear')));
 
     return `
-      <div class="dashboard-list-card fixture-card-item ${isSelected ? 'is-selected active' : ''}" data-name="${escapeHtml(fx.name)}" style="cursor: pointer; padding: 10px 12px; border-radius: 8px; border: 1px solid ${isSelected ? 'var(--primary)' : 'var(--line)'}; background: ${isSelected ? 'var(--surface-2)' : 'var(--surface)'}; display: flex; align-items: flex-start; gap: 10px; transition: all 0.15s ease;">
-        <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background: ${badgeColor}22; color: ${badgeColor}; font-size: 16px; flex-shrink: 0; margin-top: 2px;">
+      <div class="dashboard-list-card script-card-item fixture-card-item ${isSelected ? 'is-selected active' : ''}" data-name="${escapeHtml(fx.name)}">
+        <span class="dashboard-list-card__icon script-card-platform-icon fixture" style="background: ${badgeColor}18; color: ${badgeColor}; border: 1px solid ${badgeColor}33;">
           <i class="ph-bold ${iconClass}"></i>
         </span>
-        <div style="flex: 1; min-width: 0;">
-          <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
-            <strong style="font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(fx.name)}</strong>
-            ${fx.isCustom ? '<span style="background: #10b98122; color: #10b981; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600;">Custom</span>' : '<span style="background: var(--surface-3); color: var(--muted); font-size: 10px; padding: 2px 6px; border-radius: 4px;">Core</span>'}
+        <div class="dashboard-list-card__body">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+            <div class="script-card-title">${escapeHtml(fx.name)}</div>
+            ${fx.isCustom ? '<span class="script-card-badge-platform setup" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);">Tùy biến</span>' : '<span class="script-card-badge-platform desktop" style="background: rgba(99, 102, 241, 0.15); color: #6366f1; border-color: rgba(99, 102, 241, 0.3);">Cốt lõi</span>'}
           </div>
-          <div style="font-size: 11px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${escapeHtml(fx.title || fx.description || '')}
+          <div class="script-card-file" title="${escapeHtml(fx.title || fx.description || '')}">
+            ${escapeHtml(fx.title || fx.description || 'Fixture tự động nạp.')}
           </div>
-          <div style="display: flex; gap: 6px; margin-top: 6px; align-items: center;">
-            <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--surface-3); color: var(--text-muted);">
-              ${escapeHtml(fx.category || 'Nền tảng')}
+          <div class="script-card-pills">
+            <span class="script-card-badge-pages">
+              <i class="ph ph-tag"></i> ${escapeHtml(fx.category || 'Hạ tầng & Nền tảng')}
             </span>
-            <span style="font-size: 10px; color: var(--muted); font-family: monospace;">
-              scope: ${fx.scope || 'test'}
+            <span class="script-card-badge-data">
+              <i class="ph ph-clock"></i> ${escapeHtml(fx.scope || 'test')}
             </span>
           </div>
         </div>
@@ -14580,24 +14952,43 @@ function renderFixturesList() {
   }
 }
 
-function selectFixture(fx) {
+async function selectFixture(fx) {
   currentSelectedFixture = fx;
 
-  document.querySelectorAll('.fixture-card-item').forEach((card) => {
+  document.querySelectorAll('#fixtures-list-container .fixture-card-item').forEach((card) => {
     const isThis = card.dataset.name === fx.name;
     card.classList.toggle('is-selected', isThis);
     card.classList.toggle('active', isThis);
-    card.style.borderColor = isThis ? 'var(--primary)' : 'var(--line)';
-    card.style.background = isThis ? 'var(--surface-2)' : 'var(--surface)';
   });
 
-  if ($('#fx-detail-category-eyebrow')) $('#fx-detail-category-eyebrow').textContent = fx.isCustom ? 'CUSTOM BUSINESS FIXTURE' : 'CORE ENGINE FIXTURE';
-  if ($('#fx-detail-name')) $('#fx-detail-name').textContent = fx.name;
-  if ($('#fx-detail-desc')) $('#fx-detail-desc').textContent = fx.description || fx.title || 'Injected Playwright fixture.';
+  // Nếu là custom fixture, nạp chi tiết mới nhất từ server để có revision chính xác
+  if (fx.isCustom) {
+    try {
+      const detail = await request(`/api/fixtures/${encodeURIComponent(fx.name)}`);
+      if (detail) {
+        fx = { ...fx, ...detail };
+        currentSelectedFixture = fx;
+      }
+    } catch (_) {}
+  }
+
+  if ($('#fx-detail-category-eyebrow')) $('#fx-detail-category-eyebrow').textContent = fx.isCustom ? 'FIXTURE NGHIỆP VỤ TÙY BIẾN' : 'FIXTURE CỐT LÕI HỆ THỐNG';
+  if ($('#fx-detail-name')) $('#fx-detail-name').textContent = fx.title ? `${fx.name} (${fx.title})` : fx.name;
+  if ($('#fx-detail-desc')) $('#fx-detail-desc').textContent = fx.description || fx.title || 'Fixture được nạp tự động vào ngữ cảnh kiểm thử Playwright.';
+
+  const revBadge = $('#fx-detail-revision');
+  if (revBadge) {
+    if (fx.revision) {
+      revBadge.textContent = 'Bản dựng: ' + fx.revision;
+      revBadge.style.display = 'inline-block';
+    } else {
+      revBadge.style.display = 'none';
+    }
+  }
 
   if ($('#fx-grid-scope')) $('#fx-grid-scope').textContent = fx.scope || 'test';
-  if ($('#fx-grid-cat')) $('#fx-grid-cat').textContent = fx.category || 'Hạ tầng';
-  if ($('#fx-grid-params')) $('#fx-grid-params').textContent = (fx.params && fx.params.length) ? fx.params.join(', ') : 'None';
+  if ($('#fx-grid-cat')) $('#fx-grid-cat').textContent = fx.category || 'Hạ tầng & Nền tảng';
+  if ($('#fx-grid-params')) $('#fx-grid-params').textContent = (fx.params && fx.params.length) ? fx.params.join(', ') : 'Không có';
   if ($('#fx-grid-file')) $('#fx-grid-file').textContent = fx.sourceFile || 'core/fixtures/baseTest.js';
 
   const deleteBtn = $('#btn-delete-fixture');
@@ -14605,29 +14996,128 @@ function selectFixture(fx) {
     deleteBtn.style.display = fx.isCustom ? 'inline-flex' : 'none';
   }
 
+  const saveBtn = $('#btn-save-fixture');
+  const valBtn = $('#btn-validate-fixture');
+  const sourcePre = $('#fx-source-code-pre');
+  const sourceEditor = $('#fx-source-editor');
+  const editorHint = $('#fx-editor-hint');
+  const modeBadge = $('#fx-mode-badge');
+
+  if (modeBadge) {
+    modeBadge.textContent = fx.isCustom ? 'Chỉnh sửa trực tiếp' : 'Chỉ đọc';
+    modeBadge.classList.toggle('editable', Boolean(fx.isCustom));
+  }
+
+  const sourceCode = fx.rawCode || `// Fixture ${fx.name} được định nghĩa trong ${fx.sourceFile}
+// Chữ ký tham số: ${fx.params?.join(', ') || 'Không có'}`;
+
+  if (fx.isCustom) {
+    if (saveBtn) saveBtn.style.display = 'inline-flex';
+    if (valBtn) valBtn.style.display = 'inline-flex';
+    if (sourcePre) sourcePre.style.display = 'none';
+    if (sourceEditor) {
+      sourceEditor.style.display = 'block';
+      sourceEditor.value = sourceCode;
+    }
+    if (editorHint) editorHint.textContent = 'Mã nguồn fixture tùy biến có thể chỉnh sửa trực tiếp. Bấm "Lưu thay đổi" để áp dụng.';
+  } else {
+    if (saveBtn) saveBtn.style.display = 'none';
+    if (valBtn) valBtn.style.display = 'none';
+    if (sourcePre) sourcePre.style.display = 'block';
+    if (sourceEditor) sourceEditor.style.display = 'none';
+    const sourceCodeEl = $('#fx-source-code');
+    if (sourceCodeEl) {
+      sourceCodeEl.textContent = sourceCode;
+      sourceCodeEl.className = 'language-javascript';
+      if (window.Prism) {
+        Prism.highlightElement(sourceCodeEl);
+      }
+    }
+    if (editorHint) editorHint.textContent = 'Mã nguồn fixture nền tảng của hệ thống (chế độ chỉ đọc).';
+  }
+
   const usageCode = `const { test, expect } = require('../../../core/fixtures/baseTest');
 
 test('Kịch bản sử dụng fixture ${fx.name}', async ({ ${fx.name} }) => {
-  // Fixture ${fx.name} tự động được Playwright inject vào ngữ cảnh test
+  // Fixture ${fx.name} tự động được Playwright nạp vào ngữ cảnh test
   console.log('Đang thực thi với fixture:', ${fx.name});
 });`;
-  if ($('#fx-usage-code')) $('#fx-usage-code').textContent = usageCode;
-
-  const sourceCode = fx.rawCode || `// Fixture ${fx.name} được định nghĩa trong ${fx.sourceFile}
-// Chữ ký tham số: ${fx.params?.join(', ') || '()'}`;
-  if ($('#fx-source-code')) $('#fx-source-code').textContent = sourceCode;
+  const usageCodeEl = $('#fx-usage-code');
+  if (usageCodeEl) {
+    usageCodeEl.textContent = usageCode;
+    usageCodeEl.className = 'language-javascript';
+    if (window.Prism) {
+      Prism.highlightElement(usageCodeEl);
+    }
+  }
 }
 
+  async function safeCopyText(text, successMsg) {
+    let copied = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      }
+    } catch (_) {}
+
+    if (!copied) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (_) {}
+    }
+
+    if (copied) {
+      showToast(successMsg || '📋 Đã sao chép vào bộ nhớ tạm!', 'success');
+    } else {
+      showToast('Không thể sao chép tự động, vui lòng bôi đen và nhấn Ctrl+C', 'error');
+    }
+  }
+
 function initFixturesStudioListeners() {
+  $('#btn-copy-usage-code')?.addEventListener('click', () => {
+    const code = $('#fx-usage-code')?.textContent || '';
+    if (code) {
+      safeCopyText(code, '📋 Đã sao chép mã mẫu sử dụng vào bộ nhớ tạm!');
+    }
+  });
+
+  $('#btn-copy-source-code')?.addEventListener('click', () => {
+    const isCustom = currentSelectedFixture?.isCustom;
+    const code = isCustom ? ($('#fx-source-editor')?.value || '') : ($('#fx-source-code')?.textContent || '');
+    if (code) {
+      safeCopyText(code, '📋 Đã sao chép mã nguồn fixture vào bộ nhớ tạm!');
+    }
+  });
+
   $('#fixtures-search-input')?.addEventListener('input', () => {
+
     renderFixturesList();
   });
 
-  $('#fixtures-filter-pills')?.querySelectorAll('.pm-filter-pill').forEach((pill) => {
-    pill.addEventListener('click', () => {
-      $('#fixtures-filter-pills').querySelectorAll('.pm-filter-pill').forEach((p) => p.classList.remove('active'));
-      pill.classList.add('active');
-      currentFixtureFilter = pill.dataset.filter || 'all';
+  $('#fixtures-filter-pills')?.querySelectorAll('.fx-filter-pill, .pm-filter-pill').forEach((pill) => {
+    pill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const targetFilter = pill.dataset.filter || 'all';
+      const isAlreadyActive = pill.classList.contains('active');
+
+      $('#fixtures-filter-pills').querySelectorAll('.fx-filter-pill, .pm-filter-pill').forEach((p) => p.classList.remove('active'));
+
+      if (isAlreadyActive && targetFilter !== 'all') {
+        const allPill = $('#fixtures-filter-pills').querySelector('[data-filter="all"]');
+        if (allPill) allPill.classList.add('active');
+        currentFixtureFilter = 'all';
+      } else {
+        pill.classList.add('active');
+        currentFixtureFilter = targetFilter;
+      }
       renderFixturesList();
     });
   });
@@ -14711,6 +15201,61 @@ function initFixturesStudioListeners() {
     }
   });
 
+  $('#btn-validate-fixture')?.addEventListener('click', async () => {
+    if (!currentSelectedFixture) return;
+    const sourceCode = $('#fx-source-editor')?.value || '';
+    try {
+      const res = await request('/api/fixtures/validate', {
+        method: 'POST',
+        body: JSON.stringify({ name: currentSelectedFixture.name, sourceCode }),
+      });
+      if (res.valid) {
+        showToast('✅ Cú pháp mã nguồn hợp lệ!', 'success');
+      } else {
+        showToast(`❌ ${res.error}`, 'error');
+      }
+    } catch (err) {
+      showToast(`Lỗi kiểm tra: ${err.message}`, 'error');
+    }
+  });
+
+  $('#btn-save-fixture')?.addEventListener('click', async () => {
+    if (!currentSelectedFixture || !currentSelectedFixture.isCustom) return;
+    const saveBtn = $('#btn-save-fixture');
+    if (saveBtn) saveBtn.disabled = true;
+    const sourceCode = $('#fx-source-editor')?.value || '';
+
+    try {
+      const res = await request(`/api/fixtures/${encodeURIComponent(currentSelectedFixture.name)}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          sourceCode,
+          expectedRevision: currentSelectedFixture.revision,
+        }),
+      });
+
+      if (res.success) {
+        showToast(res.message || 'Đã lưu thay đổi fixture thành công!', 'success');
+        currentSelectedFixture.revision = res.revision;
+        if ($('#fx-detail-revision')) $('#fx-detail-revision').textContent = 'rev: ' + res.revision;
+        await loadFixturesList();
+      } else {
+        showToast(res.error || 'Lỗi khi lưu fixture', 'error');
+      }
+    } catch (err) {
+      if (err.message && err.message.includes('Conflict')) {
+        showToast(`⚠️ Xung đột sửa đổi: ${err.message}`, 'error');
+        if (confirm('Fixture này đã bị thay đổi bởi một phiên khác. Bạn có muốn tải lại nội dung mới nhất?')) {
+          await selectFixture(currentSelectedFixture);
+        }
+      } else {
+        showToast(`Lỗi khi lưu: ${err.message}`, 'error');
+      }
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  });
+
   $('#btn-delete-fixture')?.addEventListener('click', async () => {
     if (!currentSelectedFixture || !currentSelectedFixture.isCustom) return;
     const name = currentSelectedFixture.name;
@@ -14720,6 +15265,7 @@ function initFixturesStudioListeners() {
     try {
       const res = await request(`/api/fixtures/${encodeURIComponent(name)}`, {
         method: 'DELETE',
+        body: JSON.stringify({ expectedRevision: currentSelectedFixture.revision }),
       });
       if (res.success) {
         showToast(res.message || `Đã xóa fixture '${name}' thành công!`, 'success');

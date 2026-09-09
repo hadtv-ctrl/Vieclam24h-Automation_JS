@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 const PAGE_ROOTS = ['pages/', 'pages/desktop/', 'pages/mobile/', 'pages/mobile-web/'];
@@ -266,17 +267,21 @@ function parseExtendFixtures(content) {
       const fixName = currentKey.trim();
       const val = currentValue.trim();
       if (fixName && /^[a-zA-Z0-9_]+$/.test(fixName)) {
-        let cat = 'Page Object Injection';
+        let cat = 'Đối tượng trang (Page Objects)';
         let badgeColor = '#10b981';
         let icon = 'ph-bold ph-browsers';
         let params = [];
 
-        if (fixName.includes('User') || fixName.includes('auth') || fixName.includes('worker')) {
-          cat = 'Xác thực & Precondition';
+        if (fixName.toLowerCase().includes('clean') || fixName.toLowerCase().includes('teardown')) {
+          cat = 'Dọn dẹp & Hậu điều kiện';
+          badgeColor = '#ef4444';
+          icon = 'ph-bold ph-trash';
+        } else if (fixName.includes('User') || fixName.includes('auth') || fixName.includes('worker')) {
+          cat = 'Xác thực & Tiền điều kiện';
           badgeColor = '#8b5cf6';
           icon = 'ph-bold ph-user-circle';
         } else if (fixName.startsWith('create')) {
-          cat = 'Factory (Multi-Tab / Popup)';
+          cat = 'Khởi tạo đa tab / Popup';
           badgeColor = '#06b6d4';
           icon = 'ph-bold ph-tabs';
         } else if (fixName === 'pages' || fixName === 'pageClasses' || fixName === 'featureName' || fixName === 'basePage') {
@@ -287,7 +292,7 @@ function parseExtendFixtures(content) {
           cat = 'Vòng đời & Hook';
           badgeColor = '#ef4444';
           icon = 'ph-bold ph-arrow-clockwise';
-        } else if (val.includes('option: true')) {
+        } else if (val.includes('option: true') || fixName.startsWith('pageObjects')) {
           cat = 'Cấu hình & Tùy chọn';
           badgeColor = '#f59e0b';
           icon = 'ph-bold ph-sliders';
@@ -308,7 +313,7 @@ function parseExtendFixtures(content) {
           badgeColor,
           icon,
           isFixture: true,
-          description: `Injected Fixture: ${fixName}`,
+          description: `Fixture tự động nạp: ${fixName}`,
         });
       }
 
@@ -786,6 +791,59 @@ function deletePageObject(relativePath, rootDir = path.resolve(__dirname, '../..
   };
 }
 
+const FIXTURE_METADATA_VI = {
+  workerUserData: {
+    title: 'Dữ liệu người dùng theo worker',
+    description: 'Cung cấp tài khoản test cô lập cho từng luồng worker song song.',
+    category: 'Xác thực & Tiền điều kiện',
+  },
+  featureName: {
+    title: 'Tên tính năng kiểm thử',
+    description: 'Tự động trích xuất tên tính năng từ đường dẫn file test.',
+    category: 'Hạ tầng & Nền tảng',
+  },
+  basePage: {
+    title: 'Trang cơ sở (BasePage)',
+    description: 'Lớp nền tảng chứa các tiện ích điều hướng và tương tác trình duyệt chung.',
+    category: 'Hạ tầng & Nền tảng',
+  },
+  pageObjectsRoot: {
+    title: 'Đường dẫn gốc Page Objects',
+    description: 'Cấu hình thư mục chứa các đối tượng trang dùng trong kịch bản.',
+    category: 'Cấu hình & Tùy chọn',
+  },
+  pageObjectsPlatform: {
+    title: 'Nền tảng thực thi (Platform)',
+    description: 'Chỉ định nền tảng (Desktop / Mobile Web) để nạp Page Object tương ứng.',
+    category: 'Cấu hình & Tùy chọn',
+  },
+  pages: {
+    title: 'Bộ điều phối Page Objects (pages)',
+    description: 'Container truy cập nhanh tất cả Page Objects: pages.loginPage, pages.dashboardPage...',
+    category: 'Hạ tầng & Nền tảng',
+  },
+  authenticatedUser: {
+    title: 'Phiên đăng nhập tự động',
+    description: 'Tự động xác thực tài khoản và duy trì trạng thái đăng nhập trước khi chạy test.',
+    category: 'Xác thực & Tiền điều kiện',
+  },
+  cleanupQueue: {
+    title: 'Hàng đợi dọn dẹp sau test',
+    description: 'Tự động thu hồi và dọn dẹp tài nguyên (xóa tài khoản, reset dữ liệu) sau khi test hoàn tất.',
+    category: 'Dọn dẹp & Hậu điều kiện',
+  },
+  failureTrackerHook: {
+    title: 'Hook giám sát lỗi kiểm thử',
+    description: 'Tự động chụp ảnh màn hình, thu thập console log khi kịch bản test thất bại.',
+    category: 'Vòng đời & Hook',
+  },
+  ephemeralUser: {
+    title: 'Tài khoản người dùng tạm thời',
+    description: 'Tự động tạo user mới trước test và dọn dẹp ngay sau khi test kết thúc.',
+    category: 'Dọn dẹp & Tùy biến',
+  },
+};
+
 /**
  * Quét toàn bộ Fixtures (gồm Core fixtures và Custom fixtures tạo từ Dashboard)
  */
@@ -799,11 +857,12 @@ function scanAllFixtures(rootDir = process.cwd()) {
       const parsed = parseFixture(rel, rootDir);
       for (const item of parsed.methods) {
         if (!allFixtures.some((f) => f.name === item.name)) {
+          const viMeta = FIXTURE_METADATA_VI[item.name] || {};
           allFixtures.push({
             name: item.name,
-            title: item.title || item.name,
-            description: item.description || `Injected Fixture: ${item.name}`,
-            category: item.category || 'Hạ tầng & Nền tảng',
+            title: viMeta.title || item.title || item.name,
+            description: viMeta.description || item.description || `Fixture tự động nạp: ${item.name}`,
+            category: viMeta.category || item.category || 'Hạ tầng & Nền tảng',
             badgeColor: item.badgeColor || '#6366f1',
             icon: item.icon || 'ph-bold ph-gear',
             params: item.params || [],
@@ -818,34 +877,45 @@ function scanAllFixtures(rootDir = process.cwd()) {
     } catch (_) {}
   }
 
-  // 2. Quét Custom Fixtures trong core/fixtures/custom/
-  const customDir = path.join(rootDir, 'core', 'fixtures', 'custom');
-  if (fs.existsSync(customDir)) {
-    const entries = fs.readdirSync(customDir, { withFileTypes: true });
+  // 2. Quét Custom Fixtures: Ưu tiên fixtures/custom/ (canonical) sau đó core/fixtures/custom/ (legacy)
+  const candidateDirs = [
+    { dir: path.join(rootDir, 'fixtures', 'custom'), isCanonical: true },
+    { dir: path.join(rootDir, 'core', 'fixtures', 'custom'), isCanonical: false },
+  ];
+
+  for (const { dir, isCanonical } of candidateDirs) {
+    if (!fs.existsSync(dir)) continue;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.isFile() && (entry.name.endsWith('.fixture.js') || (entry.name.endsWith('.js') && entry.name !== 'index.js'))) {
-        const fullPath = path.join(customDir, entry.name);
+        const fixName = path.basename(entry.name, '.fixture.js').replace(/\.js$/, '');
+        if (allFixtures.some((f) => f.name === fixName)) continue; // Không duplicate
+
+        const fullPath = path.join(dir, entry.name);
         const relPath = path.relative(rootDir, fullPath).replace(/\\/g, '/');
         const fileContent = fs.readFileSync(fullPath, 'utf8');
-        const fixName = path.basename(entry.name, '.fixture.js').replace(/\.js$/, '');
+        const revision = crypto.createHash('sha256').update(fileContent, 'utf8').digest('hex').slice(0, 16);
 
         const titleMatch = fileContent.match(/@title\s+([^\n]+)/);
         const descMatch = fileContent.match(/@description\s+([^\n]+)/);
         const catMatch = fileContent.match(/@category\s+([^\n]+)/);
+        const viMeta = FIXTURE_METADATA_VI[fixName] || {};
 
         allFixtures.push({
           name: fixName,
-          title: titleMatch ? titleMatch[1].trim() : fixName,
-          description: descMatch ? descMatch[1].trim() : `Custom Fixture nghiệp vụ: ${fixName}`,
-          category: catMatch ? catMatch[1].trim() : 'Dọn dẹp & Nghiệp vụ tùy biến',
+          title: titleMatch ? titleMatch[1].trim() : (viMeta.title || fixName),
+          description: descMatch ? descMatch[1].trim() : (viMeta.description || `Fixture nghiệp vụ tùy biến: ${fixName}`),
+          category: catMatch ? catMatch[1].trim() : (viMeta.category || 'Dọn dẹp & Tùy biến'),
           badgeColor: '#10b981',
           icon: 'ph-bold ph-sparkle',
           params: ['{ request, pages }'],
           signature: fixName,
           isCustom: true,
           canDelete: true,
+          isCanonical,
           sourceFile: relPath,
           rawCode: fileContent,
+          revision,
           scope: 'test',
         });
       }
@@ -858,8 +928,81 @@ function scanAllFixtures(rootDir = process.cwd()) {
 const RESERVED_FIXTURE_NAMES = new Set([
   'test', 'expect', 'page', 'request', 'browser', 'context',
   'basePage', 'pages', 'workerUserData', 'authenticatedUser',
-  'cleanupQueue', 'featureName', 'pageObjectsRoot', 'pageObjectsPlatform'
+  'cleanupQueue', 'featureName', 'pageObjectsRoot', 'pageObjectsPlatform',
+  'isMobile', 'viewport', 'browserName', 'storageState',
 ]);
+
+/**
+ * Tìm kiếm đường dẫn file fixture của một custom fixture
+ */
+function findCustomFixturePath(name, rootDir = process.cwd()) {
+  const canonicalPath = path.join(rootDir, 'fixtures', 'custom', `${name}.fixture.js`);
+  if (fs.existsSync(canonicalPath)) return { fullPath: canonicalPath, isCanonical: true };
+
+  const legacyPath = path.join(rootDir, 'core', 'fixtures', 'custom', `${name}.fixture.js`);
+  if (fs.existsSync(legacyPath)) return { fullPath: legacyPath, isCanonical: false };
+
+  return null;
+}
+
+/**
+ * Lấy thông tin chi tiết của một fixture theo tên (Core hoặc Custom)
+ */
+function getFixtureByName(name, rootDir = process.cwd()) {
+  if (!name) return null;
+  const all = scanAllFixtures(rootDir);
+  const found = all.find((f) => f.name === name);
+  if (found) return found;
+
+  const fileInfo = findCustomFixturePath(name, rootDir);
+  if (fileInfo) {
+    const content = fs.readFileSync(fileInfo.fullPath, 'utf8');
+    const revision = crypto.createHash('sha256').update(content, 'utf8').digest('hex').slice(0, 16);
+    return {
+      name,
+      title: name,
+      description: `Custom Fixture: ${name}`,
+      category: 'Dọn dẹp & Nghiệp vụ tùy biến',
+      isCustom: true,
+      canDelete: true,
+      isCanonical: fileInfo.isCanonical,
+      sourceFile: path.relative(rootDir, fileInfo.fullPath).replace(/\\/g, '/'),
+      rawCode: content,
+      revision,
+      scope: 'test',
+    };
+  }
+  return null;
+}
+
+/**
+ * Phân tích và kiểm tra cú pháp tĩnh cho một custom fixture mà không ghi ra disk
+ */
+function validateCustomFixtureSource({ name, sourceCode, rootDir = process.cwd() }) {
+  if (!name || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) {
+    return { valid: false, error: `Tên fixture không hợp lệ: '${name}'. Phải bắt đầu bằng chữ cái và chỉ chứa ký tự chữ/số/gạch dưới.` };
+  }
+  if (RESERVED_FIXTURE_NAMES.has(name)) {
+    return { valid: false, error: `Tên fixture '${name}' trùng với từ khóa hệ thống hoặc Core Fixture nền tảng đã được bảo vệ.` };
+  }
+  if (!sourceCode || typeof sourceCode !== 'string') {
+    return { valid: false, error: 'Mã nguồn fixture không được để trống.' };
+  }
+
+  try {
+    new Function(sourceCode);
+  } catch (err) {
+    return { valid: false, error: `Lỗi cú pháp JavaScript: ${err.message}` };
+  }
+
+  const revision = crypto.createHash('sha256').update(sourceCode, 'utf8').digest('hex').slice(0, 16);
+  return {
+    valid: true,
+    name,
+    revision,
+    diagnostics: null,
+  };
+}
 
 /**
  * Tạo một Custom Fixture mới an toàn từ Dashboard Studio Form Wizard
@@ -872,13 +1015,20 @@ function createCustomFixture({ name, title, description, category, template, con
     throw new Error(`Tên fixture '${name}' trùng với từ khóa hoặc Core Fixture nền tảng đã được bảo vệ.`);
   }
 
-  const customDir = path.join(rootDir, 'core', 'fixtures', 'custom');
-  if (!fs.existsSync(customDir)) {
-    fs.mkdirSync(customDir, { recursive: true });
+  // Ưu tiên lưu vào canonical consumer directory: fixtures/custom/
+  // Nếu thư mục fixtures/custom chưa tồn tại nhưng core/fixtures/custom đã có (cho backward compat trong test runner độc lập)
+  const canonicalDir = path.join(rootDir, 'fixtures', 'custom');
+  const legacyDir = path.join(rootDir, 'core', 'fixtures', 'custom');
+  
+  let targetDir = canonicalDir;
+  if (!fs.existsSync(canonicalDir) && fs.existsSync(legacyDir)) {
+    targetDir = legacyDir;
+  } else if (!fs.existsSync(canonicalDir)) {
+    fs.mkdirSync(canonicalDir, { recursive: true });
   }
 
   const fileName = `${name}.fixture.js`;
-  const targetPath = path.join(customDir, fileName);
+  const targetPath = path.join(targetDir, fileName);
 
   let generatedCode = '';
   const safeTitle = title || name;
@@ -969,29 +1119,89 @@ module.exports = { ${name} };
   }
 
   fs.writeFileSync(targetPath, generatedCode, 'utf8');
+  const revision = crypto.createHash('sha256').update(generatedCode, 'utf8').digest('hex').slice(0, 16);
 
   return {
     success: true,
     name,
     fileName,
     relativePath: path.relative(rootDir, targetPath).replace(/\\/g, '/'),
+    revision,
     message: `Đã tạo Custom Fixture '${name}' thành công!`,
   };
 }
 
 /**
- * Xóa một Custom Fixture (Chỉ áp dụng cho core/fixtures/custom/*.fixture.js)
+ * Cập nhật mã nguồn một Custom Fixture kèm kiểm tra revision (Optimistic Concurrency Control)
  */
-function deleteCustomFixture(name, rootDir = process.cwd()) {
+function updateCustomFixture({ name, sourceCode, expectedRevision, rootDir = process.cwd() }) {
+  if (!name || RESERVED_FIXTURE_NAMES.has(name)) {
+    throw new Error(`Không thể chỉnh sửa fixture nền tảng hoặc tên không hợp lệ: '${name}'.`);
+  }
+  const fileInfo = findCustomFixturePath(name, rootDir);
+  if (!fileInfo) {
+    throw new Error(`Không tìm thấy file của fixture '${name}' để cập nhật.`);
+  }
+
+  const currentContent = fs.readFileSync(fileInfo.fullPath, 'utf8');
+  const currentRevision = crypto.createHash('sha256').update(currentContent, 'utf8').digest('hex').slice(0, 16);
+
+  if (expectedRevision && expectedRevision !== currentRevision) {
+    const conflictErr = new Error(`Conflict: Fixture '${name}' đã bị thay đổi bởi phiên làm việc khác (Revision hiện tại: ${currentRevision}, Revision gửi lên: ${expectedRevision}). Vui lòng tải lại trước khi lưu.`);
+    conflictErr.code = 'CONFLICT';
+    conflictErr.statusCode = 409;
+    throw conflictErr;
+  }
+
+  // Kiểm tra cú pháp mã mới
+  try {
+    new Function(sourceCode);
+  } catch (err) {
+    throw new Error(`Mã nguồn fixture có lỗi cú pháp JavaScript: ${err.message}`);
+  }
+
+  // Backup trước khi ghi đè
+  const backupDir = path.join(rootDir, '.dashboard-backups', 'fixtures');
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
+  }
+  const backupFile = `${name}.fixture.${Date.now()}.bak`;
+  fs.copyFileSync(fileInfo.fullPath, path.join(backupDir, backupFile));
+
+  fs.writeFileSync(fileInfo.fullPath, sourceCode, 'utf8');
+  const newRevision = crypto.createHash('sha256').update(sourceCode, 'utf8').digest('hex').slice(0, 16);
+
+  return {
+    success: true,
+    name,
+    revision: newRevision,
+    relativePath: path.relative(rootDir, fileInfo.fullPath).replace(/\\/g, '/'),
+    message: `Đã cập nhật fixture '${name}' thành công!`,
+  };
+}
+
+/**
+ * Xóa một Custom Fixture kèm backup và kiểm tra revision tùy chọn
+ */
+function deleteCustomFixture(name, rootDir = process.cwd(), expectedRevision = null) {
   if (RESERVED_FIXTURE_NAMES.has(name)) {
     throw new Error(`Không thể xóa Core Fixture nền tảng '${name}'. Thao tác bị cấm.`);
   }
 
-  const customDir = path.join(rootDir, 'core', 'fixtures', 'custom');
-  const targetPath = path.join(customDir, `${name}.fixture.js`);
+  const fileInfo = findCustomFixturePath(name, rootDir);
+  if (!fileInfo) {
+    throw new Error(`Không tìm thấy custom fixture '${name}' để xóa.`);
+  }
 
-  if (!fs.existsSync(targetPath)) {
-    throw new Error(`Không tìm thấy custom fixture '${name}' tại core/fixtures/custom/.`);
+  const targetPath = fileInfo.fullPath;
+  const content = fs.readFileSync(targetPath, 'utf8');
+  const currentRevision = crypto.createHash('sha256').update(content, 'utf8').digest('hex').slice(0, 16);
+
+  if (expectedRevision && expectedRevision !== currentRevision) {
+    const conflictErr = new Error(`Conflict: Fixture '${name}' đã bị thay đổi trước khi xóa. Vui lòng tải lại trang.`);
+    conflictErr.code = 'CONFLICT';
+    conflictErr.statusCode = 409;
+    throw conflictErr;
   }
 
   // Backup trước khi xóa
@@ -1018,7 +1228,10 @@ module.exports = {
   parsePageObject,
   scanAllPageObjects,
   scanAllFixtures,
+  getFixtureByName,
+  validateCustomFixtureSource,
   createCustomFixture,
+  updateCustomFixture,
   deleteCustomFixture,
   updateLocatorSelector,
   getCoreCapabilities,

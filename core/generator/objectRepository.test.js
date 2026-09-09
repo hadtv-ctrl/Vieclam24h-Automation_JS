@@ -7,7 +7,10 @@ const {
   parsePageObject,
   parseFixture,
   scanAllFixtures,
+  getFixtureByName,
+  validateCustomFixtureSource,
   createCustomFixture,
+  updateCustomFixture,
   deleteCustomFixture,
   updateLocatorSelector,
   getCoreCapabilities,
@@ -244,4 +247,79 @@ test('scanAllFixtures, createCustomFixture and deleteCustomFixture manage custom
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('validateCustomFixtureSource, getFixtureByName, and updateCustomFixture with conflict detection', () => {
+  const tmpDir = path.join(process.cwd(), '.tmp', 'test_fixture_crud');
+  fs.mkdirSync(tmpDir, { recursive: true });
+
+  try {
+    // 1. Validate source
+    const validResult = validateCustomFixtureSource({
+      name: 'myTestFixture',
+      sourceCode: 'const myTestFixture = async ({ page }, use) => { await use(); }; module.exports = { myTestFixture };',
+      rootDir: tmpDir,
+    });
+    assert.equal(validResult.valid, true);
+    assert.ok(validResult.revision);
+
+    const invalidSyntax = validateCustomFixtureSource({
+      name: 'badFixture',
+      sourceCode: 'const bad = { ;',
+      rootDir: tmpDir,
+    });
+    assert.equal(invalidSyntax.valid, false);
+    assert.match(invalidSyntax.error, /Lỗi cú pháp/);
+
+    const reservedName = validateCustomFixtureSource({
+      name: 'pages',
+      sourceCode: 'const pages = async () => {};',
+      rootDir: tmpDir,
+    });
+    assert.equal(reservedName.valid, false);
+    assert.match(reservedName.error, /trùng với từ khóa/);
+
+    // 2. Tạo fixture
+    const created = createCustomFixture({
+      name: 'myTestFixture',
+      title: 'Fixture thử nghiệm',
+      rawCode: 'const myTestFixture = async ({ page }, use) => { await use(); }; module.exports = { myTestFixture };',
+      rootDir: tmpDir,
+    });
+    assert.equal(created.success, true);
+
+    // 3. getFixtureByName
+    const fetched = getFixtureByName('myTestFixture', tmpDir);
+    assert.ok(fetched);
+    assert.equal(fetched.name, 'myTestFixture');
+    assert.equal(fetched.revision, created.revision);
+
+    // 4. Update với conflict expectedRevision
+    assert.throws(
+      () => updateCustomFixture({
+        name: 'myTestFixture',
+        sourceCode: 'const myTestFixture = async ({ page }, use) => { console.log(1); await use(); }; module.exports = { myTestFixture };',
+        expectedRevision: 'wrong_hash_123',
+        rootDir: tmpDir,
+      }),
+      /Conflict/
+    );
+
+    // 5. Update thành công với đúng expectedRevision
+    const updated = updateCustomFixture({
+      name: 'myTestFixture',
+      sourceCode: 'const myTestFixture = async ({ page }, use) => { console.log(1); await use(); }; module.exports = { myTestFixture };',
+      expectedRevision: fetched.revision,
+      rootDir: tmpDir,
+    });
+    assert.equal(updated.success, true);
+    assert.notEqual(updated.revision, fetched.revision);
+
+    // 6. Xóa với revision
+    const deleted = deleteCustomFixture('myTestFixture', tmpDir, updated.revision);
+    assert.equal(deleted.success, true);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 

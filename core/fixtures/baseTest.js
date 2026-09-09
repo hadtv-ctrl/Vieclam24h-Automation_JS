@@ -10,6 +10,49 @@ const { createPageContainer } = require('./pagesFactory');
 const { cleanupQueueFixture } = require('./cleanupRegistry');
 const { customFixtures } = require('./custom');
 
+const RESERVED_FIXTURE_NAMES = new Set([
+  'test', 'expect', 'page', 'request', 'browser', 'context',
+  'basePage', 'pages', 'workerUserData', 'authenticatedUser',
+  'cleanupQueue', 'featureName', 'pageObjectsRoot', 'pageObjectsPlatform',
+  'isMobile', 'viewport', 'browserName', 'storageState'
+]);
+
+function resolvePlatform({ pageObjectsPlatform, isMobile, testInfo }) {
+  // 1. Explicit override option has highest precedence
+  if (pageObjectsPlatform) {
+    const p = String(pageObjectsPlatform).toLowerCase();
+    if (!['desktop', 'mobile-web', 'mobile', 'auto'].includes(p)) {
+      throw new Error(`[baseTest] Giá trị pageObjectsPlatform='${pageObjectsPlatform}' không hợp lệ. Chỉ chấp nhận 'desktop', 'mobile-web' hoặc 'auto'.`);
+    }
+    if (p === 'mobile') return 'mobile-web';
+    if (p !== 'auto') return p;
+  }
+
+  // 2. Public Playwright device option isMobile
+  if (typeof isMobile === 'boolean') {
+    return isMobile ? 'mobile-web' : 'desktop';
+  }
+
+  // 3. Legacy hints: project name or spec file path
+  const proj = (testInfo?.project?.name || '').toLowerCase();
+  const file = (testInfo?.file || '').toLowerCase();
+  if (proj.includes('mobile') || file.includes('mobile')) {
+    return 'mobile-web';
+  }
+
+  // 4. Default fallback
+  return 'desktop';
+}
+
+const safeCustomFixtures = {};
+for (const [key, fixtureVal] of Object.entries(customFixtures || {})) {
+  if (RESERVED_FIXTURE_NAMES.has(key)) {
+    console.warn(`[baseTest Warning] Custom fixture '${key}' trùng với từ khóa hoặc fixture nền tảng đã được bảo vệ. Fixture này bị bỏ qua.`);
+    continue;
+  }
+  safeCustomFixtures[key] = fixtureVal;
+}
+
 /**
  * Core Framework Base Fixture
  * Quản lý vòng đời kiểm thử, cô lập worker session, nạp BasePage nền tảng
@@ -33,9 +76,10 @@ const test = base.extend({
   pageObjectsRoot: [undefined, { option: true }],
   pageObjectsPlatform: [undefined, { option: true }],
   pages: async ({ page, featureName, pageObjectsRoot, pageObjectsPlatform, isMobile }, use, testInfo) => {
+    const platform = resolvePlatform({ pageObjectsPlatform, isMobile, testInfo });
     const container = createPageContainer(page, {
       rootDir: pageObjectsRoot,
-      platform: pageObjectsPlatform || (isMobile ? 'mobile-web' : 'desktop'),
+      platform,
       featureName,
     });
     await use(container);
@@ -51,7 +95,12 @@ const test = base.extend({
     await use({ ...user, runtimeDataPath: workerUserData.filePath });
   },
   cleanupQueue: cleanupQueueFixture,
-  ...customFixtures,
+  ...safeCustomFixtures,
 });
 
-module.exports = { test, expect };
+module.exports = {
+  test,
+  expect,
+  resolvePlatform,
+  RESERVED_FIXTURE_NAMES,
+};
