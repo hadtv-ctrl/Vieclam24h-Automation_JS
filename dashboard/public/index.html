@@ -1671,12 +1671,19 @@
           <!-- CHẾ ĐỘ CHỈNH SỬA KỊCH BẢN (EDIT MODE) -->
           <div id="script-edit-view" style="display: none; flex-direction: column; height: 100%;">
             <div class="script-panel-head">
-              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; overflow: hidden;">
-                <span class="pm-section-tag" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; padding: 3px 8px; border-radius: 4px; font-weight: 700; flex-shrink: 0;">CHẾ ĐỘ CHỈNH SỬA</span>
-                <h2 id="script-edit-panel-title" style="margin: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;"><i class="ph-bold ph-pencil-simple-line" style="color: var(--accent);"></i> Chỉnh Sửa Kịch Bản BDD</h2>
-                <span id="script-edit-dirty-badge" class="pm-code-status-pill" style="display: none; flex-shrink: 0;">
-                  <i class="ph-bold ph-pencil-simple"></i> Đã thay đổi (chưa lưu)
-                </span>
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                <button id="btn-toggle-script-sidebar-head-edit" type="button" class="btn-icon-subtle" title="Ẩn / Hiện danh sách kịch bản">
+                  <i class="ph-bold ph-sidebar-simple"></i>
+                </button>
+                <div style="min-width: 0; overflow: hidden;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="pm-section-tag" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 10.5px;">CHẾ ĐỘ BIÊN TẬP KỊCH BẢN</span>
+                    <span id="script-edit-dirty-badge" class="pm-code-status-pill" style="display: none; font-size: 10.5px; padding: 2px 7px;">
+                      <i class="ph-bold ph-pencil-simple"></i> Chưa lưu
+                    </span>
+                  </div>
+                  <h2 id="script-edit-panel-title" style="margin: 2px 0 0 0; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">apply_job.spec.js</h2>
+                </div>
               </div>
               <div class="script-panel-head-actions" style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
                 <button type="button" class="btn-secondary-sm" id="btn-cancel-edit-script" title="Hủy các thay đổi và hoàn tác về bản gốc từ đĩa" style="padding: 5px 12px; font-size: 11.5px; white-space: nowrap;">
@@ -1688,133 +1695,208 @@
               </div>
             </div>
 
-            <div class="script-middle-scroll-wrap" style="padding: 22px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 18px;">
-              <!-- Khối 01: Thông tin kịch bản & Phân loại -->
-              <div class="script-section-block">
-                <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
-                  <div>
-                    <span class="pm-section-tag">01 · THÔNG TIN KỊCH BẢN & PHÂN LOẠI</span>
-                    <h4>Cập nhật tiêu đề & tính năng</h4>
-                  </div>
+            <!-- Scrollable middle area containing 5 collapsible cards -->
+            <div class="script-middle-scroll-wrap" style="padding: 16px 18px; overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px;">
+              <!-- Thanh điều khiển thu gọn / mở rộng toàn cục -->
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 4px 4px;">
+                <div style="font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px;">
+                  <i class="ph-bold ph-sliders" style="color: var(--accent);"></i> Bấm vào tiêu đề để thu gọn / mở rộng từng khối
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 14px;">
-                  <div>
-                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tên kịch bản (Scenario Name):</label>
-                    <input type="text" id="edit-script-title" placeholder="Tên kịch bản kiểm thử..." style="width: 100%; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13.5px;" />
-                  </div>
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <div>
-                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tính năng (Feature Name):</label>
-                      <input type="text" id="edit-script-feature" placeholder="Tên tính năng..." style="width: 100%; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;" />
-                    </div>
-                    <div>
-                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tags (Phân loại):</label>
-                      <input type="text" id="edit-script-tags" placeholder="@e2e @custom" style="width: 100%; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Khối 02: Quản lý Dữ liệu Test (Test Data / Datasets) -->
-              <div class="script-section-block">
-                <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
-                  <div>
-                    <span class="pm-section-tag">02 · QUẢN LÝ DỮ LIỆU TEST (DATA FILES)</span>
-                    <h4>Nguồn dữ liệu kiểm thử (JSON Dataset)</h4>
-                  </div>
-                  <button type="button" class="btn-secondary-sm" id="btn-edit-open-create-data" style="padding: 5px 10px; font-size: 11.5px;">
-                    <i class="ph-bold ph-plus-circle"></i> Tạo File Data Mới
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button type="button" class="btn-subtle-link" id="btn-edit-expand-all" style="font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="ph-bold ph-arrows-out-simple"></i> Mở tất cả
+                  </button>
+                  <span style="color: var(--line); font-size: 10px;">•</span>
+                  <button type="button" class="btn-subtle-link" id="btn-edit-collapse-all" style="font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="ph-bold ph-arrows-in-simple"></i> Thu gọn
                   </button>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                  <div>
-                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Chọn file dữ liệu (.json) gắn vào kịch bản:</label>
-                    <select id="edit-script-dataset" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;">
-                      <option value="">-- Không sử dụng file data ngoài --</option>
-                    </select>
+              </div>
+
+              <!-- KHỐI 01: THÔNG TIN KỊCH BẢN -->
+              <div class="script-accordion-item is-expanded" id="edit-sec-info">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-info">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">01 · THÔNG TIN KỊCH BẢN</span>
+                      <h4>Tên kịch bản & Phân loại</h4>
+                    </div>
                   </div>
-                  <div id="edit-data-info-box" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); font-size: 12px; color: var(--muted);">
-                    <span><i class="ph-bold ph-file-code" style="color: #10b981;"></i> Biến import: <code id="edit-script-data-var" style="color: var(--accent); font-weight: 700;">sampleData</code></span>
-                    <small id="edit-script-data-hint" style="font-size: 11px;">Mã tự sinh: const sampleData = require('../../../data/sampleData.json')</small>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-info">
+                      <i class="ph-bold ph-folder" style="color: var(--accent);"></i>
+                      <span id="summary-info-text">Chưa đặt tên</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="script-accordion-body">
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tên kịch bản (Scenario Name):</label>
+                      <input type="text" id="edit-script-title" placeholder="Tên kịch bản kiểm thử..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 13px;" />
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                      <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tính năng (Feature):</label>
+                        <input type="text" id="edit-script-feature" placeholder="Tên tính năng..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;" />
+                      </div>
+                      <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tags (Phân loại):</label>
+                        <input type="text" id="edit-script-tags" placeholder="@e2e @custom" style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Khối 03: Page Objects & Fixtures Liên Kết -->
-              <div class="script-section-block">
-                <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
-                  <div>
-                    <span class="pm-section-tag">03 · DEPENDENCY: PAGE OBJECTS & FIXTURES</span>
-                    <h4>Các màn hình (Page Objects) tham gia kịch bản</h4>
+              <!-- KHỐI 02: DANH SÁCH BƯỚC BDD -->
+              <div class="script-accordion-item is-expanded" id="edit-sec-steps">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-steps">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">02 · DANH SÁCH BƯỚC BDD</span>
+                      <h4>Các bước kiểm thử (<span id="edit-step-count">0</span>)</h4>
+                    </div>
                   </div>
-                  <div style="display: flex; gap: 8px; align-items: center;">
-                    <span style="font-size: 11.5px; color: var(--muted);"><i class="ph-bold ph-check-square-offset"></i> Đã chọn: <strong id="edit-pom-count" style="color: var(--accent);">0</strong></span>
-                    <button type="button" class="btn-subtle-link" id="btn-edit-pom-select-all" style="font-size: 11px;">Chọn hết</button>
-                    <span style="color: var(--line); font-size: 10px;">•</span>
-                    <button type="button" class="btn-subtle-link" id="btn-edit-pom-deselect-all" style="font-size: 11px;">Bỏ chọn</button>
-                  </div>
-                </div>
-                <div class="dependency-grid" id="edit-pom-list" style="max-height: 200px; overflow-y: auto;">
-                  <!-- Dynamic POM checkboxes rendered here -->
-                </div>
-              </div>
-
-              <!-- Khối 04: Tiền điều kiện (Precondition) -->
-              <div class="script-section-block">
-                <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
-                  <div>
-                    <span class="pm-section-tag">04 · THIẾT LẬP TIỀN ĐIỀU KIỆN (PRECONDITIONS)</span>
-                    <h4>Trạng thái ban đầu & Môi trường chạy</h4>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-steps">
+                      <i class="ph-bold ph-list-numbers" style="color: #6366f1;"></i>
+                      <span id="summary-steps-count">0</span> bước BDD
+                    </span>
                   </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 200px 1fr; gap: 12px;">
-                  <div>
-                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Quyền truy cập / Auth:</label>
-                    <select id="edit-script-auth-type" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;">
-                      <option value="guest">Khách vãng lai (Guest)</option>
-                      <option value="authenticated">Đã đăng nhập ứng viên (authSetup)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Mô tả tiền điều kiện:</label>
-                    <input type="text" id="edit-script-precondition-desc" placeholder="Ví dụ: Người dùng ở trang chủ sẵn sàng thực hiện thao tác" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Khối 05: Quản lý các bước kiểm thử BDD -->
-              <div class="script-section-block">
-                <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
-                  <div>
-                    <span class="pm-section-tag">05 · DANH SÁCH BƯỚC BDD (STEPS EDITOR)</span>
-                    <h4>Các bước kiểm thử (<span id="edit-step-count">0</span> bước)</h4>
-                  </div>
-                  <!-- Quick add step buttons -->
-                  <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                    <button type="button" class="btn-quick-step badge-given" data-type="Given" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; border: none;">+ Given</button>
-                    <button type="button" class="btn-quick-step badge-when" data-type="When" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; border: none;">+ When</button>
-                    <button type="button" class="btn-quick-step badge-then" data-type="Then" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; border: none;">+ Then</button>
-                    <button type="button" class="btn-quick-step badge-and" data-type="And" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; border: none;">+ And</button>
-                    <button type="button" class="btn-secondary-sm" id="btn-edit-add-step-pom" style="padding: 4px 10px; font-size: 11.5px; margin-left: 6px;">
-                      <i class="ph-bold ph-plus-circle"></i> Thêm bước từ Page
+                <div class="script-accordion-body">
+                  <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; background: var(--surface-2); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line);">
+                    <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                      <span style="font-size: 11px; font-weight: 700; color: var(--muted); margin-right: 2px;">+ Thêm nhanh:</span>
+                      <button type="button" class="btn-quick-step badge-given" data-type="Given" title="Thêm bước Given" style="cursor: pointer; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; border: none;">+ Given</button>
+                      <button type="button" class="btn-quick-step badge-when" data-type="When" title="Thêm bước When" style="cursor: pointer; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; border: none;">+ When</button>
+                      <button type="button" class="btn-quick-step badge-then" data-type="Then" title="Thêm bước Then" style="cursor: pointer; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; border: none;">+ Then</button>
+                      <button type="button" class="btn-quick-step badge-and" data-type="And" title="Thêm bước And" style="cursor: pointer; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; border: none;">+ And</button>
+                    </div>
+                    <button type="button" class="btn-secondary-sm" id="btn-edit-add-step-pom" style="padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
+                      <i class="ph-bold ph-plus-circle"></i> Thêm từ Page
                     </button>
                   </div>
-                </div>
-
-                <div id="edit-steps-list" style="display: flex; flex-direction: column; gap: 10px;">
-                  <!-- Steps rendered dynamically here -->
+                  <div id="edit-steps-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Steps rendered dynamically here -->
+                  </div>
                 </div>
               </div>
 
-              <!-- Nút Lưu cuối form -->
-              <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--line); margin-top: 4px;">
-                <button type="button" class="btn-secondary-sm" id="btn-cancel-edit-script-2" style="padding: 9px 18px; font-size: 13px;">
-                  <i class="ph-bold ph-arrow-counter-clockwise"></i> Hoàn tác / Hủy sửa
-                </button>
-                <button type="button" class="primary-button" id="btn-save-edit-script-2" style="padding: 10px 24px; font-size: 13px; display: inline-flex; align-items: center; gap: 8px;">
-                  <i class="ph-bold ph-floppy-disk"></i> Lưu kịch bản BDD
-                </button>
+              <!-- KHỐI 03: TIỀN ĐIỀU KIỆN -->
+              <div class="script-accordion-item is-collapsed" id="edit-sec-precondition">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-precondition">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">03 · TIỀN ĐIỀU KIỆN</span>
+                      <h4>Quyền truy cập & Môi trường</h4>
+                    </div>
+                  </div>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-precondition">
+                      <i class="ph-bold ph-shield-check" style="color: #a855f7;"></i>
+                      <span id="summary-precondition-text">Khách vãng lai</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="script-accordion-body">
+                  <div style="display: grid; grid-template-columns: 180px 1fr; gap: 12px;">
+                    <div>
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Quyền truy cập / Auth:</label>
+                      <select id="edit-script-auth-type" style="width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;">
+                        <option value="guest">Khách vãng lai (Guest)</option>
+                        <option value="authenticated">Đã đăng nhập ứng viên (authSetup)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Mô tả tiền điều kiện:</label>
+                      <input type="text" id="edit-script-precondition-desc" placeholder="Ví dụ: Người dùng ở trang chủ sẵn sàng thực hiện thao tác" style="width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;" />
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              <!-- KHỐI 04: PAGE OBJECTS & FIXTURES -->
+              <div class="script-accordion-item is-collapsed" id="edit-sec-poms">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-poms">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">04 · PAGE OBJECTS & FIXTURES</span>
+                      <h4>Màn hình tham gia kịch bản</h4>
+                    </div>
+                  </div>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-poms">
+                      <i class="ph-bold ph-browsers" style="color: #10b981;"></i>
+                      <span id="summary-poms-count">0</span> Pages
+                    </span>
+                  </div>
+                </div>
+                <div class="script-accordion-body">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 12px; color: var(--muted);"><i class="ph-bold ph-check-square-offset"></i> Đã chọn: <strong id="edit-pom-count" style="color: var(--accent);">0</strong> Page Objects</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                      <button type="button" class="btn-subtle-link" id="btn-edit-pom-select-all" style="font-size: 11px; cursor: pointer;">Chọn hết</button>
+                      <span style="color: var(--line); font-size: 10px;">•</span>
+                      <button type="button" class="btn-subtle-link" id="btn-edit-pom-deselect-all" style="font-size: 11px; cursor: pointer;">Bỏ chọn</button>
+                    </div>
+                  </div>
+                  <div class="dependency-grid" id="edit-pom-list">
+                    <!-- Dynamic POM checkboxes rendered here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI 05: QUẢN LÝ DỮ LIỆU TEST -->
+              <div class="script-accordion-item is-collapsed" id="edit-sec-data">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-data">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">05 · QUẢN LÝ DỮ LIỆU TEST</span>
+                      <h4>Nguồn dữ liệu Dataset JSON</h4>
+                    </div>
+                  </div>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-data">
+                      <i class="ph-bold ph-database" style="color: #f59e0b;"></i>
+                      <span id="summary-data-text">Không dùng data</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="script-accordion-body">
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text);">Chọn file dữ liệu (.json) gắn vào kịch bản:</label>
+                      <button type="button" class="btn-secondary-sm" id="btn-edit-open-create-data" style="padding: 3px 8px; font-size: 11px;" title="Mở màn hình Quản lý Dữ liệu test để tạo tệp Dataset JSON mới">
+                        <i class="ph-bold ph-plus-circle"></i> Tạo Data Mới
+                      </button>
+                    </div>
+                    <select id="edit-script-dataset" style="width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;">
+                      <option value="">-- Không sử dụng file data ngoài --</option>
+                    </select>
+                    <div id="edit-data-info-box" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); font-size: 12px; color: var(--muted);">
+                      <span><i class="ph-bold ph-file-code" style="color: #10b981;"></i> Biến import: <code id="edit-script-data-var" style="color: var(--accent); font-weight: 700;">sampleData</code></span>
+                      <small id="edit-script-data-hint" style="font-size: 11px;">Mã tự sinh: const sampleData = require('../../../data/sampleData.json')</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sticky footer bar for save/cancel -->
+            <div class="script-edit-sticky-footer" style="padding: 10px 18px; border-top: 1px solid var(--line); background: var(--surface); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+              <button type="button" class="btn-secondary-sm" id="btn-cancel-edit-script-2" style="padding: 6px 14px; font-size: 12px;">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i> Hoàn tác / Hủy
+              </button>
+              <button type="button" class="primary-button" id="btn-save-edit-script-2" style="padding: 7px 18px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="ph-bold ph-floppy-disk"></i> Lưu kịch bản BDD
+              </button>
             </div>
           </div>
 
@@ -2172,6 +2254,9 @@
               </span>
               <button type="button" class="ghost pm-tool-btn" id="script-spec-insert-pom-btn" title="Chèn hành động từ Page Object vào mã">
                 <i class="ph-bold ph-lightning" style="color: var(--accent);"></i> <span>Action</span>
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="script-spec-format-btn" title="Định dạng làm đẹp mã nguồn JavaScript Playwright (Format Code)">
+                <i class="ph-bold ph-magic-wand" style="color: var(--accent);"></i> <span>Format</span>
               </button>
               <button type="button" class="ghost pm-tool-btn" id="script-btn-toggle-edit" title="Bật/Tắt chế độ soạn thảo mã nguồn trực tiếp">
                 <i class="ph-bold ph-pencil-simple-line"></i> <span id="script-edit-btn-text">Chỉnh sửa</span>

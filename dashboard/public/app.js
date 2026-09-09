@@ -2698,6 +2698,110 @@ function highlightCode(content, languageOrJson = 'javascript') {
   return html + escapeHtml(content.slice(cursor));
 }
 
+function formatJavaScriptCode(code) {
+  if (!code || typeof code !== 'string') return code || '';
+
+  const rawLines = code.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const formattedLines = [];
+  let indentLevel = 0;
+  const indentSize = 2;
+  let inBlockComment = false;
+  let inTemplateLiteral = false;
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const rawLine = rawLines[i];
+    const trimmed = rawLine.trim();
+
+    // 1. Preserve single blank line (collapse consecutive blanks)
+    if (!trimmed) {
+      if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] !== '') {
+        formattedLines.push('');
+      }
+      continue;
+    }
+
+    // 2. Multiline block comments
+    if (inBlockComment) {
+      formattedLines.push(' '.repeat(Math.max(0, indentLevel * indentSize)) + trimmed);
+      if (trimmed.includes('*/')) inBlockComment = false;
+      continue;
+    }
+    if (trimmed.startsWith('/*') && !trimmed.includes('*/')) {
+      inBlockComment = true;
+      formattedLines.push(' '.repeat(Math.max(0, indentLevel * indentSize)) + trimmed);
+      continue;
+    }
+
+    // 3. Multiline template literals
+    if (inTemplateLiteral) {
+      formattedLines.push(rawLine);
+      const backticks = (rawLine.match(/(?<!\\)`/g) || []).length;
+      if (backticks % 2 === 1) inTemplateLiteral = false;
+      continue;
+    }
+
+    // 4. Determine closing tokens at start of line
+    let closuresAtStart = 0;
+    const startClosureMatch = trimmed.match(/^([}\]\)])+/);
+    if (startClosureMatch) {
+      closuresAtStart = startClosureMatch[1].length;
+      if (/^\}\s*\)\s*[;,]?$/.test(trimmed) || /^\}\s*\]\s*[;,]?$/.test(trimmed)) {
+        closuresAtStart = 1;
+      }
+    } else if (/^(?:else|catch|finally)\b/.test(trimmed)) {
+      closuresAtStart = 1;
+    }
+
+    const currentIndent = Math.max(0, (indentLevel - closuresAtStart) * indentSize);
+    formattedLines.push(' '.repeat(currentIndent) + trimmed);
+
+    // 5. Calculate indentation delta for next line
+    let netBlockDelta = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inBacktick = false;
+
+    for (let c = 0; c < trimmed.length; c++) {
+      const char = trimmed[c];
+      const prev = c > 0 ? trimmed[c - 1] : '';
+
+      if (char === '/' && trimmed[c + 1] === '/' && !inSingleQuote && !inDoubleQuote && !inBacktick) {
+        break;
+      }
+      if (char === "'" && prev !== '\\' && !inDoubleQuote && !inBacktick) {
+        inSingleQuote = !inSingleQuote;
+        continue;
+      }
+      if (char === '"' && prev !== '\\' && !inSingleQuote && !inBacktick) {
+        inDoubleQuote = !inDoubleQuote;
+        continue;
+      }
+      if (char === '`' && prev !== '\\' && !inSingleQuote && !inDoubleQuote) {
+        inBacktick = !inBacktick;
+        continue;
+      }
+
+      if (!inSingleQuote && !inDoubleQuote && !inBacktick) {
+        if (char === '{' || char === '[') {
+          netBlockDelta++;
+        } else if (char === '}' || char === ']') {
+          netBlockDelta--;
+        }
+      }
+    }
+
+    if (inBacktick) {
+      inTemplateLiteral = true;
+    }
+
+    indentLevel = Math.max(0, indentLevel + netBlockDelta);
+  }
+
+  let result = formattedLines.join('\n');
+  if (!result.endsWith('\n')) result += '\n';
+  return result;
+}
+
 function createSharedCodeEditor({
   textarea,
   preview,
@@ -2706,8 +2810,10 @@ function createSharedCodeEditor({
   revertBtn = null,
   copyBtn = null,
   saveBtn = null,
+  formatBtn = null,
   onInput = null,
   onSave = null,
+  onFormat = null,
 } = {}) {
   if (!textarea || !preview) return null;
   if (textarea.__sharedEditor) return textarea.__sharedEditor;
@@ -3127,6 +3233,29 @@ function createSharedCodeEditor({
   }
   if (saveBtn && onSave) {
     saveBtn.addEventListener('click', () => onSave(editor));
+  }
+  if (formatBtn) {
+    formatBtn.addEventListener('click', () => {
+      if (onFormat) {
+        onFormat(editor);
+      } else if (editor.language === 'json') {
+        try {
+          const formatted = JSON.stringify(JSON.parse(editor.getValue()), null, 2);
+          editor.setValue(formatted, { markClean: false });
+          if (typeof notify === 'function') notify('✨ Đã định dạng JSON!');
+        } catch (e) {
+          if (typeof notify === 'function') notify('Lỗi cú pháp JSON, không thể format: ' + e.message);
+        }
+      } else if (editor.language === 'javascript') {
+        try {
+          const formatted = formatJavaScriptCode(editor.getValue());
+          editor.setValue(formatted, { markClean: false });
+          if (typeof notify === 'function') notify('✨ Đã định dạng mã nguồn JavaScript Playwright!');
+        } catch (e) {
+          if (typeof notify === 'function') notify('Lỗi khi định dạng: ' + e.message);
+        }
+      }
+    });
   }
   textarea.__sharedEditor = editor;
   return editor;
@@ -8055,6 +8184,7 @@ async function loadDataFilesList() {
   try {
     const res = await request('/api/data/datasets');
     datasetsCache = res.datasets || [];
+    wizardAvailableDatasets = datasetsCache;
 
     const statFiles = document.getElementById('stat-data-files');
     const statRecords = document.getElementById('stat-data-records');
@@ -9048,6 +9178,8 @@ async function submitCreateDataset() {
     }
 
     await loadDataFilesList();
+    wizardAvailableDatasets = datasetsCache;
+    editSelectedDataset = res.fileName || fileName;
     await selectDataset(res.fileName || fileName, true);
     switchToDataInspectMode();
   } catch (err) {
@@ -9936,15 +10068,23 @@ function selectProjectScript(script, doScroll = false) {
   const specPathLabel = document.getElementById('script-spec-path-label');
   if (specPathLabel) specPathLabel.textContent = script.relativePath;
 
-  const specEditor = document.getElementById('script-spec-editor');
-  const specPreview = document.getElementById('script-spec-code');
-  if (specEditor) specEditor.value = script.specCode || '';
-  if (specPreview) {
-    specPreview.innerHTML = highlightCode(script.specCode || '', false);
+  if (window.specCodeEditor) {
+    window.specCodeEditor.setValue(script.specCode || '', { markClean: true, readOnly: true });
+  } else {
+    const specEditor = document.getElementById('script-spec-editor');
+    const specPreview = document.getElementById('script-spec-code');
+    if (specEditor) specEditor.value = script.specCode || '';
+    if (specPreview) {
+      specPreview.innerHTML = highlightCode(script.specCode || '', false);
+    }
   }
   const specBadge = document.getElementById('script-spec-status-badge');
   const specRevert = document.getElementById('script-spec-revert-btn');
-  if (specBadge) specBadge.style.display = 'none';
+  if (specBadge) {
+    specBadge.innerHTML = '<i class="ph-bold ph-check"></i> Đang mở từ disk';
+    specBadge.classList.remove('modified');
+    specBadge.style.display = 'inline-flex';
+  }
   if (specRevert) specRevert.style.display = 'none';
 
   // Đồng bộ sang Visual Step Builder để tester có thể sửa trực tiếp nếu muốn
@@ -10440,8 +10580,63 @@ ${actionLine}${evidenceCode}
   previewCode.innerHTML = highlightCode(finalCode, 'javascript');
 }
 
+function generatePomStepCodeAndTitle({
+  pageRelPath,
+  pageFile,
+  className,
+  pageClassName,
+  actionType,
+  actionName,
+  actionParams,
+  locatorInteraction,
+  locatorValue,
+  stepType,
+  stepTitle,
+  includeEvidence,
+}) {
+  const cName = className || pageClassName || (pageRelPath || pageFile || 'SamplePage.js').split('/').pop().replace(/\.js$/, '');
+  const fixtureName = cName.charAt(0).toLowerCase() + cName.slice(1);
+  let actionLine = '';
+  let autoTitle = '';
+  let evidenceName = '';
+
+  if (actionType === 'locator') {
+    const locName = actionName || 'element';
+    const action = locatorInteraction || 'click';
+    const val = (locatorValue || '').trim();
+    evidenceName = `${(stepType || 'when').toLowerCase()}_click_${locName}`;
+
+    if (action === 'fill') {
+      actionLine = `      await ${fixtureName}.${locName}.fill(${JSON.stringify(val || 'giá trị nhập')});`;
+      autoTitle = `Tôi nhập giá trị vào ${locName}`;
+      evidenceName = `${(stepType || 'when').toLowerCase()}_fill_${locName}`;
+    } else if (action === 'check') {
+      actionLine = `      await ${fixtureName}.${locName}.check();`;
+      autoTitle = `Tôi tích chọn ${locName}`;
+      evidenceName = `${(stepType || 'when').toLowerCase()}_check_${locName}`;
+    } else if (action === 'visible') {
+      actionLine = `      await expect(${fixtureName}.${locName}).toBeVisible();`;
+      autoTitle = `Hệ thống hiển thị phần tử ${locName}`;
+    } else {
+      actionLine = `      await ${fixtureName}.${locName}.click();`;
+      autoTitle = `Tôi nhấn chuột vào ${locName}`;
+    }
+  } else {
+    const methodName = actionName || 'actionMethod';
+    const params = (actionParams || '').trim();
+    actionLine = `      await ${fixtureName}.${methodName}(${params});`;
+    autoTitle = `Tôi thực hiện ${methodName}`;
+    evidenceName = `after_${methodName}`;
+  }
+
+  const title = (stepTitle || autoTitle).trim();
+  const evidenceCode = includeEvidence && locatorInteraction !== 'visible' ? `\n      await ${fixtureName}.capture('${evidenceName}');` : '';
+  const codeBody = `${actionLine}${evidenceCode}`;
+
+  return { title, codeBody, autoTitle };
+}
+
 async function submitPomActionToBdd() {
-  const submitBtn = document.getElementById('btn-submit-pom-modal');
   const scriptSelect = document.getElementById('pom-modal-script-select');
   const pageSelect = document.getElementById('pom-modal-page-select');
   const methodSelect = document.getElementById('pom-modal-method-select');
@@ -10484,37 +10679,96 @@ async function submitPomActionToBdd() {
     return;
   }
 
-  const origHtml = submitBtn.innerHTML;
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Đang chèn bước...';
+  const { title, codeBody } = generatePomStepCodeAndTitle(payload);
 
-  try {
-    const res = await request('/api/builder/insert-step', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+  // 1. Nếu người dùng đang ở màn hình Chỉnh sửa (Edit Mode) của kịch bản này:
+  const isCurrentlyEditingThisScript = scriptBuilderMode === 'edit' && currentSelectedScript && currentSelectedScript.relativePath === payload.scriptPath;
 
-    document.getElementById('modal-insert-pom-action')?.close();
-    notify(`✅ ${res.message}`);
+  if (isCurrentlyEditingThisScript) {
+    // Thêm bước mới trực tiếp vào bộ nhớ editableSteps (chưa lưu vào đĩa)
+    const newStep = {
+      id: `s_${Date.now()}`,
+      stepType: payload.stepType || 'When',
+      title: title,
+      code: codeBody,
+    };
+    editableSteps.push(newStep);
 
-    await loadProjectScripts();
-    const updated = projectScripts.find((s) => s.relativePath === payload.scriptPath);
-    if (updated) {
-      selectProjectScript(updated);
+    // Tự động chọn Page Object này trong Khối 04 nếu chưa được chọn
+    if (pageRelPath && typeof editSelectedPoms !== 'undefined') {
+      editSelectedPoms.add(pageRelPath);
+      renderEditPomList();
     }
 
+    renderEditableSteps();
+    updateEditAccordionSummaries();
+    updateEditScriptPreview();
+
+    document.getElementById('modal-insert-pom-action')?.close();
+
+    // Mở khối 02 nếu đang bị đóng và cuộn nhẹ tới bước mới
+    const secSteps = document.getElementById('edit-sec-steps');
+    if (secSteps && secSteps.classList.contains('is-collapsed')) {
+      secSteps.classList.remove('is-collapsed');
+      secSteps.classList.add('is-expanded');
+    }
+
+    setTimeout(() => {
+      const stepCards = document.querySelectorAll('#edit-steps-list .builder-step-card');
+      const lastCard = stepCards[stepCards.length - 1];
+      lastCard?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+
+    notify(`✨ Đã thêm bước "${title}" vào bản nháp kịch bản! Nhấn "Lưu kịch bản" để lưu thay đổi vào file.`);
+    return;
+  }
+
+  // 2. Nếu đang ở chế độ Xem (Inspect) hoặc mở từ Page Manager:
+  // Tự động chuyển sang Chế độ Chỉnh sửa kịch bản (Edit Mode) để người dùng xem trước và duyệt trước khi lưu!
+  const targetScript = (projectScripts || []).find((s) => s.relativePath === payload.scriptPath);
+  if (targetScript) {
     const currentView = document.querySelector('.view-tab.active')?.dataset.view;
     if (currentView !== 'builder-view') {
       const bddTab = document.querySelector('.view-tab[data-view="builder-view"]');
       if (bddTab) bddTab.click();
     }
-  } catch (err) {
-    notify(`❌ Lỗi: ${err.message}`);
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = origHtml;
+
+    currentSelectedScript = targetScript;
+    selectProjectScript(targetScript);
+    switchToEditScriptMode('steps');
+
+    const newStep = {
+      id: `s_${Date.now()}`,
+      stepType: payload.stepType || 'When',
+      title: title,
+      code: codeBody,
+    };
+    editableSteps.push(newStep);
+
+    if (pageRelPath && typeof editSelectedPoms !== 'undefined') {
+      editSelectedPoms.add(pageRelPath);
+      renderEditPomList();
+    }
+
+    renderEditableSteps();
+    updateEditAccordionSummaries();
+    updateEditScriptPreview();
+
+    document.getElementById('modal-insert-pom-action')?.close();
+
+    setTimeout(() => {
+      const stepCards = document.querySelectorAll('#edit-steps-list .builder-step-card');
+      const lastCard = stepCards[stepCards.length - 1];
+      lastCard?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 120);
+
+    notify(`✨ Đã chuyển sang màn hình chỉnh sửa và thêm bước "${title}". Nhấn "Lưu kịch bản" để lưu thay đổi!`);
+    return;
   }
+
+  // 3. Fallback an toàn nếu không tìm thấy script trong bộ nhớ
+  document.getElementById('modal-insert-pom-action')?.close();
+  notify('❌ Không tìm thấy thông tin kịch bản test đích.');
 }
 
 initPomModalControls();
@@ -10663,11 +10917,15 @@ function updateEditScriptPreview() {
     precondition: { auth: authType, desc: preDesc },
   });
 
-  const codeEl = document.getElementById('script-spec-code');
-  if (codeEl) codeEl.innerHTML = highlightCode(updatedCode, false);
+  if (window.specCodeEditor) {
+    window.specCodeEditor.setValue(updatedCode, { markClean: false, readOnly: !scriptDirectEditMode });
+  } else {
+    const codeEl = document.getElementById('script-spec-code');
+    if (codeEl) codeEl.innerHTML = highlightCode(updatedCode, false);
 
-  const editorEl = document.getElementById('script-spec-editor');
-  if (editorEl) editorEl.value = updatedCode;
+    const editorEl = document.getElementById('script-spec-editor');
+    if (editorEl) editorEl.value = updatedCode;
+  }
 
   const isDirty = updatedCode !== (currentSelectedScript.specCode || '');
   const statusBadge = document.getElementById('script-spec-status-badge');
@@ -10844,34 +11102,116 @@ function renderEditPomList() {
   });
 }
 
-async function loadEditDatasets() {
+async function loadEditDatasets(forceReload = true) {
   const select = document.getElementById('edit-script-dataset');
   if (!select) return;
 
   try {
-    if (!wizardAvailableDatasets || wizardAvailableDatasets.length === 0) {
-      const res = await fetch('/api/data/datasets');
-      if (res.ok) {
-        const data = await res.json();
-        wizardAvailableDatasets = data.datasets || [];
-      }
-    }
-
-    select.innerHTML = '<option value="">-- Không sử dụng file data ngoài --</option>' +
-      (wizardAvailableDatasets || []).map((d) => {
-        const count = d.recordCount ?? d.itemCount ?? 0;
-        return `<option value="${escapeHtml(d.fileName)}">${escapeHtml(d.fileName)} (${count} mục)</option>`;
-      }).join('');
-
-    if (editSelectedDataset) {
-      select.value = editSelectedDataset;
+    const res = await fetch('/api/data/datasets');
+    if (res.ok) {
+      const data = await res.json();
+      wizardAvailableDatasets = data.datasets || [];
+      datasetsCache = wizardAvailableDatasets;
     }
   } catch (err) {
     console.error('Failed to load edit datasets:', err);
   }
+
+  select.innerHTML = '<option value="">-- Không sử dụng file data ngoài --</option>' +
+    (wizardAvailableDatasets || []).map((d) => {
+      const count = d.recordCount ?? d.itemCount ?? 0;
+      return `<option value="${escapeHtml(d.fileName)}">${escapeHtml(d.fileName)} (${count} mục)</option>`;
+    }).join('');
+
+  if (editSelectedDataset) {
+    select.value = editSelectedDataset;
+  }
+  updateEditAccordionSummaries();
 }
 
-function switchToEditScriptMode() {
+function updateEditAccordionSummaries() {
+  const titleVal = document.getElementById('edit-script-title')?.value.trim();
+  const featVal = document.getElementById('edit-script-feature')?.value.trim();
+  const infoSummary = document.getElementById('summary-info-text');
+  if (infoSummary) {
+    infoSummary.textContent = featVal ? `Feature: ${featVal}` : (titleVal || 'Chưa đặt tên');
+  }
+
+  const stepsSummary = document.getElementById('summary-steps-count');
+  if (stepsSummary) {
+    stepsSummary.textContent = Array.isArray(editableSteps) ? editableSteps.length : 0;
+  }
+
+  const preSummary = document.getElementById('summary-precondition-text');
+  const authSelect = document.getElementById('edit-script-auth-type');
+  if (preSummary && authSelect) {
+    preSummary.textContent = authSelect.value === 'authenticated' ? 'Đã đăng nhập (authSetup)' : 'Khách vãng lai (Guest)';
+  }
+
+  const pomsSummary = document.getElementById('summary-poms-count');
+  if (pomsSummary) {
+    pomsSummary.textContent = editSelectedPoms ? editSelectedPoms.size : 0;
+  }
+
+  const dataSummary = document.getElementById('summary-data-text');
+  const datasetSelect = document.getElementById('edit-script-dataset');
+  const currentDataset = datasetSelect ? datasetSelect.value : editSelectedDataset;
+  if (dataSummary) {
+    dataSummary.textContent = currentDataset ? currentDataset : 'Không dùng data';
+  }
+}
+
+function initScriptEditAccordions() {
+  const container = document.getElementById('script-edit-view');
+  if (!container || container._accordionsInit) return;
+  container._accordionsInit = true;
+
+  container.querySelectorAll('.script-accordion-header').forEach((header) => {
+    header.addEventListener('click', (e) => {
+      // Don't toggle if user clicked on interactive control
+      if (e.target.closest('button, input, select, a, .script-steps-quick-actions')) return;
+      const targetId = header.dataset.target;
+      const item = targetId ? document.getElementById(targetId) : header.closest('.script-accordion-item');
+      if (!item) return;
+
+      const isExpanded = item.classList.contains('is-expanded');
+      if (isExpanded) {
+        item.classList.remove('is-expanded');
+        item.classList.add('is-collapsed');
+      } else {
+        item.classList.remove('is-collapsed');
+        item.classList.add('is-expanded');
+        if (item.id === 'edit-sec-data') {
+          loadEditDatasets(true);
+        }
+      }
+    });
+
+    header.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (e.target.closest('button, input, select, a')) return;
+        e.preventDefault();
+        header.click();
+      }
+    });
+  });
+
+  document.getElementById('btn-edit-expand-all')?.addEventListener('click', () => {
+    container.querySelectorAll('.script-accordion-item').forEach((item) => {
+      item.classList.remove('is-collapsed');
+      item.classList.add('is-expanded');
+    });
+  });
+
+  document.getElementById('btn-edit-collapse-all')?.addEventListener('click', () => {
+    container.querySelectorAll('.script-accordion-item').forEach((item) => {
+      item.classList.remove('is-expanded');
+      item.classList.add('is-collapsed');
+    });
+  });
+}
+
+function switchToEditScriptMode(targetSection) {
   if (!currentSelectedScript) {
     notify('Vui lòng chọn một kịch bản test trước khi chỉnh sửa.');
     return;
@@ -10946,6 +11286,37 @@ function switchToEditScriptMode() {
   editableSteps = currentSelectedScript.steps ? JSON.parse(JSON.stringify(currentSelectedScript.steps)) : [];
   renderEditableSteps();
 
+  // Setup accordion collapsible behavior
+  initScriptEditAccordions();
+
+  const secInfo = document.getElementById('edit-sec-info');
+  const secSteps = document.getElementById('edit-sec-steps');
+  const secPre = document.getElementById('edit-sec-precondition');
+  const secPoms = document.getElementById('edit-sec-poms');
+  const secData = document.getElementById('edit-sec-data');
+
+  if (targetSection === 'info') {
+    secInfo?.classList.add('is-expanded');
+    secInfo?.classList.remove('is-collapsed');
+    [secPre, secPoms, secData].forEach(el => { el?.classList.add('is-collapsed'); el?.classList.remove('is-expanded'); });
+    setTimeout(() => {
+      titleInput?.focus();
+    }, 60);
+  } else if (targetSection === 'steps') {
+    secSteps?.classList.add('is-expanded');
+    secSteps?.classList.remove('is-collapsed');
+    [secPre, secPoms, secData].forEach(el => { el?.classList.add('is-collapsed'); el?.classList.remove('is-expanded'); });
+    setTimeout(() => {
+      secSteps?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+  } else {
+    // Default: Section 01 & 02 open, Section 03, 04, 05 collapsed
+    [secInfo, secSteps].forEach(el => { el?.classList.add('is-expanded'); el?.classList.remove('is-collapsed'); });
+    [secPre, secPoms, secData].forEach(el => { el?.classList.add('is-collapsed'); el?.classList.remove('is-expanded'); });
+  }
+
+  updateEditAccordionSummaries();
+
   // Column 3 Code Panel
   const eyebrow = document.getElementById('script-code-eyebrow');
   if (eyebrow) eyebrow.textContent = 'MÃ NGUỒN BDD SPEC (CHỈNH SỬA)';
@@ -10982,18 +11353,31 @@ function switchToEditScriptMode() {
   if (toggleEditBtn) toggleEditBtn.style.display = 'inline-flex';
   if (saveBtn) saveBtn.style.display = 'none';
 
-  const codeEl = document.getElementById('script-spec-code');
-  if (codeEl) codeEl.innerHTML = highlightCode(currentSelectedScript.specCode || '', false);
+  if (window.specCodeEditor) {
+    window.specCodeEditor.setValue(currentSelectedScript.specCode || '', { markClean: true, readOnly: true });
+  } else {
+    const codeEl = document.getElementById('script-spec-code');
+    if (codeEl) codeEl.innerHTML = highlightCode(currentSelectedScript.specCode || '', false);
 
-  const editorEl = document.getElementById('script-spec-editor');
-  if (editorEl) editorEl.value = currentSelectedScript.specCode || '';
+    const editorEl = document.getElementById('script-spec-editor');
+    if (editorEl) editorEl.value = currentSelectedScript.specCode || '';
+  }
 
   // Attach input listeners once
   if (titleInput && !titleInput._editBound) {
     titleInput._editBound = true;
-    titleInput.addEventListener('input', () => updateEditScriptPreview());
-    featInput?.addEventListener('input', () => updateEditScriptPreview());
-    tagsInput?.addEventListener('input', () => updateEditScriptPreview());
+    titleInput.addEventListener('input', () => {
+      updateEditScriptPreview();
+      updateEditAccordionSummaries();
+    });
+    featInput?.addEventListener('input', () => {
+      updateEditScriptPreview();
+      updateEditAccordionSummaries();
+    });
+    tagsInput?.addEventListener('input', () => {
+      updateEditScriptPreview();
+      updateEditAccordionSummaries();
+    });
   }
 
   const datasetSelect = document.getElementById('edit-script-dataset');
@@ -11002,27 +11386,36 @@ function switchToEditScriptMode() {
     datasetSelect.addEventListener('change', () => {
       editSelectedDataset = datasetSelect.value;
       updateEditScriptPreview();
+      updateEditAccordionSummaries();
     });
   }
 
   if (authSelect && !authSelect._editBound) {
     authSelect._editBound = true;
-    authSelect.addEventListener('change', () => updateEditScriptPreview());
+    authSelect.addEventListener('change', () => {
+      updateEditScriptPreview();
+      updateEditAccordionSummaries();
+    });
   }
   if (preDescInput && !preDescInput._editBound) {
     preDescInput._editBound = true;
-    preDescInput.addEventListener('input', () => updateEditScriptPreview());
+    preDescInput.addEventListener('input', () => {
+      updateEditScriptPreview();
+      updateEditAccordionSummaries();
+    });
   }
 
   document.getElementById('btn-edit-pom-select-all')?.addEventListener('click', () => {
     (repoPages || []).forEach((p) => editSelectedPoms.add(p.relativePath));
     renderEditPomList();
     updateEditScriptPreview();
+    updateEditAccordionSummaries();
   });
   document.getElementById('btn-edit-pom-deselect-all')?.addEventListener('click', () => {
     editSelectedPoms.clear();
     renderEditPomList();
     updateEditScriptPreview();
+    updateEditAccordionSummaries();
   });
 
   document.getElementById('btn-edit-add-step-pom')?.addEventListener('click', () => {
@@ -11030,8 +11423,18 @@ function switchToEditScriptMode() {
   });
 
   document.getElementById('btn-edit-open-create-data')?.addEventListener('click', () => {
-    const dataDrawer = document.getElementById('drawer-create-data');
-    if (dataDrawer) dataDrawer.classList.add('open');
+    const dataTab = document.querySelector('.view-tab[data-view="data-view"]');
+    if (dataTab) {
+      dataTab.click();
+      setTimeout(() => {
+        if (typeof switchToDataCreateMode === 'function') {
+          switchToDataCreateMode();
+        }
+        notify('📁 Đã chuyển sang màn hình Quản lý Dữ liệu test để tạo tệp Dataset mới!');
+      }, 150);
+    } else {
+      notify('❌ Không tìm thấy màn hình Quản lý Dữ liệu test.');
+    }
   });
 }
 
@@ -12646,6 +13049,10 @@ async function initVisualBuilder() {
   }
   populateBuilderSpecOptions();
   await loadProjectScripts();
+  await loadWizardDatasets();
+  if (typeof scriptBuilderMode !== 'undefined' && scriptBuilderMode === 'edit') {
+    await loadEditDatasets(true);
+  }
   try {
     const res = await request('/api/builder/actions');
     builderPresetActions = res.presetActions || [];
@@ -12868,6 +13275,17 @@ function initVisualBuilderControls() {
     revertBtn: document.getElementById('script-spec-revert-btn'),
     copyBtn: document.getElementById('script-spec-copy-btn'),
     saveBtn: document.getElementById('script-spec-save-btn'),
+    formatBtn: document.getElementById('script-spec-format-btn'),
+    onFormat: (editor) => {
+      try {
+        const currentCode = editor.getValue();
+        const formatted = formatJavaScriptCode(currentCode);
+        editor.setValue(formatted, { markClean: false });
+        notify('✨ Đã định dạng mã nguồn BDD Spec (.spec.js) chuẩn Playwright!');
+      } catch (err) {
+        notify('Không thể định dạng mã nguồn: ' + err.message);
+      }
+    },
     onSave: async (editor) => {
       if (!currentSelectedScript) {
         notify('Vui lòng chọn một kịch bản test trước khi lưu.');
@@ -12976,8 +13394,8 @@ function initVisualBuilderControls() {
   document.getElementById('btn-reset-create-script')?.addEventListener('click', () => resetWizardToDefaults(false));
   document.getElementById('btn-sidebar-create-script')?.addEventListener('click', () => switchToCreateScriptMode());
   document.getElementById('script-edit-this-btn')?.addEventListener('click', () => switchToEditScriptMode());
-  document.getElementById('btn-edit-script-info')?.addEventListener('click', () => switchToEditScriptMode());
-  document.getElementById('btn-edit-script-steps')?.addEventListener('click', () => switchToEditScriptMode());
+  document.getElementById('btn-edit-script-info')?.addEventListener('click', () => switchToEditScriptMode('info'));
+  document.getElementById('btn-edit-script-steps')?.addEventListener('click', () => switchToEditScriptMode('steps'));
   const handleCancelScriptEdit = () => {
     const editor = document.getElementById('script-spec-editor');
     const isDirty = editor && currentSelectedScript && editor.value !== (currentSelectedScript.specCode || '');
