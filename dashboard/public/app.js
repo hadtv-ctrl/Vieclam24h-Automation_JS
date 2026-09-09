@@ -1397,14 +1397,15 @@ async function inspectPage(relativePath, doScroll = false) {
     if ($('#page-manager-select-page')) $('#page-manager-select-page').value = relativePath;
 
     // Cập nhật Left Panel: Thông tin Page (Phần 01)
-    const isFixture = result.platform === 'fixture';
-    const platformLabel = isFixture ? 'Fixture Nền Tảng' : (result.platform === 'mobile-web' ? 'Mobile Web' : (result.platform === 'base' ? 'Trang Cơ Sở' : 'Desktop Web'));
+    const isFixture = result.platform === 'fixture' || result.resourceKind === 'fixture';
+    const isFoundation = result.isBase || result.platform === 'base' || result.resourceKind === 'foundation';
+    const platformLabel = isFixture ? 'Fixture Nền Tảng' : (isFoundation ? 'Lớp Nền Tảng (Core Foundation)' : (result.platform === 'mobile-web' ? 'Mobile Web' : 'Desktop Web'));
     if ($('#pm-inspect-title-text')) $('#pm-inspect-title-text').textContent = result.title ? `${result.title} (${result.className})` : result.className;
     if ($('#pm-input-title')) $('#pm-input-title').textContent = `${result.className}.js`;
     if ($('#pm-inspect-platform')) $('#pm-inspect-platform').textContent = platformLabel;
     if ($('#pm-inspect-file')) $('#pm-inspect-file').textContent = result.relativePath;
     if ($('#pm-inspect-class')) $('#pm-inspect-class').textContent = isFixture ? `${result.className}.extend({ ... })` : `${result.className}${result.baseClass && result.baseClass !== 'None' ? ` extends ${result.baseClass}` : ''}`;
-    if ($('#pm-inspect-desc')) $('#pm-inspect-desc').textContent = result.desc || (isFixture ? 'Fixture quản lý Dependency Injection và vòng đời kiểm thử.' : `Page Object quản lý tương tác trên ${result.className}.`);
+    if ($('#pm-inspect-desc')) $('#pm-inspect-desc').textContent = result.desc || (isFixture ? 'Fixture quản lý Dependency Injection và vòng đời kiểm thử.' : (isFoundation ? 'Lớp cơ sở nền tảng dùng chung của toàn bộ framework.' : `Page Object quản lý tương tác trên ${result.className}.`));
     if ($('#pm-inspect-loc-count')) $('#pm-inspect-loc-count').textContent = isFixture ? '—' : (result.locators || []).length;
     if ($('#pm-locators-badge-count')) $('#pm-locators-badge-count').textContent = isFixture ? '0' : (result.locators || []).length;
     if ($('#pm-inspect-act-count')) $('#pm-inspect-act-count').textContent = (result.methods || []).length;
@@ -1416,27 +1417,27 @@ async function inspectPage(relativePath, doScroll = false) {
     if ($('#pm-grid-platform')) $('#pm-grid-platform').textContent = platformLabel;
     if ($('#pm-grid-path')) $('#pm-grid-path').textContent = result.relativePath;
     if ($('#pm-grid-base')) $('#pm-grid-base').textContent = result.baseClass || (isFixture ? 'playwright/test' : 'BasePage');
-    if ($('#pm-grid-ctor')) $('#pm-grid-ctor').textContent = isFixture ? 'test.extend({ ... })' : 'constructor(page)';
+    if ($('#pm-grid-ctor')) $('#pm-grid-ctor').textContent = isFixture ? 'test.extend({ ... })' : 'constructor(page, featureName)';
 
+    const isLockedResource = isFixture || isFoundation;
     const pmDelBtn = $('#pm-subnav-delete-btn');
     if (pmDelBtn) {
-      const isBase = result.relativePath === 'pages/BasePage.js' || isFixture;
-      pmDelBtn.disabled = isBase;
-      pmDelBtn.style.opacity = isBase ? '0.35' : '1';
-      pmDelBtn.title = isFixture ? 'Không thể xóa Fixture nền tảng' : (isBase ? 'Không thể xóa BasePage.js (lớp nền tảng dùng chung)' : 'Xóa Page Object này khỏi dự án');
+      pmDelBtn.disabled = isLockedResource;
+      pmDelBtn.style.opacity = isLockedResource ? '0.35' : '1';
+      pmDelBtn.title = isFixture ? 'Không thể xóa Fixture nền tảng' : (isFoundation ? 'Không thể xóa BasePage.js (lớp nền tảng dùng chung)' : 'Xóa Page Object này khỏi dự án');
     }
 
     const quickAddBox = document.querySelector('.pm-inline-add-box');
     const quickAddBtn = $('#pm-subnav-add-locator-btn');
-    if (quickAddBox) quickAddBox.style.display = isFixture ? 'none' : 'block';
-    if (quickAddBtn) quickAddBtn.style.display = isFixture ? 'none' : 'inline-flex';
+    if (quickAddBox) quickAddBox.style.display = isLockedResource ? 'none' : 'block';
+    if (quickAddBtn) quickAddBtn.style.display = isLockedResource ? 'none' : 'inline-flex';
 
     const quickActionBox = $('#pm-inline-add-action-box');
     const quickActionBtn = $('#pm-subnav-add-action-btn');
     const headActionBtn = $('#pm-btn-add-action-toggle');
-    if (quickActionBox) quickActionBox.style.display = isFixture ? 'none' : 'block';
-    if (quickActionBtn) quickActionBtn.style.display = isFixture ? 'none' : 'inline-flex';
-    if (headActionBtn) headActionBtn.style.display = isFixture ? 'none' : 'inline-flex';
+    if (quickActionBox) quickActionBox.style.display = isLockedResource ? 'none' : 'block';
+    if (quickActionBtn) quickActionBtn.style.display = isLockedResource ? 'none' : 'inline-flex';
+    if (headActionBtn) headActionBtn.style.display = isLockedResource ? 'none' : 'inline-flex';
 
     // Render locators và actions
     renderInspectedLocators(result.locators || []);
@@ -1892,8 +1893,17 @@ function renderPageManagerFiles() {
 
   const searchQuery = ($('#pm-filter-input')?.value || '').toLowerCase().trim();
 
+  // Tương thích: Nếu phiên cũ lưu filter 'fixture', tự động chuyển về 'all'
+  if (existingPageFilter === 'fixture') existingPageFilter = 'all';
+
   const filtered = repoPages.filter((page) => {
-    if (existingPageFilter !== 'all' && page.platform !== existingPageFilter) return false;
+    if (existingPageFilter !== 'all') {
+      if (existingPageFilter === 'base') {
+        if (!page.isBase && page.platform !== 'base' && page.relativePath !== 'pages/BasePage.js') return false;
+      } else if (page.platform !== existingPageFilter) {
+        return false;
+      }
+    }
     if (searchQuery) {
       const matchName = (page.className || '').toLowerCase().includes(searchQuery);
       const matchPath = (page.relativePath || '').toLowerCase().includes(searchQuery);
@@ -1910,11 +1920,11 @@ function renderPageManagerFiles() {
 
   container.innerHTML = filtered.map((page) => {
     const isCurrent = currentInspectedPage && currentInspectedPage.relativePath === page.relativePath;
-    const isFixture = page.platform === 'fixture';
-    const isBase = page.relativePath === 'pages/BasePage.js' || isFixture;
-    const platformLabel = isFixture ? 'Fixture' : (page.platform === 'mobile-web' ? 'Mobile' : (page.platform === 'base' ? 'Base' : 'Desktop'));
-    const platformClass = isFixture ? 'fixture' : (page.platform === 'mobile-web' ? 'mobile' : (page.platform === 'base' ? 'setup' : 'desktop'));
-    const platformIcon = isFixture ? (page.relativePath.includes('mobile') ? 'ph-device-mobile' : 'ph-lightning') : (page.icon || (page.platform === 'mobile-web' ? 'ph-device-mobile' : 'ph-browsers'));
+    const isBase = page.relativePath === 'pages/BasePage.js' || page.isBase || page.platform === 'base';
+    const isFixture = page.platform === 'fixture' || page.resourceKind === 'fixture';
+    const platformLabel = isFixture ? 'Fixture' : (isBase ? 'Nền tảng (Core)' : (page.platform === 'mobile-web' ? 'Mobile' : 'Desktop'));
+    const platformClass = isFixture ? 'fixture' : (isBase ? 'setup' : (page.platform === 'mobile-web' ? 'mobile' : 'desktop'));
+    const platformIcon = isFixture ? 'ph-lightning' : (isBase ? 'ph-shield-check' : (page.icon || (page.platform === 'mobile-web' ? 'ph-device-mobile' : 'ph-browsers')));
 
     return `
       <div class="dashboard-list-card page-manager-file-card script-card-item ${isCurrent ? 'is-selected active' : ''}" data-path="${escapeHtml(page.relativePath)}">
@@ -6515,6 +6525,7 @@ const toolShortLabels = {
   'suites-view': 'Test Suites',
   'recorder-view': 'Ghi kịch bản',
   'data-view': 'Dữ liệu test',
+  'fixtures-view': 'Fixtures & Hooks',
   'compare-view': 'So sánh ảnh',
   'git-view': 'Đồng bộ Git',
 };
@@ -6558,6 +6569,7 @@ document.querySelectorAll('.view-tab').forEach((button) => button.addEventListen
   if (button.dataset.view === 'suites-view') await openSuitesManager();
   if (button.dataset.view === 'recorder-view') await openRecorderStudio();
   if (button.dataset.view === 'data-view') await openDataManager();
+  if (button.dataset.view === 'fixtures-view') await openFixturesStudio();
   if (button.dataset.view === 'builder-view') await initVisualBuilder();
   if (button.dataset.view === 'git-view') await openGitStudio();
 }));
@@ -9895,9 +9907,13 @@ window.openPageCodeModal = async function (pagePath, pageName) {
 
   currentModalPagePath = pagePath;
   const isFixture = pagePath.startsWith('core/fixtures/');
+  const isCoreFixture = pagePath === 'core/fixtures/baseTest.js' || pagePath === 'core/fixtures/mobileWebTest.js' || (pagePath.startsWith('core/fixtures/') && !pagePath.includes('/custom/'));
+
   if (titleEl) {
-    if (isFixture) {
-      titleEl.innerHTML = `<i class="ph-bold ph-lightning" style="color: #a855f7;"></i> Fixture Nền Tảng: ${escapeHtml(pageName)}`;
+    if (isCoreFixture) {
+      titleEl.innerHTML = `<i class="ph-bold ph-lightning" style="color: #a855f7;"></i> Fixture Nền Tảng: ${escapeHtml(pageName)} <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; margin-left: 8px; vertical-align: middle;"><i class="ph-bold ph-lock-key"></i> CHỈ ĐỌC</span>`;
+    } else if (isFixture) {
+      titleEl.innerHTML = `<i class="ph-bold ph-sparkle" style="color: #10b981;"></i> Custom Fixture: ${escapeHtml(pageName)}`;
     } else {
       titleEl.innerHTML = `<i class="ph-bold ph-browsers" style="color: #10b981;"></i> Page Object: ${escapeHtml(pageName)}`;
     }
@@ -9905,7 +9921,30 @@ window.openPageCodeModal = async function (pagePath, pageName) {
   if (pathEl) pathEl.textContent = pagePath;
   if (dirtyBadge) dirtyBadge.style.display = 'none';
   const eyebrowEl = document.getElementById('modal-page-eyebrow');
-  if (eyebrowEl) eyebrowEl.textContent = isFixture ? 'Mã nguồn Fixture Nền Tảng' : 'Mã nguồn Page Object Class';
+  if (eyebrowEl) {
+    if (isCoreFixture) {
+      eyebrowEl.innerHTML = 'MÃ NGUỒN FIXTURE NỀN TẢNG &bull; <span style="color: #ef4444; font-weight: 600;"><i class="ph-bold ph-lock-key"></i> ĐƯỢC BẢO VỆ CHỈ ĐỌC</span>';
+    } else if (isFixture) {
+      eyebrowEl.textContent = 'Mã nguồn Custom Fixture';
+    } else {
+      eyebrowEl.textContent = 'Mã nguồn Page Object Class';
+    }
+  }
+
+  const protectBanner = document.getElementById('modal-fixture-protect-banner');
+  if (protectBanner) {
+    protectBanner.style.display = isCoreFixture ? 'block' : 'none';
+  }
+  const btnModalOpenFixturesStudio = document.getElementById('btn-modal-open-fixtures-studio');
+  if (btnModalOpenFixturesStudio && !btnModalOpenFixturesStudio.__bound) {
+    btnModalOpenFixturesStudio.__bound = true;
+    btnModalOpenFixturesStudio.onclick = () => {
+      modal.close();
+      if (typeof openFixturesStudio === 'function') {
+        openFixturesStudio();
+      }
+    };
+  }
 
   // Ensure scroll listener is bound directly on modal elements as failsafe
   if (editor && previewPre && !editor.__modalScrollBound) {
@@ -9941,10 +9980,16 @@ window.openPageCodeModal = async function (pagePath, pageName) {
     const res = await request(`/api/builder/page-content?file=${encodeURIComponent(pagePath)}`);
     currentModalPageOriginalContent = res.content || '';
     if (window.pageCodeEditor) {
-      window.pageCodeEditor.setValue(currentModalPageOriginalContent, { markClean: true });
+      window.pageCodeEditor.setValue(currentModalPageOriginalContent, { markClean: true, readOnly: isCoreFixture });
+      window.pageCodeEditor.setReadOnly(isCoreFixture);
     } else {
       if (editor) {
         editor.value = currentModalPageOriginalContent;
+        if (isCoreFixture) {
+          editor.setAttribute('readonly', 'true');
+        } else {
+          editor.removeAttribute('readonly');
+        }
         editor.scrollTop = 0;
         editor.scrollLeft = 0;
       }
@@ -9966,7 +10011,11 @@ window.openPageCodeModal = async function (pagePath, pageName) {
     }
 
     if (saveBtn) {
-      saveBtn.onclick = async () => {
+      if (isCoreFixture) {
+        saveBtn.style.display = 'none';
+      } else {
+        saveBtn.style.display = 'inline-flex';
+        saveBtn.onclick = async () => {
         if (!currentModalPagePath || !editor) return;
         const originalText = saveBtn.innerHTML;
         saveBtn.disabled = true;
@@ -9995,6 +10044,7 @@ window.openPageCodeModal = async function (pagePath, pageName) {
         }
       };
     }
+  }
   } catch (err) {
     if (editor) editor.value = `Lỗi: ${err.message}`;
     if (preview) preview.innerHTML = `<span style="color: #ef4444;">${escapeHtml(err.message)}</span>`;
@@ -14420,3 +14470,305 @@ function initGitStudio() {
 }
 
 initGitStudio();
+
+// =============================================================================
+// PHÂN HỆ: QUẢN LÝ FIXTURES, PRECONDITIONS & TEARDOWN STUDIO (PLAN 08)
+// =============================================================================
+let repoFixtures = [];
+let currentFixtureFilter = 'all';
+let currentSelectedFixture = null;
+let isFixturesStudioInitialized = false;
+
+async function openFixturesStudio() {
+  if (!isFixturesStudioInitialized) {
+    initFixturesStudioListeners();
+    isFixturesStudioInitialized = true;
+  }
+  await loadFixturesList();
+}
+
+async function loadFixturesList() {
+  const container = $('#fixtures-list-container');
+  if (container) container.innerHTML = '<p class="empty-resource">Đang tải danh sách fixtures...</p>';
+
+  try {
+    const res = await request('/api/fixtures');
+    repoFixtures = res.fixtures || [];
+    renderFixturesList();
+  } catch (err) {
+    if (container) {
+      container.innerHTML = `<p class="empty-resource" style="color: var(--danger);">Lỗi tải fixtures: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+}
+
+function renderFixturesList() {
+  const container = $('#fixtures-list-container');
+  if (!container) return;
+
+  const searchQuery = ($('#fixtures-search-input')?.value || '').toLowerCase().trim();
+
+  const filtered = repoFixtures.filter((fx) => {
+    if (currentFixtureFilter !== 'all') {
+      if (currentFixtureFilter === 'precondition' && !fx.category.toLowerCase().includes('precondition') && !fx.category.toLowerCase().includes('xác thực')) return false;
+      if (currentFixtureFilter === 'teardown' && !fx.category.toLowerCase().includes('dọn dẹp') && !fx.category.toLowerCase().includes('teardown') && !fx.category.toLowerCase().includes('hook')) return false;
+      if (currentFixtureFilter === 'custom' && !fx.isCustom) return false;
+    }
+    if (searchQuery) {
+      const matchName = (fx.name || '').toLowerCase().includes(searchQuery);
+      const matchTitle = (fx.title || '').toLowerCase().includes(searchQuery);
+      const matchDesc = (fx.description || '').toLowerCase().includes(searchQuery);
+      return matchName || matchTitle || matchDesc;
+    }
+    return true;
+  });
+
+  if ($('#fixtures-badge-total')) {
+    $('#fixtures-badge-total').textContent = `${filtered.length} / ${repoFixtures.length}`;
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<p class="empty-resource">Không tìm thấy Fixture nào phù hợp.</p>';
+    return;
+  }
+
+  container.innerHTML = filtered.map((fx) => {
+    const isSelected = currentSelectedFixture && currentSelectedFixture.name === fx.name;
+    const badgeColor = fx.isCustom ? '#10b981' : (fx.category.includes('Xác thực') || fx.category.includes('Precondition') ? '#8b5cf6' : (fx.category.includes('Dọn dẹp') ? '#ef4444' : '#6366f1'));
+    const iconClass = fx.isCustom ? 'ph-sparkle' : (fx.name === 'pages' ? 'ph-browsers' : (fx.category.includes('Xác thực') ? 'ph-user-circle' : (fx.category.includes('Dọn dẹp') ? 'ph-trash' : 'ph-gear')));
+
+    return `
+      <div class="dashboard-list-card fixture-card-item ${isSelected ? 'is-selected active' : ''}" data-name="${escapeHtml(fx.name)}" style="cursor: pointer; padding: 10px 12px; border-radius: 8px; border: 1px solid ${isSelected ? 'var(--primary)' : 'var(--line)'}; background: ${isSelected ? 'var(--surface-2)' : 'var(--surface)'}; display: flex; align-items: flex-start; gap: 10px; transition: all 0.15s ease;">
+        <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background: ${badgeColor}22; color: ${badgeColor}; font-size: 16px; flex-shrink: 0; margin-top: 2px;">
+          <i class="ph-bold ${iconClass}"></i>
+        </span>
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+            <strong style="font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(fx.name)}</strong>
+            ${fx.isCustom ? '<span style="background: #10b98122; color: #10b981; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600;">Custom</span>' : '<span style="background: var(--surface-3); color: var(--muted); font-size: 10px; padding: 2px 6px; border-radius: 4px;">Core</span>'}
+          </div>
+          <div style="font-size: 11px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${escapeHtml(fx.title || fx.description || '')}
+          </div>
+          <div style="display: flex; gap: 6px; margin-top: 6px; align-items: center;">
+            <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--surface-3); color: var(--text-muted);">
+              ${escapeHtml(fx.category || 'Nền tảng')}
+            </span>
+            <span style="font-size: 10px; color: var(--muted); font-family: monospace;">
+              scope: ${fx.scope || 'test'}
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.fixture-card-item').forEach((card) => {
+    card.addEventListener('click', () => {
+      const name = card.dataset.name;
+      const found = repoFixtures.find((f) => f.name === name);
+      if (found) selectFixture(found);
+    });
+  });
+
+  if (!currentSelectedFixture && filtered.length > 0) {
+    selectFixture(filtered[0]);
+  } else if (currentSelectedFixture) {
+    const stillExists = filtered.find((f) => f.name === currentSelectedFixture.name);
+    if (stillExists) selectFixture(stillExists);
+    else if (filtered.length > 0) selectFixture(filtered[0]);
+  }
+}
+
+function selectFixture(fx) {
+  currentSelectedFixture = fx;
+
+  document.querySelectorAll('.fixture-card-item').forEach((card) => {
+    const isThis = card.dataset.name === fx.name;
+    card.classList.toggle('is-selected', isThis);
+    card.classList.toggle('active', isThis);
+    card.style.borderColor = isThis ? 'var(--primary)' : 'var(--line)';
+    card.style.background = isThis ? 'var(--surface-2)' : 'var(--surface)';
+  });
+
+  if ($('#fx-detail-category-eyebrow')) $('#fx-detail-category-eyebrow').textContent = fx.isCustom ? 'CUSTOM BUSINESS FIXTURE' : 'CORE ENGINE FIXTURE';
+  if ($('#fx-detail-name')) $('#fx-detail-name').textContent = fx.name;
+  if ($('#fx-detail-desc')) $('#fx-detail-desc').textContent = fx.description || fx.title || 'Injected Playwright fixture.';
+
+  if ($('#fx-grid-scope')) $('#fx-grid-scope').textContent = fx.scope || 'test';
+  if ($('#fx-grid-cat')) $('#fx-grid-cat').textContent = fx.category || 'Hạ tầng';
+  if ($('#fx-grid-params')) $('#fx-grid-params').textContent = (fx.params && fx.params.length) ? fx.params.join(', ') : 'None';
+  if ($('#fx-grid-file')) $('#fx-grid-file').textContent = fx.sourceFile || 'core/fixtures/baseTest.js';
+
+  const deleteBtn = $('#btn-delete-fixture');
+  if (deleteBtn) {
+    deleteBtn.style.display = fx.isCustom ? 'inline-flex' : 'none';
+  }
+
+  const usageCode = `const { test, expect } = require('../../../core/fixtures/baseTest');
+
+test('Kịch bản sử dụng fixture ${fx.name}', async ({ ${fx.name} }) => {
+  // Fixture ${fx.name} tự động được Playwright inject vào ngữ cảnh test
+  console.log('Đang thực thi với fixture:', ${fx.name});
+});`;
+  if ($('#fx-usage-code')) $('#fx-usage-code').textContent = usageCode;
+
+  const sourceCode = fx.rawCode || `// Fixture ${fx.name} được định nghĩa trong ${fx.sourceFile}
+// Chữ ký tham số: ${fx.params?.join(', ') || '()'}`;
+  if ($('#fx-source-code')) $('#fx-source-code').textContent = sourceCode;
+}
+
+function initFixturesStudioListeners() {
+  $('#fixtures-search-input')?.addEventListener('input', () => {
+    renderFixturesList();
+  });
+
+  $('#fixtures-filter-pills')?.querySelectorAll('.pm-filter-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      $('#fixtures-filter-pills').querySelectorAll('.pm-filter-pill').forEach((p) => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentFixtureFilter = pill.dataset.filter || 'all';
+      renderFixturesList();
+    });
+  });
+
+  $('#btn-open-create-fixture-modal')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-create-fixture');
+    if (modal) {
+      $('#form-create-fixture')?.reset();
+      updateFixtureTemplateFields('cleanup_api');
+      modal.showModal();
+    }
+  });
+
+  $('#btn-close-create-fixture-modal')?.addEventListener('click', () => {
+    document.getElementById('modal-create-fixture')?.close();
+  });
+  $('#btn-cancel-create-fixture')?.addEventListener('click', () => {
+    document.getElementById('modal-create-fixture')?.close();
+  });
+
+  document.querySelectorAll('.fx-template-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.fx-template-card').forEach((c) => {
+        c.classList.remove('is-selected');
+        c.style.borderColor = 'var(--line)';
+      });
+      card.classList.add('is-selected');
+      card.style.borderColor = 'var(--primary)';
+      const radio = card.querySelector('input[type="radio"]');
+      if (radio) {
+        radio.checked = true;
+        updateFixtureTemplateFields(radio.value);
+      }
+    });
+  });
+
+  $('#form-create-fixture')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = ($('#fx-input-name')?.value || '').trim();
+    const title = ($('#fx-input-title')?.value || '').trim();
+    const description = ($('#fx-input-desc')?.value || '').trim();
+    const template = document.querySelector('input[name="fx-template"]:checked')?.value || 'cleanup_api';
+
+    const submitBtn = $('#btn-submit-create-fixture');
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const payload = {
+        name,
+        title,
+        description,
+        template,
+        config: {},
+      };
+
+      if (template === 'cleanup_api') {
+        payload.config.method = $('#fx-cleanup-method')?.value || 'DELETE';
+        payload.config.url = ($('#fx-cleanup-url')?.value || '/api/resource/:id').trim();
+      } else if (template === 'custom_code') {
+        payload.rawCode = $('#fx-custom-code')?.value || '';
+      }
+
+      const res = await request('/api/fixtures', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      if (res.success) {
+        showToast(res.message || `Đã tạo fixture '${name}' thành công!`, 'success');
+        document.getElementById('modal-create-fixture')?.close();
+        await loadFixturesList();
+        const createdFx = repoFixtures.find((f) => f.name === name);
+        if (createdFx) selectFixture(createdFx);
+      } else {
+        showToast(res.error || 'Không thể tạo fixture', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi khi tạo fixture: ' + err.message, 'error');
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+
+  $('#btn-delete-fixture')?.addEventListener('click', async () => {
+    if (!currentSelectedFixture || !currentSelectedFixture.isCustom) return;
+    const name = currentSelectedFixture.name;
+    const confirmed = confirm(`Bạn có chắc chắn muốn xóa Custom Fixture '${name}' khỏi dự án?\n(File mã nguồn sẽ được sao lưu an toàn tại .dashboard-backups/fixtures/)`);
+    if (!confirmed) return;
+
+    try {
+      const res = await request(`/api/fixtures/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+      });
+      if (res.success) {
+        showToast(res.message || `Đã xóa fixture '${name}' thành công!`, 'success');
+        currentSelectedFixture = null;
+        await loadFixturesList();
+      } else {
+        showToast(res.error || 'Không thể xóa fixture', 'error');
+      }
+    } catch (err) {
+      showToast('Lỗi khi xóa fixture: ' + err.message, 'error');
+    }
+  });
+}
+
+function updateFixtureTemplateFields(template) {
+  const cleanupFields = $('#fx-fields-cleanup');
+  const customFields = $('#fx-fields-custom');
+
+  if (template === 'cleanup_api') {
+    if (cleanupFields) cleanupFields.style.display = 'flex';
+    if (customFields) customFields.style.display = 'none';
+  } else if (template === 'custom_code') {
+    if (cleanupFields) cleanupFields.style.display = 'none';
+    if (customFields) {
+      customFields.style.display = 'flex';
+      const name = $('#fx-input-name')?.value || 'myCustomFixture';
+      if (!$('#fx-custom-code')?.value) {
+        $('#fx-custom-code').value = `/**
+ * Custom Fixture: ${name}
+ */
+const ${name} = async ({ request, page }, use) => {
+  // 1. Setup
+  const session = { id: Date.now() };
+
+  try {
+    // 2. Chuyển quyền cho test chạy
+    await use(session);
+  } finally {
+    // 3. Teardown / Dọn dẹp
+    console.log('[Teardown] Hoàn tất.');
+  }
+};
+
+module.exports = { ${name} };\n`;
+      }
+    }
+  } else {
+    if (cleanupFields) cleanupFields.style.display = 'none';
+    if (customFields) customFields.style.display = 'none';
+  }
+}
+

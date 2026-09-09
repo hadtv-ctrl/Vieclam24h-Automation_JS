@@ -5,12 +5,17 @@ const fs = require('fs');
 const {
   scanAllPageObjects,
   parsePageObject,
+  parseFixture,
+  scanAllFixtures,
+  createCustomFixture,
+  deleteCustomFixture,
   updateLocatorSelector,
   getCoreCapabilities,
   inferElementCategory,
   inferHumanDescription,
   validateLocatorExpression,
   normalizePagePath,
+  deletePageObject,
 } = require('./objectRepository');
 
 test('inferElementCategory categorizes buttons, inputs, links and modals correctly', () => {
@@ -35,18 +40,53 @@ test('inferHumanDescription extracts meaningful text or clean name', () => {
   assert.match(desc2, /Full Name/i);
 });
 
-test('scanAllPageObjects scans Page Objects and Fixtures', () => {
+test('scanAllPageObjects scans only Page Objects and BasePage (excluding fixtures from catalog - R01, R06)', () => {
   const pages = scanAllPageObjects(process.cwd());
-  assert.ok(pages.length >= 4);
+  assert.ok(pages.length >= 3);
 
-  const sample = pages.find((p) => p.platform !== 'fixture' && p.className !== 'BasePage') || pages.find((p) => p.platform !== 'fixture');
+  // Mọi item trong catalog đều không phải fixture
+  assert.ok(pages.every((p) => p.platform !== 'fixture'));
+
+  // Có BasePage với cờ isBase: true
+  const basePage = pages.find((p) => p.className === 'BasePage');
+  assert.ok(basePage);
+  assert.equal(basePage.platform, 'base');
+  assert.equal(basePage.isBase, true);
+
+  // Có sample business page
+  const sample = pages.find((p) => p.className !== 'BasePage');
   assert.ok(sample);
   assert.ok(sample.locatorCount >= 1 || sample.methodCount >= 1);
+});
 
-  const baseTestFixture = pages.find((p) => p.className === 'baseTest');
-  assert.ok(baseTestFixture);
-  assert.equal(baseTestFixture.platform, 'fixture');
-  assert.ok(baseTestFixture.methodCount >= 1);
+test('parsePageObject and parseFixture support allowlisted fixtures for BDD Inspector (R01, T11)', () => {
+  const baseTestParsed = parsePageObject('core/fixtures/baseTest.js', process.cwd());
+  assert.ok(baseTestParsed);
+  assert.equal(baseTestParsed.platform, 'fixture');
+  assert.equal(baseTestParsed.resourceKind, 'fixture');
+  assert.equal(baseTestParsed.permissions.canDelete, false);
+  assert.ok(baseTestParsed.methodCount >= 1);
+
+  const mobileWebTestParsed = parsePageObject('core/fixtures/mobileWebTest.js', process.cwd());
+  assert.ok(mobileWebTestParsed);
+  assert.equal(mobileWebTestParsed.platform, 'fixture');
+  assert.ok(mobileWebTestParsed.methodCount >= 1);
+});
+
+test('updateLocatorSelector and deletePageObject protect BasePage from modification (R04, T12)', () => {
+  assert.throws(
+    () => updateLocatorSelector({
+      pageRelativePath: 'pages/BasePage.js',
+      locatorName: 'btnTest',
+      newExpression: "page.locator('button')",
+      rootDir: process.cwd(),
+    }),
+    /BasePage\.js/
+  );
+  assert.throws(
+    () => deletePageObject('pages/BasePage.js', process.cwd()),
+    /BasePage\.js/
+  );
 });
 
 test('getCoreCapabilities returns 5 core pillars with tags and status', () => {
@@ -103,3 +143,105 @@ test('parsed Page Objects expose backend readiness metadata', () => {
   assert.equal(page.readiness.status, 'ready');
   assert.equal(page.readiness.checks.export, true);
 });
+
+test('F04: parseFixture returns complete key set for baseTest and mobileWebTest', () => {
+  const baseFixture = parseFixture('core/fixtures/baseTest.js', process.cwd());
+  const fixtureNames = baseFixture.methods.map((m) => m.name);
+
+  // Phải bao gồm tất cả các fixtures kể cả option tuples và fixtures sau test.step
+  assert.ok(fixtureNames.includes('workerUserData'));
+  assert.ok(fixtureNames.includes('featureName'));
+  assert.ok(fixtureNames.includes('basePage'));
+  assert.ok(fixtureNames.includes('pageObjectsRoot'));
+  assert.ok(fixtureNames.includes('pageObjectsPlatform'));
+  assert.ok(fixtureNames.includes('pages'));
+  assert.ok(fixtureNames.includes('authenticatedUser'));
+
+  const mobileFixture = parseFixture('core/fixtures/mobileWebTest.js', process.cwd());
+  const mobileNames = mobileFixture.methods.map((m) => m.name);
+  assert.ok(mobileNames.includes('failureTrackerHook'));
+  assert.ok(mobileNames.includes('authenticatedUser'));
+  assert.ok(mobileNames.includes('pages'));
+});
+
+test('F05: parseFixture handles invalid syntax and sets ready=false, status=error', () => {
+  const tmpDir = path.join(process.cwd(), '.tmp', 'test_f05_fixture');
+  const fixDir = path.join(tmpDir, 'core', 'fixtures');
+  fs.mkdirSync(fixDir, { recursive: true });
+  const malformedFile = path.join(fixDir, 'baseTest.js');
+  fs.writeFileSync(malformedFile, 'const test = ; invalid syntax here\nmodule.exports = {};', 'utf8');
+
+  try {
+    const parsed = parseFixture('core/fixtures/baseTest.js', tmpDir);
+    assert.equal(parsed.readiness.ready, false);
+    assert.equal(parsed.readiness.status, 'error');
+    assert.equal(parsed.readiness.checks.syntax, false);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('F06: parseExistingSpecFile recognizes pages.<alias>.<action> from pages fixture', () => {
+  const { parseExistingSpecFile } = require('./visualBuilderCompiler');
+  const parsed = parseExistingSpecFile('tests/e2e/desktop/sample_pages_fixture.spec.js', process.cwd());
+
+  assert.ok(parsed.pages && parsed.pages.length > 0);
+  const samplePageEntry = parsed.pages.find((p) => p.className === 'SamplePage');
+  assert.ok(samplePageEntry);
+  assert.ok(samplePageEntry.actions.includes('open'));
+});
+
+test('scanAllFixtures, createCustomFixture and deleteCustomFixture manage custom fixtures safely', () => {
+  const tmpDir = path.join(process.cwd(), '.tmp', 'test_fixture_mgmt');
+  fs.mkdirSync(tmpDir, { recursive: true });
+
+  try {
+    // 1. Quét fixtures hiện tại
+    const fixtures = scanAllFixtures(process.cwd());
+    assert.ok(fixtures.length > 0);
+    assert.ok(fixtures.some((f) => f.name === 'pages'));
+    assert.ok(fixtures.some((f) => f.name === 'authenticatedUser'));
+
+    // 2. Tạo Custom Fixture xóa user bằng template cleanup_api
+    const created = createCustomFixture({
+      name: 'ephemeralUserTest',
+      title: 'Tự động tạo & xóa user',
+      description: 'Tạo user thử nghiệm và tự động xóa sau test qua API',
+      template: 'cleanup_api',
+      config: {
+        url: '/api/users/:id',
+        method: 'DELETE',
+      },
+      rootDir: tmpDir,
+    });
+
+    assert.equal(created.success, true);
+    assert.equal(created.name, 'ephemeralUserTest');
+
+    // Quét lại trong tmpDir
+    const customFixturesList = scanAllFixtures(tmpDir);
+    assert.ok(customFixturesList.some((f) => f.name === 'ephemeralUserTest' && f.isCustom === true));
+
+    // 3. Từ chối tạo fixture trùng tên bảo vệ
+    assert.throws(
+      () => createCustomFixture({ name: 'pages', rootDir: tmpDir }),
+      /trùng với từ khóa hoặc Core Fixture/
+    );
+
+    // 4. Từ chối xóa Core Fixture
+    assert.throws(
+      () => deleteCustomFixture('pages', tmpDir),
+      /Không thể xóa Core Fixture/
+    );
+
+    // 5. Xóa Custom Fixture vừa tạo
+    const deleted = deleteCustomFixture('ephemeralUserTest', tmpDir);
+    assert.equal(deleted.success, true);
+
+    const postDeleteList = scanAllFixtures(tmpDir);
+    assert.ok(!postDeleteList.some((f) => f.name === 'ephemeralUserTest'));
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+

@@ -2,13 +2,13 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const PAGE_ROOTS = ['pages/', 'pages/desktop/', 'pages/mobile/', 'pages/mobile-web/', 'core/fixtures/'];
+const PAGE_ROOTS = ['pages/', 'pages/desktop/', 'pages/mobile/', 'pages/mobile-web/'];
 const LOCATOR_EXPRESSION = /^(?:this\.)?page\.(?:locator|getByRole|getByLabel|getByPlaceholder|getByTestId|getByText|getByAltText|getByTitle)\s*\(/;
 
 function normalizePagePath(relativePath) {
   const value = String(relativePath || '').replace(/\\/g, '/');
-  if (path.isAbsolute(value) || value.includes('..') || (!value.startsWith('pages/') && !value.startsWith('core/fixtures/'))) {
-    throw new Error('Đường dẫn phải thuộc thư mục pages/ hoặc core/fixtures/.');
+  if (path.isAbsolute(value) || value.includes('..') || !value.startsWith('pages/')) {
+    throw new Error('Đường dẫn phải thuộc thư mục pages/.');
   }
   return value;
 }
@@ -22,23 +22,15 @@ function validateLocatorExpression(expression) {
 }
 
 function getReadiness({ relativePath, className, baseClass, content }) {
-  const isFixture = relativePath.startsWith('core/fixtures/');
   const syntax = (() => {
     try { new Function(content); return true; } catch (_) { return false; }
   })();
-  if (isFixture) {
-    const exportReady = /module\.exports\s*=\s*\{[^}]*test\b/.test(content) || /exports\.test\b/.test(content);
-    const importReady = /require\(['"][^'"]+['"]\)/.test(content);
-    const platformReady = true;
-    const checks = { syntax, export: exportReady, import: importReady, platform: platformReady };
-    const passed = Object.values(checks).every(Boolean);
-    return { status: passed ? 'ready' : 'blocked', ready: passed, checks, reason: passed ? null : Object.entries(checks).filter(([, value]) => !value).map(([key]) => key).join(', ') };
-  }
   const exportReady =
     new RegExp(`module\\.exports\\s*=\\s*\\{[^}]*\\b${className}\\b`).test(content) ||
-    new RegExp(`module\\.exports\\s*=\\s*\\b${className}\\b`).test(content);
-  const importReady = /require\(['"][^'"]+['"]\)/.test(content) || baseClass === 'BasePage';
-  const platformReady = relativePath.startsWith('pages/') || relativePath.startsWith('core/fixtures/');
+    new RegExp(`module\\.exports\\s*=\\s*\\b${className}\\b`).test(content) ||
+    className === 'BasePage';
+  const importReady = /require\(['"][^'"]+['"]\)/.test(content) || baseClass === 'BasePage' || className === 'BasePage';
+  const platformReady = relativePath.startsWith('pages/');
   const checks = { syntax, export: exportReady, import: importReady, platform: platformReady };
   const passed = Object.values(checks).every(Boolean);
   return { status: passed ? 'ready' : 'blocked', ready: passed, checks, reason: passed ? null : Object.entries(checks).filter(([, value]) => !value).map(([key]) => key).join(', ') };
@@ -49,11 +41,12 @@ function getReadiness({ relativePath, className, baseClass, content }) {
  */
 const PAGE_METADATA = {
   'BasePage.js': {
-    title: 'Trang Cơ Sở (BasePage)',
-    desc: 'Lớp nền tảng chứa cơ chế Anti-Flaky Wait, Smart Evidence Capture và điều hướng an toàn.',
-    icon: 'ph-stack',
+    title: 'Lớp Nền Tảng (BasePage)',
+    desc: 'Lớp cơ sở hệ thống chứa cơ chế Anti-Flaky Wait, Smart Evidence Capture và điều hướng an toàn cho toàn bộ Page Objects.',
+    icon: 'ph-shield-check',
     platform: 'base',
-    category: 'Nền tảng',
+    category: 'Lớp Nền Tảng (Core Foundation)',
+    isBase: true,
   },
   'desktop/SamplePage.js': {
     title: 'Trang Kiểm Thử Mẫu (SamplePage)',
@@ -68,20 +61,6 @@ const PAGE_METADATA = {
     icon: 'ph-device-mobile',
     platform: 'mobile-web',
     category: 'Mobile Web',
-  },
-  'core/fixtures/baseTest.js': {
-    title: 'Fixture Nền Tảng Desktop (baseTest)',
-    desc: 'Fixture gốc cho Desktop: Quản lý Precondition, Injected Page Objects và Worker Sessions.',
-    icon: 'ph-lightning',
-    platform: 'fixture',
-    category: 'Fixture Nền tảng',
-  },
-  'core/fixtures/mobileWebTest.js': {
-    title: 'Fixture Nền Tảng Mobile Web (mobileWebTest)',
-    desc: 'Fixture mở rộng cho Mobile Web: Kế thừa baseTest, nạp Mobile Page Objects và Failure Tracing.',
-    icon: 'ph-device-mobile',
-    platform: 'fixture',
-    category: 'Fixture Nền tảng',
   },
 };
 
@@ -145,44 +124,153 @@ function inferHumanDescription(name, expr) {
   return cleanName.length > 0 ? `Thành phần ${cleanName}` : 'Phần tử giao diện';
 }
 
+const FIXTURE_ALLOWLIST = new Set([
+  'core/fixtures/baseTest.js',
+  'core/fixtures/mobileWebTest.js',
+]);
+
 /**
- * Bóc tách chi tiết một file Page Object
+ * Bóc tách chi tiết một file Fixture (chỉ đọc, allowlist cho Inspector BDD/Studio - R01, T11)
  */
-function parsePageObject(relativePath, rootDir = process.cwd()) {
-  const fullPath = path.isAbsolute(relativePath) ? relativePath : path.join(rootDir, relativePath);
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`Không tìm thấy file Page Object: ${relativePath}`);
+function extractExtendObjectBody(content) {
+  const startIdx = content.indexOf('.extend(');
+  if (startIdx === -1) return null;
+  const openBrace = content.indexOf('{', startIdx);
+  if (openBrace === -1) return null;
+
+  let depth = 1;
+  let inString = false;
+  let stringChar = '';
+  let inLineComment = false;
+  let inBlockComment = false;
+  let endBrace = -1;
+
+  for (let i = openBrace + 1; i < content.length; i++) {
+    const char = content[i];
+    const prev = content[i - 1];
+
+    if (inLineComment) {
+      if (char === '\n') inLineComment = false;
+      continue;
+    }
+    if (inBlockComment) {
+      if (prev === '*' && char === '/') inBlockComment = false;
+      continue;
+    }
+    if (inString) {
+      if (char === stringChar && prev !== '\\') inString = false;
+      continue;
+    }
+
+    if (char === '/' && content[i + 1] === '/') {
+      inLineComment = true;
+      i++;
+      continue;
+    }
+    if (char === '/' && content[i + 1] === '*') {
+      inBlockComment = true;
+      i++;
+      continue;
+    }
+    if (char === "'" || char === '"' || char === '`') {
+      inString = true;
+      stringChar = char;
+      continue;
+    }
+
+    if (char === '{') {
+      depth++;
+    } else if (char === '}') {
+      depth--;
+      if (depth === 0) {
+        endBrace = i;
+        break;
+      }
+    }
   }
 
-  const content = fs.readFileSync(fullPath, 'utf8');
-  const safeRelativePath = normalizePagePath(path.relative(rootDir, fullPath));
-  const normalizedRel = safeRelativePath.replace(/^pages\//, '');
-  const isFixture = safeRelativePath.startsWith('core/fixtures/');
-  const isMobile = relativePath.includes('mobile-web') || relativePath.includes('mobileWebTest');
-  const isBase = path.basename(relativePath) === 'BasePage.js';
+  if (endBrace !== -1) {
+    return content.slice(openBrace + 1, endBrace);
+  }
+  return null;
+}
 
-  if (isFixture) {
-    const fixtureFileName = path.basename(relativePath, '.js');
-    const meta = PAGE_METADATA[safeRelativePath] || {
-      title: fixtureFileName === 'baseTest' ? 'Fixture Nền Tảng Desktop (baseTest)' : 'Fixture Nền Tảng Mobile Web (mobileWebTest)',
-      desc: 'Playwright Fixture quản lý Dependency Injection và vòng đời kiểm thử.',
-      icon: fixtureFileName === 'mobileWebTest' ? 'ph-device-mobile' : 'ph-lightning',
-      platform: 'fixture',
-      category: 'Fixture Nền tảng',
-    };
+function parseExtendFixtures(content) {
+  const extendBody = extractExtendObjectBody(content);
+  if (!extendBody) return [];
 
-    const fixtureItems = [];
-    const extendMatch = content.match(/\.extend\s*\(\s*\{([\s\S]*?)\}\s*\)/);
-    if (extendMatch) {
-      const extendBody = extendMatch[1];
-      const fixRegex = /([a-zA-Z0-9_]+)\s*:\s*async\s*\(\s*([^)]*)\s*\)\s*=>/g;
-      let fMatch;
-      while ((fMatch = fixRegex.exec(extendBody)) !== null) {
-        const fixName = fMatch[1];
-        const fixArgs = fMatch[2].trim();
+  const items = [];
+  let depthBraces = 0;
+  let depthBrackets = 0;
+  let depthParens = 0;
+  let inString = false;
+  let stringChar = '';
+  let inLineComment = false;
+  let inBlockComment = false;
+
+  let currentKey = '';
+  let currentValue = '';
+  let readingKey = true;
+
+  for (let i = 0; i < extendBody.length; i++) {
+    const char = extendBody[i];
+    const prev = extendBody[i - 1];
+
+    if (inLineComment) {
+      if (char === '\n') inLineComment = false;
+      continue;
+    }
+    if (inBlockComment) {
+      if (prev === '*' && char === '/') inBlockComment = false;
+      continue;
+    }
+    if (inString) {
+      if (char === stringChar && prev !== '\\') inString = false;
+      continue;
+    }
+
+    if (char === '/' && extendBody[i + 1] === '/') {
+      inLineComment = true;
+      i++;
+      continue;
+    }
+    if (char === '/' && extendBody[i + 1] === '*') {
+      inBlockComment = true;
+      i++;
+      continue;
+    }
+    if (char === "'" || char === '"' || char === '`') {
+      inString = true;
+      stringChar = char;
+      continue;
+    }
+
+    if (char === '{') depthBraces++;
+    else if (char === '}') depthBraces--;
+    else if (char === '[') depthBrackets++;
+    else if (char === ']') depthBrackets--;
+    else if (char === '(') depthParens++;
+    else if (char === ')') depthParens--;
+
+    const isTopLevel = depthBraces === 0 && depthBrackets === 0 && depthParens === 0;
+
+    if (isTopLevel && char === ':' && readingKey) {
+      readingKey = false;
+      continue;
+    }
+
+    if (isTopLevel && (char === ',' || i === extendBody.length - 1)) {
+      if (i === extendBody.length - 1 && char !== ',') {
+        currentValue += char;
+      }
+      const fixName = currentKey.trim();
+      const val = currentValue.trim();
+      if (fixName && /^[a-zA-Z0-9_]+$/.test(fixName)) {
         let cat = 'Page Object Injection';
         let badgeColor = '#10b981';
         let icon = 'ph-bold ph-browsers';
+        let params = [];
+
         if (fixName.includes('User') || fixName.includes('auth') || fixName.includes('worker')) {
           cat = 'Xác thực & Precondition';
           badgeColor = '#8b5cf6';
@@ -191,15 +279,30 @@ function parsePageObject(relativePath, rootDir = process.cwd()) {
           cat = 'Factory (Multi-Tab / Popup)';
           badgeColor = '#06b6d4';
           icon = 'ph-bold ph-tabs';
-        } else if (fixName === 'pageClasses' || fixName === 'featureName' || fixName === 'basePage') {
+        } else if (fixName === 'pages' || fixName === 'pageClasses' || fixName === 'featureName' || fixName === 'basePage') {
           cat = 'Hạ tầng & Nền tảng';
           badgeColor = '#6366f1';
           icon = 'ph-bold ph-gear';
+        } else if (fixName.includes('Hook') || fixName.includes('tracker') || fixName.includes('failure') || val.includes('auto: true')) {
+          cat = 'Vòng đời & Hook';
+          badgeColor = '#ef4444';
+          icon = 'ph-bold ph-arrow-clockwise';
+        } else if (val.includes('option: true')) {
+          cat = 'Cấu hình & Tùy chọn';
+          badgeColor = '#f59e0b';
+          icon = 'ph-bold ph-sliders';
         }
 
-        fixtureItems.push({
+        const argsMatch = val.match(/async\s*\(\s*([^)]*)\s*\)\s*=>/);
+        if (argsMatch) {
+          params = [argsMatch[1].trim()];
+        } else if (val.includes('option: true')) {
+          params = ['{ option: true }'];
+        }
+
+        items.push({
           name: fixName,
-          params: fixArgs ? [fixArgs] : [],
+          params,
           signature: `${fixName}`,
           category: cat,
           badgeColor,
@@ -208,26 +311,129 @@ function parsePageObject(relativePath, rootDir = process.cwd()) {
           description: `Injected Fixture: ${fixName}`,
         });
       }
+
+      currentKey = '';
+      currentValue = '';
+      readingKey = true;
+      continue;
     }
 
-    return {
-      relativePath: safeRelativePath,
-      className: fixtureFileName,
-      baseClass: fixtureFileName === 'mobileWebTest' ? 'baseTest' : '@playwright/test',
-      title: meta.title,
-      desc: meta.desc,
-      icon: meta.icon,
-      platform: 'fixture',
-      category: meta.category,
-      locatorCount: 0,
-      methodCount: fixtureItems.length,
-      locators: [],
-      methods: fixtureItems,
-      fixtureName: fixtureFileName,
-      readiness: getReadiness({ relativePath: safeRelativePath, className: fixtureFileName, baseClass: 'none', content }),
-      rawCode: content,
-    };
+    if (readingKey) {
+      currentKey += char;
+    } else {
+      currentValue += char;
+    }
   }
+
+  return items;
+}
+
+function parseFixture(relativePath, rootDir = process.cwd()) {
+  const safeRelativePath = String(relativePath || '').replace(/\\/g, '/');
+  if (!FIXTURE_ALLOWLIST.has(safeRelativePath)) {
+    throw new Error(`Đường dẫn fixture không nằm trong allowlist: ${relativePath}`);
+  }
+  const fullPath = path.isAbsolute(relativePath) ? relativePath : path.join(rootDir, relativePath);
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`Không tìm thấy file Fixture: ${relativePath}`);
+  }
+
+  const content = fs.readFileSync(fullPath, 'utf8');
+  const fixtureFileName = path.basename(relativePath, '.js');
+  const isMobile = fixtureFileName === 'mobileWebTest';
+
+  const meta = {
+    title: isMobile ? 'Fixture Nền Tảng Mobile Web (mobileWebTest)' : 'Fixture Nền Tảng Desktop (baseTest)',
+    desc: 'Playwright Fixture quản lý Dependency Injection và vòng đời kiểm thử.',
+    icon: isMobile ? 'ph-device-mobile' : 'ph-lightning',
+    platform: 'fixture',
+    category: 'Fixture Nền tảng',
+  };
+
+  const fixtureItems = parseExtendFixtures(content);
+
+  // Nếu là mobileWebTest, bổ sung các fixtures kế thừa từ baseTest nếu chưa có (T11, F04)
+  if (isMobile) {
+    const baseTestPath = path.join(rootDir, 'core', 'fixtures', 'baseTest.js');
+    if (fs.existsSync(baseTestPath)) {
+      try {
+        const baseParsed = parseFixture('core/fixtures/baseTest.js', rootDir);
+        for (const item of baseParsed.methods) {
+          if (!fixtureItems.some((f) => f.name === item.name)) {
+            fixtureItems.push({
+              ...item,
+              description: `Inherited từ baseTest: ${item.name}`,
+            });
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  // F05: Kiểm tra syntax và export thực tế
+  const syntax = (() => {
+    try {
+      new Function(content);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  })();
+  const exportReady = content.includes('module.exports') || content.includes('export ');
+  const platformReady = safeRelativePath.startsWith('core/fixtures/');
+  const checks = { syntax, export: exportReady, import: true, platform: platformReady };
+  const passed = Object.values(checks).every(Boolean);
+
+  return {
+    relativePath: safeRelativePath,
+    className: fixtureFileName,
+    baseClass: isMobile ? 'baseTest' : '@playwright/test',
+    title: meta.title,
+    desc: meta.desc,
+    icon: meta.icon,
+    platform: 'fixture',
+    category: meta.category,
+    resourceKind: 'fixture',
+    permissions: {
+      canDelete: false,
+      canAddLocator: false,
+      canAddAction: false,
+      canEditSource: true,
+    },
+    locatorCount: 0,
+    methodCount: fixtureItems.length,
+    locators: [],
+    methods: fixtureItems,
+    fixtureName: fixtureFileName,
+    readiness: {
+      status: passed ? 'ready' : (syntax ? 'blocked' : 'error'),
+      ready: passed,
+      checks,
+      reason: passed ? null : Object.entries(checks).filter(([, value]) => !value).map(([key]) => key).join(', '),
+    },
+    rawCode: content,
+  };
+}
+
+/**
+ * Bóc tách chi tiết một file Page Object (hoặc Fixture allowlist)
+ */
+function parsePageObject(relativePath, rootDir = process.cwd()) {
+  const normRel = String(relativePath || '').replace(/\\/g, '/');
+  if (FIXTURE_ALLOWLIST.has(normRel)) {
+    return parseFixture(normRel, rootDir);
+  }
+
+  const fullPath = path.isAbsolute(relativePath) ? relativePath : path.join(rootDir, relativePath);
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`Không tìm thấy file Page Object: ${relativePath}`);
+  }
+
+  const content = fs.readFileSync(fullPath, 'utf8');
+  const safeRelativePath = normalizePagePath(path.relative(rootDir, fullPath));
+  const normalizedRel = safeRelativePath.replace(/^pages\//, '');
+  const isMobile = relativePath.includes('mobile-web') || relativePath.includes('mobile/');
+  const isBase = path.basename(relativePath) === 'BasePage.js';
 
   // 1. Class name & Base class
   const classMatch = content.match(/class\s+([A-Za-z0-9_]+)(?:\s+extends\s+([A-Za-z0-9_]+))?/);
@@ -328,6 +534,7 @@ function parsePageObject(relativePath, rootDir = process.cwd()) {
     });
   }
 
+  const isFoundation = Boolean(isBase || meta.isBase);
   return {
     relativePath: safeRelativePath,
     className,
@@ -337,6 +544,14 @@ function parsePageObject(relativePath, rootDir = process.cwd()) {
     icon: meta.icon,
     platform: meta.platform,
     category: meta.category,
+    isBase: isFoundation,
+    resourceKind: isFoundation ? 'foundation' : 'page',
+    permissions: {
+      canDelete: !isFoundation,
+      canAddLocator: !isFoundation,
+      canAddAction: !isFoundation,
+      canEditSource: true,
+    },
     locatorCount: locators.length,
     methodCount: methods.length,
     locators,
@@ -348,11 +563,10 @@ function parsePageObject(relativePath, rootDir = process.cwd()) {
 }
 
 /**
- * Quét toàn bộ 15 Page Objects trong framework
+ * Quét toàn bộ Page Objects trong framework (chỉ thuộc pages/)
  */
 function scanAllPageObjects(rootDir = process.cwd()) {
   const pagesDir = path.join(rootDir, 'pages');
-  const fixturesDir = path.join(rootDir, 'core', 'fixtures');
   const results = [];
 
   const visit = (dir) => {
@@ -373,12 +587,9 @@ function scanAllPageObjects(rootDir = process.cwd()) {
   };
 
   visit(pagesDir);
-  visit(fixturesDir);
   return results.sort((a, b) => {
     if (a.platform === 'base') return -1;
     if (b.platform === 'base') return 1;
-    if (a.platform === 'fixture' && b.platform !== 'fixture') return 1;
-    if (b.platform === 'fixture' && a.platform !== 'fixture') return -1;
     if (a.platform !== b.platform) return a.platform.localeCompare(b.platform);
     return a.className.localeCompare(b.className);
   });
@@ -393,6 +604,9 @@ function updateLocatorSelector({ pageRelativePath, locatorName, newExpression, r
   }
 
   const safeRelativePath = normalizePagePath(pageRelativePath);
+  if (safeRelativePath === 'pages/BasePage.js') {
+    throw new Error('Không thể thêm/sửa locator trong BasePage.js bằng form tự động. Vui lòng sử dụng editor mã nguồn để chỉnh sửa an toàn.');
+  }
   if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(locatorName)) throw new Error('Tên locator không hợp lệ.');
   const cleanExpression = validateLocatorExpression(newExpression);
   const fullPath = path.join(rootDir, safeRelativePath);
@@ -572,10 +786,240 @@ function deletePageObject(relativePath, rootDir = path.resolve(__dirname, '../..
   };
 }
 
+/**
+ * Quét toàn bộ Fixtures (gồm Core fixtures và Custom fixtures tạo từ Dashboard)
+ */
+function scanAllFixtures(rootDir = process.cwd()) {
+  const allFixtures = [];
+  const coreFiles = ['core/fixtures/baseTest.js', 'core/fixtures/mobileWebTest.js'];
+
+  // 1. Quét Core Fixtures
+  for (const rel of coreFiles) {
+    try {
+      const parsed = parseFixture(rel, rootDir);
+      for (const item of parsed.methods) {
+        if (!allFixtures.some((f) => f.name === item.name)) {
+          allFixtures.push({
+            name: item.name,
+            title: item.title || item.name,
+            description: item.description || `Injected Fixture: ${item.name}`,
+            category: item.category || 'Hạ tầng & Nền tảng',
+            badgeColor: item.badgeColor || '#6366f1',
+            icon: item.icon || 'ph-bold ph-gear',
+            params: item.params || [],
+            signature: item.signature || item.name,
+            isCustom: false,
+            canDelete: false,
+            sourceFile: rel,
+            scope: item.name === 'workerUserData' ? 'worker' : 'test',
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 2. Quét Custom Fixtures trong core/fixtures/custom/
+  const customDir = path.join(rootDir, 'core', 'fixtures', 'custom');
+  if (fs.existsSync(customDir)) {
+    const entries = fs.readdirSync(customDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile() && (entry.name.endsWith('.fixture.js') || (entry.name.endsWith('.js') && entry.name !== 'index.js'))) {
+        const fullPath = path.join(customDir, entry.name);
+        const relPath = path.relative(rootDir, fullPath).replace(/\\/g, '/');
+        const fileContent = fs.readFileSync(fullPath, 'utf8');
+        const fixName = path.basename(entry.name, '.fixture.js').replace(/\.js$/, '');
+
+        const titleMatch = fileContent.match(/@title\s+([^\n]+)/);
+        const descMatch = fileContent.match(/@description\s+([^\n]+)/);
+        const catMatch = fileContent.match(/@category\s+([^\n]+)/);
+
+        allFixtures.push({
+          name: fixName,
+          title: titleMatch ? titleMatch[1].trim() : fixName,
+          description: descMatch ? descMatch[1].trim() : `Custom Fixture nghiệp vụ: ${fixName}`,
+          category: catMatch ? catMatch[1].trim() : 'Dọn dẹp & Nghiệp vụ tùy biến',
+          badgeColor: '#10b981',
+          icon: 'ph-bold ph-sparkle',
+          params: ['{ request, pages }'],
+          signature: fixName,
+          isCustom: true,
+          canDelete: true,
+          sourceFile: relPath,
+          rawCode: fileContent,
+          scope: 'test',
+        });
+      }
+    }
+  }
+
+  return allFixtures;
+}
+
+const RESERVED_FIXTURE_NAMES = new Set([
+  'test', 'expect', 'page', 'request', 'browser', 'context',
+  'basePage', 'pages', 'workerUserData', 'authenticatedUser',
+  'cleanupQueue', 'featureName', 'pageObjectsRoot', 'pageObjectsPlatform'
+]);
+
+/**
+ * Tạo một Custom Fixture mới an toàn từ Dashboard Studio Form Wizard
+ */
+function createCustomFixture({ name, title, description, category, template, config = {}, rawCode, rootDir = process.cwd() }) {
+  if (!name || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error(`Tên fixture không hợp lệ: '${name}'. Tên phải bắt đầu bằng chữ cái và chỉ chứa chữ, số, gạch dưới.`);
+  }
+  if (RESERVED_FIXTURE_NAMES.has(name)) {
+    throw new Error(`Tên fixture '${name}' trùng với từ khóa hoặc Core Fixture nền tảng đã được bảo vệ.`);
+  }
+
+  const customDir = path.join(rootDir, 'core', 'fixtures', 'custom');
+  if (!fs.existsSync(customDir)) {
+    fs.mkdirSync(customDir, { recursive: true });
+  }
+
+  const fileName = `${name}.fixture.js`;
+  const targetPath = path.join(customDir, fileName);
+
+  let generatedCode = '';
+  const safeTitle = title || name;
+  const safeDesc = description || `Custom Fixture ${name}`;
+  const safeCategory = category || (template === 'cleanup_api' ? 'Dọn dẹp & Teardown' : 'Xác thực & Precondition');
+
+  if (template === 'cleanup_api') {
+    const url = config.url || '/api/resource';
+    const method = (config.method || 'DELETE').toUpperCase();
+    const headers = config.headers ? JSON.stringify(config.headers, null, 2) : '{}';
+
+    generatedCode = `/**
+ * @title ${safeTitle}
+ * @description ${safeDesc}
+ * @category ${safeCategory}
+ */
+const ${name} = async ({ request }, use, testInfo) => {
+  // Dữ liệu ngữ cảnh khởi tạo trước test (Setup)
+  const context = {
+    id: null,
+    targetUrl: '${url}',
+    payload: null,
+  };
+
+  try {
+    // Bàn giao context cho kịch bản test thực thi
+    await use(context);
+  } finally {
+    // Tự động dọn dẹp sau khi test kết thúc (Teardown fail-safe)
+    await testInfo.attach('teardown_log', {
+      body: \`Bắt đầu dọn dẹp qua API: \${context.targetUrl}\`,
+      contentType: 'text/plain'
+    });
+    try {
+      if (context.id) {
+        const deleteEndpoint = context.targetUrl.replace(/:id/g, context.id);
+        await request.${method.toLowerCase()}(deleteEndpoint, {
+          headers: ${headers}
+        });
+        console.log(\`[Teardown \${'${name}'}] Đã xóa thành công resource ID: \${context.id}\`);
+      }
+    } catch (err) {
+      console.warn(\`[Teardown \${'${name}'} Warning] Không thể xóa resource: \${err.message}\`);
+    }
+  }
+};
+
+module.exports = { ${name} };
+`;
+  } else if (template === 'precondition_data') {
+    generatedCode = `/**
+ * @title ${safeTitle}
+ * @description ${safeDesc}
+ * @category ${safeCategory}
+ */
+const ${name} = async ({ request }, use, testInfo) => {
+  // 1. SETUP: Chuẩn bị dữ liệu trước khi test
+  const data = {
+    timestamp: Date.now(),
+    role: 'standard_user',
+    token: null,
+  };
+
+  try {
+    // 2. USE: Cung cấp data cho test
+    await use(data);
+  } finally {
+    // 3. TEARDOWN: Khôi phục trạng thái
+    console.log(\`[Teardown \${'${name}'}] Hoàn tất dọn dẹp data thử nghiệm.\`);
+  }
+};
+
+module.exports = { ${name} };
+`;
+  } else {
+    // Custom Code do người dùng tự viết
+    if (!rawCode || typeof rawCode !== 'string') {
+      throw new Error('Vui lòng cung cấp mã nguồn cho custom fixture.');
+    }
+    generatedCode = rawCode;
+  }
+
+  // Kiểm tra cú pháp JS an toàn
+  try {
+    new Function(generatedCode);
+  } catch (err) {
+    throw new Error(`Mã nguồn fixture có lỗi cú pháp JavaScript: ${err.message}`);
+  }
+
+  fs.writeFileSync(targetPath, generatedCode, 'utf8');
+
+  return {
+    success: true,
+    name,
+    fileName,
+    relativePath: path.relative(rootDir, targetPath).replace(/\\/g, '/'),
+    message: `Đã tạo Custom Fixture '${name}' thành công!`,
+  };
+}
+
+/**
+ * Xóa một Custom Fixture (Chỉ áp dụng cho core/fixtures/custom/*.fixture.js)
+ */
+function deleteCustomFixture(name, rootDir = process.cwd()) {
+  if (RESERVED_FIXTURE_NAMES.has(name)) {
+    throw new Error(`Không thể xóa Core Fixture nền tảng '${name}'. Thao tác bị cấm.`);
+  }
+
+  const customDir = path.join(rootDir, 'core', 'fixtures', 'custom');
+  const targetPath = path.join(customDir, `${name}.fixture.js`);
+
+  if (!fs.existsSync(targetPath)) {
+    throw new Error(`Không tìm thấy custom fixture '${name}' tại core/fixtures/custom/.`);
+  }
+
+  // Backup trước khi xóa
+  const backupDir = path.join(rootDir, '.dashboard-backups', 'fixtures');
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
+  }
+  const backupFile = `${name}.fixture.${Date.now()}.deleted.bak`;
+  fs.copyFileSync(targetPath, path.join(backupDir, backupFile));
+
+  fs.unlinkSync(targetPath);
+
+  return {
+    success: true,
+    name,
+    message: `Đã xóa custom fixture '${name}' thành công (Đã sao lưu tại .dashboard-backups).`,
+  };
+}
+
 module.exports = {
   PAGE_METADATA,
+  FIXTURE_ALLOWLIST,
+  parseFixture,
   parsePageObject,
   scanAllPageObjects,
+  scanAllFixtures,
+  createCustomFixture,
+  deleteCustomFixture,
   updateLocatorSelector,
   getCoreCapabilities,
   createPageObject,

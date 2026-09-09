@@ -57,7 +57,11 @@
               </button>
               <button class="nav-dropdown-item view-tab" type="button" role="menuitem" data-view="data-view">
                 <i class="ph-bold ph-database"></i>
-                <div class="nav-item-text"><strong>Dữ liệu test</strong><small>Quản lý file JSON & fixtures</small></div>
+                <div class="nav-item-text"><strong>Dữ liệu test</strong><small>Quản lý file JSON & datasets</small></div>
+              </button>
+              <button class="nav-dropdown-item view-tab" type="button" role="menuitem" data-view="fixtures-view">
+                <i class="ph-bold ph-sliders"></i>
+                <div class="nav-item-text"><strong>Hạ tầng & Fixtures</strong><small>Quản lý vòng đời, Preconditions & Teardown</small></div>
               </button>
               <button class="nav-dropdown-item view-tab" type="button" role="menuitem" data-view="compare-view">
                 <i class="ph-bold ph-images"></i>
@@ -1098,8 +1102,7 @@
               <div class="pm-sidebar-pills">
                 <button type="button" class="pm-filter-pill active" data-platform="desktop">Desktop</button>
                 <button type="button" class="pm-filter-pill" data-platform="mobile-web">Mobile</button>
-                <button type="button" class="pm-filter-pill" data-platform="base">Base</button>
-                <button type="button" class="pm-filter-pill" data-platform="fixture">Fixture</button>
+                <button type="button" class="pm-filter-pill" data-platform="base" title="Lớp nền tảng dùng chung (Core Foundation)">Nền tảng</button>
               </div>
             </div>
 
@@ -1628,8 +1631,8 @@
                       <span>Fixture Nền Tảng: <strong id="pillar-fixture-name">core/fixtures/baseTest.js</strong></span>
                       <span class="dependency-badge-ready" id="pillar-fixture-scope" style="background: rgba(168, 85, 247, 0.12); color: #9333ea; border-color: rgba(168, 85, 247, 0.25);">Desktop Web Scope</span>
                     </div>
-                    <button type="button" class="btn-secondary-sm" id="btn-view-fixture-code" title="Xem và chỉnh sửa mã nguồn Fixture" style="font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;">
-                      <i class="ph-bold ph-code"></i> Xem mã Fixture
+                    <button type="button" class="btn-secondary-sm" id="btn-view-fixture-code" title="Xem mã nguồn Fixture nền tảng (Chỉ đọc để bảo vệ Framework)" style="font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="ph-bold ph-eye"></i> Xem mã Fixture
                     </button>
                   </div>
                   <div class="fixture-caps-wrap" id="pillar-fixture-caps" style="padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); border-radius: 6px; margin-top: 8px; border: 1px solid var(--line);">
@@ -2527,6 +2530,169 @@
       </dialog>
 
 
+    </section>
+
+    <!-- Phân hệ Hạ tầng & Fixtures Studio -->
+    <section id="fixtures-view" class="dashboard-view fixtures-view" role="tabpanel" hidden>
+      <header class="hero">
+        <div>
+          <p class="eyebrow"><i class="ph-bold ph-sliders"></i> HẠ TẦNG & VÒNG ĐỜI KIỂM THỬ</p>
+          <h1>Quản lý Fixtures & Preconditions</h1>
+          <p class="subtitle">Quản lý vòng đời kiểm thử, cấu hình Precondition và nghiệp vụ Setup/Teardown tự động (như tự động xóa User sau test).</p>
+        </div>
+        <div class="hero-stats-group">
+          <button type="button" class="btn-primary" id="btn-open-create-fixture-modal">
+            <i class="ph-bold ph-plus-circle"></i> Thêm Fixture Dùng Chung
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace" style="display: grid; grid-template-columns: 340px 1fr; gap: 20px; min-height: 600px;">
+        <!-- Panel Trái: Danh mục Fixtures & Bộ lọc -->
+        <section class="panel" style="display: flex; flex-direction: column; gap: 12px; height: 100%;">
+          <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <p>DANH MỤC</p>
+              <h2>Fixtures & Hooks</h2>
+            </div>
+            <span class="badge" id="fixtures-badge-total" style="background: var(--surface-2); padding: 4px 8px; border-radius: 6px; font-size: 12px;">0</span>
+          </div>
+
+          <!-- Search & Filter Pills -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="search-input-box" style="position: relative;">
+              <i class="ph ph-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted);"></i>
+              <input type="text" id="fixtures-search-input" placeholder="Tìm kiếm fixture..." style="width: 100%; padding: 8px 12px 8px 32px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text);" />
+            </div>
+            <div class="pm-sidebar-pills" id="fixtures-filter-pills" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button type="button" class="pm-filter-pill active" data-filter="all">Tất cả</button>
+              <button type="button" class="pm-filter-pill" data-filter="precondition">Precondition</button>
+              <button type="button" class="pm-filter-pill" data-filter="teardown">Teardown / Dọn dẹp</button>
+              <button type="button" class="pm-filter-pill" data-filter="custom">Tùy biến</button>
+            </div>
+          </div>
+
+          <!-- Danh sách items -->
+          <div id="fixtures-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; max-height: 580px;">
+            <p class="empty-resource">Đang tải danh sách fixtures...</p>
+          </div>
+        </section>
+
+        <!-- Panel Phải: Chi tiết Fixture & Code View -->
+        <section class="panel" id="fixtures-detail-panel" style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <p id="fx-detail-category-eyebrow">CHI TIẾT FIXTURE</p>
+              <h2 id="fx-detail-name">Chọn một Fixture để xem</h2>
+              <span class="subtitle" id="fx-detail-desc" style="display: block; margin-top: 4px; color: var(--muted);">Chữ ký hàm, phạm vi và cách sử dụng trong kịch bản test.</span>
+            </div>
+            <div id="fx-detail-actions" style="display: flex; gap: 8px;">
+              <button type="button" class="btn-danger-sm" id="btn-delete-fixture" style="display: none;">
+                <i class="ph ph-trash"></i> Xóa Fixture
+              </button>
+            </div>
+          </div>
+
+          <!-- Metadata Grid -->
+          <div class="pm-meta-grid" id="fx-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; padding: 14px; background: var(--surface-2); border-radius: 8px;">
+            <div><strong style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Phạm vi (Scope)</strong><div id="fx-grid-scope" style="font-weight: 600; margin-top: 2px;">test</div></div>
+            <div><strong style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Phân loại</strong><div id="fx-grid-cat" style="font-weight: 600; margin-top: 2px;">—</div></div>
+            <div><strong style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Tham số nạp</strong><div id="fx-grid-params" style="font-weight: 600; margin-top: 2px;">—</div></div>
+            <div><strong style="font-size: 11px; color: var(--muted); text-transform: uppercase;">File nguồn</strong><div id="fx-grid-file" style="font-weight: 600; margin-top: 2px; font-family: monospace; font-size: 12px;">—</div></div>
+          </div>
+
+          <!-- Usage snippet -->
+          <div>
+            <h3 style="font-size: 14px; margin-bottom: 6px;"><i class="ph-bold ph-code"></i> Cách sử dụng trong Test Spec</h3>
+            <pre style="background: var(--surface-2); padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto;"><code id="fx-usage-code">// Chọn fixture để xem mã mẫu</code></pre>
+          </div>
+
+          <!-- Source code -->
+          <div style="flex: 1; display: flex; flex-direction: column;">
+            <h3 style="font-size: 14px; margin-bottom: 6px;"><i class="ph-bold ph-file-js"></i> Mã nguồn triển khai</h3>
+            <pre style="flex: 1; background: var(--surface-2); padding: 14px; border-radius: 6px; font-size: 12px; overflow-y: auto; max-height: 320px;"><code id="fx-source-code">// Mã nguồn fixture</code></pre>
+          </div>
+        </section>
+      </div>
+
+      <!-- Modal Wizard Tạo Fixture Mới -->
+      <dialog id="modal-create-fixture" class="app-modal" style="max-width: 680px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 0;">
+        <div class="app-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="ph-bold ph-plus-circle" style="color: var(--primary); font-size: 20px;"></i>
+            <h3 style="margin: 0; font-size: 16px;">Tạo Fixture & Hook Dùng Chung Mới</h3>
+          </div>
+          <button type="button" class="btn-icon-subtle" id="btn-close-create-fixture-modal" style="border: none; background: transparent; font-size: 18px; cursor: pointer; color: var(--muted);"><i class="ph ph-x"></i></button>
+        </div>
+
+        <form id="form-create-fixture" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+          <div>
+            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px;">Chọn mẫu Wizard (Template)</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+              <label class="fx-template-card is-selected" style="border: 1px solid var(--primary); padding: 10px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;">
+                <input type="radio" name="fx-template" value="cleanup_api" checked style="display: none;" />
+                <strong style="font-size: 13px; color: var(--primary);"><i class="ph-bold ph-trash"></i> Xóa data sau test (API)</strong>
+                <small style="font-size: 11px; color: var(--muted);">Tự động gọi API xóa user/resource trong finally</small>
+              </label>
+              <label class="fx-template-card" style="border: 1px solid var(--line); padding: 10px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;">
+                <input type="radio" name="fx-template" value="precondition_data" style="display: none;" />
+                <strong style="font-size: 13px;"><i class="ph-bold ph-database"></i> Chuẩn bị dữ liệu (Setup)</strong>
+                <small style="font-size: 11px; color: var(--muted);">Chuẩn bị data trước test và bàn giao qua use()</small>
+              </label>
+              <label class="fx-template-card" style="border: 1px solid var(--line); padding: 10px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;">
+                <input type="radio" name="fx-template" value="custom_code" style="display: none;" />
+                <strong style="font-size: 13px;"><i class="ph-bold ph-code"></i> Tự do (Custom Code)</strong>
+                <small style="font-size: 11px; color: var(--muted);">Tự viết code hàm JS linh hoạt theo ý muốn</small>
+              </label>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label for="fx-input-name" style="display: block; font-weight: 600; font-size: 12px; margin-bottom: 4px;">Tên Fixture (camelCase) *</label>
+              <input type="text" id="fx-input-name" required placeholder="ví dụ: ephemeralUser" pattern="^[a-zA-Z][a-zA-Z0-9_]*$" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text);" />
+            </div>
+            <div>
+              <label for="fx-input-title" style="display: block; font-weight: 600; font-size: 12px; margin-bottom: 4px;">Tiêu đề hiển thị *</label>
+              <input type="text" id="fx-input-title" required placeholder="ví dụ: Tự động tạo và xóa User" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text);" />
+            </div>
+          </div>
+
+          <div>
+            <label for="fx-input-desc" style="display: block; font-weight: 600; font-size: 12px; margin-bottom: 4px;">Mô tả nghiệp vụ</label>
+            <input type="text" id="fx-input-desc" placeholder="Giải thích mục đích của fixture này..." style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text);" />
+          </div>
+
+          <!-- Dynamic Config Fields for cleanup_api -->
+          <div id="fx-fields-cleanup" style="display: flex; flex-direction: column; gap: 10px; background: var(--surface-2); padding: 12px; border-radius: 8px;">
+            <div style="font-weight: 600; font-size: 12px; color: var(--primary);">Cấu hình API Dọn dẹp (Teardown API)</div>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 10px;">
+              <div>
+                <label style="display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px;">Method</label>
+                <select id="fx-cleanup-method" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text);">
+                  <option value="DELETE" selected>DELETE</option>
+                  <option value="POST">POST</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px;">Endpoint URL (Dùng :id cho ID động)</label>
+                <input type="text" id="fx-cleanup-url" placeholder="/api/users/:id" value="/api/users/:id" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--text);" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Code Field for custom_code -->
+          <div id="fx-fields-custom" style="display: none; flex-direction: column; gap: 6px;">
+            <label for="fx-custom-code" style="font-weight: 600; font-size: 12px;">Mã nguồn JavaScript</label>
+            <textarea id="fx-custom-code" rows="7" style="width: 100%; font-family: monospace; font-size: 12px; padding: 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text);"></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; border-top: 1px solid var(--line); padding-top: 14px;">
+            <button type="button" class="btn-secondary" id="btn-cancel-create-fixture">Hủy</button>
+            <button type="submit" class="btn-primary" id="btn-submit-create-fixture"><i class="ph-bold ph-check"></i> Lưu & Áp Dụng Fixture</button>
+          </div>
+        </form>
+      </dialog>
     </section>
 
     <section id="resources-view" class="dashboard-view resources-view" role="tabpanel" hidden>
@@ -3991,6 +4157,19 @@
           <button type="button" class="btn-icon-subtle" onclick="document.getElementById('modal-view-page-code').close()"><i class="ph ph-x"></i></button>
         </div>
         <div class="app-modal-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px;">
+          <!-- Banner bảo vệ Core Fixture -->
+          <div id="modal-fixture-protect-banner" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; font-size: 12px; color: var(--text);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="ph-bold ph-shield-check" style="color: #ef4444; font-size: 18px;"></i>
+                <span><strong>Fixture Cốt Lõi (Được Bảo Vệ):</strong> File này quản lý vòng đời và container nền tảng của framework, được khóa chỉ đọc để ngăn ngừa rủi ro hỏng hệ thống test.</span>
+              </div>
+              <button type="button" class="btn-secondary-sm" id="btn-modal-open-fixtures-studio" style="font-size: 11.5px; padding: 4px 10px; color: var(--accent); border-color: var(--accent); display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+                <i class="ph-bold ph-arrow-square-out"></i> Mở Hạ tầng & Fixtures
+              </button>
+            </div>
+          </div>
+
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span id="modal-page-eyebrow" style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Mã nguồn Page Object Class</span>

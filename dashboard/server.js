@@ -70,6 +70,9 @@ const { analyzeDiagnostics } = require('../core/diagnostics/diagnosticsAnalyzer'
 const {
   scanAllPageObjects,
   parsePageObject,
+  scanAllFixtures,
+  createCustomFixture,
+  deleteCustomFixture,
   updateLocatorSelector,
   getCoreCapabilities,
   createPageObject,
@@ -1380,6 +1383,13 @@ const server = http.createServer(async (request, response) => {
     try {
       const body = await parseBody(request);
       const filePath = String(body.path || '');
+      const isDev = isDeveloperRequest(request);
+      const isCoreFoundation = filePath === 'core/fixtures/baseTest.js' || filePath === 'core/fixtures/mobileWebTest.js';
+      if (isCoreFoundation && !isDev) {
+        return sendJson(response, 403, {
+          error: `File '${filePath}' là Fixture nền tảng cốt lõi của framework, được bảo vệ chỉ đọc để tránh làm hỏng hệ thống kiểm thử. Để tạo hoặc mở rộng fixture nghiệp vụ, vui lòng sử dụng phân hệ 'Hạ tầng & Fixtures' hoặc tạo custom fixture trong 'core/fixtures/custom/'.`
+        });
+      }
       const absolutePath = resolveCodeFile(filePath);
       if (!absolutePath) return sendJson(response, 403, { error: 'File mã nguồn này không được phép chỉnh sửa.' });
       const content = String(body.content ?? '');
@@ -2433,6 +2443,48 @@ test.describe('Feature: ${featureName} ${tags}', () => {
       return sendJson(response, 200, { capabilities });
     } catch (error) {
       return sendJson(response, 500, { error: error.message });
+    }
+  }
+
+  // --- Fixtures & Lifecycle Hooks Management APIs ---
+  if (request.method === 'GET' && url.pathname === '/api/fixtures') {
+    try {
+      const fixtures = scanAllFixtures(ROOT);
+      return sendJson(response, 200, { fixtures });
+    } catch (error) {
+      return sendJson(response, 500, { error: error.message });
+    }
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/fixtures') {
+    try {
+      const body = await parseBody(request);
+      const result = createCustomFixture({ ...body, rootDir: ROOT });
+      return sendJson(response, 201, result);
+    } catch (error) {
+      return sendJson(response, 400, { error: error.message });
+    }
+  }
+
+  if ((request.method === 'DELETE' || request.method === 'POST') && url.pathname.startsWith('/api/fixtures/delete')) {
+    try {
+      const body = request.method === 'POST' ? await parseBody(request) : {};
+      const fixtureName = body.name || decodeURIComponent(url.pathname.slice('/api/fixtures/delete/'.length));
+      if (!fixtureName) return sendJson(response, 400, { error: 'Thiếu tên fixture cần xóa.' });
+      const result = deleteCustomFixture(fixtureName, ROOT);
+      return sendJson(response, 200, result);
+    } catch (error) {
+      return sendJson(response, 400, { error: error.message });
+    }
+  }
+
+  if (request.method === 'DELETE' && url.pathname.startsWith('/api/fixtures/')) {
+    try {
+      const fixtureName = decodeURIComponent(url.pathname.slice('/api/fixtures/'.length));
+      const result = deleteCustomFixture(fixtureName, ROOT);
+      return sendJson(response, 200, result);
+    } catch (error) {
+      return sendJson(response, 400, { error: error.message });
     }
   }
 

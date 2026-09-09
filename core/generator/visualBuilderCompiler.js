@@ -111,6 +111,15 @@ const PRESET_ACTIONS = [
     desc: 'Xác nhận URL sau khi thao tác khớp đường dẫn mong đợi',
     codeTemplate: (step, ctx) => `      await expect(page).toHaveURL(new RegExp(${quote(step.expectedVal || '')}));`,
   },
+  {
+    id: 'cleanup_action',
+    category: 'teardown',
+    stepType: 'Teardown',
+    name: 'Dọn dẹp sau test (Cleanup Hook)',
+    desc: 'Đăng ký tác vụ dọn dẹp dữ liệu (xóa user, xóa đơn hàng) luôn chạy trong finally',
+    fixture: 'cleanupQueue',
+    codeTemplate: (step, ctx) => `      cleanupQueue(async () => {\n        // Dọn dẹp dữ liệu sau test: ${step.name || 'Cleanup action'}\n        ${step.code ? String(step.code).trim() : `console.log('Hoàn tất dọn dẹp dữ liệu.');`}\n      });`,
+  },
 ];
 
 /**
@@ -293,13 +302,14 @@ function getFixturePageMap(rootDir = process.cwd()) {
       for (const file of files) {
         const base = path.basename(file, '.js');
         const fix = base.charAt(0).toLowerCase() + base.slice(1);
-        if (!map[fix]) {
-          map[fix] = {
-            name: file,
-            relativePath: `${item.dir}/${file}`.replace(/\\/g, '/'),
-            className: base,
-          };
-        }
+        const shortAlias = fix.endsWith('Page') ? fix.slice(0, -4) : fix;
+        const pageEntry = {
+          name: file,
+          relativePath: `${item.dir}/${file}`.replace(/\\/g, '/'),
+          className: base,
+        };
+        if (!map[fix]) map[fix] = pageEntry;
+        if (shortAlias && !map[shortAlias]) map[shortAlias] = pageEntry;
       }
     }
   }
@@ -376,6 +386,35 @@ function parseExistingSpecFile(filePath, rootDir = process.cwd()) {
   // 5. Trích xuất các Page Objects tham gia (1 script -> nhiều pages)
   const pageMap = new Map();
   const fixturePageMap = getFixturePageMap(rootDir);
+
+  // 5a. Nhận diện từ pages container: pages.<alias>.<action>(...)
+  const pagesCallRegex = /\bpages\.([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\s*\(/g;
+  let pcMatch;
+  while ((pcMatch = pagesCallRegex.exec(content)) !== null) {
+    const alias = pcMatch[1];
+    const act = pcMatch[2];
+    const pageInfo = fixturePageMap[alias] || fixturePageMap[alias.toLowerCase()];
+    if (pageInfo) {
+      const existing = pageMap.get(pageInfo.relativePath);
+      if (existing) {
+        if (!['capture', 'waitForLoadState', 'waitForTimeout'].includes(act) && !existing.actions.includes(act)) {
+          existing.actions.push(act);
+          existing.actionCount = existing.actions.length;
+        }
+      } else {
+        const actions = ['capture', 'waitForLoadState', 'waitForTimeout'].includes(act) ? [] : [act];
+        pageMap.set(pageInfo.relativePath, {
+          name: pageInfo.name,
+          className: pageInfo.className,
+          relativePath: pageInfo.relativePath,
+          actions,
+          actionCount: actions.length,
+        });
+      }
+    }
+  }
+
+  // 5b. Nhận diện từ individual fixtures hoặc local instances
   for (const [fixName, pageInfo] of Object.entries(fixturePageMap)) {
     const fixRegex = new RegExp(`\\b${fixName}\\b`);
     if (fixRegex.test(content) || fixtures.includes(fixName)) {
@@ -395,7 +434,7 @@ function parseExistingSpecFile(filePath, rootDir = process.cwd()) {
           if (!existing.actions.includes(a)) existing.actions.push(a);
         });
         existing.actionCount = existing.actions.length;
-      } else {
+      } else if (actions.length > 0 || fixtures.includes(fixName)) {
         pageMap.set(pageInfo.relativePath, {
           name: pageInfo.name,
           className: pageInfo.className,
