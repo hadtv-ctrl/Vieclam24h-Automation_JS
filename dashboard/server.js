@@ -99,6 +99,7 @@ const agentService = createAgentService({ root: ROOT });
 let pendingDashboardWrites = 0;
 const agentRoutes = createAgentRoutes({ service: agentService, parseBody, sendJson,
   isBusy: () => Boolean(activeRun || activeRecorder || pendingDashboardWrites) });
+const { handleDataRoutes } = require('./routes/dataRoutes');
 const AGENT_SAFE_POST_ROUTES = new Set([
   '/api/stop', '/api/shutdown', '/api/recorder/stop', '/api/recorder/reset', '/api/recorder/scan-pages',
   '/api/recorder/convert', '/api/recorder/generate-draft', '/api/ai/generate-state',
@@ -1951,112 +1952,9 @@ const server = http.createServer(async (request, response) => {
     }
   }
 
-  // --- No-Code Test Data Studio APIs ---
-  if (request.method === 'GET' && url.pathname === '/api/data/datasets') {
-    try {
-      return sendJson(response, 200, { datasets: listDatasets() });
-    } catch (error) {
-      return sendJson(response, 500, { error: error.message });
-    }
-  }
-
-  if (request.method === 'GET' && url.pathname === '/api/data/dataset') {
-    const fileName = url.searchParams.get('file');
-    if (!fileName) return sendJson(response, 400, { error: 'Thiếu tên file dữ liệu.' });
-    try {
-      const result = readDataset(fileName);
-      return sendJson(response, 200, result);
-    } catch (error) {
-      return sendJson(response, 404, { error: error.message });
-    }
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/data/dataset') {
-    try {
-      const body = await parseBody(request);
-      const fileName = body.fileName;
-      if (!fileName) return sendJson(response, 400, { error: 'Thiếu tên file dữ liệu.' });
-      const result = saveDataset(fileName, body.data);
-      return sendJson(response, 200, result);
-    } catch (error) {
-      return sendJson(response, 400, { error: error.message });
-    }
-  }
-
-  if ((request.method === 'DELETE' && url.pathname === '/api/data/dataset') || (request.method === 'POST' && url.pathname === '/api/data/delete-dataset')) {
-    try {
-      const body = request.method === 'POST' ? await parseBody(request) : {};
-      const fileName = body.fileName || body.file || body.name || url.searchParams.get('fileName') || url.searchParams.get('file') || url.searchParams.get('name');
-      if (!fileName) return sendJson(response, 400, { error: 'Thiếu tên file dữ liệu cần xóa.' });
-      const result = deleteDataset(fileName);
-      return sendJson(response, 200, result);
-    } catch (error) {
-      return sendJson(response, 400, { error: error.message });
-    }
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/data/create-dataset') {
-    try {
-      const body = await parseBody(request);
-      const fileName = body.fileName;
-      const templateType = body.templateType || 'array';
-      if (!fileName) return sendJson(response, 400, { error: 'Thiếu tên file dữ liệu.' });
-      const result = createDataset(fileName, templateType, body.content);
-      return sendJson(response, 200, {
-        success: true,
-        message: `Đã tạo tệp dữ liệu ${result.fileName}`,
-        ...result,
-      });
-    } catch (error) {
-      return sendJson(response, 400, { error: error.message });
-    }
-  }
-
-  if (request.method === 'GET' && url.pathname === '/api/data/export-csv') {
-    const fileName = url.searchParams.get('file');
-    if (!fileName) return sendJson(response, 400, { error: 'Thiếu tên file dữ liệu.' });
-    try {
-      const dataset = readDataset(fileName);
-      if (!Array.isArray(dataset.data)) throw new Error('Chỉ có thể xuất CSV từ dataset dạng mảng.');
-      const csv = jsonToCsv(dataset.data);
-      response.writeHead(200, {
-        'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${dataset.fileName.replace(/"/g, '')}"`,
-      });
-      return response.end(`\uFEFF${csv}`);
-    } catch (error) {
-      return sendJson(response, 400, { error: error.message });
-    }
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/data/import-csv') {
-    try {
-      const body = await parseBody(request, 1024 * 1024 + 4096);
-      const fileName = body.fileName;
-      const csv = typeof body.csv === 'string' ? body.csv.replace(/^\uFEFF/, '') : '';
-      if (!fileName || !csv) return sendJson(response, 400, { error: 'Thiếu tên file hoặc nội dung CSV.' });
-      const rows = csvToJson(csv);
-      if (rows.length === 0) throw new Error('CSV phải có tiêu đề và ít nhất một dòng dữ liệu.');
-      const result = saveDataset(fileName, rows);
-      return sendJson(response, 200, { ...result, importedRows: rows.length });
-    } catch (error) {
-      return sendJson(response, 400, { error: error.message });
-    }
-  }
-
-  if (request.method === 'GET' && url.pathname === '/api/data/dynamic-preview') {
-    try {
-      return sendJson(response, 200, {
-        random_phone: generateDynamicValue('{{random_phone}}'),
-        random_email: generateDynamicValue('{{random_email}}'),
-        random_name: generateDynamicValue('{{random_name}}'),
-        timestamp: generateDynamicValue('{{timestamp}}'),
-        date: generateDynamicValue('{{date}}'),
-      });
-    } catch (error) {
-      return sendJson(response, 500, { error: error.message });
-    }
-  }
+  // --- No-Code Test Data Studio APIs (Modularized to dashboard/routes/dataRoutes.js) ---
+  const handledData = await handleDataRoutes(request, response, url);
+  if (handledData) return;
 
   // --- Visual Step Builder & BDD Studio APIs ---
   if (request.method === 'GET' && url.pathname === '/api/builder/scripts') {
