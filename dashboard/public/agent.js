@@ -18,28 +18,20 @@
   }
 
   async function api(url, body) {
-    let response;
     const clientCfg = getClientAiConfig();
     const headers = { 'Content-Type': 'application/json', 'X-Dashboard-Agent': '1' };
-    if (clientCfg) {
-      try { headers['X-AI-Config'] = btoa(unescape(encodeURIComponent(JSON.stringify(clientCfg)))); } catch {}
-    }
+    if (clientCfg) { try { headers['X-AI-Config'] = btoa(unescape(encodeURIComponent(JSON.stringify(clientCfg)))); } catch {} }
     const reqBody = body === undefined ? undefined : { ...body, ...(clientCfg ? { clientConfig: clientCfg } : {}) };
+    let response;
     try {
-      response = await fetch(url, {
-        signal: AbortSignal.timeout(15000),
-        ...(reqBody === undefined ? (clientCfg ? { headers: { 'X-AI-Config': headers['X-AI-Config'] } } : {}) : { method: 'POST', headers, body: JSON.stringify(reqBody) })
-      });
+      response = await fetch(url, { signal: AbortSignal.timeout(15000), ...(reqBody === undefined ? (clientCfg ? { headers: { 'X-AI-Config': headers['X-AI-Config'] } } : {}) : { method: 'POST', headers, body: JSON.stringify(reqBody) }) });
     } catch { throw new Error('Mất kết nối Dashboard. Kiểm tra máy chủ rồi thử lại.'); }
     let data;
     try { data = await response.json(); } catch { throw new Error('Dashboard chưa trả về kết quả hợp lệ. Hãy tải lại trang.'); }
     if (!response.ok) throw new Error(data.error || 'Không thực hiện được yêu cầu.');
     return data;
   }
-  function feedback(message = '') {
-    const el = byId('agent-feedback');
-    if (el) { el.textContent = message; el.hidden = !message; }
-  }
+  function feedback(message = '') { const el = byId('agent-feedback'); if (el) { el.textContent = message; el.hidden = !message; } }
   function controls() {
     if (!start || !stop || !model || !prompt || !history) return;
     start.disabled = !available || Boolean(activeId) || working || refreshPending;
@@ -50,9 +42,7 @@
   function getUnsavedCodeReason() {
     if ([...document.querySelectorAll('textarea')].some(input => !input.readOnly && input.__sharedEditor?.isDirty())) {
       const pmDirty = window.pageManagerCodeEditor?.isDirty?.();
-      return pmDirty
-        ? 'Mã nguồn tại "Quản lý Page Object" đang có thay đổi chưa lưu. Hãy bấm "Lưu thay đổi" (Ctrl+S) hoặc F5 trước khi giao việc cho Agent.'
-        : 'Có mã nguồn đang được chỉnh sửa chưa lưu. Hãy bấm "Lưu thay đổi" (Ctrl+S) hoặc F5 trước khi giao việc cho Agent.';
+      return pmDirty ? 'Mã nguồn tại "Quản lý Page Object" đang có thay đổi chưa lưu. Hãy bấm "Lưu thay đổi" (Ctrl+S) hoặc F5 trước khi giao việc cho Agent.' : 'Có mã nguồn đang được chỉnh sửa chưa lưu. Hãy bấm "Lưu thay đổi" (Ctrl+S) hoặc F5 trước khi giao việc cho Agent.';
     }
     if (typeof currentCodeFile !== 'undefined' && currentCodeFile && byId('code-editor')?.value !== originalCodeContent) {
       return `Tệp "${currentCodeFile}" tại Kịch bản BDD chưa được lưu. Hãy bấm "Lưu" (Ctrl+S) hoặc F5 trước khi giao việc cho Agent.`;
@@ -63,8 +53,7 @@
       if (isDirty || (typeof currentInspectedCode !== 'undefined' && val && val !== currentInspectedCode)) {
         return 'Mã nguồn tại "Quản lý Page Object" đang chỉnh sửa chưa lưu. Hãy bấm "Lưu thay đổi" (Ctrl+S) hoặc F5 trước khi giao việc cho Agent.';
       }
-      if (typeof toggleDirectCodeEdit === 'function') toggleDirectCodeEdit(false);
-      else pageDirectEditMode = false;
+      if (typeof toggleDirectCodeEdit === 'function') toggleDirectCodeEdit(false); else pageDirectEditMode = false;
     }
     if (byId('resource-editor') && !byId('resource-editor').hidden) return 'Trình sửa tài nguyên (Resource Editor) đang mở. Hãy lưu hoặc đóng lại trước khi giao việc cho Agent.';
     return null;
@@ -94,8 +83,7 @@
     }
     const barFill = byId('agent-quota-bar-fill');
     if (barFill?.style) barFill.style.width = `${percent}%`;
-    const progressBar = byId('agent-quota-progressbar');
-    if (progressBar?.setAttribute) progressBar.setAttribute('aria-valuenow', String(percent));
+    byId('agent-quota-progressbar')?.setAttribute?.('aria-valuenow', String(percent));
     if (byId('agent-quota-model')) byId('agent-quota-model').textContent = quota?.modelName || model?.value || 'gemini-2.5-flash';
     if (byId('agent-quota-used')) byId('agent-quota-used').textContent = formatTokens(quota?.usedTokens || 0);
     if (byId('agent-quota-limit')) byId('agent-quota-limit').textContent = formatTokens(quota?.limitTokens || 1000000);
