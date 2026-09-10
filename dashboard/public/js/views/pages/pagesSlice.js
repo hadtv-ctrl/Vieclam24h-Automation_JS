@@ -22,6 +22,9 @@ export class PagesSlice {
     this._mounted = true;
     this._bindDomEvents();
     this._registerBridgeActions();
+    if (typeof window.openPageManager === 'function') {
+      try { await window.openPageManager(); } catch (_) {}
+    }
     await this.loadPages();
   }
 
@@ -68,7 +71,7 @@ export class PagesSlice {
       container.innerHTML = '<p class="empty-resource">Đang nạp danh sách Pages...</p>';
     }
     try {
-      const res = await apiClient.get('/api/pages');
+      const res = await apiClient.get('/api/object-repository/pages');
       this.pages = res?.pages || [];
       stateStore.setState({ pages: { list: this.pages } }, 'pagesSlice.loadPages');
       this.renderPagesList();

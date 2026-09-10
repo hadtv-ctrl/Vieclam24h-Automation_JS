@@ -16,7 +16,7 @@ const { sendJson, parseBody } = require('./routeUtils');
 async function handlePageRoutes(request, response, url, context = {}) {
   const root = context.root || process.env.QA_PROJECT_ROOT || process.cwd();
 
-  if (request.method === 'GET' && url.pathname === '/api/object-repository/pages') {
+  if (request.method === 'GET' && (url.pathname === '/api/object-repository/pages' || url.pathname === '/api/pages')) {
     try {
       const pages = scanAllPageObjects(root);
       sendJson(response, 200, { pages });

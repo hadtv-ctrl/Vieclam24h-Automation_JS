@@ -1,14 +1,6 @@
 const path = require('path');
 const { test: base, expect } = require('@playwright/test');
 const { BasePage } = require('../../pages/BasePage');
-const { HomePage } = require('../../pages/desktop/HomePage');
-const { LoginPopup } = require('../../pages/desktop/LoginPopup');
-const { OnboardingPopup } = require('../../pages/desktop/OnboardingPopup');
-const { PopupConsent } = require('../../pages/desktop/PopupConsent');
-const { JobSearchPage } = require('../../pages/desktop/JobSearchPage');
-const { JobApplyPage } = require('../../pages/desktop/JobApplyPage');
-const { JobApplyNoCVPage } = require('../../pages/desktop/JobApplyNoCVPage');
-const { UserProfilePage } = require('../../pages/desktop/UserProfilePage');
 const {
   createRuntimeUserData,
   loginUserFromDataForPrecondition,
@@ -22,10 +14,7 @@ const RESERVED_FIXTURE_NAMES = new Set([
   'test', 'expect', 'page', 'request', 'browser', 'context',
   'basePage', 'pages', 'workerUserData', 'authenticatedUser',
   'cleanupQueue', 'featureName', 'pageObjectsRoot', 'pageObjectsPlatform',
-  'isMobile', 'viewport', 'browserName', 'storageState',
-  'homePage', 'loginPopup', 'onboardingPopup', 'popupConsent',
-  'jobSearchPage', 'jobApplyPage', 'jobApplyNoCVPage', 'userProfilePage',
-  'createJobApplyPage', 'createJobApplyNoCVPage', 'createPopupConsent'
+  'isMobile', 'viewport', 'browserName', 'storageState'
 ]);
 
 function resolvePlatform({ pageObjectsPlatform, isMobile, testInfo }) {
@@ -67,7 +56,7 @@ for (const [key, fixtureVal] of Object.entries(customFixtures || {})) {
 /**
  * Core Framework Base Fixture
  * Quản lý vòng đời kiểm thử, cô lập worker session, nạp BasePage nền tảng
- * và cung cấp Lazy Page Container (pages) đạt chuẩn 10/10 cùng Page Objects trực tiếp.
+ * và cung cấp Lazy Page Container (pages) đạt chuẩn 10/10.
  */
 const test = base.extend({
   workerUserData: async ({}, use, testInfo) => {
@@ -84,39 +73,6 @@ const test = base.extend({
   basePage: async ({ page, featureName }, use) => {
     await use(new BasePage(page, featureName));
   },
-  homePage: async ({ page, featureName }, use) => {
-    await use(new HomePage(page, featureName));
-  },
-  loginPopup: async ({ page, featureName }, use) => {
-    await use(new LoginPopup(page, featureName));
-  },
-  onboardingPopup: async ({ page }, use) => {
-    await use(new OnboardingPopup(page));
-  },
-  popupConsent: async ({ page, featureName }, use) => {
-    await use(new PopupConsent(page, featureName));
-  },
-  jobSearchPage: async ({ page, featureName }, use) => {
-    await use(new JobSearchPage(page, featureName));
-  },
-  jobApplyPage: async ({ page, featureName }, use) => {
-    await use(new JobApplyPage(page, featureName));
-  },
-  jobApplyNoCVPage: async ({ page }, use) => {
-    await use(new JobApplyNoCVPage(page));
-  },
-  userProfilePage: async ({ page, featureName }, use) => {
-    await use(new UserProfilePage(page, featureName));
-  },
-  createJobApplyPage: async ({ featureName }, use) => {
-    await use((targetPage) => new JobApplyPage(targetPage, featureName));
-  },
-  createJobApplyNoCVPage: async ({}, use) => {
-    await use((targetPage) => new JobApplyNoCVPage(targetPage));
-  },
-  createPopupConsent: async ({ featureName }, use) => {
-    await use((targetPage) => new PopupConsent(targetPage, featureName));
-  },
   pageObjectsRoot: [undefined, { option: true }],
   pageObjectsPlatform: [undefined, { option: true }],
   pages: async ({ page, featureName, pageObjectsRoot, pageObjectsPlatform, isMobile }, use, testInfo) => {
@@ -128,15 +84,13 @@ const test = base.extend({
     });
     await use(container);
   },
-  authenticatedUser: async ({ page, workerUserData, featureName }, use, testInfo) => {
+  authenticatedUser: async ({ page, workerUserData }, use, testInfo) => {
     testInfo.annotations.push({
       type: 'Precondition',
       description: `Đã xác thực tài khoản kiểm thử (authSetup: ${workerUserData.user?.phone || workerUserData.user?.username || 'Test User'})`,
     });
     const user = await test.step('[Precondition] Khởi tạo tài khoản xác thực (authSetup)', async () => {
-      return await loginUserFromDataForPrecondition(page, workerUserData.user, {
-        skipCloseOnboarding: Boolean(featureName && featureName.toLowerCase().includes('onboarding')),
-      });
+      return await loginUserFromDataForPrecondition(page, workerUserData.user);
     });
     await use({ ...user, runtimeDataPath: workerUserData.filePath });
   },
@@ -150,4 +104,3 @@ module.exports = {
   resolvePlatform,
   RESERVED_FIXTURE_NAMES,
 };
-

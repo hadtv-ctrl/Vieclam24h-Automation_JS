@@ -16,6 +16,9 @@ export class SettingsSlice {
   async mount() {
     this._mounted = true;
     this._bindDomEvents();
+    if (typeof window.openSettings === 'function') {
+      try { await window.openSettings(); } catch (_) {}
+    }
     await this.loadSettings();
   }
 
@@ -28,11 +31,64 @@ export class SettingsSlice {
   _bindDomEvents() {
     const root = document.getElementById('settings-view');
     if (!root) return;
-    const saveBtn = root.querySelector('#btn-save-settings');
+
+    // Subtabs click listener
+    root.querySelectorAll('.settings-subtab').forEach((tab) => {
+      const h = () => this.switchSubtab(tab.dataset.subtab);
+      tab.addEventListener('click', h);
+      this._disposers.push(() => tab.removeEventListener('click', h));
+    });
+
+    const saveBtn = root.querySelector('#save-settings-button') || root.querySelector('#btn-save-settings');
     if (saveBtn) {
-      const h = () => this.saveSettings();
+      const h = () => (typeof window.saveSettings === 'function' ? window.saveSettings() : this.saveSettings());
       saveBtn.addEventListener('click', h);
       this._disposers.push(() => saveBtn.removeEventListener('click', h));
+    }
+
+    const reloadBtn = root.querySelector('#reload-settings-button');
+    if (reloadBtn) {
+      const h = () => (typeof window.openSettings === 'function' ? window.openSettings() : this.loadSettings());
+      reloadBtn.addEventListener('click', h);
+      this._disposers.push(() => reloadBtn.removeEventListener('click', h));
+    }
+  }
+
+  switchSubtab(target) {
+    const root = document.getElementById('settings-view');
+    if (!root) return;
+
+    root.querySelectorAll('.settings-subtab').forEach((t) => t.classList.toggle('active', t.dataset.subtab === target));
+
+    const isGeneral = target === 'general';
+    ['.settings-environments', '.settings-runtime', '.settings-api', '.settings-artifacts'].forEach((sel) => {
+      const el = root.querySelector(sel);
+      if (el) el.hidden = !isGeneral;
+    });
+
+    const aiPanel = root.querySelector('.settings-ai');
+    if (aiPanel) {
+      aiPanel.hidden = target !== 'ai';
+      if (target === 'ai' && typeof window.initAiSettings === 'function') {
+        window.initAiSettings();
+      }
+    }
+
+    const discordPanel = root.querySelector('.settings-discord');
+    if (discordPanel) discordPanel.hidden = target !== 'discord';
+
+    const brandingPanel = root.querySelector('.settings-branding');
+    if (brandingPanel) brandingPanel.hidden = target !== 'branding';
+
+    const suitesPanel = root.querySelector('.settings-suites');
+    if (suitesPanel) suitesPanel.hidden = target !== 'suites';
+
+    const documentsPanel = root.querySelector('.settings-documents');
+    if (documentsPanel) {
+      documentsPanel.hidden = target !== 'documents';
+      if (target === 'documents' && typeof window.openSettingsDocuments === 'function') {
+        window.openSettingsDocuments();
+      }
     }
   }
 

@@ -180,17 +180,21 @@ $('#spec')?.addEventListener('change', updateWorkersForSpec);
 $('#grep')?.addEventListener('input', updateManualSpecsPreview);
 
 function fillSettingSelect(selector, values, selected) {
-  $(selector).innerHTML = values.map((value) =>
+  const el = $(selector);
+  if (!el) return;
+  el.innerHTML = values.map((value) =>
     `<option value="${escapeHtml(value)}"${value === selected ? ' selected' : ''}>${escapeHtml(value)}</option>`
   ).join('');
 }
 
 function setInputValue(selector, value) {
-  $(selector).value = value ?? '';
+  const el = $(selector);
+  if (el) el.value = value ?? '';
 }
 
 function setChecked(selector, value) {
-  $(selector).checked = value === true;
+  const el = $(selector);
+  if (el) el.checked = value === true;
 }
 
 function readNumber(target, fallback = 0) {
@@ -4946,7 +4950,9 @@ function renderSettings(settings) {
   savedSuitesCache = JSON.parse(JSON.stringify(settings.suites || {}));
   renderSuitesView(settings.suites || {});
   const environmentEntries = Object.entries(settings.environments || {});
-  $('#environment-settings').innerHTML = environmentEntries.map(([key, env]) => `
+  const envContainer = $('#environment-settings');
+  if (envContainer) {
+    envContainer.innerHTML = environmentEntries.map(([key, env]) => `
     <div class="environment-row" data-env="${escapeHtml(key)}">
       <div class="environment-key"><strong>${escapeHtml(key)}</strong><small>${escapeHtml(env.label || key.toUpperCase())}</small></div>
       <div class="environment-fields">
@@ -4956,33 +4962,37 @@ function renderSettings(settings) {
       </div>
     </div>
   `).join('');
+  }
 
-  fillSettingSelect('#settings-default-environment', environmentEntries.map(([key]) => key), settings.runtime.defaultEnvironment);
-  fillSettingSelect('#settings-trace', settings.options.trace, settings.runtime.trace);
-  fillSettingSelect('#settings-screenshot', settings.options.screenshot, settings.runtime.screenshot);
-  fillSettingSelect('#settings-video', settings.options.video, settings.runtime.video);
+  fillSettingSelect('#settings-default-environment', environmentEntries.map(([key]) => key), settings.runtime?.defaultEnvironment);
+  fillSettingSelect('#settings-trace', settings.options?.trace || [], settings.runtime?.trace);
+  fillSettingSelect('#settings-screenshot', settings.options?.screenshot || [], settings.runtime?.screenshot);
+  fillSettingSelect('#settings-video', settings.options?.video || [], settings.runtime?.video);
 
-  setInputValue('#settings-workers', settings.runtime.workers);
-  setInputValue('#settings-test-timeout', settings.runtime.testTimeout);
-  setInputValue('#settings-navigation-timeout', settings.runtime.navigationTimeout);
-  setInputValue('#settings-action-timeout', settings.runtime.actionTimeout);
-  setInputValue('#settings-retries-local', settings.runtime.retriesLocal);
-  setInputValue('#settings-retries-ci', settings.runtime.retriesCI);
-  setInputValue('#settings-viewport-width', settings.runtime.viewport.width);
-  setInputValue('#settings-viewport-height', settings.runtime.viewport.height);
-  setChecked('#settings-show-env-banner', settings.runtime.showEnvBanner);
-  setChecked('#settings-debug-optional-popups', settings.runtime.debugOptionalPopups);
+  setInputValue('#settings-workers', settings.runtime?.workers);
+  setInputValue('#settings-test-timeout', settings.runtime?.testTimeout);
+  setInputValue('#settings-navigation-timeout', settings.runtime?.navigationTimeout);
+  setInputValue('#settings-action-timeout', settings.runtime?.actionTimeout);
+  setInputValue('#settings-retries-local', settings.runtime?.retriesLocal);
+  setInputValue('#settings-retries-ci', settings.runtime?.retriesCI);
+  setInputValue('#settings-viewport-width', settings.runtime?.viewport?.width);
+  setInputValue('#settings-viewport-height', settings.runtime?.viewport?.height);
+  setChecked('#settings-show-env-banner', settings.runtime?.showEnvBanner);
+  setChecked('#settings-debug-optional-popups', settings.runtime?.debugOptionalPopups);
 
   setInputValue('#settings-registration-token', '');
-  setInputValue('#settings-api-branch', settings.api.branch);
-  setInputValue('#settings-api-lang', settings.api.lang);
-  setInputValue('#settings-register-retries', settings.api.registerRetries);
-  setInputValue('#settings-register-timeout', settings.api.registerTimeout);
-  setInputValue('#settings-consent-retries', settings.api.consentRetries);
-  setInputValue('#settings-consent-timeout', settings.api.consentTimeout);
-  $('#settings-token-status').textContent = settings.api.hasRegistrationBearerToken
-    ? 'Đã lưu bearer token. Để trống ô token nếu không muốn thay đổi.'
-    : 'Chưa có bearer token được lưu.';
+  setInputValue('#settings-api-branch', settings.api?.branch);
+  setInputValue('#settings-api-lang', settings.api?.lang);
+  setInputValue('#settings-register-retries', settings.api?.registerRetries);
+  setInputValue('#settings-register-timeout', settings.api?.registerTimeout);
+  setInputValue('#settings-consent-retries', settings.api?.consentRetries);
+  setInputValue('#settings-consent-timeout', settings.api?.consentTimeout);
+  const tokenStatusEl = $('#settings-token-status');
+  if (tokenStatusEl) {
+    tokenStatusEl.textContent = settings.api?.hasRegistrationBearerToken
+      ? 'Đã lưu bearer token. Để trống ô token nếu không muốn thay đổi.'
+      : 'Chưa có bearer token được lưu.';
+  }
 
   setInputValue('#settings-retention-days', settings.artifacts.retentionDays);
   setInputValue('#settings-max-reports-per-day', settings.artifacts.maxReportsPerDay);
@@ -5195,6 +5205,12 @@ function renderBotSettings(cfg, currentBranch = 'main') {
 
 async function openSettings() {
   try {
+    if (window.__STUDIO_CORE__?.templateLoader) {
+      const tl = window.__STUDIO_CORE__.templateLoader;
+      if (tl.hasTemplate('settings-view') && !tl.isLoaded('settings-view')) {
+        await tl.loadViewTemplate('settings-view');
+      }
+    }
     const [settings, botData] = await Promise.all([
       request('/api/settings'),
       request('/api/discord-bot/config').catch(() => null)
@@ -5347,8 +5363,9 @@ $('#runner-suite-select')?.addEventListener('change', (e) => {
   updateSuiteSummaryBox(e.target.value);
 });
 
-document.querySelectorAll('.settings-subtab').forEach((tab) => {
-  tab.addEventListener('click', () => {
+document.addEventListener('click', (e) => {
+  const tab = e.target.closest('.settings-subtab');
+  if (tab) {
     const target = tab.dataset.subtab;
     document.querySelectorAll('.settings-subtab').forEach((t) => t.classList.toggle('active', t === tab));
     
@@ -5383,7 +5400,20 @@ document.querySelectorAll('.settings-subtab').forEach((tab) => {
     if (envPanel) envPanel.hidden = !isGeneral;
     if (apiPanel) apiPanel.hidden = !isGeneral;
     if (artifactsPanel) artifactsPanel.hidden = !isGeneral;
-  });
+    return;
+  }
+
+  const saveBtn = e.target.closest('#save-settings-button');
+  if (saveBtn) {
+    saveSettings();
+    return;
+  }
+
+  const reloadBtn = e.target.closest('#reload-settings-button');
+  if (reloadBtn) {
+    openSettings();
+    return;
+  }
 });
 
 const AI_PRESETS = {

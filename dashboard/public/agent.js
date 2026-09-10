@@ -41,6 +41,7 @@
     if (el) { el.textContent = message; el.hidden = !message; }
   }
   function controls() {
+    if (!start || !stop || !model || !prompt || !history) return;
     start.disabled = !available || Boolean(activeId) || working || refreshPending;
     stop.disabled = !activeId || working;
     model.disabled = prompt.readOnly = history.disabled = Boolean(activeId) || working;
@@ -179,16 +180,20 @@
   async function refresh() {
     if (refreshPending) return;
     refreshPending = true; controls();
-    byId('agent-refresh').disabled = true;
+    const refreshBtn = byId('agent-refresh');
+    if (refreshBtn) refreshBtn.disabled = true;
     try {
       const state = await api('/api/agent/status?refresh=1');
       available = state.available;
-      const previous = model.value;
-      model.replaceChildren();
-      if (!state.models.length) model.add(new Option('Chưa có model Gemini', ''));
-      for (const item of state.models) model.add(new Option(item.name, item.name));
-      model.value = state.models.some(item => item.name === previous) ? previous : state.selectedModel;
-      byId('agent-connection').textContent = state.message;
+      if (model) {
+        const previous = model.value;
+        model.replaceChildren();
+        if (!state.models.length) model.add(new Option('Chưa có model Gemini', ''));
+        for (const item of state.models) model.add(new Option(item.name, item.name));
+        model.value = state.models.some(item => item.name === previous) ? previous : state.selectedModel;
+      }
+      const conn = byId('agent-connection');
+      if (conn) conn.textContent = state.message;
       updateTokenQuota(state.tokenQuota, null);
       if (byId('agent-eyebrow')) byId('agent-eyebrow').textContent = state.provider ? state.provider.toUpperCase() : 'AI AGENT';
       const sessions = await loadHistory();
@@ -199,9 +204,15 @@
     } catch {
       available = false;
       const message = 'Mất kết nối Dashboard. Kiểm tra máy chủ rồi thử lại.';
-      byId('agent-connection').textContent = message;
+      const conn = byId('agent-connection');
+      if (conn) conn.textContent = message;
       feedback(message);
-    } finally { refreshPending = false; byId('agent-refresh').disabled = false; controls(); }
+    } finally {
+      refreshPending = false;
+      const rBtn = byId('agent-refresh');
+      if (rBtn) rBtn.disabled = false;
+      controls();
+    }
   }
   function bind() {
     form = byId('agent-form');

@@ -8,7 +8,7 @@ import { stateStore } from '../../core/stateStore.js';
 
 export class DocsSlice {
   constructor() {
-    this.activeDoc = 'README.md';
+    this.activeDoc = 'docs/SETUP_GUIDE.md';
     this._disposers = [];
     this._mounted = false;
   }
@@ -16,7 +16,9 @@ export class DocsSlice {
   async mount() {
     this._mounted = true;
     this._bindDomEvents();
-    await this.loadDoc(this.activeDoc);
+    if (typeof window.openDocsView === 'function') {
+      try { await window.openDocsView(); } catch (_) {}
+    }
   }
 
   unmount() {
@@ -28,13 +30,16 @@ export class DocsSlice {
   _bindDomEvents() {
     const root = document.getElementById('docs-view');
     if (!root) return;
-    root.querySelectorAll('.doc-nav-item').forEach((item) => {
+
+    root.querySelectorAll('.docs-subtab').forEach((tab) => {
       const h = () => {
-        const docName = item.dataset.doc;
-        if (docName) this.loadDoc(docName);
+        const sub = tab.dataset.docsSubtab;
+        if (typeof window.switchDocsSubtab === 'function') {
+          window.switchDocsSubtab(sub);
+        }
       };
-      item.addEventListener('click', h);
-      this._disposers.push(() => item.removeEventListener('click', h));
+      tab.addEventListener('click', h);
+      this._disposers.push(() => tab.removeEventListener('click', h));
     });
   }
 

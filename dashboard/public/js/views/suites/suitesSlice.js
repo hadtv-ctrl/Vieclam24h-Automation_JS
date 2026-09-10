@@ -21,6 +21,9 @@ export class SuitesSlice {
     this._mounted = true;
     this._bindDomEvents();
     this._registerBridgeActions();
+    if (typeof window.openSuitesManager === 'function') {
+      try { await window.openSuitesManager(); } catch (_) {}
+    }
     await this.loadSuites();
   }
 
