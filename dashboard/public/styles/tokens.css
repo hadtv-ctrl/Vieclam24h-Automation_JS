@@ -1,0 +1,76 @@
+/**
+ * dashboard/public/styles/tokens.css
+ * Design Tokens & Themes
+ * Original lines: 1 - 71
+ */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  color-scheme: dark;
+  --bg: #0A0514;
+  --surface: #120A24;
+  --surface-2: #1A1033;
+  --input: #0F081C;
+  --line: #2D1B4E;
+  --text: #F3F4F6;
+  --muted: #9CA3AF;
+  --accent: #A78BFA;
+  --accent-deep: #2E1065;
+  --danger: #ff7078;
+  --warning: #ffc857;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+  --code-bg: #090412;
+  --code-bg-soft: #0C0617;
+  --code-text: #E2E8F0;
+  --code-muted: #64748B;
+  --code-caret: #fff;
+  --code-selection: rgba(167, 139, 250, 0.25);
+  --syntax-keyword: #d99cff;
+  --syntax-string: #a8e66b;
+  --syntax-comment: #7f948a;
+  --syntax-number: #ff9f68;
+  --syntax-function: #70c9ff;
+  --syntax-property: #ffd36a;
+  --syntax-api: #70c9ff;
+  --syntax-fixture: #ffd36a;
+  --syntax-method: #70c9ff;
+  --code-editor-size: 13px;
+  --code-editor-line-height: 1.7;
+  --code-editor-padding: 18px 22px 56px;
+  --font-meta: 10px;
+  --font-caption: 11px;
+  --font-control: 12px;
+  --font-body: 14px;
+  --font-panel-title: 17px;
+  --font-page-title: 52px;
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F5F3FA;
+  --surface: #FFFFFF;
+  --surface-2: #F9F8FC;
+  --input: #F9F8FC;
+  --line: #E2DDF0;
+  --text: #111827;
+  --muted: #6B7280;
+  --accent: #5B21B6;
+  --accent-deep: #EDE9FE;
+  --danger: #c93440;
+  --warning: #a66500;
+  --shadow: 0 22px 60px rgba(38, 58, 48, 0.1);
+  --code-bg: #FCFBFF;
+  --code-bg-soft: #F6F4FB;
+  --code-text: #1E293B;
+  --code-muted: #64748B;
+  --code-caret: #17201c;
+  --code-selection: rgba(91, 33, 182, 0.18);
+  --syntax-keyword: #7a3fc2;
+  --syntax-string: #16713c;
+  --syntax-comment: #718078;
+  --syntax-number: #bd541c;
+  --syntax-function: #006fae;
+  --syntax-property: #9a6500;
+  --syntax-api: #006fae;
+  --syntax-fixture: #9a6500;
+  --syntax-method: #006fae;
+}

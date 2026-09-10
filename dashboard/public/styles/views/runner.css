@@ -1,0 +1,115 @@
+/**
+ * dashboard/public/styles/views/runner.css
+ * Runner Mode Switcher & Scope Tabs
+ * Original lines: 4126 - 4235
+ */
+/* ==========================================================================
+   Unified Segmented Tab Switchers (Design System)
+   ========================================================================== */
+.runner-mode-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 16px 20px 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-1);
+}
+.runner-mode-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: 700 12px/1 var(--font-sans);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.runner-mode-tab:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.runner-mode-tab.active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.runner-mode-tab.active i {
+  color: var(--accent);
+}
+
+.runner-config-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px 20px;
+  min-height: 330px;
+}
+
+.runner-mode-panel {
+  display: grid;
+  gap: 12px;
+  animation: fadeIn 0.15s ease;
+}
+.runner-mode-panel[hidden] {
+  display: none !important;
+}
+
+/* Manual Runner Scope Selector - Matching Exactly */
+.runner-scope-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.runner-scope-label {
+  font: 700 11px/1.2 var(--font-sans);
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.runner-scope-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 4px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.runner-scope-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: 700 12px/1 var(--font-sans);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+.runner-scope-tab-btn:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.runner-scope-tab-btn.active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.runner-scope-tab-btn.active i {
+  color: var(--accent);
+}
+
