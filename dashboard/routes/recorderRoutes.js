@@ -52,11 +52,15 @@ async function handleRecorderRoutes(request, response, url, context = {}) {
 
       const playwrightCli = require.resolve('@playwright/test/cli');
       const args = [playwrightCli, 'codegen', targetUrl, '--target=playwright-test', `--output=${outputPath}`];
-      if (body.browser && ['chromium', 'firefox', 'webkit', 'chrome'].includes(body.browser)) args.push(`--browser=${body.browser}`);
+      if (body.browser && ['chromium', 'firefox', 'webkit'].includes(body.browser)) {
+        args.push(`--browser=${body.browser}`);
+      } else if (body.browser === 'chrome') {
+        args.push('--channel=chrome');
+      }
       if (body.device) args.push(`--device=${body.device}`);
       else if (body.viewport) args.push(`--viewport-size=${body.viewport}`);
 
-      const child = spawn(process.execPath, args, { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env }, shell: false, windowsHide: true });
+      const child = spawn(process.execPath, args, { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env }, shell: false, windowsHide: false });
       let stderrBuffer = '';
       let earlyExitCode = null;
 
@@ -68,10 +72,10 @@ async function handleRecorderRoutes(request, response, url, context = {}) {
         publish('recorder_status', { isRecording: false, code, fileName: finished?.fileName, recentRecordings: listRecentRecordings(root).slice(0, 15) });
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (earlyExitCode !== null && earlyExitCode !== 0) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      if (earlyExitCode !== null) {
         if (activeRecorder?.child === child) activeRecorder = null;
-        return sendJson(response, 500, { error: `Không thể mở Playwright Codegen: ${stderrBuffer.trim() || 'Mã lỗi ' + earlyExitCode}` });
+        return sendJson(response, 500, { error: `Không thể mở Playwright Codegen: tiến trình đã thoát sớm (mã thoát: ${earlyExitCode}). ${stderrBuffer.trim()}` });
       }
 
       activeRecorder = { child, url: targetUrl, platform, fileName, outputPath, startTime: new Date().toISOString() };
