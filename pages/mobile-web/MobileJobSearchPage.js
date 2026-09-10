@@ -38,7 +38,7 @@ class MobileJobSearchPage extends JobSearchPage {
 
   /**
    * Click vào công việc đầu tiên trên mobile:
-   * Tự động đóng popup cản trở, mở việc làm trong popup hoặc tab mới tương thích với vòng đời test
+   * Tự động đóng popup cản trở, hỗ trợ cả trường hợp mở tab mới (popup) hoặc điều hướng tại chỗ (in-tab/SPA)
    */
   async clickFirstJob() {
     await this.closeBlockingDialogsIfVisible();
@@ -47,26 +47,29 @@ class MobileJobSearchPage extends JobSearchPage {
       ? this.firstUnappliedJobLink
       : this.firstJobLink;
 
-    const href = await targetJob.getAttribute('href');
-    const targetAttr = await targetJob.getAttribute('target').catch(() => null);
+    const href = await targetJob.getAttribute('href').catch(() => null);
 
-    if (targetAttr === '_blank') {
-      const pagePromise = this.page.waitForEvent('popup');
-      await this.clickElement(targetJob);
-      const jobPage = await pagePromise;
-      await jobPage.waitForLoadState('domcontentloaded');
-      return jobPage;
-    } else if (href) {
-      const context = this.page.context();
-      const jobPage = await context.newPage();
-      await jobPage.goto(new URL(href, this.page.url()).toString());
-      await jobPage.waitForLoadState('domcontentloaded');
-      return jobPage;
-    } else {
-      await this.clickElement(targetJob);
-      await this.page.waitForLoadState('domcontentloaded');
-      return this.page;
+    let popup = null;
+    const popupPromise = this.page.waitForEvent('popup', { timeout: 3000 }).catch((_err) => null);
+    await this.clickElement(targetJob);
+    popup = await popupPromise;
+
+    if (popup) {
+      await popup.waitForLoadState('domcontentloaded');
+      return popup;
     }
+
+    // Nếu không mở popup, đợi trang hiện tại chuyển sang trang chi tiết việc làm
+    try {
+      await this.page.waitForURL(/(?:id\d+\.html|\/viec-lam\/|\/tin-tuyen-dung\/)/, { timeout: 10000 });
+    } catch (_e) {
+      if (href && !this.page.url().includes(href)) {
+        await this.navigate(href);
+      }
+    }
+
+    await this.page.waitForLoadState('domcontentloaded');
+    return this.page;
   }
 }
 

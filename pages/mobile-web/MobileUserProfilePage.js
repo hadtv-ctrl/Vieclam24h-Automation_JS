@@ -23,7 +23,7 @@ class MobileUserProfilePage extends UserProfilePage {
 
     // Mobile modal save button (thường là fixed bottom trên mobile viewport)
     this.btnCommonSave = this.page
-      .getByRole('button', { name: /Lưu thông tin|Lưu lại|Xác nhận/i })
+      .getByRole('button', { name: /Lưu thông tin|Lưu lại|Xác nhận|Lưu thay đổi|^Lưu$/i })
       .or(this.page.locator('.fixed.bottom-0 button:has-text("Lưu")'))
       .or(this.page.locator('[data-test-id="common__actions-button"] button'))
       .first();
@@ -84,7 +84,12 @@ class MobileUserProfilePage extends UserProfilePage {
       .locator('p:has-text("Tiêu chí tìm việc"):visible, button:has-text("Tiêu chí tìm việc"):visible, [data-test-id*="search-criteria"]:visible')
       .first();
 
-    await this.clickElement(criteriaBtn);
+    await Promise.all([
+      this.page.waitForURL(/tieu-chi-tim-viec/, { timeout: 15000 }).catch(() => null),
+      this.clickElement(criteriaBtn),
+    ]);
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.waitForGlobalLoadingHidden(15000).catch(() => null);
   }
 
   /**

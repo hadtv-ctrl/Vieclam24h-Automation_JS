@@ -11,13 +11,25 @@ class JobApplyNoCVPage extends BasePage {
     this.btnApplyNoCV = this.page.getByRole('button', { name: /Ứng tuyển không cần CV/i }).first();
     this.txtFullName = this.page.getByRole('textbox', { name: /Nhập họ và tên/i });
     this.txtPhone = this.page.getByRole('textbox', { name: /Nhập số điện thoại/i });
-    this.txtProvince = this.page.getByRole('textbox', { name: /Chọn tỉnh/i }).first();
-    this.txtDistrict = this.page.getByText('Chọn quận').first();
+    this.txtProvince = this.page.getByText('Chọn tỉnh', { exact: true })
+      .or(this.page.getByRole('textbox', { name: /Chọn tỉnh/i }))
+      .or(this.page.locator('[data-test-id="common__select-input"]').filter({ hasText: /Chọn tỉnh/i }))
+      .first();
+    this.txtDistrict = this.page.getByText('Chọn quận', { exact: true })
+      .or(this.page.getByRole('textbox', { name: /Chọn quận/i }))
+      .or(this.page.locator('[data-test-id="common__select-input"]').filter({ hasText: /Chọn quận/i }))
+      .first();
     this.txtIntro = this.page.getByRole('textbox', { name: /Chia sẻ về bản thân|Giới thiệu bản thân/i })
       .or(this.page.getByPlaceholder(/Giới thiệu bản thân/i))
       .first();
-    this.txtBirthYear = this.page.getByRole('textbox', { name: /Chọn năm sinh/i }).first();
-    this.txtEducation = this.page.getByText('Chọn học vấn', { exact: true }).first();
+    this.txtBirthYear = this.page.getByText('Chọn năm sinh', { exact: true })
+      .or(this.page.getByRole('textbox', { name: /Chọn năm sinh/i }))
+      .or(this.page.locator('[data-test-id="common__select-input"]').filter({ hasText: /Chọn năm sinh/i }))
+      .first();
+    this.txtEducation = this.page.getByText('Chọn học vấn', { exact: true })
+      .or(this.page.getByRole('textbox', { name: /Chọn học vấn/i }))
+      .or(this.page.locator('[data-test-id="common__select-input"]').filter({ hasText: /Chọn học vấn/i }))
+      .first();
     this.fileInput = this.page.locator('input[type="file"]').first();
     this.btnUploadFile = this.page.getByRole('button', { name: /Chọn hình\/file|Thay hình/i }).first();
     this.btnDone = this.page.getByRole('button', { name: 'Xong' }).first();
@@ -61,6 +73,27 @@ class JobApplyNoCVPage extends BasePage {
     await this.submitPhoneVerificationOtp(otpCode);
   }
 
+  /**
+   * Đóng dropdown / select menu đang mở bằng Escape và click outside an toàn
+   */
+  async closeActiveDropdownIfAny() {
+    await this.page.keyboard.press('Escape').catch((_err) => null);
+
+    const outsideTarget = this.page.getByText('Địa điểm làm việc')
+      .or(this.page.getByText('Thông tin ứng tuyển'))
+      .or(this.page.getByText('Hồ sơ ứng tuyển'))
+      .first();
+
+    if (await outsideTarget.isVisible({ timeout: 500 }).catch(() => false)) {
+      await outsideTarget.click({ force: true }).catch((_err) => null);
+    }
+
+    const districtMenuOption = this.page.locator('button:has-text("Quận 1"):visible').first();
+    if (await districtMenuOption.isVisible({ timeout: 500 }).catch(() => false)) {
+      await this.page.locator('body').click({ position: { x: 10, y: 10 }, force: true }).catch((_err) => null);
+    }
+  }
+
   async fillMiniProfile(data) {
     // Province
     if (data.province && await this.txtProvince.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -74,7 +107,7 @@ class JobApplyNoCVPage extends BasePage {
         await this.actions.click(provinceOption, { timeout: 3000 });
       } catch (err) {
         console.log('Province option click notice:', err.message);
-        await this.page.keyboard.press('Escape');
+        await this.closeActiveDropdownIfAny();
       }
     }
 
@@ -98,18 +131,25 @@ class JobApplyNoCVPage extends BasePage {
 
           await this.actions.click(districtOption, { timeout: 3000 });
         }
-        // Close dropdown: try confirm button first, then Escape
-        const confirmDistrictBtn = this.page.locator('button:has-text("Xong"), button:has-text("Chọn"), button:has-text("Xác nhận")').first();
+        // Close dropdown: try scoped confirm button first, then closeActiveDropdownIfAny
+        const confirmDistrictBtn = this.page.locator(
+          '[data-test-id="common__select-menu"] button:has-text("Xong"), ' +
+          '[data-test-id="select__modal-menu__container"] button:has-text("Xong"), ' +
+          'button:text-is("Xong"), button:text-is("Xác nhận")'
+        ).first();
         if (await confirmDistrictBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
           await confirmDistrictBtn.click().catch(() => null);
         } else {
-          await this.page.keyboard.press('Escape');
+          await this.closeActiveDropdownIfAny();
         }
       } catch (err) {
         console.log('District option click notice:', err.message);
-        await this.page.keyboard.press('Escape');
+        await this.closeActiveDropdownIfAny();
       }
     }
+
+    // Ensure any dropdown is closed before next field
+    await this.closeActiveDropdownIfAny();
 
     // Intro (Optional based on job)
     if (data.intro) {
@@ -127,12 +167,24 @@ class JobApplyNoCVPage extends BasePage {
     // Birth Year (Optional based on job)
     if (data.birthYear && await this.txtBirthYear.isVisible({ timeout: 2000 }).catch(() => false)) {
       await this.clickElement(this.txtBirthYear);
-      await this.clickElement(this.page.getByRole('button', { name: data.birthYear }));
+      const yearOption = this.page.getByRole('button', { name: data.birthYear })
+        .or(this.page.locator('[data-test-id="common__select-menu"]').getByText(data.birthYear, { exact: true }))
+        .or(this.page.getByText(data.birthYear, { exact: true }))
+        .first();
+      await this.clickElement(yearOption);
     }
+
+    // Ensure any dropdown is closed
+    await this.closeActiveDropdownIfAny();
 
     if (data.education && await this.txtEducation.isVisible({ timeout: 2000 }).catch(() => false)) {
       await this.clickElement(this.txtEducation);
-      await this.clickElement(this.page.getByText(data.education, { exact: true }).last());
+      const eduOption = this.page.getByRole('button', { name: data.education })
+        .or(this.page.locator('[data-test-id="common__select-menu"]').getByText(data.education, { exact: true }))
+        .or(this.page.getByText(data.education, { exact: true }))
+        .last();
+      await this.clickElement(eduOption);
+      await this.closeActiveDropdownIfAny();
     }
 
     // Gender can be absent in some no-CV mini profile forms.

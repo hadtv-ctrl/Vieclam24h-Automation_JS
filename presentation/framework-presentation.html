@@ -322,7 +322,7 @@
         <h1>Automation Testing<br><span class="accent">Framework</span></h1>
         <p class="lead">Playwright + JavaScript cho hệ thống Việc Làm 24h — dễ đọc, dễ mở rộng và tạo bằng chứng rõ ràng.</p>
         <div class="rule"></div>
-        <p style="color:var(--muted);font-size:15px">Page Object Model · Custom Fixtures · API Precondition · CI/CD · HTML Report</p>
+        <p style="color:var(--muted);font-size:15px">Page Object Model · Đa nền tảng (Desktop + Mobile Web + API) · Parent-Child Suites · Web Studio Dashboard · CI/CD</p>
       </div>
       <footer class="footer"><span class="brand"><i class="brand-mark"></i><strong>Việc Làm 24h</strong></span><span>Playwright Automation</span></footer>
     </section>
@@ -353,15 +353,15 @@
       <div class="content top">
         <h2>Mỗi lớp chỉ giữ <span class="cyan">một loại trách nhiệm</span>.</h2>
         <div class="flow">
-          <div class="flow-step"><b>Test Spec</b><span>Scenario, step và assertion nghiệp vụ</span></div>
-          <div class="flow-step"><b>Fixture</b><span>Khởi tạo Page Object và precondition</span></div>
-          <div class="flow-step"><b>Page Object</b><span>Locator và hành vi từng màn hình</span></div>
-          <div class="flow-step"><b>Utilities</b><span>UI action, API, auth, screenshot</span></div>
-          <div class="flow-step"><b>Data & Config</b><span>JSON, file upload, URL môi trường</span></div>
+          <div class="flow-step"><b>Test Spec (24 specs)</b><span>tests/e2e/ (desktop · mobile-web) & tests/api</span></div>
+          <div class="flow-step"><b>Custom Fixtures</b><span>baseTest.js & mobileWebTest.js</span></div>
+          <div class="flow-step"><b>Page Objects (19 POMs)</b><span>pages/desktop/ & pages/mobile-web/</span></div>
+          <div class="flow-step"><b>Utilities & Engine</b><span>UiActions, authSetup, screenshotHelper</span></div>
+          <div class="flow-step"><b>Data & Test Suites</b><span>dashboardConfig, applyJobData, users.json</span></div>
         </div>
-        <p class="lead" style="margin-top:34px">Khi UI thay đổi, phần lớn chỉnh sửa nằm trong Page Object — spec vẫn giữ ngôn ngữ nghiệp vụ.</p>
+        <p class="lead" style="margin-top:34px">Khi UI thay đổi, phần lớn chỉnh sửa nằm trong Page Object — spec vẫn giữ ngôn ngữ nghiệp vụ BDD trong sáng.</p>
       </div>
-      <footer class="footer"><span>tests → fixtures → pages → core → data</span><span>03</span></footer>
+      <footer class="footer"><span>tests/ (desktop · mobile-web · api) → fixtures → pages/ → core → data</span><span>03</span></footer>
     </section>
 
     <section class="slide">
@@ -377,12 +377,12 @@
         </div>
         <div class="metric-row">
           <div class="metric"><strong>60s</strong><span>timeout mặc định</span></div>
-          <div class="metric"><strong>N</strong><span>workers cấu hình bằng PW_WORKERS</span></div>
+          <div class="metric"><strong>N</strong><span>workers (PW_WORKERS, mặc định 2)</span></div>
           <div class="metric"><strong>2×</strong><span>retry khi chạy trên CI</span></div>
-          <div class="metric"><strong>3</strong><span>projects không chồng lặp</span></div>
+          <div class="metric"><strong>7</strong><span>projects (Desktop, Mobile, API)</span></div>
         </div>
       </div>
-      <footer class="footer"><span>baseURL thay đổi theo NODE_ENV: qc · stg · prod</span><span>04</span></footer>
+      <footer class="footer"><span>Môi trường: QC (qc.sieuviet-team.com) · Staging · Production</span><span>04</span></footer>
     </section>
 
     <section class="slide">
@@ -407,7 +407,7 @@
 <span class="cm">// Không locator trực tiếp trong spec</span></pre>
         </div>
       </div>
-      <footer class="footer"><span>Ví dụ: tests/e2e/apply_job_with_CV_flow-bdd.spec.js</span><span>05</span></footer>
+      <footer class="footer"><span>Ví dụ: tests/e2e/desktop/apply_job_with_CV_flow-bdd.spec.js</span><span>05</span></footer>
     </section>
 
     <section class="slide">
@@ -449,16 +449,16 @@
       <div class="content top">
         <h2>Khi chạy spec, Playwright đi qua <span class="accent">nhiều lớp</span> — không đọc mọi thứ trong một file.</h2>
         <div class="call-map">
-          <div class="call-node"><small>1 · Bootstrap</small><strong>playwright.config.js</strong><span>Đọc PW_WORKERS, chọn project, runId, reporter và browser</span></div>
+          <div class="call-node"><small>1 · Bootstrap</small><strong>playwright.config.js → defineConfig.js</strong><span>Đọc PW_WORKERS, chọn 7 projects, runId, reporters</span></div>
           <span class="call-arrow">→</span>
-          <div class="call-node orange"><small>2 · Scenario</small><strong>apply_job_with_profile_flow-bdd.spec.js</strong><span>Đọc step, data và gọi hành vi nghiệp vụ</span></div>
+          <div class="call-node orange"><small>2 · Scenario</small><strong>tests/e2e/desktop/apply_job_with_profile_flow-bdd.spec.js</strong><span>Đọc step, data và gọi hành vi nghiệp vụ</span></div>
           <span class="call-arrow">→</span>
           <div class="call-node"><small>3 · Dependency</small><strong>core/fixtures/baseTest.js</strong><span>Tạo workerUserData rồi inject authenticatedUser và Page Object</span></div>
         </div>
         <div class="call-map" style="margin-top:12px">
-          <div class="call-node"><small>4 · Precondition</small><strong>authSetup.js → registrationApiHelper.js</strong><span>Tạo account riêng, ghi runtime JSON, đọc lại rồi login</span></div>
+          <div class="call-node"><small>4 · Precondition</small><strong>authSetup.js → registrationApiHelper.js</strong><span>Tạo account riêng qua API, ghi runtime JSON, đọc lại rồi login</span></div>
           <span class="call-arrow">→</span>
-          <div class="call-node orange"><small>5 · UI behavior</small><strong>HomePage · JobSearchPage · JobApplyPage</strong><span>Locator và method thao tác từng màn hình</span></div>
+          <div class="call-node orange"><small>5 · UI behavior</small><strong>pages/desktop/HomePage · JobSearchPage · JobApplyPage</strong><span>Locator và method thao tác từng màn hình</span></div>
           <span class="call-arrow">→</span>
           <div class="call-node"><small>6 · Shared engine</small><strong>BasePage → UiActions → Playwright</strong><span>Wait visible, click, fill, assertion và điều khiển Chromium</span></div>
         </div>
@@ -482,7 +482,7 @@
         <div>
           <div class="trace-line"><b>01</b><div><code>data/applyJobData.json</code><span>Cấp company, jobTitle, thời gian và description.</span></div></div>
           <div class="trace-line"><b>02</b><div><code>core/fixtures/baseTest.js</code><span>Factory tạo JobApplyPage gắn với tab chi tiết việc làm.</span></div></div>
-          <div class="trace-line"><b>03</b><div><code>pages/JobApplyPage.js</code><span>fillExperience() ánh xạ từng field vào locator tương ứng.</span></div></div>
+          <div class="trace-line"><b>03</b><div><code>pages/desktop/JobApplyPage.js</code><span>fillExperience() ánh xạ từng field vào locator tương ứng.</span></div></div>
           <div class="trace-line"><b>04</b><div><code>pages/BasePage.js</code><span>fillInput()/clickElement() cuộn, chờ và gọi action chung.</span></div></div>
           <div class="trace-line"><b>05</b><div><code>core/utils/commonUtils.js</code><span>UiActions.waitForVisible() rồi fill/click bằng Playwright.</span></div></div>
           <div class="trace-line"><b>06</b><div><code>ScreenshotHelper → evidence/</code><span>capture() lưu trạng thái trước và sau khi Save section.</span></div></div>
@@ -547,33 +547,33 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
       <div class="content top">
         <h2>AI viết nhanh, nhưng phải đi trong <span class="cyan">đường ray chất lượng</span>.</h2>
         <div class="three-col" style="margin-top:38px">
-          <article class="principle"><span class="index">01</span><h3>AGENTS.md</h3><p>Điểm vào cho coding agent: bắt buộc đọc quy tắc QA trước khi sửa Playwright.</p></article>
-          <article class="principle"><span class="index">02</span><h3>QA_AI_RULES.md</h3><p>Lớp tương thích, dẫn mọi AI tool về một nguồn quy tắc thống nhất.</p></article>
-          <article class="principle"><span class="index">03</span><h3>AI_PROMPTS.md</h3><p>Nguồn chuẩn về POM, BDD, locator, synchronization, evidence và Definition of Done.</p></article>
-          <article class="principle"><span class="index">04</span><h3>Đọc context trước</h3><p>AI phải đọc spec, config, fixture, Page Object, helper và data liên quan.</p></article>
-          <article class="principle"><span class="index">05</span><h3>Guardrails khi code</h3><p>Không hard sleep, không locator trong spec, không private API hoặc nuốt lỗi.</p></article>
-          <article class="principle"><span class="index">06</span><h3>Verify trước khi báo pass</h3><p>Static check → unit test → targeted Playwright run; tối đa 3 vòng tự sửa.</p></article>
+          <article class="principle"><span class="index">01</span><h3>AGENTS.md</h3><p>Hiến pháp dự án & Master Process reference: 4 Quality Gates và luật bất biến.</p></article>
+          <article class="principle"><span class="index">02</span><h3>.ai/knowledge/</h3><p>Kho tri thức chuyên sâu: project profile, conventions viết code và test conventions.</p></article>
+          <article class="principle"><span class="index">03</span><h3>.ai/learning/</h3><p>Vòng lặp tự học (Self-learning loop): candidates trích xuất bài học sau mỗi bugfix/review.</p></article>
+          <article class="principle"><span class="index">04</span><h3>AI_PROMPTS.md</h3><p>Tiêu chuẩn chuẩn hóa POM, BDD, locator, wait, evidence và Definition of Done.</p></article>
+          <article class="principle"><span class="index">05</span><h3>check:framework</h3><p>Rào chắn tự động: kiểm tra 24 specs, 19 POMs, cấm import bừa bãi và hard sleep.</p></article>
+          <article class="principle"><span class="index">06</span><h3>Senior QA Gate 4</h3><p>Verify thực tế đa thiết bị (1920x1080, mobile 390x844), console logs và báo cáo rủi ro.</p></article>
         </div>
       </div>
-      <footer class="footer"><span>AGENTS.md → QA_AI_RULES.md → AI_PROMPTS.md → code → verify</span><span>12</span></footer>
+      <footer class="footer"><span>AGENTS.md → .ai/knowledge → AI_PROMPTS.md → check:framework → Senior QA Gate 4</span><span>12</span></footer>
     </section>
 
     <section class="slide">
       <header class="topline"><p class="eyebrow">Phạm vi</p><span class="chapter">13 / Test suites</span></header>
       <div class="content two-col">
         <div>
-          <h2>Tag &amp; Project biến repository thành các <span class="accent">bộ test có mục đích</span>.</h2>
-          <p class="lead" style="margin-top:24px">Tách bạch phạm vi tại <code>playwright.config.js</code> &amp; Dashboard; không chạy trùng lặp test giữa các suite.</p>
+          <h2>Hệ thống Test Suite <span class="accent">Phân Cấp Cha - Con</span></h2>
+          <p class="lead" style="margin-top:24px">Tổ chức đa tầng: Master Suite kích hoạt Suite Cha (Smoke/Regression), Suite Cha phân giải đệ quy xuống Suite Con từng nền tảng.</p>
         </div>
         <div class="stack">
-          <div class="stack-item"><strong>Desktop Smoke · @smoke · 2 tests</strong><span>Hai luồng đăng ký cốt lõi (Email / SĐT), phản hồi cực nhanh sau deploy.</span></div>
-          <div class="stack-item"><strong>Desktop Regression · @e2e − @smoke · 9 tests</strong><span>Bao phủ toàn bộ UI: Onboarding, Profile AI, Upload CV, Apply Job.</span></div>
-          <div class="stack-item"><strong>Mobile Web Suites · @mobile</strong><span>Mô phỏng đa nền tảng: Android (Pixel 7) và iOS (iPhone 13 / WebKit).</span></div>
-          <div class="stack-item"><strong>API Tests · @api</strong><span>Scenario API độc lập kiểm tra Auth / Registration không qua UI browser.</span></div>
-          <div class="stack-item"><strong>Custom Dashboard Suites</strong><span>Tùy biến bộ kịch bản linh hoạt theo Tag, Viewport hoặc từng File trên Dashboard.</span></div>
+          <div class="stack-item"><strong>👑 Master Suite · full-test-suite · 24 specs</strong><span>Bao phủ toàn bộ hệ thống: 11 Desktop + 11 Mobile Web + 2 API (npm run suite:all).</span></div>
+          <div class="stack-item"><strong>⚡ Suite Cha Smoke · smoke-all · 4 tests</strong><span>Tích hợp smoke-desktop + smoke-mobile: kiểm tra khói đăng ký SĐT/Email siêu tốc (npm run suite:smoke).</span></div>
+          <div class="stack-item"><strong>🚀 Suite Cha Regression · regression-all · 20 tests</strong><span>Tích hợp regression-desktop + regression-mobile + regression-api: bảo vệ toàn diện luồng nghiệp vụ (npm run suite:regression).</span></div>
+          <div class="stack-item"><strong>💼 Suite Phân Hệ · feature-* (ApplyJob · Profile · Onboarding)</strong><span>Chạy chuyên sâu từng phân hệ trên cả hai nền tảng Desktop và Mobile Web song song.</span></div>
+          <div class="stack-item"><strong>🎯 Suite Con Đơn Lập (Platform & Viewport)</strong><span>Desktop Chrome (1920x1080), Mobile Web (Pixel 7 390x844, iPhone 13) và API Tests.</span></div>
         </div>
       </div>
-      <footer class="footer"><span>npm run suite:smoke · npm run suite:regression · npm run suite:mobile · npm run suite:api</span><span>13</span></footer>
+      <footer class="footer"><span>npm run suite:all · npm run suite:smoke · npm run suite:regression · npm run suite:applyjob</span><span>13</span></footer>
     </section>
 
     <section class="slide">
@@ -610,18 +610,19 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
         </div>
         <div class="output-tree">
           <strong>playwright-report/</strong><br>
-          └─ YY-MM-DD/[time-ms random] report/<br>
-          &nbsp;&nbsp;├─ index.html <span style="color:var(--muted)">· tổng</span><br>
-          &nbsp;&nbsp;└─ workers/<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;├─ [runId]-worker-0/index.html<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;└─ [runId]-worker-(N-1)/index.html<br><br>
+          └─ YY-MM-DD/[desktop | mobile-web | api]/[scriptFolder]/<br>
+          &nbsp;&nbsp;└─ [runId] report/<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;├─ index.html <span style="color:var(--muted)">· report tổng</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;└─ workers/<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ [runId]-worker-0/index.html<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ [runId]-worker-(N-1)/index.html<br><br>
           <strong>evidence/</strong><br>
           └─ YY-MM-DD/[runId] spec-name/<br>
           &nbsp;&nbsp;├─ worker-0/step001_*.png<br>
           &nbsp;&nbsp;└─ worker-(N-1)/step001_*.png<br><br>
           <strong>test-results/</strong><br>
-          ├─ runtime-users/ <span style="color:var(--orange)">· tự xóa</span><br>
-          └─ trace · screenshot · video khi lỗi
+          ├─ runtime-users/ <span style="color:var(--orange)">· tự động dọn dẹp</span><br>
+          └─ trace · screenshot · video khi test fail
         </div>
       </div>
       <footer class="footer"><span>CI upload playwright-report, test-results và evidence trong 14 ngày</span><span>15</span></footer>
@@ -675,33 +676,33 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
     </section>
 
     <section class="slide">
-      <header class="topline"><p class="eyebrow">Demo</p><span class="chapter">18 / Lệnh chạy multi-worker</span></header>
+      <header class="topline"><p class="eyebrow">Demo</p><span class="chapter">18 / Lệnh chạy CLI &amp; Suites</span></header>
       <div class="content top">
-        <h2>Worker chạy song song <span class="accent">test instance</span> — không chia nhỏ một test().</h2>
+        <h2>Chạy linh hoạt từ <span class="accent">Terminal CLI</span> đến các bộ suite phân cấp.</h2>
         <div class="commands" style="margin-top:34px">
-          <div class="command"><i class="command-icon" aria-hidden="true">🧱</i><div><code>npm run check:framework</code><span>Kiểm tra cấu trúc và quy ước repository</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">🧪</i><div><code>node --test core/reporters/*.test.js</code><span>Kiểm tra report tổng và report tách theo worker</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">🌐</i><div><code>$env:PW_WORKERS=4; npx playwright test ... --repeat-each=4</code><span>Tạo 4 test instance để tối đa 4 worker thực thi đồng thời</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">💼</i><div><code>npx playwright test --grep="@applyjob" --project="Regression Tests"</code><span>Chạy riêng business flow ứng tuyển</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">🧭</i><div><code>npm run test:ui</code><span>Nhiều file có thể chạy song song; cùng file cần fullyParallel hoặc parallel mode</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">📊</i><div><code>npm run report</code><span>Mở report tổng; thư mục workers chứa report riêng</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">🧱</i><div><code>npm run check:framework</code><span>Kiểm tra rào chắn kiến trúc: 24 specs, 19 POMs và conventions</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">⚡</i><div><code>npm run suite:smoke</code><span>Chạy Suite Cha Smoke toàn hệ thống (Desktop + Mobile Chrome)</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">🚀</i><div><code>npm run suite:regression</code><span>Chạy Suite Cha Regression toàn hệ thống (Desktop + Mobile + API)</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">👑</i><div><code>npm run suite:all</code><span>Chạy Master Suite toàn bộ 24 kịch bản E2E và API backend</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">🧭</i><div><code>npm run test:ui</code><span>Mở Playwright Interactive UI Mode để debug trực quan</span></div></div>
+          <div class="command"><i class="command-icon" aria-hidden="true">📊</i><div><code>npm run dashboard</code><span>Khởi chạy Automation Web Dashboard Studio (Port 4180)</span></div></div>
         </div>
       </div>
-      <footer class="footer"><span>PW_WORKERS=N đặt mức đồng thời tối đa; một test() luôn chạy trọn vẹn trên một worker</span><span>18</span></footer>
+      <footer class="footer"><span>Hỗ trợ cả CLI npm run suite:* và Web Dashboard Studio trực quan</span><span>18</span></footer>
     </section>
 
     <section class="slide">
       <header class="topline"><p class="eyebrow">Control Hub</p><span class="chapter">19 / Automation Dashboard</span></header>
       <div class="content two-col">
         <div>
-          <h2>Trung tâm điều khiển <span class="cyan">Web Dashboard</span> &amp; Báo cáo thời gian thực.</h2>
+          <h2>Trung tâm điều khiển <span class="cyan">Web Dashboard Studio</span> &amp; Báo cáo thời gian thực.</h2>
           <div class="stack" style="margin-top:24px">
-            <div class="stack-item"><strong>1-Click Launch</strong><span>Chạy <code>Start_Dashboard.bat</code> để tự động tìm port trống, chạy server nền và mở trình duyệt.</span></div>
-            <div class="stack-item"><strong>Test Suites &amp; Tag Chips</strong><span>Chạy theo kịch bản tùy chỉnh, lọc nhanh theo tag (<code>@smoke</code>, <code>@register</code>) hoặc tích chọn từng file.</span></div>
-            <div class="stack-item"><strong>Real-time Log &amp; Discord Alerts</strong><span>Quan sát tiến trình qua SSE và tự động bắn thông báo kết quả qua Discord Webhook.</span></div>
-            <div class="stack-item"><strong>Artifacts &amp; Code Hub</strong><span>Duyệt Playwright reports, cây ảnh evidence theo worker, và chỉnh sửa test data trực quan.</span></div>
+            <div class="stack-item"><strong>1-Click Launch</strong><span>Chạy <code>Start_Dashboard.bat</code> hoặc <code>npm run dashboard</code> để tự động tìm port (4180), chạy server nền và mở browser.</span></div>
+            <div class="stack-item"><strong>Quản Lý Suite Phân Cấp (Cha/Con)</strong><span>Bộ giải mã đệ quy tự động phân giải Master -> Cha -> Con, tùy biến workers, viewport và tag chips.</span></div>
+            <div class="stack-item"><strong>Real-time Log &amp; Discord Alerts</strong><span>Quan sát tiến trình qua SSE Stream, xem trực tiếp console logs và bắn thông báo Discord Webhook.</span></div>
+            <div class="stack-item"><strong>Evidence Tree &amp; Code Studio</strong><span>Duyệt cây ảnh evidence theo từng worker, quản lý test data và chỉnh sửa cấu hình trực quan.</span></div>
           </div>
-          <a class="tool-link" href="http://127.0.0.1:4174" target="_blank" rel="noopener" style="margin-top:16px">Mở Automation Dashboard ↗</a>
+          <a class="tool-link" href="http://127.0.0.1:4180" target="_blank" rel="noopener" style="margin-top:16px">Mở Automation Dashboard ↗</a>
         </div>
         <div>
           <div class="compare-preview" aria-label="Minh họa Automation Dashboard features">
@@ -713,7 +714,7 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
           <p style="color:var(--cyan);font-size:14px">Đóng mở an toàn qua <code>Start_Dashboard.bat</code> và <code>Stop_Dashboard.bat</code>.</p>
         </div>
       </div>
-      <footer class="footer"><span>http://127.0.0.1:4174 · Biến terminal thành Control Hub trực quan cho cả team</span><span>19</span></footer>
+      <footer class="footer"><span>http://127.0.0.1:4180 · Biến terminal thành Control Hub trực quan cho cả team QA</span><span>19</span></footer>
     </section>
 
     <section class="slide">

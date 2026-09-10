@@ -289,26 +289,22 @@ class UserProfilePage extends BasePage {
 
   // --- Thông tin cá nhân (Personal Info) ---
   async clickEditPersonalInfo() {
-    const desktopEditBtn = this.page.locator('[data-test-id="user-profile__personal-info"] [data-test-id="user-profile__edit-button"]:visible').first();
-    const isDesktopVisible = await desktopEditBtn.isVisible({ timeout: 2000 }).catch(() => false);
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.waitForGlobalLoadingHidden(10000).catch(() => null);
 
-    if (isDesktopVisible) {
-      await this.clickElement(desktopEditBtn);
-    } else {
-      const mobileEditBtn = this.page
-        .locator('[data-test-id="user-profile__edit-button"]:visible')
-        .or(this.page.locator('.svicon-edit-alt:visible, .svicon-edit:visible'))
-        .or(this.page.getByText('Thêm địa chỉ hiện tại'))
-        .first();
+    const editBtn = this.page.locator(
+      '[data-test-id="user-profile__personal-info"] [data-test-id="user-profile__edit-button"]:visible, ' +
+      '[data-test-id="user-profile__edit-button"]:visible, ' +
+      '.svicon-edit-alt:visible, ' +
+      'button:has(.svicon-edit-alt):visible'
+    ).first();
 
-      await this.clickElement(mobileEditBtn, { force: true });
-    }
+    await this.clickElement(editBtn, { force: true });
 
     const modal = this.page.locator(
       '[data-test-id="user-profile__personal-info-modal"]:visible, ' +
       '[data-test-id="common__form-modal"]:visible, ' +
-      '[data-test-id="common__dialog"]:visible, ' +
-      'div[role="dialog"]:visible'
+      '[data-test-id="common__dialog"]:visible'
     ).first();
 
     try {
@@ -330,33 +326,72 @@ class UserProfilePage extends BasePage {
     const modal = this.page.locator(
       '[data-test-id="user-profile__personal-info-modal"]:visible, ' +
       '[data-test-id="common__form-modal"]:visible, ' +
-      'div[role="dialog"]:visible'
+      '[data-test-id="common__dialog"]:visible'
     ).first();
-    const scope = (await modal.isVisible({ timeout: 2000 }).catch(() => false)) ? modal : this.page;
+    const scope = (await modal.isVisible({ timeout: 3000 }).catch(() => false)) ? modal : this.page;
 
     // Select Province
     const provinceBtn = scope.getByText('Chọn tỉnh thành').first();
     await this.clickElement(provinceBtn, { force: true });
 
+    const provinceEscaped = this.escapeRegExp(data.province);
     const provinceOption = this.page
-      .locator('[data-test-id="common__select-menu"]:visible div, [data-test-id="select__modal-menu__container"]:visible div')
-      .filter({ hasText: data.province })
-      .last();
+      .locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible')
+      .getByRole('heading', { name: new RegExp(provinceEscaped, 'i') })
+      .or(
+        this.page
+          .locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible')
+          .getByText(data.province, { exact: true })
+      )
+      .or(
+        this.page
+          .locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible')
+          .getByRole('button', { name: new RegExp(provinceEscaped, 'i') })
+      )
+      .or(
+        this.page
+          .locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible')
+          .locator('li, [role="option"]')
+          .filter({ hasText: new RegExp(provinceEscaped, 'i') })
+      )
+      .first();
+
+    await provinceOption.waitFor({ state: 'visible', timeout: 15000 });
     await this.clickElement(provinceOption, { force: true });
+    await this.closeSelectModalMenuIfVisible();
 
     // Select District after its async options finish rendering
     const districtBtn = scope.getByText('Chọn quận huyện').first();
     await this.clickElement(districtBtn, { force: true });
 
     const districtName = data.district.split('(')[0].trim();
+    const districtEscaped = this.escapeRegExp(districtName);
     const districtOption = this.page
       .locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible')
       .getByRole('heading')
       .filter({ hasText: districtName })
+      .or(
+        this.page
+          .locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible')
+          .getByText(districtName, { exact: true })
+      )
+      .or(
+        this.page
+          .locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible')
+          .getByRole('button')
+          .filter({ hasText: new RegExp(districtEscaped, 'i') })
+      )
+      .or(
+        this.page
+          .locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible')
+          .locator('li, [role="option"]')
+          .filter({ hasText: new RegExp(districtEscaped, 'i') })
+      )
       .first();
 
     await districtOption.waitFor({ state: 'visible', timeout: 35000 });
     await this.clickElement(districtOption, { force: true });
+    await this.closeSelectModalMenuIfVisible();
 
     // Fill Date of Birth
     const inpDateOfBirth = scope.getByRole('textbox', { name: 'DD/MM/YYYY' }).first();
@@ -378,8 +413,16 @@ class UserProfilePage extends BasePage {
   }
 
   async savePersonalInfo() {
-    // Save personal info
-    await this.saveSection();
+    const btnSave = this.page
+      .getByRole('button', { name: /Lưu thông tin|Lưu thay đổi|^Lưu$/i })
+      .or(this.page.locator('button:has-text("Lưu thông tin"), button:text-is("Lưu")'))
+      .first();
+
+    await btnSave.scrollIntoViewIfNeeded().catch(() => null);
+    await this.clickElement(btnSave, { force: true });
+    const modal = this.page.locator('[data-test-id="user-profile__personal-info-modal"]');
+    await modal.waitFor({ state: 'hidden', timeout: 30000 }).catch(() => null);
+    await this.waitForGlobalLoadingHidden(15000).catch(() => null);
   }
 
   // --- Tiêu chí tìm việc (Job Goal/Criteria) ---
@@ -402,9 +445,13 @@ class UserProfilePage extends BasePage {
 
   async clickVisibleSelectMenuHeading(optionName, options = {}) {
     const timeout = options.timeout ?? 10000;
-    const menu = this.page.locator('[data-test-id="common__select-menu"]:visible').last();
+    const menu = this.page.locator('[data-test-id="common__select-menu"]:visible, [data-test-id="select__modal-menu__container"]:visible').last();
     await menu.waitFor({ state: 'visible', timeout });
-    const option = menu.getByRole('heading', { name: new RegExp(`^${this.escapeRegExp(optionName)}$`, 'i') }).first();
+    const option = menu.getByRole('heading', { name: new RegExp(`^${this.escapeRegExp(optionName)}$`, 'i') })
+      .or(menu.getByRole('button', { name: new RegExp(`^${this.escapeRegExp(optionName)}$`, 'i') }))
+      .or(menu.locator('li, [role="option"]').filter({ hasText: new RegExp(`^\\s*${this.escapeRegExp(optionName)}\\s*$`, 'i') }))
+      .or(menu.getByText(new RegExp(`^\\s*${this.escapeRegExp(optionName)}\\s*$`, 'i')))
+      .first();
     await this.clickElement(option, { timeout });
   }
 

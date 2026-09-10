@@ -55,21 +55,35 @@ if (suiteName.toLowerCase() === 'check') {
     return [p];
   }
 
-  // Composite suite: Cha chứa nhiều con
+  // Composite suite: Cha chứa nhiều con (hỗ trợ phân giải đệ quy đa tầng Cha -> Con -> Cháu)
   if (suite.type === 'composite' || (Array.isArray(suite.suites) && suite.suites.length > 0)) {
-    const childKeys = Array.isArray(suite.suites) ? suite.suites : [];
-    console.log(`[Composite Suite] Kịch bản cha kích hoạt ${childKeys.length} kịch bản con: ${childKeys.join(', ')}`);
+    function resolveLeafSuites(keys, visited = new Set()) {
+      const leaves = [];
+      for (const key of keys) {
+        if (visited.has(key)) continue;
+        visited.add(key);
+        const s = config.suites?.[key];
+        if (!s) {
+          console.warn(`[Composite Suite] Cảnh báo: Kịch bản con "${key}" không tồn tại trong cấu hình.`);
+          continue;
+        }
+        if (s.type === 'composite' || (Array.isArray(s.suites) && s.suites.length > 0)) {
+          leaves.push(...resolveLeafSuites(s.suites || [], visited));
+        } else {
+          leaves.push({ key, suite: s });
+        }
+      }
+      return leaves;
+    }
+
+    const leafItems = resolveLeafSuites(Array.isArray(suite.suites) ? suite.suites : []);
+    console.log(`[Composite Suite] Kịch bản cha kích hoạt ${leafItems.length} kịch bản con: ${leafItems.map(i => i.key).join(', ')}`);
     const compSpecs = [];
     const compProjects = [];
     let compWorkers = suite.workers || 2;
     const compGreps = [];
 
-    for (const childKey of childKeys) {
-      const childSuite = config.suites?.[childKey];
-      if (!childSuite) {
-        console.warn(`[Composite Suite] Cảnh báo: Kịch bản con "${childKey}" không tồn tại trong cấu hình.`);
-        continue;
-      }
+    for (const { key: childKey, suite: childSuite } of leafItems) {
       if (Array.isArray(childSuite.specs) && childSuite.specs.length > 0 && childSuite.specs !== 'all') {
         compSpecs.push(...childSuite.specs);
       } else if (childSuite.spec && childSuite.spec !== 'all') {
@@ -81,6 +95,8 @@ if (suiteName.toLowerCase() === 'check') {
         compProjects.push('Mobile Chrome Smoke Tests', 'Mobile Chrome Regression Tests');
       } else if (childSuite.platform === 'desktop') {
         compProjects.push('Desktop Smoke Tests', 'Desktop Regression Tests');
+      } else if (childSuite.platform === 'api') {
+        compProjects.push('API Tests');
       }
       if (childSuite.grep) compGreps.push(childSuite.grep);
       if (childSuite.workers) compWorkers = Math.max(compWorkers, childSuite.workers);

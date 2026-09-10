@@ -62,28 +62,23 @@
     "fontSize": "14px"
   },
   "suites": {
-    "smoke-tests": {
-      "label": "⚡ Smoke Tests Toàn Hệ Thống (@smoke)",
-      "platform": "all",
-      "projects": [
-        "Desktop Smoke Tests",
-        "Mobile Chrome Smoke Tests",
-        "Mobile Safari Smoke Tests"
+    "smoke-all": {
+      "label": "⚡ Smoke Tests Toàn Hệ Thống (Desktop + Mobile)",
+      "description": "Suite cha chạy toàn bộ kiểm tra khói (Smoke) đăng ký tài khoản trên Desktop Chrome và Mobile Chrome.",
+      "type": "composite",
+      "suites": [
+        "smoke-desktop",
+        "smoke-mobile"
       ],
-      "viewport": {
-        "preset": "1920x1080",
-        "width": 1920,
-        "height": 1080
-      },
-      "spec": "all",
-      "specs": "all",
-      "grep": "@smoke",
       "workers": 2
     },
     "smoke-desktop": {
       "label": "🖥️ Smoke Desktop Chrome (@smoke)",
+      "description": "Suite con kiểm tra khói luồng đăng ký tài khoản (SĐT & Email) trên Desktop Chrome.",
+      "type": "single",
       "platform": "desktop",
       "project": "Desktop Smoke Tests",
+      "device": "",
       "viewport": {
         "preset": "1920x1080",
         "width": 1920,
@@ -96,11 +91,11 @@
     },
     "smoke-mobile": {
       "label": "📱 Smoke Mobile Web (@smoke)",
+      "description": "Suite con kiểm tra khói luồng đăng ký tài khoản (SĐT & Email) trên Mobile Web (Pixel 7).",
+      "type": "single",
       "platform": "mobile",
-      "projects": [
-        "Mobile Chrome Smoke Tests",
-        "Mobile Safari Smoke Tests"
-      ],
+      "project": "Mobile Chrome Smoke Tests",
+      "device": "",
       "viewport": {
         "preset": "390x844",
         "width": 390,
@@ -111,24 +106,24 @@
       "grep": "@smoke",
       "workers": 2
     },
-    "apply-job-flow": {
-      "label": "💼 Ứng Tuyển Việc Làm (@applyjob)",
-      "platform": "all",
-      "project": "all",
-      "viewport": {
-        "preset": "1920x1080",
-        "width": 1920,
-        "height": 1080
-      },
-      "spec": "all",
-      "specs": "all",
-      "grep": "@applyjob",
+    "regression-all": {
+      "label": "🚀 Regression Tests Toàn Hệ Thống (Desktop + Mobile + API)",
+      "description": "Suite cha chạy toàn bộ kiểm thử hồi quy (Regression) trên tất cả các nền tảng.",
+      "type": "composite",
+      "suites": [
+        "regression-desktop",
+        "regression-mobile",
+        "regression-api"
+      ],
       "workers": 2
     },
-    "apply-job-desktop": {
-      "label": "🖥️ Ứng Tuyển Desktop (@applyjob)",
+    "regression-desktop": {
+      "label": "🖥️ Regression Desktop Chrome (@e2e)",
+      "description": "Suite con chạy toàn bộ 9 kịch bản hồi quy chức năng nghiệp vụ trên Desktop Chrome.",
+      "type": "single",
       "platform": "desktop",
       "project": "Desktop Regression Tests",
+      "device": "",
       "viewport": {
         "preset": "1920x1080",
         "width": 1920,
@@ -136,16 +131,16 @@
       },
       "spec": "all",
       "specs": "all",
-      "grep": "@applyjob",
+      "grep": "@e2e",
       "workers": 2
     },
-    "apply-job-mobile": {
-      "label": "📱 Ứng Tuyển Mobile Web (@applyjob)",
+    "regression-mobile": {
+      "label": "📱 Regression Mobile Web (@e2e)",
+      "description": "Suite con chạy toàn bộ 9 kịch bản hồi quy chức năng nghiệp vụ trên Mobile Web (Pixel 7).",
+      "type": "single",
       "platform": "mobile",
-      "projects": [
-        "Mobile Chrome Regression Tests",
-        "Mobile Safari Regression Tests"
-      ],
+      "project": "Mobile Chrome Regression Tests",
+      "device": "",
       "viewport": {
         "preset": "390x844",
         "width": 390,
@@ -153,122 +148,16 @@
       },
       "spec": "all",
       "specs": "all",
-      "grep": "@applyjob",
+      "grep": "@e2e",
       "workers": 2
     },
-    "user-profile-flow": {
-      "label": "📄 Hồ Sơ & CV Ứng Viên (@profile)",
-      "platform": "all",
-      "project": "all",
-      "viewport": {
-        "preset": "1920x1080",
-        "width": 1920,
-        "height": 1080
-      },
-      "spec": "all",
-      "specs": "all",
-      "grep": "@profile",
-      "workers": 2
-    },
-    "user-profile-desktop": {
-      "label": "🖥️ Hồ Sơ & CV Desktop (@profile)",
-      "platform": "desktop",
-      "project": "Desktop Regression Tests",
-      "viewport": {
-        "preset": "1920x1080",
-        "width": 1920,
-        "height": 1080
-      },
-      "spec": "all",
-      "specs": "all",
-      "grep": "@profile",
-      "workers": 2
-    },
-    "user-profile-mobile": {
-      "label": "📱 Hồ Sơ & CV Mobile Web (@profile)",
-      "platform": "mobile",
-      "projects": [
-        "Mobile Chrome Regression Tests",
-        "Mobile Safari Regression Tests"
-      ],
-      "viewport": {
-        "preset": "390x844",
-        "width": 390,
-        "height": 844
-      },
-      "spec": "all",
-      "specs": "all",
-      "grep": "@profile",
-      "workers": 2
-    },
-    "auth-flow": {
-      "label": "🔑 Đăng Ký & Xác Thực (@register)",
-      "platform": "all",
-      "project": "all",
-      "viewport": {
-        "preset": "1920x1080",
-        "width": 1920,
-        "height": 1080
-      },
-      "spec": "all",
-      "specs": "all",
-      "grep": "@register",
-      "workers": 2
-    },
-    "onboarding-flow": {
-      "label": "🧭 Khảo Sát Onboarding (@onboarding)",
-      "platform": "all",
-      "project": "all",
-      "viewport": {
-        "preset": "1920x1080",
-        "width": 1920,
-        "height": 1080
-      },
-      "spec": "all",
-      "specs": "all",
-      "grep": "@onboarding",
-      "workers": 2
-    },
-    "desktop-regression": {
-      "label": "🖥️ Toàn Bộ Kịch Bản Desktop",
-      "platform": "desktop",
-      "projects": [
-        "Desktop Smoke Tests",
-        "Desktop Regression Tests"
-      ],
-      "viewport": {
-        "preset": "1920x1080",
-        "width": 1920,
-        "height": 1080
-      },
-      "spec": "all",
-      "specs": "all",
-      "grep": "@desktop",
-      "workers": 2
-    },
-    "mobile-web-suite": {
-      "label": "📱 Toàn Bộ Kịch Bản Mobile Web",
-      "platform": "mobile",
-      "projects": [
-        "Mobile Chrome Smoke Tests",
-        "Mobile Chrome Regression Tests",
-        "Mobile Safari Smoke Tests",
-        "Mobile Safari Regression Tests"
-      ],
-      "viewport": {
-        "preset": "390x844",
-        "width": 390,
-        "height": 844
-      },
-      "spec": "all",
-      "specs": "all",
-      "grep": "@mobile",
-      "workers": 2
-    },
-    "api-suite": {
-      "label": "🔌 Backend API Tests (@api)",
+    "regression-api": {
+      "label": "🔌 API Regression Tests (@api)",
+      "description": "Suite con kiểm thử các dịch vụ backend API (đăng ký, xác thực, token me).",
+      "type": "single",
       "platform": "api",
       "project": "API Tests",
+      "device": "",
       "viewport": {
         "preset": "default",
         "width": 1920,
@@ -279,10 +168,33 @@
       "grep": "@api",
       "workers": 2
     },
-    "full-regression": {
-      "label": "🚀 Full Regression (Tất cả 24 Specs + API)",
-      "platform": "all",
-      "project": "all",
+    "full-test-suite": {
+      "label": "👑 Master Toàn Dự Án (Smoke + Regression + API)",
+      "description": "Suite tối cao kích hoạt toàn bộ suite cha Smoke và Regression trên mọi nền tảng.",
+      "type": "composite",
+      "suites": [
+        "smoke-all",
+        "regression-all"
+      ],
+      "workers": 2
+    },
+    "feature-applyjob": {
+      "label": "💼 Phân Hệ Ứng Tuyển Việc Làm (Desktop + Mobile)",
+      "description": "Suite cha chuyên sâu chạy toàn bộ luồng ứng tuyển việc làm trên cả hai nền tảng.",
+      "type": "composite",
+      "suites": [
+        "applyjob-desktop",
+        "applyjob-mobile"
+      ],
+      "workers": 2
+    },
+    "applyjob-desktop": {
+      "label": "🖥️ Ứng Tuyển Desktop (@applyjob)",
+      "description": "Các kịch bản ứng tuyển (No CV, With CV, With Profile, Guest OTP) trên Desktop.",
+      "type": "single",
+      "platform": "desktop",
+      "project": "Desktop Regression Tests",
+      "device": "",
       "viewport": {
         "preset": "1920x1080",
         "width": 1920,
@@ -290,7 +202,133 @@
       },
       "spec": "all",
       "specs": "all",
-      "grep": "@e2e|@api",
+      "grep": "@applyjob",
+      "workers": 2
+    },
+    "applyjob-mobile": {
+      "label": "📱 Ứng Tuyển Mobile Web (@applyjob)",
+      "description": "Các kịch bản ứng tuyển (No CV, With CV, With Profile, Guest OTP) trên Mobile Web.",
+      "type": "single",
+      "platform": "mobile",
+      "project": "Mobile Chrome Regression Tests",
+      "device": "",
+      "viewport": {
+        "preset": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@applyjob",
+      "workers": 2
+    },
+    "feature-profile": {
+      "label": "📄 Phân Hệ Hồ Sơ & CV (Desktop + Mobile)",
+      "description": "Suite cha chuyên sâu chạy toàn bộ luồng hoàn thành hồ sơ, tải CV, AI writing trên cả hai nền tảng.",
+      "type": "composite",
+      "suites": [
+        "profile-desktop",
+        "profile-mobile"
+      ],
+      "workers": 2
+    },
+    "profile-desktop": {
+      "label": "🖥️ Hồ Sơ & CV Desktop (@profile)",
+      "description": "Các kịch bản hoàn thành hồ sơ, tải lên CV, AI writing trên Desktop.",
+      "type": "single",
+      "platform": "desktop",
+      "project": "Desktop Regression Tests",
+      "device": "",
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@profile",
+      "workers": 2
+    },
+    "profile-mobile": {
+      "label": "📱 Hồ Sơ & CV Mobile Web (@profile)",
+      "description": "Các kịch bản hoàn thành hồ sơ, tải lên CV, AI writing trên Mobile Web.",
+      "type": "single",
+      "platform": "mobile",
+      "project": "Mobile Chrome Regression Tests",
+      "device": "",
+      "viewport": {
+        "preset": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@profile",
+      "workers": 2
+    },
+    "feature-onboarding": {
+      "label": "🧭 Phân Hệ Khảo Sát Onboarding (Desktop + Mobile)",
+      "description": "Suite cha chuyên sâu chạy luồng khảo sát onboarding sau đăng ký trên cả hai nền tảng.",
+      "type": "composite",
+      "suites": [
+        "onboarding-desktop",
+        "onboarding-mobile"
+      ],
+      "workers": 2
+    },
+    "onboarding-desktop": {
+      "label": "🧭 Onboarding Desktop (@onboarding)",
+      "description": "Kịch bản khảo sát Onboarding 5 bước trên Desktop.",
+      "type": "single",
+      "platform": "desktop",
+      "project": "Desktop Regression Tests",
+      "device": "",
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@onboarding",
+      "workers": 2
+    },
+    "onboarding-mobile": {
+      "label": "📱 Onboarding Mobile Web (@onboarding)",
+      "description": "Kịch bản khảo sát Onboarding 5 bước trên Mobile Web.",
+      "type": "single",
+      "platform": "mobile",
+      "project": "Mobile Chrome Regression Tests",
+      "device": "",
+      "viewport": {
+        "preset": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@onboarding",
+      "workers": 2
+    },
+    "smoke": {
+      "label": "⚡ Smoke Tests (Alias -> smoke-all)",
+      "description": "Alias kịch bản khói toàn hệ thống.",
+      "type": "composite",
+      "suites": [
+        "smoke-desktop",
+        "smoke-mobile"
+      ],
+      "workers": 2
+    },
+    "regression": {
+      "label": "🚀 Regression Tests (Alias -> regression-all)",
+      "description": "Alias kịch bản hồi quy toàn hệ thống.",
+      "type": "composite",
+      "suites": [
+        "regression-desktop",
+        "regression-mobile",
+        "regression-api"
+      ],
       "workers": 2
     }
   },
