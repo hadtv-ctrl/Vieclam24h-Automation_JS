@@ -89,8 +89,8 @@ export class FeatureRegistry {
     });
 
     // Update view panels visibility
-    const views = document.querySelectorAll('.view');
-    views.forEach((v) => {
+    const panels = document.querySelectorAll('.dashboard-view, [role="tabpanel"]');
+    panels.forEach((v) => {
       const match = v.id === activeId;
       v.classList.toggle('active', match);
       if (match) {

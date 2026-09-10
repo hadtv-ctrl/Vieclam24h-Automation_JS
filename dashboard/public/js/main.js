@@ -26,7 +26,7 @@ const INVENTORY_VIEWS = [
   { id: 'git-view', title: 'Đồng bộ Git' },
   { id: 'fixtures-view', title: 'Custom Fixtures' },
   { id: 'settings-view', title: 'Cấu hình hệ thống' },
-  { id: 'suites-quick', title: 'Quick Suites Bar' },
+  { id: 'compare-view', title: 'So sánh ảnh' },
 ];
 
 INVENTORY_VIEWS.forEach((viewDef) => {

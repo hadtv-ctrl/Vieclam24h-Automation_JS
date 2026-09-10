@@ -8,6 +8,7 @@ export class WindowBridge {
   constructor(targetWindow = window) {
     this._window = targetWindow;
     this._actions = new Map();
+    this._tokenCounter = 0;
     this._window.__STUDIO_BRIDGE__ = this._window.__STUDIO_BRIDGE__ || {};
   }
 
@@ -17,12 +18,14 @@ export class WindowBridge {
       console.warn(`[WindowBridge] Overwriting existing action: "${name}"`);
     }
 
-    this._actions.set(name, handler);
+    const token = ++this._tokenCounter;
+    this._actions.set(name, { handler, token });
 
     // Bind to window for inline onclick="..." handlers
     this._window[name] = (...args) => {
       try {
-        return handler(...args);
+        const current = this._actions.get(name);
+        return current ? current.handler(...args) : handler(...args);
       } catch (err) {
         console.error(`[WindowBridge] Error executing global action "${name}":`, err);
         throw err;
@@ -30,10 +33,15 @@ export class WindowBridge {
     };
 
     this._window.__STUDIO_BRIDGE__[name] = this._window[name];
-    return () => this.unexposeAction(name);
+    return () => this.unexposeAction(name, token);
   }
 
-  unexposeAction(name) {
+  unexposeAction(name, expectedToken = null) {
+    const current = this._actions.get(name);
+    if (!current) return;
+    if (expectedToken !== null && current.token !== expectedToken) {
+      return; // Handled action was replaced by a newer owner token; do not delete replacement
+    }
     this._actions.delete(name);
     delete this._window[name];
     delete this._window.__STUDIO_BRIDGE__[name];
@@ -47,7 +55,8 @@ export class WindowBridge {
     if (!this.hasAction(name)) {
       throw new ReferenceError(`[WindowBridge] Action "${name}" is not registered on window.`);
     }
-    const fn = this._actions.get(name) || this._window[name];
+    const entry = this._actions.get(name);
+    const fn = entry ? entry.handler : this._window[name];
     return fn(...args);
   }
 

@@ -13,9 +13,11 @@ export class EditorSession {
     this._cleanContent = '';
     this._bufferContent = '';
     this._isDirty = false;
+    this._sessionId = 0;
   }
 
   openFile(filePath, content = '') {
+    this._sessionId += 1;
     this._activeFile = filePath;
     this._cleanContent = content;
     this._bufferContent = content;
@@ -37,14 +39,19 @@ export class EditorSession {
     if (!this._activeFile) throw new Error('No active file open in editor.');
     if (!this._isDirty) return { skipped: true };
 
+    const saveSessionId = this._sessionId;
+    const fileBeingSaved = this._activeFile;
     const contentToSave = this._bufferContent;
+
     if (typeof saveFn === 'function') {
-      await saveFn(this._activeFile, contentToSave);
+      await saveFn(fileBeingSaved, contentToSave);
     }
 
-    this._cleanContent = contentToSave;
-    this._setDirty(false);
-    return { success: true, file: this._activeFile };
+    if (this._sessionId === saveSessionId && this._activeFile === fileBeingSaved) {
+      this._cleanContent = contentToSave;
+      this._setDirty(this._bufferContent !== this._cleanContent);
+    }
+    return { success: true, file: fileBeingSaved };
   }
 
   discard() {

@@ -16,13 +16,39 @@ export class StateStore {
     this._subscribers = new Set();
   }
 
+  _cloneState(source) {
+    const clone = {};
+    for (const [key, value] of Object.entries(source)) {
+      if (value instanceof Set) {
+        clone[key] = new Set(value);
+      } else if (value && typeof value === 'object') {
+        clone[key] = JSON.parse(JSON.stringify(value));
+      } else {
+        clone[key] = value;
+      }
+    }
+    return clone;
+  }
+
   getState() {
-    return { ...this._state };
+    return this._cloneState(this._state);
   }
 
   setState(partialState, actionSource = 'unknown') {
-    const prevState = { ...this._state };
-    this._state = { ...this._state, ...partialState };
+    const prevState = this.getState();
+    const nextState = { ...this._state };
+    for (const [key, value] of Object.entries(partialState)) {
+      if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Set)) {
+        nextState[key] = { ...(nextState[key] || {}), ...JSON.parse(JSON.stringify(value)) };
+      } else if (value instanceof Set) {
+        nextState[key] = new Set(value);
+      } else if (Array.isArray(value)) {
+        nextState[key] = JSON.parse(JSON.stringify(value));
+      } else {
+        nextState[key] = value;
+      }
+    }
+    this._state = nextState;
     this._notify(prevState, actionSource);
     return this.getState();
   }

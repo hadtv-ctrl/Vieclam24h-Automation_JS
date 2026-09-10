@@ -23,7 +23,22 @@ export class ApiClient {
     const url = `${this._baseUrl}${path}`;
     const timeoutMs = options.timeout || this._defaultTimeoutMs;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    let isTimeout = false;
+    const timeoutId = setTimeout(() => {
+      isTimeout = true;
+      controller.abort();
+    }, timeoutMs);
+    let removeCallerAbort = null;
+
+    if (options.signal) {
+      if (options.signal.aborted) {
+        clearTimeout(timeoutId);
+        throw options.signal.reason || new Error('Aborted by caller.');
+      }
+      const onCallerAbort = () => controller.abort(options.signal.reason);
+      options.signal.addEventListener('abort', onCallerAbort, { once: true });
+      removeCallerAbort = () => options.signal.removeEventListener('abort', onCallerAbort);
+    }
 
     const headers = {
       'Content-Type': 'application/json',
@@ -52,12 +67,16 @@ export class ApiClient {
 
       return data;
     } catch (err) {
-      if (err.name === 'AbortError') {
+      if (options.signal?.aborted) {
+        throw err;
+      }
+      if (isTimeout || err.name === 'AbortError') {
         throw new ApiError(`Request timeout after ${timeoutMs}ms: ${path}`, 408);
       }
       throw err;
     } finally {
       clearTimeout(timeoutId);
+      if (removeCallerAbort) removeCallerAbort();
     }
   }
 
