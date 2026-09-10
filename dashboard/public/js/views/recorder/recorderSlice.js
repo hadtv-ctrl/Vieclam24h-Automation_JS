@@ -10,13 +10,16 @@ import { windowBridge } from '../../core/windowBridge.js';
 export class RecorderSlice {
   constructor() {
     this.status = 'idle'; // 'idle' | 'recording' | 'converting'
-    this.activeUrl = 'http://localhost:3000';
+    this.activeUrl = 'https://example.com';
     this._disposers = [];
     this._mounted = false;
   }
 
   async mount() {
     this._mounted = true;
+    if (typeof window.openRecorderStudio === 'function') {
+      await window.openRecorderStudio();
+    }
     this._bindDomEvents();
     this._registerBridgeActions();
   }
@@ -37,37 +40,103 @@ export class RecorderSlice {
       this._disposers.push(() => el.removeEventListener(evt, fn));
     };
 
+    on('#rec-start-btn', 'click', () => this.startRecording());
     on('#btn-start-recording', 'click', () => this.startRecording());
+    on('#rec-stop-btn', 'click', () => this.stopRecording());
     on('#btn-stop-recording', 'click', () => this.stopRecording());
+    on('#rec-reset-btn', 'click', () => this.resetRecording());
+    on('#rec-refresh-list-btn', 'click', () => window.checkRecorderStatus?.());
+    on('#rec-platform', 'change', (e) => {
+      const wrapper = root.querySelector('#rec-device-wrapper');
+      if (wrapper) wrapper.style.display = e.target.value === 'mobile-web' ? 'block' : 'none';
+    });
   }
 
   _registerBridgeActions() {
     const reg = (name, fn) => this._disposers.push(windowBridge.exposeAction(name, fn));
     reg('startRecorderSession', (url) => this.startRecording(url));
     reg('stopRecorderSession', () => this.stopRecording());
+    reg('resetRecorderSession', () => this.resetRecording());
   }
 
   async startRecording(url) {
-    const inputUrl = url || document.getElementById('recorder-url-input')?.value?.trim() || this.activeUrl;
+    const root = document.getElementById('recorder-view');
+    const inputUrl = url || root?.querySelector('#rec-url')?.value?.trim() || root?.querySelector('#recorder-url-input')?.value?.trim() || this.activeUrl;
+    const platform = root?.querySelector('#rec-platform')?.value || 'desktop';
+    const device = platform === 'mobile-web' ? root?.querySelector('#rec-device')?.value || '' : '';
+    const startBtn = root?.querySelector('#rec-start-btn') || root?.querySelector('#btn-start-recording');
+    const stopBtn = root?.querySelector('#rec-stop-btn') || root?.querySelector('#btn-stop-recording');
+    const badge = root?.querySelector('#recorder-badge');
+
+    if (startBtn) {
+      startBtn.disabled = true;
+      startBtn.innerHTML = '<i class="ph ph-spinner-gap"></i> Đang mở trình duyệt...';
+    }
+
     try {
       this.status = 'recording';
       stateStore.setState({ recorder: { status: 'recording', url: inputUrl } }, 'recorderSlice.start');
-      await apiClient.post('/api/recorder/start', { url: inputUrl });
-      this.notify(`Đang ghi thao tác trình duyệt tại ${inputUrl}...`);
+      const res = await apiClient.post('/api/recorder/start', { url: inputUrl, platform, device, force: true });
+      if (badge) {
+        badge.className = 'rec-status-badge recording';
+        badge.innerHTML = '<i class="ph-fill ph-circle"></i> Đang ghi thao tác...';
+      }
+      if (stopBtn) stopBtn.disabled = false;
+      this.notify(res.message || `Đang ghi thao tác trình duyệt tại ${inputUrl}...`);
+      if (typeof window.onRecorderStatusUpdate === 'function') window.onRecorderStatusUpdate({ isRecording: true });
     } catch (err) {
       this.status = 'idle';
-      this.notify('Lỗi khởi động ghi kịch bản: ' + err.message);
+      if (startBtn) startBtn.disabled = false;
+      if (badge) {
+        badge.className = 'rec-status-badge idle';
+        badge.innerHTML = '<i class="ph-fill ph-circle"></i> Sẵn sàng';
+      }
+      this.notify('Lỗi khởi động ghi: ' + err.message);
+    } finally {
+      if (startBtn) startBtn.innerHTML = '<i class="ph-fill ph-record"></i> Bắt đầu ghi (Codegen)';
     }
   }
 
   async stopRecording() {
+    const root = document.getElementById('recorder-view');
+    const startBtn = root?.querySelector('#rec-start-btn') || root?.querySelector('#btn-start-recording');
+    const stopBtn = root?.querySelector('#rec-stop-btn') || root?.querySelector('#btn-stop-recording');
+    const badge = root?.querySelector('#recorder-badge');
+
+    if (stopBtn) {
+      stopBtn.disabled = true;
+      stopBtn.innerHTML = '<i class="ph ph-spinner-gap"></i> Đang đọc mã...';
+    }
+
     try {
       this.status = 'idle';
       stateStore.setState({ recorder: { status: 'idle' } }, 'recorderSlice.stop');
-      await apiClient.post('/api/recorder/stop', {});
-      this.notify('Đã dừng phiên ghi kịch bản.');
+      const res = await apiClient.post('/api/recorder/stop', {});
+      if (badge) {
+        badge.className = 'rec-status-badge idle';
+        badge.innerHTML = '<i class="ph-fill ph-circle"></i> Sẵn sàng';
+      }
+      if (startBtn) startBtn.disabled = false;
+      this.notify(res.message || 'Đã dừng phiên ghi.');
+      if (typeof window.checkRecorderStatus === 'function') await window.checkRecorderStatus();
+      if (typeof window.setRawScriptContent === 'function' && res.rawScript) {
+        window.setRawScriptContent(res.rawScript, res.actions, res.actionsCount, res.detectedUrl);
+      }
     } catch (err) {
       this.notify('Lỗi dừng ghi: ' + err.message);
+    } finally {
+      if (stopBtn) stopBtn.innerHTML = '<i class="ph-fill ph-stop"></i> Dừng ghi & Lấy mã';
+    }
+  }
+
+  async resetRecording() {
+    try {
+      await apiClient.post('/api/recorder/reset', {});
+      this.status = 'idle';
+      this.notify('Đã reset phiên ghi.');
+      if (typeof window.checkRecorderStatus === 'function') await window.checkRecorderStatus();
+    } catch (err) {
+      this.notify('Lỗi reset: ' + err.message);
     }
   }
 
