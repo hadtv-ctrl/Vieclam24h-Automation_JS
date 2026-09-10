@@ -154,7 +154,11 @@ function shutdown() {
   if (fs.existsSync(STATE_PATH)) {
     try { fs.rmSync(STATE_PATH, { force: true }); } catch (_) {}
   }
+  if (typeof server.closeAllConnections === 'function') {
+    server.closeAllConnections();
+  }
   server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 1000).unref();
 }
 
 process.on('SIGINT', shutdown);

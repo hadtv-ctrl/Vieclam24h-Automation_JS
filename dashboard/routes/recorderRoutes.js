@@ -60,7 +60,7 @@ async function handleRecorderRoutes(request, response, url, context = {}) {
       if (body.device) args.push(`--device=${body.device}`);
       else if (body.viewport) args.push(`--viewport-size=${body.viewport}`);
 
-      const child = spawn(process.execPath, args, { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env }, shell: false, windowsHide: false });
+      const child = spawn(process.execPath, args, { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env }, shell: false, windowsHide: true });
       let stderrBuffer = '';
       let earlyExitCode = null;
 
