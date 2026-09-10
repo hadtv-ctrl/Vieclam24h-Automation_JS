@@ -6,13 +6,14 @@ const path = require('path');
 function sendJson(response, status, body) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   response.end(JSON.stringify(body));
+  return true;
 }
 
 /**
  * Sends a standardized JSON error response.
  */
 function sendError(response, status, message) {
-  sendJson(response, status, { error: message });
+  return sendJson(response, status, { error: message });
 }
 
 /**
