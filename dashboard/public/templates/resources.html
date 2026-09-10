@@ -1,0 +1,101 @@
+      <header class="hero resources-hero">
+        <div>
+          <p class="eyebrow"><i class="ph-bold ph-chart-bar"></i> KẾT QUẢ CHẠY TEST</p>
+          <h1>Báo cáo & Evidence</h1>
+          <p class="subtitle">Xem test đã chạy ra sao và kiểm tra bằng hình ảnh. Dữ liệu đầu vào nằm riêng trong tab Dữ liệu test.</p>
+        </div>
+        <div id="resource-summary" class="hero-stats-group"></div>
+      </header>
+      <div class="panel explorer-page">
+        <nav class="resource-nav" id="resource-nav">
+          <!-- Header của Sidebar Artifacts -->
+          <div class="resource-nav-head">
+            <div>
+              <span class="pm-section-tag">01 · KHO ARTIFACTS</span>
+              <h2 class="resource-nav-title"><i class="ph-bold ph-archive"></i> Báo cáo & Ảnh</h2>
+            </div>
+            <button id="resource-refresh-btn" type="button" class="btn-icon-subtle" title="Làm mới danh sách artifacts">
+              <i class="ph-bold ph-arrows-clockwise"></i>
+            </button>
+          </div>
+
+          <!-- Chuyển đổi Báo cáo / Evidence duy nhất (Segmented Switcher) -->
+          <div class="resource-segmented-control" role="tablist" aria-label="Chọn loại kết quả kiểm thử">
+            <button type="button" class="resource-seg-btn active" data-category="reports" role="tab" aria-selected="true" id="seg-btn-reports">
+              <i class="ph-bold ph-chart-bar"></i>
+              <div class="resource-seg-info">
+                <span class="resource-seg-name">Báo cáo</span>
+                <small class="resource-seg-desc">Playwright HTML</small>
+              </div>
+              <span class="resource-seg-count" id="badge-reports-count">0</span>
+            </button>
+            <button type="button" class="resource-seg-btn" data-category="evidence" role="tab" aria-selected="false" id="seg-btn-evidence">
+              <i class="ph-bold ph-image"></i>
+              <div class="resource-seg-info">
+                <span class="resource-seg-name">Evidence</span>
+                <small class="resource-seg-desc">Ảnh từng bước</small>
+              </div>
+              <span class="resource-seg-count" id="badge-evidence-count">0</span>
+            </button>
+          </div>
+
+          <!-- Hộp Tìm kiếm & Lọc Nền tảng -->
+          <div class="resource-search-container">
+            <div class="pm-sidebar-search">
+              <i class="ph ph-magnifying-glass"></i>
+              <input id="resource-search" type="search" placeholder="Tìm theo tên run, ngày, file..." autocomplete="off">
+              <button type="button" id="resource-search-clear-btn" class="resource-search-clear" hidden title="Xóa tìm kiếm">×</button>
+            </div>
+            
+            <!-- Quick Platform Pills (hiển thị khi chọn Evidence để lọc nhanh) -->
+            <div class="resource-platform-pills" id="resource-platform-pills" style="display: none;">
+              <button type="button" class="resource-plat-pill active" data-platform="all">Tất cả</button>
+              <button type="button" class="resource-plat-pill" data-platform="desktop"><i class="ph-bold ph-desktop"></i> Desktop</button>
+              <button type="button" class="resource-plat-pill" data-platform="mobile"><i class="ph-bold ph-device-mobile"></i> Mobile</button>
+            </div>
+          </div>
+
+          <!-- Thanh Tiêu đề Danh mục & Điều khiển cây thư mục -->
+          <div class="resource-list-toolbar">
+            <div class="resource-list-meta">
+              <span id="resource-list-title" class="resource-list-title">DANH MỤC BÁO CÁO</span>
+              <span id="resource-list-count" class="resource-list-count">0 mục</span>
+            </div>
+            <button type="button" id="resource-toggle-tree-btn" class="resource-tree-toggle-btn" title="Mở rộng / Thu gọn tất cả thư mục">
+              <i class="ph-bold ph-arrows-out-simple"></i>
+              <span>Mở tất cả</span>
+            </button>
+          </div>
+
+          <!-- Cây Thư mục Danh mục Cuộn Dọc -->
+          <div id="resource-list" class="resource-list-scroll"></div>
+        </nav>
+        <section class="resource-viewer">
+          <div class="resource-toolbar">
+            <div><span id="resource-type">TÀI NGUYÊN</span><strong id="resource-name">Chọn một mục để xem chi tiết</strong></div>
+            <div class="resource-actions">
+              <button id="reveal-button" class="ghost" type="button" hidden>Hiện dữ liệu gốc</button>
+              <button id="edit-button" class="ghost" type="button" hidden>Chỉnh sửa</button>
+              <button id="delete-button" class="delete-button" type="button" hidden>Xóa</button>
+            </div>
+          </div>
+          <div class="resource-empty" id="resource-empty"><i class="ph ph-files" style="font-size: 24px; color: var(--accent); margin-bottom: 8px;"></i><strong>Chọn một artifact hoặc file</strong><p>Nội dung chi tiết sẽ hiển thị tại đây.</p></div>
+          <div id="resource-content" hidden></div>
+          <div id="resource-editor" class="resource-editor" hidden>
+            <textarea id="resource-edit-content" spellcheck="false" aria-label="Nội dung file"></textarea>
+            <div><button id="format-resource-button" class="ghost" type="button">Định dạng</button><button id="cancel-edit-button" class="ghost" type="button">Hủy</button><button id="save-resource-button" class="primary" type="button">Lưu thay đổi</button></div>
+          </div>
+          <div id="evidence-preview" class="evidence-preview" hidden>
+            <div class="evidence-stage">
+              <button id="previous-evidence" class="evidence-arrow" type="button" aria-label="Ảnh evidence trước">‹</button>
+              <img id="evidence-image" alt="Test evidence preview">
+              <button id="next-evidence" class="evidence-arrow" type="button" aria-label="Ảnh evidence tiếp theo">›</button>
+            </div>
+            <div class="evidence-footer"><span id="evidence-position">—</span><a id="evidence-open" href="#" target="_blank" rel="noreferrer">Mở ảnh kích thước gốc ↗</a></div>
+          </div>
+          <div id="report-preview" class="report-preview" hidden>
+            <iframe id="report-frame" title="Báo cáo HTML của Playwright"></iframe>
+            <a id="report-open" href="#" target="_blank" rel="noreferrer">Mở report trong tab riêng ↗</a>
+          </div>
+        </section>
+      </div>

@@ -1,0 +1,57 @@
+      <header class="hero">
+        <div><p class="eyebrow" id="agent-eyebrow">AI AGENT</p><h1>Giao việc cho Agent.</h1><p class="subtitle">Đọc và sửa nhiều file, chạy kiểm thử, phân tích lỗi và tiếp tục hoàn thiện tác vụ.</p></div>
+        <div class="agent-header-status-group">
+          <span class="draft-status-pill" id="agent-state" role="status">Sẵn sàng nhận việc</span>
+        </div>
+      </header>
+      <div class="workspace agent-workspace">
+        <section class="panel">
+          <div class="panel-heading"><div><p>TÁC VỤ</p><h2>Yêu cầu của bạn</h2></div><i class="ph-bold ph-cpu" aria-hidden="true"></i></div>
+          <form id="agent-form" class="controls">
+            <label for="agent-model">Mô hình AI</label>
+            <select id="agent-model" disabled><option value="">Đang kiểm tra mô hình…</option></select>
+            <div class="agent-connection"><p id="agent-connection" role="status">Đang kiểm tra AI API…</p><button class="btn-secondary-sm" id="agent-refresh" type="button">Kiểm tra lại</button></div>
+            <div class="agent-quota-card" id="agent-quota-card" aria-label="Hạn mức Token API">
+              <div class="agent-quota-header">
+                <div class="agent-quota-title">
+                  <i class="ph-bold ph-gauge"></i>
+                  <span>Token API</span>
+                  <span class="agent-quota-model" id="agent-quota-model">gemini-2.5-flash</span>
+                </div>
+                <div class="agent-quota-badge is-healthy" id="agent-quota-badge">
+                  <span id="agent-quota-percent">100%</span> còn lại
+                </div>
+              </div>
+              <div class="agent-quota-bar-track" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" id="agent-quota-progressbar" aria-label="Phần trăm Token còn lại">
+                <div class="agent-quota-bar-fill is-healthy" id="agent-quota-bar-fill"></div>
+              </div>
+              <div class="agent-quota-stats">
+                <span id="agent-quota-counts"><i class="ph-bold ph-chart-pie-slice"></i> Đã dùng: <strong id="agent-quota-used">0</strong> / <span id="agent-quota-limit">1.000.000</span> TPM</span>
+                <span id="agent-quota-session-info"><i class="ph-bold ph-cpu"></i> Phiên này: <strong id="agent-quota-session-tokens">0</strong> tokens</span>
+                <span id="agent-quota-alltime-info"><i class="ph-bold ph-database"></i> Tổng tích lũy: <strong id="agent-quota-alltime-tokens">0</strong> tokens</span>
+              </div>
+            </div>
+            <label for="agent-prompt">Bạn muốn hoàn thành việc gì?</label>
+            <textarea id="agent-prompt" rows="8" maxlength="8000" required placeholder="Ví dụ: Sửa lỗi trong kịch bản đăng nhập mobile, kiểm tra Page Object liên quan và chạy lại đúng test bị lỗi." aria-describedby="agent-scope"></textarea>
+            <p class="agent-note" id="agent-scope">Agent sẽ sửa trực tiếp các file trong dự án và chạy lệnh kiểm thử qua AI API.</p>
+            <p id="agent-feedback" class="agent-feedback" role="alert" hidden></p>
+            <div class="agent-actions"><button id="agent-start" class="primary-button" type="submit" disabled><i class="ph-bold ph-play"></i> Bắt đầu</button><button id="agent-stop" class="btn-secondary-sm" type="button" disabled>Dừng tác vụ</button></div>
+          </form>
+          <div class="controls agent-history"><label for="agent-history">Các phiên gần đây</label><select id="agent-history"><option value="">Chưa có phiên nào</option></select></div>
+        </section>
+        <section class="panel agent-results">
+          <div class="panel-heading"><div><p>TIẾN TRÌNH</p><h2>Theo dõi công việc</h2></div><span id="agent-event-count" class="step">0 hoạt động</span></div>
+          <div class="controls">
+            <p id="agent-session-task" class="agent-note">Nhập yêu cầu để bắt đầu. Bạn có thể theo dõi các lệnh, file được sửa và kết quả tại đây.</p>
+            <div id="agent-events" class="agent-events" aria-label="Hoạt động của Agent"><p class="agent-empty">Chưa có hoạt động.</p></div>
+            <section id="agent-summary-section" hidden>
+              <div class="agent-summary-header">
+                <h3>Kết quả từ Agent</h3>
+                <span class="agent-tokens-spent" id="agent-summary-tokens"></span>
+              </div>
+              <div id="agent-summary" class="agent-summary"></div>
+            </section>
+            <section id="agent-files-section" hidden><h3>File Agent đã cập nhật</h3><ul id="agent-files" class="agent-files"></ul></section>
+          </div>
+        </section>
+      </div>

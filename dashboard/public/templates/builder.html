@@ -1,0 +1,852 @@
+      <header class="hero builder-hero">
+        <div>
+          <p class="eyebrow"><i class="ph ph-tree-structure"></i> QUẢN LÝ KỊCH BẢN KIỂM THỬ (BDD TEST STUDIO)</p>
+          <h1>Kịch bản kiểm thử (Test Scripts)</h1>
+          <p class="subtitle">Khung hiển thị cấu hình chuẩn của 1 kịch bản: 1 File Script BDD (.spec.js) + 1 File Fixture Nền tảng + Các File Page Objects + 1 File Dữ liệu Test. Đọc trực quan tất cả kịch bản thực tế trong framework.</p>
+        </div>
+        <div class="hero-stats-group">
+          <div class="hero-stat-card"><strong id="stat-scripts-total">12</strong><small>Kịch bản test</small></div>
+          <div class="hero-stat-card"><strong id="stat-scripts-desktop">11</strong><small>Desktop Web</small></div>
+          <div class="hero-stat-card"><strong id="stat-scripts-mobile">1</strong><small>Mobile Web</small></div>
+        </div>
+      </header>
+
+      <!-- Subtabs Navigation (3 subtask: Chi tiết kịch bản, Chỉnh sửa kịch bản, Tạo kịch bản BDD mới) + Quick Actions (Góc phải) -->
+      <div class="view-subnav script-subnav" role="tablist" aria-label="Các chế độ làm việc với kịch bản">
+        <div class="script-subnav-tabs">
+          <button type="button" class="view-subtab script-subtab active" id="btn-tab-script-inspect">
+            <i class="ph-bold ph-sliders"></i> Chi tiết kịch bản BDD
+          </button>
+          <button type="button" class="view-subtab script-subtab" id="btn-tab-script-edit">
+            <i class="ph-bold ph-pencil-simple-line"></i> Chỉnh sửa kịch bản
+          </button>
+          <button type="button" class="view-subtab script-subtab" id="btn-tab-script-create">
+            <i class="ph-bold ph-plus-circle"></i> Tạo kịch bản BDD mới
+          </button>
+        </div>
+        <div class="script-subnav-actions" id="script-subnav-actions">
+          <button id="script-delete-btn" type="button" class="script-subnav-btn script-delete-btn" title="Xóa kịch bản test này khỏi dự án">
+            <i class="ph-bold ph-trash"></i> Xóa kịch bản
+          </button>
+          <button id="script-auto-capture-btn" type="button" class="script-subnav-btn script-auto-capture-btn" title="Tự động phân tích và chèn evidence capture chuẩn">
+            <i class="ph-bold ph-camera"></i> Tự động Evidence
+          </button>
+          <button id="script-run-this-btn" type="button" class="script-subnav-btn script-run-primary-btn" title="Chạy kịch bản test này ngay">
+            <i class="ph-bold ph-play"></i> Chạy test này
+          </button>
+        </div>
+      </div>
+
+      <div class="panel script-workspace-panel">
+        <!-- CỘT 1: DANH SÁCH KỊCH BẢN (290px - CÓ THỂ THU GỌN) -->
+        <aside class="script-sidebar" id="script-sidebar">
+          <div class="sidebar-expanded-content" id="script-sidebar-expanded-content">
+            <div class="pm-sidebar-head">
+              <div>
+                <span class="pm-section-tag">01 · DANH SÁCH KỊCH BẢN</span>
+                <h2 class="pm-sidebar-title"><i class="ph-bold ph-tree-structure"></i> Danh sách (<span id="stat-scripts-sidebar-count">12</span>)</h2>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="script-refresh-btn" type="button" class="btn-icon-subtle" title="Làm mới danh sách"><i class="ph-bold ph-arrows-clockwise"></i></button>
+                <button id="btn-collapse-script-sidebar" type="button" class="btn-icon-subtle btn-sidebar-collapse" title="Thu gọn danh sách kịch bản (mở rộng không gian làm việc)">
+                  <i class="ph-bold ph-caret-left"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tìm kiếm & Lọc phân hệ -->
+            <div class="pm-sidebar-filter-box">
+              <div class="pm-sidebar-search">
+                <i class="ph ph-magnifying-glass"></i>
+                <input type="text" id="script-search-input" placeholder="Tìm theo tên kịch bản, tag, file...">
+              </div>
+              <div class="pm-sidebar-pills">
+                <button type="button" class="pm-filter-pill script-filter-btn active" data-platform="desktop">Desktop</button>
+                <button type="button" class="pm-filter-pill script-filter-btn" data-platform="mobile-web">Mobile</button>
+                <button type="button" class="pm-filter-pill script-filter-btn" data-platform="api">API</button>
+                <button type="button" class="pm-filter-pill script-filter-btn" data-platform="setup">Setup</button>
+              </div>
+            </div>
+
+            <div id="script-files-list" class="script-files-list">
+              <div class="data-loading-spinner"><i class="ph ph-spinner ph-spin"></i> Đang đọc các kịch bản...</div>
+            </div>
+          </div>
+
+          <!-- Strip hiển thị khi Sidebar được thu gọn -->
+          <div class="script-sidebar-collapsed-strip" id="script-sidebar-collapsed-strip" title="Bấm để mở rộng danh sách kịch bản">
+            <button type="button" class="btn-icon-subtle btn-sidebar-expand-rail" id="btn-expand-script-sidebar" title="Mở rộng danh sách kịch bản">
+              <i class="ph-bold ph-sidebar-simple"></i>
+            </button>
+            <div class="sidebar-rail-badge" id="script-rail-count">12</div>
+            <div class="sidebar-rail-text">DANH SÁCH KỊCH BẢN</div>
+          </div>
+        </aside>
+
+        <!-- CỘT 2: GIAO DIỆN CẤU HÌNH & BƯỚC BDD (1fr) -->
+        <section class="script-middle-panel panel" id="script-middle-panel">
+          <!-- CHẾ ĐỘ XEM & CHỈNH SỬA CHI TIẾT (INSPECT MODE) -->
+          <div id="script-inspect-view" style="display: flex; flex-direction: column; height: 100%;">
+            <div class="script-panel-head">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="btn-toggle-script-sidebar-head" type="button" class="btn-icon-subtle" title="Ẩn / Hiện danh sách kịch bản">
+                  <i class="ph-bold ph-sidebar-simple"></i>
+                </button>
+                <div>
+                  <span class="pm-section-tag">CHI TIẾT KỊCH BẢN BDD</span>
+                  <h2 id="script-middle-title">apply_job_with_profile_flow-bdd.spec.js</h2>
+                </div>
+              </div>
+              <div class="script-panel-head-actions">
+                <button id="script-edit-this-btn" type="button" class="btn-secondary-sm script-edit-this-btn" title="Chuyển sang chế độ chỉnh sửa kịch bản này">
+                  <i class="ph-bold ph-pencil-simple-line"></i> Chỉnh sửa kịch bản
+                </button>
+              </div>
+            </div>
+
+            <div class="script-middle-scroll-wrap" id="script-middle-scroll">
+              <!-- PHẦN 1: THÔNG TIN KỊCH BẢN & CẤU HÌNH -->
+              <div class="script-section-block pm-section-part1">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">01 · THÔNG TIN KỊCH BẢN & CẤU HÌNH</span>
+                    <h4 id="script-scenario-name-text">Thông tin kịch bản</h4>
+                  </div>
+                  <button type="button" class="btn-link-action-header" id="btn-edit-script-info" title="Chỉnh sửa thông tin kịch bản">
+                    <i class="ph-bold ph-pencil-simple"></i> Sửa thông tin
+                  </button>
+                </div>
+                <div class="script-inspect-banner">
+                  <div class="script-inspect-meta">
+                    <div class="script-banner-top">
+                      <span class="script-platform-tag" id="script-banner-platform">Desktop Web</span>
+                      <span class="script-file-badge" id="script-banner-file">apply_job_with_profile_flow-bdd.spec.js</span>
+                    </div>
+                    <h3 id="script-banner-title" class="script-banner-title">Người dùng hoàn thành tạo profile và ứng tuyển thành công</h3>
+                    <p id="script-banner-feature" class="script-banner-feature"><i class="ph ph-folder"></i> Feature: Ứng tuyển việc làm</p>
+                    <div class="script-banner-tags" id="script-banner-tags">
+                      <span class="script-tag-chip">@applyjob</span>
+                      <span class="script-tag-chip">@e2e</span>
+                    </div>
+                  </div>
+                  <div class="script-inspect-stats-card">
+                    <div class="script-inspect-stat-item"><strong id="pillar-bdd-count-stat">0</strong><small>Bước BDD</small></div>
+                    <div class="script-inspect-stat-item"><strong id="pillar-pages-count-stat">0</strong><small>Pages</small></div>
+                    <div class="script-inspect-stat-item"><strong id="pillar-data-count-stat">0</strong><small>Data</small></div>
+                  </div>
+                </div>
+                <div class="script-readonly-form-grid" aria-label="Cấu hình kịch bản dạng chỉ đọc">
+                  <div class="script-readonly-field"><span>Môi trường kiểm thử</span><strong id="inspect-platform-value">Desktop Web</strong></div>
+                  <div class="script-readonly-field"><span>File spec</span><strong id="inspect-file-value">tests/e2e/desktop/apply_job.spec.js</strong></div>
+                  <div class="script-readonly-field"><span>Feature</span><strong id="inspect-feature-value">Kiểm thử</strong></div>
+                  <div class="script-readonly-field"><span>Tags</span><strong id="inspect-tags-value">@e2e</strong></div>
+                </div>
+              </div>
+
+              <!-- PHẦN 2: DANH SÁCH BƯỚC BDD (TIMELINE) -->
+              <div class="script-section-block pm-section-part2">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">02 · DANH SÁCH BƯỚC BDD (STEPS TIMELINE)</span>
+                    <h4>Các bước kiểm thử (<span id="pillar-bdd-count">0 bước BDD</span>)</h4>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="btn-link-action-header" id="btn-edit-script-steps" title="Chỉnh sửa danh sách các bước BDD">
+                      <i class="ph-bold ph-pencil-simple"></i> Sửa các bước
+                    </button>
+                    <button type="button" class="btn-link-action-header" id="btn-add-step-from-pom" title="Thêm bước BDD từ Page Object">
+                      <i class="ph-bold ph-plus-circle"></i> Thêm bước từ Page
+                    </button>
+                  </div>
+                </div>
+                <div class="bdd-steps-timeline" id="pillar-bdd-timeline">
+                  <!-- Steps rendered here -->
+                </div>
+              </div>
+
+              <!-- PHẦN 03: TIỀN ĐIỀU KIỆN -->
+              <div class="script-section-block">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">03 · TIỀN ĐIỀU KIỆN (PRECONDITION)</span>
+                    <h4>Trạng thái ban đầu của kịch bản</h4>
+                  </div>
+                </div>
+                <div class="script-readonly-form-grid script-readonly-form-grid--three">
+                  <div class="script-readonly-field"><span>Quyền truy cập</span><strong id="inspect-auth-value">Chưa phân tích</strong></div>
+                  <div class="script-readonly-field"><span>Trang bắt đầu</span><strong id="inspect-landing-value">Chưa phân tích</strong></div>
+                  <div class="script-readonly-field"><span>Evidence ban đầu</span><strong id="inspect-precondition-evidence">Chưa phân tích</strong></div>
+                </div>
+              </div>
+
+              <!-- PHẦN 04: THÀNH PHẦN LIÊN KẾT (FIXTURE, PAGES & DATA) -->
+              <div class="script-section-block pm-section-part3">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">04 · THÀNH PHẦN LIÊN KẾT (FIXTURE, PAGES & DATA)</span>
+                    <h4>Fixture, Page Objects & Dữ liệu test</h4>
+                  </div>
+                  <button type="button" class="btn-link-action-header" id="btn-link-pom-to-script" title="Liên kết Page Object và thêm action vào kịch bản">
+                    <i class="ph-bold ph-plugs-connected"></i> Dùng Page & Action
+                  </button>
+                </div>
+
+                <!-- Khối Fixture Nền Tảng -->
+                <div class="script-subpart-box script-fixture-subpart" style="margin-bottom: 14px;">
+                  <div class="script-subpart-header" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <i class="ph-bold ph-lightning" style="color: #a855f7; font-size: 15px;"></i>
+                      <span>Fixture Nền Tảng: <strong id="pillar-fixture-name">core/fixtures/baseTest.js</strong></span>
+                      <span class="dependency-badge-ready" id="pillar-fixture-scope" style="background: rgba(168, 85, 247, 0.12); color: #9333ea; border-color: rgba(168, 85, 247, 0.25);">Desktop Web Scope</span>
+                    </div>
+                    <button type="button" class="btn-secondary-sm" id="btn-view-fixture-code" title="Xem mã nguồn Fixture nền tảng (Chỉ đọc để bảo vệ Framework)" style="font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;">
+                      <i class="ph-bold ph-eye"></i> Xem mã Fixture
+                    </button>
+                  </div>
+                  <div class="fixture-caps-wrap" id="pillar-fixture-caps" style="padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); border-radius: 6px; margin-top: 8px; border: 1px solid var(--line);">
+                    <!-- Dynamic capabilities rendered here -->
+                  </div>
+                </div>
+
+                <!-- Khối Page Objects -->
+                <div class="script-subpart-box">
+                  <div class="script-subpart-header">
+                    <i class="ph-bold ph-browsers" style="color: #10b981;"></i>
+                    <span>Các File Page Objects (<span id="pillar-pages-count">0 Pages</span>):</span>
+                  </div>
+                  <div class="pages-cards-grid" id="pillar-pages-grid">
+                    <!-- Page Object Cards rendered here -->
+                  </div>
+                </div>
+
+                <!-- Khối Dữ Liệu Test -->
+                <div class="script-subpart-box" style="margin-top: 14px;">
+                  <div class="script-subpart-header">
+                    <i class="ph-bold ph-database" style="color: #f59e0b;"></i>
+                    <span>File Dữ Liệu Test (Data File) - <span id="pillar-data-badge">1 Tệp JSON</span>:</span>
+                  </div>
+                  <div id="pillar-data-box">
+                    <!-- Data file info rendered here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CHẾ ĐỘ CHỈNH SỬA KỊCH BẢN (EDIT MODE) -->
+          <div id="script-edit-view" style="display: none; flex-direction: column; height: 100%;">
+            <div class="script-panel-head">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                <button id="btn-toggle-script-sidebar-head-edit" type="button" class="btn-icon-subtle" title="Ẩn / Hiện danh sách kịch bản">
+                  <i class="ph-bold ph-sidebar-simple"></i>
+                </button>
+                <div style="min-width: 0; overflow: hidden;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="pm-section-tag" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; padding: 2px 7px; border-radius: 4px; font-weight: 700; font-size: 10.5px;">CHẾ ĐỘ BIÊN TẬP KỊCH BẢN</span>
+                    <span id="script-edit-dirty-badge" class="pm-code-status-pill" style="display: none; font-size: 10.5px; padding: 2px 7px;">
+                      <i class="ph-bold ph-pencil-simple"></i> Chưa lưu
+                    </span>
+                  </div>
+                  <h2 id="script-edit-panel-title" style="margin: 2px 0 0 0; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">apply_job.spec.js</h2>
+                </div>
+              </div>
+              <div class="script-panel-head-actions" style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
+                <button type="button" class="btn-secondary-sm" id="btn-cancel-edit-script" title="Hủy các thay đổi và hoàn tác về bản gốc từ đĩa" style="padding: 5px 12px; font-size: 11.5px; white-space: nowrap;">
+                  <i class="ph-bold ph-arrow-counter-clockwise"></i> Hoàn tác
+                </button>
+                <button type="button" class="primary-button" id="btn-save-edit-script" title="Lưu các thay đổi vào file spec trên ổ đĩa" style="padding: 5px 14px; font-size: 11.5px; white-space: nowrap;">
+                  <i class="ph-bold ph-floppy-disk"></i> Lưu kịch bản
+                </button>
+              </div>
+            </div>
+
+            <!-- Scrollable middle area containing 5 collapsible cards -->
+            <div class="script-middle-scroll-wrap" style="padding: 16px 18px; overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px;">
+              <!-- Thanh điều khiển thu gọn / mở rộng toàn cục -->
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 4px 4px;">
+                <div style="font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px;">
+                  <i class="ph-bold ph-sliders" style="color: var(--accent);"></i> Bấm vào tiêu đề để thu gọn / mở rộng từng khối
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button type="button" class="btn-subtle-link" id="btn-edit-expand-all" style="font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="ph-bold ph-arrows-out-simple"></i> Mở tất cả
+                  </button>
+                  <span style="color: var(--line); font-size: 10px;">•</span>
+                  <button type="button" class="btn-subtle-link" id="btn-edit-collapse-all" style="font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="ph-bold ph-arrows-in-simple"></i> Thu gọn
+                  </button>
+                </div>
+              </div>
+
+              <!-- KHỐI 01: THÔNG TIN KỊCH BẢN -->
+              <div class="script-accordion-item is-expanded" id="edit-sec-info">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-info">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">01 · THÔNG TIN KỊCH BẢN</span>
+                      <h4>Tên kịch bản & Phân loại</h4>
+                    </div>
+                  </div>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-info">
+                      <i class="ph-bold ph-folder" style="color: var(--accent);"></i>
+                      <span id="summary-info-text">Chưa đặt tên</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="script-accordion-body">
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tên kịch bản (Scenario Name):</label>
+                      <input type="text" id="edit-script-title" placeholder="Tên kịch bản kiểm thử..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 13px;" />
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                      <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tính năng (Feature):</label>
+                        <input type="text" id="edit-script-feature" placeholder="Tên tính năng..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;" />
+                      </div>
+                      <div>
+                        <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tags (Phân loại):</label>
+                        <input type="text" id="edit-script-tags" placeholder="@e2e @custom" style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI 02: DANH SÁCH BƯỚC BDD -->
+              <div class="script-accordion-item is-expanded" id="edit-sec-steps">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-steps">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">02 · DANH SÁCH BƯỚC BDD</span>
+                      <h4>Các bước kiểm thử (<span id="edit-step-count">0</span>)</h4>
+                    </div>
+                  </div>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-steps">
+                      <i class="ph-bold ph-list-numbers" style="color: #6366f1;"></i>
+                      <span id="summary-steps-count">0</span> bước BDD
+                    </span>
+                  </div>
+                </div>
+                <div class="script-accordion-body">
+                  <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; background: var(--surface-2); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line);">
+                    <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                      <span style="font-size: 11px; font-weight: 700; color: var(--muted); margin-right: 2px;">+ Thêm nhanh:</span>
+                      <button type="button" class="btn-quick-step badge-given" data-type="Given" title="Thêm bước Given" style="cursor: pointer; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; border: none;">+ Given</button>
+                      <button type="button" class="btn-quick-step badge-when" data-type="When" title="Thêm bước When" style="cursor: pointer; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; border: none;">+ When</button>
+                      <button type="button" class="btn-quick-step badge-then" data-type="Then" title="Thêm bước Then" style="cursor: pointer; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; border: none;">+ Then</button>
+                      <button type="button" class="btn-quick-step badge-and" data-type="And" title="Thêm bước And" style="cursor: pointer; padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; border: none;">+ And</button>
+                    </div>
+                    <button type="button" class="btn-secondary-sm" id="btn-edit-add-step-pom" style="padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
+                      <i class="ph-bold ph-plus-circle"></i> Thêm từ Page
+                    </button>
+                  </div>
+                  <div id="edit-steps-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Steps rendered dynamically here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI 03: TIỀN ĐIỀU KIỆN -->
+              <div class="script-accordion-item is-collapsed" id="edit-sec-precondition">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-precondition">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">03 · TIỀN ĐIỀU KIỆN</span>
+                      <h4>Quyền truy cập & Môi trường</h4>
+                    </div>
+                  </div>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-precondition">
+                      <i class="ph-bold ph-shield-check" style="color: #a855f7;"></i>
+                      <span id="summary-precondition-text">Khách vãng lai</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="script-accordion-body">
+                  <div style="display: grid; grid-template-columns: 180px 1fr; gap: 12px;">
+                    <div>
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Quyền truy cập / Auth:</label>
+                      <select id="edit-script-auth-type" style="width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;">
+                        <option value="guest">Khách vãng lai (Guest)</option>
+                        <option value="authenticated">Đã đăng nhập ứng viên (authSetup)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Mô tả tiền điều kiện:</label>
+                      <input type="text" id="edit-script-precondition-desc" placeholder="Ví dụ: Người dùng ở trang chủ sẵn sàng thực hiện thao tác" style="width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI 04: PAGE OBJECTS & FIXTURES -->
+              <div class="script-accordion-item is-collapsed" id="edit-sec-poms">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-poms">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">04 · PAGE OBJECTS & FIXTURES</span>
+                      <h4>Màn hình tham gia kịch bản</h4>
+                    </div>
+                  </div>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-poms">
+                      <i class="ph-bold ph-browsers" style="color: #10b981;"></i>
+                      <span id="summary-poms-count">0</span> Pages
+                    </span>
+                  </div>
+                </div>
+                <div class="script-accordion-body">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 12px; color: var(--muted);"><i class="ph-bold ph-check-square-offset"></i> Đã chọn: <strong id="edit-pom-count" style="color: var(--accent);">0</strong> Page Objects</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                      <button type="button" class="btn-subtle-link" id="btn-edit-pom-select-all" style="font-size: 11px; cursor: pointer;">Chọn hết</button>
+                      <span style="color: var(--line); font-size: 10px;">•</span>
+                      <button type="button" class="btn-subtle-link" id="btn-edit-pom-deselect-all" style="font-size: 11px; cursor: pointer;">Bỏ chọn</button>
+                    </div>
+                  </div>
+                  <div class="dependency-grid" id="edit-pom-list">
+                    <!-- Dynamic POM checkboxes rendered here -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI 05: QUẢN LÝ DỮ LIỆU TEST -->
+              <div class="script-accordion-item is-collapsed" id="edit-sec-data">
+                <div class="script-accordion-header" role="button" tabindex="0" data-target="edit-sec-data">
+                  <div class="script-accordion-title-group">
+                    <i class="ph-bold ph-caret-down script-accordion-chevron"></i>
+                    <div class="script-accordion-titles">
+                      <span class="pm-section-tag">05 · QUẢN LÝ DỮ LIỆU TEST</span>
+                      <h4>Nguồn dữ liệu Dataset JSON</h4>
+                    </div>
+                  </div>
+                  <div class="script-accordion-summary">
+                    <span class="script-accordion-summary-chip" id="edit-summary-data">
+                      <i class="ph-bold ph-database" style="color: #f59e0b;"></i>
+                      <span id="summary-data-text">Không dùng data</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="script-accordion-body">
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text);">Chọn file dữ liệu (.json) gắn vào kịch bản:</label>
+                      <button type="button" class="btn-secondary-sm" id="btn-edit-open-create-data" style="padding: 3px 8px; font-size: 11px;" title="Mở màn hình Quản lý Dữ liệu test để tạo tệp Dataset JSON mới">
+                        <i class="ph-bold ph-plus-circle"></i> Tạo Data Mới
+                      </button>
+                    </div>
+                    <select id="edit-script-dataset" style="width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12.5px;">
+                      <option value="">-- Không sử dụng file data ngoài --</option>
+                    </select>
+                    <div id="edit-data-info-box" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); font-size: 12px; color: var(--muted);">
+                      <span><i class="ph-bold ph-file-code" style="color: #10b981;"></i> Biến import: <code id="edit-script-data-var" style="color: var(--accent); font-weight: 700;">sampleData</code></span>
+                      <small id="edit-script-data-hint" style="font-size: 11px;">Mã tự sinh: const sampleData = require('../../../data/sampleData.json')</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sticky footer bar for save/cancel -->
+            <div class="script-edit-sticky-footer" style="padding: 10px 18px; border-top: 1px solid var(--line); background: var(--surface); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+              <button type="button" class="btn-secondary-sm" id="btn-cancel-edit-script-2" style="padding: 6px 14px; font-size: 12px;">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i> Hoàn tác / Hủy
+              </button>
+              <button type="button" class="primary-button" id="btn-save-edit-script-2" style="padding: 7px 18px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="ph-bold ph-floppy-disk"></i> Lưu kịch bản BDD
+              </button>
+            </div>
+          </div>
+
+          <!-- CHẾ ĐỘ TẠO MỚI (STEP-BY-STEP SCRIPT STUDIO WIZARD) -->
+          <div id="script-create-view" style="display: none; flex-direction: column; height: 100%; position: relative;">
+            <div class="script-panel-head">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; overflow: hidden;">
+                <span class="pm-section-tag" style="background: rgba(99, 102, 241, 0.12); color: var(--accent); padding: 3px 8px; border-radius: 4px; font-weight: 700; flex-shrink: 0;">WIZARD KHỞI TẠO</span>
+                <h2 style="margin: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;"><i class="ph-bold ph-magic-wand" style="color: var(--accent);"></i> Hướng Dẫn Tạo Kịch Bản</h2>
+                <span id="script-wizard-draft-badge" class="draft-status-pill" style="display: none; flex-shrink: 0;">
+                  <i class="ph-bold ph-circle-dashed"></i> <span>Bản nháp</span>
+                </span>
+              </div>
+              <div class="script-panel-head-actions">
+                <button type="button" class="btn-icon-action" id="btn-save-draft-script" data-tooltip="Lưu bản nháp" data-tooltip-pos="bottom" aria-label="Lưu bản nháp">
+                  <i class="ph-bold ph-floppy-disk"></i>
+                </button>
+                <button type="button" class="btn-icon-action" id="btn-reset-create-script" data-tooltip="Làm mới bản nháp" data-tooltip-pos="bottom" aria-label="Làm mới bản nháp">
+                  <i class="ph-bold ph-eraser"></i>
+                </button>
+                <button type="button" class="btn-icon-action" id="btn-cancel-create-script" data-tooltip="Hủy tạo kịch bản" data-tooltip-pos="bottom" data-tooltip-align="right" aria-label="Hủy tạo">
+                  <i class="ph-bold ph-arrow-counter-clockwise"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Script Draft Recovery Banner -->
+            <div id="script-wizard-draft-banner" class="draft-recovery-banner" style="display: none; margin: 10px 14px 0 14px;">
+              <div class="draft-recovery-info">
+                <i class="ph-bold ph-file-dashed"></i>
+                <span id="script-wizard-draft-text">Phát hiện bản nháp kịch bản chưa hoàn thành trên máy chủ.</span>
+              </div>
+              <div class="draft-recovery-actions">
+                <button type="button" class="btn-sm btn-accent" id="btn-restore-script-draft"><i class="ph-bold ph-arrow-counter-clockwise"></i> Khôi phục</button>
+                <button type="button" class="btn-sm btn-ghost" id="btn-dismiss-script-draft"><i class="ph-bold ph-x"></i> Bỏ qua</button>
+              </div>
+            </div>
+
+            <!-- Stepper Progress Bar -->
+            <div class="wizard-stepper-container">
+              <div class="wizard-stepper-bar" id="wizard-stepper-bar">
+                <button type="button" class="wizard-step-tab active" data-step="1" id="wizard-tab-1">
+                  <span class="wizard-step-circle">1</span>
+                  <span class="wizard-step-text">Thông tin</span>
+                </button>
+                <div class="wizard-step-divider" id="wizard-div-1"></div>
+                <button type="button" class="wizard-step-tab" data-step="2" id="wizard-tab-2">
+                  <span class="wizard-step-circle">2</span>
+                  <span class="wizard-step-text">Page Objects</span>
+                </button>
+                <div class="wizard-step-divider" id="wizard-div-2"></div>
+                <button type="button" class="wizard-step-tab" data-step="3" id="wizard-tab-3">
+                  <span class="wizard-step-circle">3</span>
+                  <span class="wizard-step-text">Test Data</span>
+                </button>
+                <div class="wizard-step-divider" id="wizard-div-3"></div>
+                <button type="button" class="wizard-step-tab" data-step="4" id="wizard-tab-4">
+                  <span class="wizard-step-circle">4</span>
+                  <span class="wizard-step-text">Tiền điều kiện</span>
+                </button>
+                <div class="wizard-step-divider" id="wizard-div-4"></div>
+                <button type="button" class="wizard-step-tab" data-step="5" id="wizard-tab-5">
+                  <span class="wizard-step-circle">5</span>
+                  <span class="wizard-step-text">Kịch bản BDD</span>
+                </button>
+                <div class="wizard-step-divider" id="wizard-div-5"></div>
+                <button type="button" class="wizard-step-tab" data-step="6" id="wizard-tab-6">
+                  <span class="wizard-step-circle">6</span>
+                  <span class="wizard-step-text">Review & Lưu</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Wizard Scrollable Body -->
+            <div class="script-middle-scroll-wrap" style="padding: 18px 22px; overflow-y: auto; flex: 1;">
+              
+              <!-- BƯỚC 1: MỤC TIÊU & PHẠM VI -->
+              <div class="wizard-step-panel active" id="wizard-panel-1">
+                <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
+                  <div>
+                    <span class="pm-section-tag">BƯỚC 1/6 · MÔI TRƯỜNG & ĐỊNH DANH</span>
+                    <h4 style="margin: 3px 0 0; font-size: 14px;">Thiết lập mục tiêu và thông tin kịch bản</h4>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                  <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Phân hệ môi trường kiểm thử:</label>
+                    <select id="create-script-platform" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;">
+                      <option value="desktop" selected>Desktop Web (Chromium 1920x1080)</option>
+                      <option value="mobile-web">Mobile Web (Pixel 7 emulated)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tên kịch bản (Scenario Name): <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="create-script-title" required placeholder="Ví dụ: Người dùng hoàn thành tạo profile và ứng tuyển không cần CV" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;" />
+                    <small style="color: var(--muted); font-size: 11px; margin-top: 4px; display: block;">Mô tả hành vi nghiệp vụ người dùng thực hiện.</small>
+                    <div id="create-script-title-error" class="wizard-error-text" style="display: none;"><i class="ph-bold ph-warning-circle"></i> Vui lòng nhập tên kịch bản (Scenario Name).</div>
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tính năng (Feature Name):</label>
+                    <input type="text" id="create-script-feature" placeholder="Ví dụ: Hoàn thành profile mini và ứng tuyển việc không cần CV" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;" />
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 180px; gap: 12px;">
+                    <div>
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tên file spec (.spec.js):</label>
+                      <input type="text" id="create-script-filename" placeholder="vd: apply_job_mini_profile_flow-bdd.spec.js" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-family: var(--font-mono); font-size: 12px;" />
+                    </div>
+                    <div>
+                      <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Tags (Bộ phân loại):</label>
+                      <input type="text" id="create-script-tags" value="@e2e @custom" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 12px;" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- BƯỚC 2: CHUẨN BỊ PAGE OBJECTS -->
+              <div class="wizard-step-panel" id="wizard-panel-2">
+                <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
+                  <div>
+                    <span class="pm-section-tag">BƯỚC 2/6 · DEPENDENCY: PAGE OBJECTS</span>
+                    <h4 style="margin: 3px 0 0; font-size: 14px;">Chọn hoặc Tạo Mới Page Object Cần Dùng</h4>
+                  </div>
+                  <button type="button" class="btn-secondary-sm" id="btn-wizard-open-create-pom" style="padding: 5px 10px; font-size: 11.5px;">
+                    <i class="ph-bold ph-plus-circle"></i> Tạo Page Object Mới
+                  </button>
+                </div>
+                <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px;">
+                  Kịch bản của bạn cần tương tác với những màn hình nào? Hãy chọn các Page Object sẵn có hoặc tạo mới nếu chưa tồn tại.
+                </p>
+                <div class="dependency-box" id="wizard-pom-box">
+                  <div class="dependency-box-header">
+                    <div class="dependency-search-wrap">
+                      <i class="ph-bold ph-magnifying-glass"></i>
+                      <input type="text" id="wizard-pom-search" placeholder="Lọc nhanh màn hình, class, file..." autocomplete="off" />
+                    </div>
+                    <div class="dependency-actions">
+                      <span class="dependency-selection-count"><i class="ph-bold ph-check-square-offset"></i> Đã chọn: <strong id="wizard-pom-count">0</strong>/<span id="wizard-pom-total">0</span></span>
+                      <button type="button" class="btn-subtle-link" id="btn-pom-select-all">Chọn hết</button>
+                      <span style="color: var(--line); font-size: 10px;">•</span>
+                      <button type="button" class="btn-subtle-link" id="btn-pom-deselect-all">Bỏ chọn</button>
+                    </div>
+                  </div>
+                  <div class="dependency-grid" id="wizard-pom-list" aria-live="polite">
+                    <div class="data-loading-spinner"><i class="ph ph-spinner ph-spin"></i> Đang tải danh sách Page Objects...</div>
+                  </div>
+                </div>
+                <div id="wizard-pom-error" class="wizard-error-text" style="display: none; margin-top: 6px;"><i class="ph-bold ph-warning-circle"></i> Vui lòng chọn ít nhất một Page Object cần dùng cho kịch bản.</div>
+                <div class="dependency-primary-box">
+                  <div class="dependency-primary-header">
+                    <div class="dependency-primary-title">
+                      <i class="ph-bold ph-star" style="color: #f59e0b;"></i>
+                      <span>Màn hình Page Object chính (khởi tạo fixture):</span>
+                    </div>
+                    <span class="dependency-primary-badge">Fixture BeforeEach</span>
+                  </div>
+                  <select id="create-script-primary-page" class="dependency-primary-select"></select>
+                  <small class="dependency-primary-hint">Page Object này sẽ tự động được inject và khởi tạo trước trong fixture kiểm thử của spec file.</small>
+                </div>
+              </div>
+
+              <!-- BƯỚC 3: CHUẨN BỊ TEST DATA -->
+              <div class="wizard-step-panel" id="wizard-panel-3">
+                <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
+                  <div>
+                    <span class="pm-section-tag">BƯỚC 3/6 · DEPENDENCY: TEST DATA</span>
+                    <h4 style="margin: 3px 0 0; font-size: 14px;">Chọn hoặc Tạo Mới File Dữ Liệu Kiểm Thử (JSON)</h4>
+                  </div>
+                  <button type="button" class="btn-secondary-sm" id="btn-wizard-open-create-data" style="padding: 5px 10px; font-size: 11.5px;">
+                    <i class="ph-bold ph-plus-circle"></i> Tạo File Data Mới
+                  </button>
+                </div>
+                <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px;">
+                  Chuẩn hóa tách rời dữ liệu khỏi kịch bản kiểm thử (ngăn ngừa hard-code data theo chuẩn AI Prompt).
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Nguồn dữ liệu kiểm thử:</label>
+                    <select id="wizard-select-dataset" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;">
+                      <option value="">-- Không sử dụng file data ngoài --</option>
+                    </select>
+                  </div>
+                  <div id="wizard-data-preview-box" style="background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; font-size: 11.5px; color: var(--muted); display: none;">
+                    <strong>Xem trước cấu trúc data:</strong>
+                    <pre id="wizard-data-preview-json" style="margin: 6px 0 0; font-family: var(--font-mono); font-size: 11px; max-height: 120px; overflow-y: auto; color: var(--text);"></pre>
+                  </div>
+                  <label style="font-size: 12px; font-weight: 700; color: var(--text);">Đường dẫn dữ liệu (dataPath):
+                    <input id="wizard-data-path" list="wizard-data-path-hints" placeholder="Ví dụ: introduction hoặc experience" style="display: block; width: 100%; margin-top: 6px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;" />
+                    <datalist id="wizard-data-path-hints"></datalist>
+                    <small id="wizard-data-path-help" style="display: block; margin-top: 4px; font-size: 11.5px; color: var(--muted); font-weight: normal;">Tùy chọn: Nhập nhánh dữ liệu cụ thể cần trích xuất (nếu để trống, toàn bộ tệp sẽ được nạp).</small>
+                  </label>
+                </div>
+              </div>
+
+              <!-- BƯỚC 4: TIỀN ĐIỀU KIỆN (PRECONDITION) -->
+              <div class="wizard-step-panel" id="wizard-panel-4">
+                <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
+                  <div>
+                    <span class="pm-section-tag">BƯỚC 4/6 · THIẾT LẬP TIỀN ĐIỀU KIỆN</span>
+                    <h4 style="margin: 3px 0 0; font-size: 14px;">Xác định trạng thái ban đầu & Xử lý rào cản</h4>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                  <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Quyền truy cập / Đăng nhập:</label>
+                    <div style="display: flex; gap: 16px;">
+                      <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer;">
+                        <input type="radio" name="wizard-auth-type" value="authenticated" checked />
+                        <span>Đã đăng nhập ứng viên (authSetup)</span>
+                      </label>
+                      <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer;">
+                        <input type="radio" name="wizard-auth-type" value="guest" />
+                        <span>Khách vãng lai (Chưa đăng nhập)</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">Mô tả tiền điều kiện (Hiển thị Header Report):</label>
+                    <input type="text" id="wizard-precondition-desc" value="Đã đăng nhập tài khoản ứng viên hợp lệ (authSetup)" style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px;" />
+                    <div id="wizard-precond-error" class="wizard-error-text" style="display: none; margin-top: 4px;"><i class="ph-bold ph-warning-circle"></i> Vui lòng nhập mô tả tiền điều kiện.</div>
+                  </div>
+                  <div style="background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: var(--text);">Các thao tác tự động trong bước Given:</span>
+                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                      <input type="checkbox" id="wizard-precond-onboarding" checked />
+                      <span>Tự động đóng modal Onboarding nếu xuất hiện (onboardingPopup.closeIfVisible)</span>
+                    </label>
+                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                      <input type="checkbox" id="wizard-precond-verify-home" checked />
+                      <span>Xác minh trang chủ hiển thị sẵn sàng (expectHomepageVisible)</span>
+                    </label>
+                    <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                      <input type="checkbox" id="wizard-precond-capture" checked />
+                      <span>Chụp ảnh bằng chứng khởi đầu (capture: precondition_logged_in_ready)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- BƯỚC 5: SOẠN THẢO BƯỚC BDD -->
+              <div class="wizard-step-panel" id="wizard-panel-5">
+                <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
+                  <div>
+                    <span class="pm-section-tag">BƯỚC 5/6 · SOẠN THẢO BƯỚC KIỂM THỬ</span>
+                    <h4 style="margin: 3px 0 0; font-size: 14px;">Danh Sách Các Bước BDD (When / Then / And)</h4>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn-secondary-sm" id="btn-wizard-add-when" style="padding: 4px 8px; font-size: 11px;">+ When</button>
+                    <button type="button" class="btn-secondary-sm" id="btn-wizard-add-and" style="padding: 4px 8px; font-size: 11px;">+ And</button>
+                    <button type="button" class="btn-secondary-sm" id="btn-wizard-add-then" style="padding: 4px 8px; font-size: 11px;">+ Then</button>
+                  </div>
+                </div>
+                <div id="wizard-bdd-steps-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding-right: 4px;">
+                  <!-- Dynamically populated via JS -->
+                </div>
+                <div id="wizard-steps-error" class="wizard-error-text" style="display: none; margin-top: 6px;"><i class="ph-bold ph-warning-circle"></i> Kịch bản cần ít nhất một bước BDD và tất cả các bước phải chọn hành động runtime.</div>
+              </div>
+
+              <!-- BƯỚC 6: REVIEW & LƯU TRỮ -->
+              <div class="wizard-step-panel" id="wizard-panel-6">
+                <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
+                  <div>
+                    <span class="pm-section-tag">BƯỚC 6/6 · TỔNG QUAN & HOÀN TẤT</span>
+                    <h4 style="margin: 3px 0 0; font-size: 14px;">Kiểm Tra Toàn Vẹn & Lưu Kịch Bản</h4>
+                  </div>
+                </div>
+                <div class="wizard-summary-card">
+                  <div class="wizard-summary-row">
+                    <span>Tên kịch bản:</span>
+                    <strong id="wizard-sum-title" style="color: var(--text);">---</strong>
+                  </div>
+                  <div class="wizard-summary-row">
+                    <span>Môi trường & File:</span>
+                    <span id="wizard-sum-file" style="font-family: var(--font-mono); color: var(--accent);">---</span>
+                  </div>
+                  <div class="wizard-summary-row">
+                    <span>Page Objects liên kết:</span>
+                    <span id="wizard-sum-poms" style="font-weight: 600;">---</span>
+                  </div>
+                  <div class="wizard-summary-row">
+                    <span>File dữ liệu (Test Data):</span>
+                    <span id="wizard-sum-data">---</span>
+                  </div>
+                  <div class="wizard-summary-row">
+                    <span>Tiền điều kiện (Precondition):</span>
+                    <span id="wizard-sum-precond" style="color: #10b981; font-weight: 600;">---</span>
+                  </div>
+                  <div class="wizard-summary-row">
+                    <span>Tổng số bước BDD:</span>
+                    <span id="wizard-sum-steps-count">0 bước</span>
+                  </div>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #10b981; display: flex; align-items: center; gap: 8px;">
+                  <i class="ph-bold ph-check-circle" style="font-size: 16px;"></i>
+                  <span>Kịch bản tuân thủ 100% quy chuẩn kiến trúc Page Object Model và Precondition theo AI Prompt.</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Footer Navigation Bar -->
+            <div class="wizard-footer-nav">
+              <button type="button" class="btn-secondary-sm" id="btn-wizard-prev" disabled style="padding: 8px 16px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="ph-bold ph-caret-left"></i> Quay lại
+              </button>
+              <div style="font-size: 12px; color: var(--muted); font-weight: 600;">
+                Bước <span id="wizard-step-counter" style="color: var(--accent); font-weight: 700;">1</span> / 6
+              </div>
+              <button type="button" class="primary-button" id="btn-wizard-next" style="padding: 8px 20px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+                Tiếp theo <i class="ph-bold ph-caret-right"></i>
+              </button>
+            </div>
+
+            <!-- INLINE DRAWER: TẠO TEST DATA MỚI -->
+            <div class="wizard-inline-drawer" id="wizard-drawer-data">
+              <div style="padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="margin: 0; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                  <i class="ph-bold ph-plus-circle" style="color: var(--accent);"></i> Tạo File Test Data Mới
+                </h3>
+                <button type="button" class="btn-icon-subtle" id="btn-close-drawer-data"><i class="ph-bold ph-x"></i></button>
+              </div>
+              <div style="padding: 16px 18px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px;">
+                <div>
+                  <label style="font-size: 11.5px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px;">Tên file (.json):</label>
+                  <input type="text" id="drawer-data-filename" placeholder="companyReviewData.json" style="width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-family: var(--font-mono); font-size: 11.5px;" />
+                </div>
+                <div>
+                  <label style="font-size: 11.5px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px;">Nội dung JSON khởi đầu:</label>
+                  <textarea id="drawer-data-content" rows="6" style="width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-family: var(--font-mono); font-size: 11px;">{
+  "testItem": {
+    "keyword": "Tester",
+    "notes": "Dữ liệu thử nghiệm khởi tạo từ Wizard"
+  }
+}</textarea>
+                </div>
+              </div>
+              <div style="padding: 12px 18px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-secondary-sm" id="btn-cancel-drawer-data">Hủy</button>
+                <button type="button" class="primary-button" id="btn-submit-drawer-data">Lưu File Data</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- CỘT 3: MÃ NGUỒN PLAYWRIGHT BDD SPEC (1fr - SITE BY SITE) -->
+        <section class="script-code-panel panel" id="script-code-panel">
+          <div class="page-manager-panel-head">
+            <div>
+              <span id="script-code-eyebrow">MÃ NGUỒN BDD SPEC (.spec.js)</span>
+              <h2 id="script-code-title">apply_job_with_profile_flow-bdd.spec.js</h2>
+            </div>
+            <div class="pm-code-head-meta">
+              <span class="pm-code-status-pill" id="script-spec-status-badge">
+                <i class="ph-bold ph-check"></i> Đang mở từ disk
+              </span>
+              <button type="button" class="ghost pm-tool-btn" id="script-spec-insert-pom-btn" title="Chèn hành động từ Page Object vào mã">
+                <i class="ph-bold ph-lightning" style="color: var(--accent);"></i> <span>Action</span>
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="script-spec-format-btn" title="Định dạng làm đẹp mã nguồn JavaScript Playwright (Format Code)">
+                <i class="ph-bold ph-magic-wand" style="color: var(--accent);"></i> <span>Format</span>
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="script-btn-toggle-edit" title="Bật/Tắt chế độ soạn thảo mã nguồn trực tiếp">
+                <i class="ph-bold ph-pencil-simple-line"></i> <span id="script-edit-btn-text">Chỉnh sửa</span>
+              </button>
+              <button type="button" class="primary pm-tool-btn" id="script-spec-save-btn" title="Lưu thay đổi mã nguồn vào file (Ctrl+S)" style="display:none;">
+                <i class="ph-bold ph-floppy-disk"></i> Lưu
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="script-spec-revert-btn" title="Hoàn tác về mã gốc từ đĩa" style="display:none;">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i>
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="script-spec-copy-btn" title="Sao chép toàn bộ mã nguồn">
+                <i class="ph-bold ph-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Syntax-Highlighted Code Editor Stage (Giữ định dạng code cả khi xem và khi sửa) -->
+          <div class="code-editor-stage script-code-stage" id="script-code-stage">
+            <pre class="code-preview" id="script-code-view-wrap"><code id="script-spec-code" class="language-javascript"></code></pre>
+            <textarea id="script-spec-editor" class="code-editor" wrap="off" spellcheck="false" placeholder="Nội dung mã nguồn .spec.js..." readonly></textarea>
+          </div>
+
+          <div class="page-manager-code-help" id="script-code-help">
+            <i class="ph-bold ph-info"></i>
+            <span id="script-code-help-text">Nhấn "Chỉnh sửa" để gõ trực tiếp hoặc Ctrl+S để lưu file. Tự động sao lưu backup (.bak) an toàn.</span>
+          </div>
+        </section>
+      </div>

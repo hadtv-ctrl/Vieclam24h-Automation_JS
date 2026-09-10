@@ -1,0 +1,393 @@
+      <!-- Header -->
+      <header class="hero page-manager-hero">
+        <div>
+          <p class="eyebrow"><i class="ph-bold ph-browsers"></i> PAGE OBJECT STUDIO & REPOSITORY</p>
+          <h1>Quản lý Page Object</h1>
+          <p class="subtitle">Bố cục 3 cột song song: Danh sách Page bên trái dễ tìm · Giao diện Input ở giữa · Mã nguồn Code Playwright bên phải.</p>
+        </div>
+        <div class="hero-stats-group">
+          <div class="hero-stat-card"><strong id="pm-stat-total">15</strong><small>Page Objects</small></div>
+          <div class="hero-stat-card"><strong id="pm-stat-desktop">8</strong><small>Desktop Web</small></div>
+          <div class="hero-stat-card"><strong id="pm-stat-mobile">6</strong><small>Mobile Web</small></div>
+        </div>
+      </header>
+
+      <!-- Subtabs Navigation Bar (Đồng bộ chuẩn BDD Studio) -->
+      <div class="view-subnav script-subnav page-manager-subnav" role="tablist" aria-label="Các chế độ làm việc với Page Object">
+        <div class="script-subnav-tabs">
+          <button type="button" class="view-subtab script-subtab active" id="pm-subnav-inspect">
+            <i class="ph-bold ph-sliders"></i> Chi tiết Page Object
+          </button>
+          <button type="button" class="view-subtab script-subtab" id="pm-subnav-edit">
+            <i class="ph-bold ph-pencil-simple-line"></i> Chỉnh sửa mã
+          </button>
+          <button type="button" class="view-subtab script-subtab" id="pm-subnav-create">
+            <i class="ph-bold ph-plus-circle"></i> Tạo Page Object mới
+          </button>
+        </div>
+        <div class="script-subnav-actions" id="pm-subnav-actions">
+          <button id="pm-subnav-delete-btn" type="button" class="script-subnav-btn script-delete-btn" title="Xóa Page Object này khỏi dự án">
+            <i class="ph-bold ph-trash"></i> Xóa Page
+          </button>
+          <button id="pm-subnav-add-locator-btn" type="button" class="script-subnav-btn script-auto-capture-btn" title="Mở hộp thoại thêm locator">
+            <i class="ph-bold ph-plus"></i> Thêm locator
+          </button>
+          <button id="pm-subnav-add-action-btn" type="button" class="script-subnav-btn script-auto-capture-btn" title="Thêm action mới vào Page Object">
+            <i class="ph-bold ph-plus"></i> Thêm action
+          </button>
+          <button id="pm-subnav-save-btn" type="button" class="script-subnav-btn script-run-primary-btn" title="Lưu thay đổi mã nguồn">
+            <i class="ph-bold ph-floppy-disk"></i> Lưu thay đổi
+          </button>
+        </div>
+      </div>
+
+      <!-- Main 3-Column Seamless Workspace Layout -->
+      <main class="page-manager-workspace" id="page-manager-workspace">
+        <!-- CỘT 1: DANH SÁCH PAGE OBJECTS (DỄ TÌM, LUÔN HIỆN DIỆN BÊN TRÁI) -->
+        <aside class="page-manager-sidebar panel" id="pm-sidebar">
+          <div class="sidebar-expanded-content" id="pm-sidebar-expanded-content">
+            <div class="pm-sidebar-head">
+              <div>
+                <span class="pm-section-tag">01 · DANH SÁCH PAGE</span>
+                <h2 class="pm-sidebar-title"><i class="ph-bold ph-folders"></i> Danh sách (<span id="pm-total-pages-count">15</span>)</h2>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="pm-refresh-btn" type="button" class="btn-icon-subtle" title="Làm mới danh sách"><i class="ph-bold ph-arrows-clockwise"></i></button>
+                <button id="btn-collapse-pm-sidebar" type="button" class="btn-icon-subtle btn-sidebar-collapse" title="Thu gọn danh sách Page (mở rộng không gian làm việc)">
+                  <i class="ph-bold ph-caret-left"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tìm kiếm & Lọc phân hệ -->
+            <div class="pm-sidebar-filter-box">
+              <div class="pm-sidebar-search">
+                <i class="ph ph-magnifying-glass"></i>
+                <input type="text" id="pm-filter-input" placeholder="Tìm kiếm file, class...">
+              </div>
+              <div class="pm-sidebar-pills">
+                <button type="button" class="pm-filter-pill active" data-platform="desktop">Desktop</button>
+                <button type="button" class="pm-filter-pill" data-platform="mobile-web">Mobile</button>
+                <button type="button" class="pm-filter-pill" data-platform="base" title="Lớp nền tảng dùng chung (Core Foundation)">Nền tảng</button>
+              </div>
+            </div>
+
+            <!-- Danh sách Page cuộn dọc -->
+            <div id="page-manager-existing-list" class="page-manager-sidebar-list"></div>
+          </div>
+
+          <!-- Strip hiển thị khi Sidebar Page Manager được thu gọn -->
+          <div class="script-sidebar-collapsed-strip" id="pm-sidebar-collapsed-strip" title="Bấm để mở rộng danh sách Page">
+            <button type="button" class="btn-icon-subtle btn-sidebar-expand-rail" id="btn-expand-pm-sidebar" title="Mở rộng danh sách Page">
+              <i class="ph-bold ph-sidebar-simple"></i>
+            </button>
+            <div class="sidebar-rail-badge" id="pm-rail-count">15</div>
+            <div class="sidebar-rail-text">DANH SÁCH PAGE OBJECTS</div>
+          </div>
+        </aside>
+
+        <!-- CỘT 2: GIAO DIỆN INPUT (CẤU HÌNH, THÊM/SỬA PHẦN TỬ & ACTION) -->
+        <section class="page-manager-left-panel panel">
+          <!-- CREATE FORM (Visible in 'create' mode - Đồng bộ chuẩn BDD Studio) -->
+          <div class="page-manager-form" id="page-manager-create-form" style="display:none; flex-direction: column; height: 100%;">
+            <!-- Header chuẩn BDD Studio -->
+            <div class="page-manager-panel-head">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; overflow: hidden;">
+                <span class="pm-section-tag" style="background: rgba(99, 102, 241, 0.12); color: var(--accent); padding: 3px 8px; border-radius: 4px; font-weight: 700; white-space: nowrap; flex-shrink: 0;">CHẾ ĐỘ TẠO MỚI</span>
+                <h2 style="margin: 0; font-size: 14px; display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;">
+                  <i class="ph-bold ph-plus-circle" style="color: var(--accent); flex-shrink: 0;"></i> Khởi tạo Page Object mới
+                </h2>
+                <span id="pm-draft-status-badge" class="draft-status-pill" style="display: none; flex-shrink: 0;">
+                  <i class="ph-bold ph-circle-dashed"></i> <span>Bản nháp</span>
+                </span>
+              </div>
+              <div class="script-panel-head-actions" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <button type="button" class="btn-secondary-sm" id="pm-btn-reset-draft" title="Làm mới form và xóa bản nháp hiện tại" style="white-space: nowrap;">
+                  <i class="ph-bold ph-eraser"></i> Làm mới
+                </button>
+                <button type="button" class="btn-secondary-sm" id="pm-btn-inspect-mode" title="Hủy tạo Page Object và quay lại xem chi tiết" style="white-space: nowrap;">
+                  <i class="ph-bold ph-arrow-counter-clockwise"></i> Hủy tạo
+                </button>
+              </div>
+            </div>
+
+            <!-- Page Draft Recovery Banner (Đồng bộ chuẩn BDD Studio) -->
+            <div id="pm-draft-recovery-banner" class="draft-recovery-banner" style="display: none; margin: 12px 18px 0;">
+              <div class="draft-recovery-info">
+                <i class="ph-bold ph-file-dashed"></i>
+                <span id="pm-draft-recovery-text">Phát hiện bản nháp Page Object chưa hoàn thành trên máy chủ.</span>
+              </div>
+              <div class="draft-recovery-actions">
+                <button type="button" class="btn-sm btn-accent" id="pm-btn-restore-draft"><i class="ph-bold ph-arrow-counter-clockwise"></i> Khôi phục</button>
+                <button type="button" class="btn-sm btn-ghost" id="pm-btn-dismiss-draft"><i class="ph-bold ph-x"></i> Bỏ qua</button>
+              </div>
+            </div>
+
+            <!-- Scrollable Content Body -->
+            <div class="script-middle-scroll-wrap pm-create-scroll-wrap" style="padding: 18px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+              <!-- KHỐI 01: THÔNG TIN CƠ BẢN -->
+              <div class="script-section-block pm-create-card-section">
+                <div class="pm-inspect-section-head" style="margin-bottom: 12px;">
+                  <div>
+                    <span class="pm-section-tag">01 · THÔNG TIN CƠ BẢN</span>
+                    <h4 style="margin: 3px 0 0; font-size: 14px;">Cấu hình thông tin màn hình & Class</h4>
+                  </div>
+                </div>
+                <div class="pm-form-grid" style="display: flex; flex-direction: column; gap: 14px;">
+                  <div>
+                    <label class="pm-form-label">Phân hệ môi trường kiểm thử: <span style="color: #ef4444;">*</span></label>
+                    <select id="page-manager-platform" class="pm-form-control">
+                      <option value="desktop" selected>Desktop Web (Chromium 1920x1080)</option>
+                      <option value="mobile-web">Mobile Web (Pixel 7 emulated)</option>
+                    </select>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                      <label class="pm-form-label">Tên màn hình (UI Description): <span style="color: #ef4444;">*</span></label>
+                      <input id="page-manager-title" class="pm-form-control" required placeholder="Ví dụ: Chi tiết công việc">
+                      <small class="pm-form-hint">Mô tả tên màn hình nghiệp vụ hiển thị cho người dùng.</small>
+                    </div>
+                    <div>
+                      <label class="pm-form-label">Tên Class trong mã nguồn: <span style="color: #ef4444;">*</span></label>
+                      <input id="page-manager-class" class="pm-form-control font-mono" required placeholder="Ví dụ: JobDetailPage">
+                      <small class="pm-form-hint">PascalCase, kết thúc bằng <code>Page</code> (vd: <code>HomePage</code>, <code>JobDetailPage</code>).</small>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="pm-form-label">Mô tả chi tiết màn hình:</label>
+                    <textarea id="page-manager-description" class="pm-form-control" rows="2" placeholder="Ví dụ: Màn hình chi tiết tin tuyển dụng, hiển thị mô tả công việc và các nút ứng tuyển..."></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI 02: PHẦN TỬ GIAO DIỆN (LOCATORS) -->
+              <div class="script-section-block pm-create-card-section">
+                <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
+                  <div>
+                    <span class="pm-section-tag">02 · PHẦN TỬ GIAO DIỆN (LOCATORS)</span>
+                    <h4 style="margin: 3px 0 0; font-size: 14px;">Khai báo phần tử trong constructor (<span id="pm-locators-count-display">0 locator</span>)</h4>
+                  </div>
+                  <button type="button" class="btn-secondary-sm" id="page-manager-add-locator">
+                    <i class="ph-bold ph-plus-circle"></i> Thêm locator
+                  </button>
+                </div>
+                <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px;">
+                  Khai báo các phần tử giao diện (nút bấm, ô nhập, dropdown, tiêu đề) để các phương thức nghiệp vụ sử dụng.
+                </p>
+                <div id="page-manager-locators" class="pm-rows-container">
+                  <!-- Rendered dynamically by renderPageManagerRows() -->
+                </div>
+              </div>
+
+              <!-- KHỐI 03: HÀNH ĐỘNG NGHIỆP VỤ (ACTIONS) -->
+              <div class="script-section-block pm-create-card-section">
+                <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
+                  <div>
+                    <span class="pm-section-tag">03 · HÀNH ĐỘNG NGHIỆP VỤ (ACTIONS)</span>
+                    <h4 style="margin: 3px 0 0; font-size: 14px;">Phương thức xử lý nghiệp vụ (<span id="pm-actions-count-display">0 action</span>)</h4>
+                  </div>
+                  <button type="button" class="btn-secondary-sm" id="page-manager-add-action">
+                    <i class="ph-bold ph-plus-circle"></i> Thêm action
+                  </button>
+                </div>
+                <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px;">
+                  Định nghĩa các hàm thao tác nghiệp vụ (click, fill, assert) gắn liền với các phần tử đã khai báo.
+                </p>
+                <div id="page-manager-actions" class="pm-rows-container">
+                  <!-- Rendered dynamically by renderPageManagerRows() -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer Bar chuẩn BDD Studio -->
+            <div class="page-manager-form-footer">
+              <div class="pm-footer-stats">
+                <span class="pm-footer-stat-pill" id="page-manager-count">
+                  <i class="ph-bold ph-crosshair"></i> 0 locator · <i class="ph-bold ph-lightning"></i> 0 action
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn-secondary-sm" id="pm-btn-cancel-create">
+                  Hủy bỏ
+                </button>
+                <button type="button" class="btn-secondary-sm" id="pm-btn-save-draft-footer" title="Lưu bản nháp Page Object vào máy chủ">
+                  <i class="ph-bold ph-floppy-disk"></i> Lưu nháp
+                </button>
+                <button type="button" class="primary-button" id="page-manager-create">
+                  <i class="ph-bold ph-file-plus"></i> Tạo file Page Object
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- INSPECT PANEL (Visible in 'inspect' mode) -->
+          <div class="page-manager-inspect" id="page-manager-inspect-panel">
+            <div class="page-manager-panel-head script-panel-head">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="btn-toggle-pm-sidebar-head" type="button" class="btn-icon-subtle" title="Ẩn / Hiện danh sách Page">
+                  <i class="ph-bold ph-sidebar-simple"></i>
+                </button>
+                <div>
+                  <span class="pm-section-tag">CHI TIẾT PAGE OBJECT</span>
+                  <h2 id="pm-input-title">HomePage.js</h2>
+                </div>
+              </div>
+              <div class="script-panel-head-actions">
+                <button id="pm-inspect-edit-btn" type="button" class="btn-secondary-sm script-edit-this-btn" title="Chuyển sang chế độ chỉnh sửa mã này">
+                  <i class="ph-bold ph-pencil-simple-line"></i> Chỉnh sửa mã
+                </button>
+              </div>
+            </div>
+
+            <!-- PHẦN 1: THÔNG TIN & CẤU HÌNH TRANG -->
+            <div class="pm-inspect-section pm-section-part1" style="margin-bottom: 14px;">
+              <div class="pm-inspect-section-head" style="margin-bottom: 8px;">
+                <div>
+                  <span class="pm-section-tag">01 · THÔNG TIN & CẤU HÌNH TRANG</span>
+                  <h4 id="pm-inspect-title-text">Thông tin tổng quan</h4>
+                </div>
+              </div>
+
+              <!-- Page Overview Banner (Đồng bộ chuẩn BDD Studio) -->
+              <div class="script-inspect-banner pm-inspect-banner" style="margin-bottom: 12px;">
+                <div class="script-inspect-meta">
+                  <div class="script-banner-top">
+                    <span class="script-platform-tag pm-platform-badge" id="pm-inspect-platform">Desktop Web</span>
+                    <span class="script-file-badge pm-file-badge" id="pm-inspect-file">pages/desktop/HomePage.js</span>
+                  </div>
+                  <h3 id="pm-inspect-class" class="script-banner-title pm-inspect-class">HomePage</h3>
+                  <p id="pm-inspect-desc" class="script-banner-feature pm-inspect-desc"><i class="ph ph-folder"></i> Trang chủ Việc Làm 24h, menu điều hướng và popup.</p>
+                  <div class="script-banner-tags" id="pm-inspect-tags">
+                    <span class="script-tag-chip" id="pm-inspect-base-tag">extends BasePage</span>
+                  </div>
+                </div>
+                <div class="script-inspect-stats-card pm-inspect-stats-card">
+                  <div class="script-inspect-stat-item"><strong id="pm-inspect-loc-count">0</strong><small>Locators</small></div>
+                  <div class="script-inspect-stat-item"><strong id="pm-inspect-act-count">0</strong><small>Actions</small></div>
+                  <div class="script-inspect-stat-item"><strong id="pm-inspect-caps-count">0</strong><small>Methods</small></div>
+                </div>
+              </div>
+
+              <!-- Readonly Grid (Đồng bộ chuẩn BDD Studio) -->
+              <div class="script-readonly-form-grid" aria-label="Cấu hình Page Object dạng chỉ đọc">
+                <div class="script-readonly-field"><span>Phân hệ kiểm thử</span><strong id="pm-grid-platform">Desktop Web</strong></div>
+                <div class="script-readonly-field"><span>Đường dẫn code</span><strong id="pm-grid-path">pages/desktop/HomePage.js</strong></div>
+                <div class="script-readonly-field"><span>Lớp kế thừa</span><strong id="pm-grid-base">BasePage</strong></div>
+                <div class="script-readonly-field"><span>Constructor</span><strong id="pm-grid-ctor">constructor(page)</strong></div>
+              </div>
+            </div>
+
+            <!-- PHẦN 2: PHẦN TỬ GIAO DIỆN (LOCATORS & SELECTORS) -->
+            <div class="pm-inspect-section pm-section-part2">
+              <div class="pm-inspect-section-head">
+                <div>
+                  <span class="pm-section-tag">02 · PHẦN TỬ GIAO DIỆN (LOCATORS & SELECTORS)</span>
+                  <h4>Phần tử trong constructor (<span id="pm-locators-badge-count">0</span>)</h4>
+                </div>
+                <div class="pm-search-wrap pm-inspect-search">
+                  <i class="ph ph-magnifying-glass"></i>
+                  <input type="text" id="pm-quick-search-input" placeholder="Lọc phần tử / action...">
+                </div>
+              </div>
+
+              <!-- INLINE QUICK ADD LOCATOR INPUT FORM -->
+              <div class="pm-inline-add-box">
+                <div class="pm-inline-add-header">
+                  <i class="ph-bold ph-lightning"></i>
+                  <span>Thêm nhanh phần tử vào <code>constructor()</code>:</span>
+                </div>
+                <div class="pm-inline-add-row">
+                  <input type="text" id="pm-inline-loc-name" placeholder="Tên biến (vd: submitBtn)" class="pm-inline-input pm-inline-input-name" />
+                  <input type="text" id="pm-inline-loc-expr" placeholder="Selector (vd: page.getByRole('button', { name: 'Lưu' }))" class="pm-inline-input pm-inline-input-expr" />
+                  <button type="button" class="primary pm-inline-add-btn" id="pm-btn-inline-add-loc" title="Thêm ngay vào Page Object">
+                    <i class="ph-bold ph-plus"></i> Thêm
+                  </button>
+                </div>
+              </div>
+
+              <div id="pm-inspect-locators-list" class="pm-inspect-locators-list"></div>
+            </div>
+
+            <!-- PHẦN 3: HÀNH ĐỘNG NGHIỆP VỤ (BUSINESS ACTIONS) -->
+            <div class="pm-inspect-section pm-section-part3">
+              <div class="pm-inspect-section-head">
+                <div>
+                  <span class="pm-section-tag">03 · HÀNH ĐỘNG NGHIỆP VỤ (BUSINESS ACTIONS)</span>
+                  <h4>Danh sách hàm xử lý (<span id="pm-actions-badge-count">0</span>)</h4>
+                </div>
+                <button type="button" class="btn-secondary-sm pm-add-action-btn" id="pm-btn-add-action-toggle" title="Thêm hàm xử lý (Action) mới vào Page Object">
+                  <i class="ph-bold ph-plus"></i> Thêm action
+                </button>
+              </div>
+
+              <!-- INLINE QUICK ADD ACTION INPUT FORM -->
+              <div class="pm-inline-add-box pm-inline-action-box" id="pm-inline-add-action-box">
+                <div class="pm-inline-add-header">
+                  <i class="ph-bold ph-lightning"></i>
+                  <span>Thêm nhanh hàm xử lý (Action) vào Page Object:</span>
+                </div>
+                <div class="pm-inline-add-row pm-inline-action-row">
+                  <input type="text" id="pm-inline-act-name" placeholder="Tên action (vd: clickApply, inputSearch)" class="pm-inline-input pm-inline-input-name" />
+                  <select id="pm-inline-act-loc" class="pm-inline-input pm-inline-select-loc" title="Chọn locator liên kết">
+                    <option value="">-- Chọn locator liên kết --</option>
+                  </select>
+                  <select id="pm-inline-act-op" class="pm-inline-input pm-inline-select-op" title="Chọn loại thao tác">
+                    <option value="click">click() - Nhấp chuột</option>
+                    <option value="fill">fill(val) - Điền dữ liệu</option>
+                    <option value="check">check() - Tích chọn</option>
+                    <option value="hover">hover() - Rê chuột</option>
+                    <option value="assert">expect(...).toBeVisible()</option>
+                  </select>
+                  <button type="button" class="primary pm-inline-add-btn" id="pm-btn-inline-add-act" title="Thêm ngay action vào Page Object">
+                    <i class="ph-bold ph-plus"></i> Thêm
+                  </button>
+                </div>
+              </div>
+
+              <div id="pm-inspect-actions-list" class="pm-inspect-actions-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CỘT 3: MÃ NGUỒN PLAYWRIGHT (LIVE CODE / CHỈNH SỬA & LƯU FILE) -->
+        <section class="page-manager-code panel" id="page-manager-code-panel">
+          <div class="page-manager-panel-head">
+            <div>
+              <span id="pm-code-eyebrow">MÃ NGUỒN PLAYWRIGHT</span>
+              <h2 id="pm-code-title">HomePage.js</h2>
+            </div>
+            <div class="pm-code-head-meta">
+              <span class="pm-code-status-pill" id="pm-code-status"><i class="ph-bold ph-check"></i> Đang mở từ disk</span>
+              <button type="button" class="ghost pm-tool-btn" id="pm-btn-toggle-edit" title="Bật/Tắt chế độ soạn thảo mã nguồn trực tiếp">
+                <i class="ph-bold ph-pencil-simple-line"></i> <span id="pm-edit-btn-text">Chỉnh sửa</span>
+              </button>
+              <button type="button" class="primary pm-tool-btn" id="pm-btn-save-code" title="Lưu thay đổi mã nguồn vào file (Ctrl+S)" style="display:none;">
+                <i class="ph-bold ph-floppy-disk"></i> Lưu
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="pm-btn-revert-code" title="Hoàn tác về mã gốc từ đĩa" style="display:none;">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i>
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="pm-btn-copy-code" title="Sao chép toàn bộ mã nguồn">
+                <i class="ph-bold ph-copy"></i>
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="pm-btn-toggle-wrap" title="Bật/Tắt tự động xuống dòng (Word Wrap) hoặc cuộn ngang">
+                <i class="ph-bold ph-text-align-left" id="pm-wrap-icon"></i>
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="page-manager-refresh" title="Làm mới dữ liệu từ framework">
+                <i class="ph ph-arrows-clockwise"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Live Syntax-Highlighted Code Editor Stage (Giữ định dạng code cả khi xem và khi sửa chuẩn BDD Studio) -->
+          <div class="code-editor-stage script-code-stage pm-code-stage" id="pm-code-stage">
+            <pre class="code-preview" id="page-manager-preview"><code id="page-manager-preview-code" class="language-javascript"></code></pre>
+            <textarea id="page-manager-code-editor" class="code-editor" wrap="off" spellcheck="false" placeholder="// Nội dung mã nguồn Page Object..." readonly></textarea>
+          </div>
+
+          <div class="page-manager-code-help" id="pm-code-help">
+            <i class="ph-bold ph-info"></i>
+            <span id="pm-code-help-text">Nhấn "Chỉnh sửa" để gõ trực tiếp hoặc Ctrl+S để lưu file. Tự động sao lưu backup (.bak) an toàn.</span>
+          </div>
+        </section>
+      </main>

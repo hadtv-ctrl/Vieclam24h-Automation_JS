@@ -1,0 +1,404 @@
+      <header class="hero data-hero">
+        <div>
+          <p class="eyebrow"><i class="ph ph-database"></i> QUẢN LÝ DỮ LIỆU TEST (TEST DATA STUDIO)</p>
+          <h1>Dữ liệu kiểm thử (Test Data)</h1>
+          <p class="subtitle">Xem và chỉnh sửa trực quan các file dữ liệu test (tài khoản đăng nhập, thông tin ứng tuyển, hồ sơ...). Tách rời dữ liệu khỏi kịch bản kiểm thử theo chuẩn framework, có sao lưu an toàn tự động.</p>
+        </div>
+        <div class="hero-stats-group">
+          <div class="hero-stat-card"><strong id="stat-data-files">0</strong><small>Tệp dữ liệu</small></div>
+          <div class="hero-stat-card"><strong id="stat-data-records">0</strong><small>Bản ghi test</small></div>
+          <div class="hero-stat-card"><strong id="stat-data-total-size">0 KB</strong><small>Tổng dung lượng</small></div>
+        </div>
+      </header>
+
+      <!-- Subtabs Navigation & Quick Actions (Đồng bộ chuẩn BDD Studio & Page Manager) -->
+      <div class="view-subnav data-subnav" role="tablist" aria-label="Các chế độ làm việc với dữ liệu test">
+        <div class="script-subnav-tabs">
+          <button type="button" class="view-subtab data-subtab active" id="btn-tab-data-inspect">
+            <i class="ph-bold ph-sliders"></i> Chi tiết & Biểu mẫu
+          </button>
+          <button type="button" class="view-subtab data-subtab" id="btn-tab-data-create">
+            <i class="ph-bold ph-plus-circle"></i> Tạo tệp dữ liệu mới
+          </button>
+        </div>
+        <div class="script-subnav-actions" id="data-subnav-actions">
+          <button id="data-delete-file-btn" type="button" class="script-subnav-btn script-delete-btn" title="Xóa tệp dữ liệu này khỏi thư mục data/">
+            <i class="ph-bold ph-trash"></i> Xóa file
+          </button>
+          <button id="data-import-csv-btn" type="button" class="script-subnav-btn" title="Nhập dữ liệu từ CSV vào tệp hiện tại">
+            <i class="ph-bold ph-upload-simple"></i> Nhập CSV
+          </button>
+          <button id="data-export-csv-btn" type="button" class="script-subnav-btn" title="Xuất dataset dạng CSV">
+            <i class="ph-bold ph-download-simple"></i> Xuất CSV
+          </button>
+          <button id="data-copy-json-btn" type="button" class="script-subnav-btn" title="Sao chép toàn bộ JSON">
+            <i class="ph-bold ph-copy"></i> Sao chép JSON
+          </button>
+          <button id="data-save-btn" type="button" class="script-subnav-btn script-run-primary-btn" title="Lưu dữ liệu vào tệp (Ctrl+S)">
+            <i class="ph-bold ph-floppy-disk"></i> Lưu dữ liệu
+          </button>
+        </div>
+      </div>
+
+      <div class="panel data-workspace-panel" id="data-workspace-panel">
+        <!-- CỘT 1: DANH SÁCH TỆP DỮ LIỆU (290px - CÓ THỂ THU GỌN VỀ 46px) -->
+        <aside class="data-sidebar" id="data-sidebar">
+          <div class="sidebar-expanded-content" id="data-sidebar-expanded-content">
+            <div class="pm-sidebar-head">
+              <div>
+                <span class="pm-section-tag">01 · DANH SÁCH TỆP</span>
+                <h2 class="pm-sidebar-title"><i class="ph-bold ph-database"></i> Danh sách (<span id="stat-data-sidebar-count">0</span>)</h2>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="data-refresh-btn" type="button" class="btn-icon-subtle" title="Làm mới danh sách"><i class="ph-bold ph-arrows-clockwise"></i></button>
+                <button id="btn-collapse-data-sidebar" type="button" class="btn-icon-subtle btn-sidebar-collapse" title="Thu gọn danh sách tệp dữ liệu">
+                  <i class="ph-bold ph-caret-left"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tìm kiếm & Lọc cấu trúc dữ liệu -->
+            <div class="pm-sidebar-filter-box">
+              <div class="pm-sidebar-search">
+                <i class="ph ph-magnifying-glass"></i>
+                <input type="text" id="data-search-input" placeholder="Tìm theo tên file, ghi chú, key...">
+              </div>
+              <div class="pm-sidebar-pills" id="data-filter-pills">
+                <button type="button" class="pm-filter-pill data-filter-btn active" data-type="all">Tất cả</button>
+                <button type="button" class="pm-filter-pill data-filter-btn" data-type="array">Danh sách</button>
+                <button type="button" class="pm-filter-pill data-filter-btn" data-type="object">Biểu mẫu</button>
+                <button type="button" class="pm-filter-pill data-filter-btn" data-type="auth">Tài khoản</button>
+              </div>
+            </div>
+
+            <div id="data-files-list" class="data-files-list">
+              <div class="data-loading-spinner"><i class="ph ph-spinner ph-spin"></i> Đang tải danh sách...</div>
+            </div>
+
+            <!-- Hộp tiện ích Biến Ngẫu Nhiên (Faker) -->
+            <div class="data-sidebar-footer">
+              <div class="dynamic-var-hint-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <strong><i class="ph-bold ph-sparkle"></i> Biến ngẫu nhiên (Faker):</strong>
+                  <button id="data-quick-preview-btn" type="button" class="btn-xs" style="color: var(--accent); background: transparent; border: none; cursor: pointer; font-size: 11px; font-weight: 700;">Xem mẫu <i class="ph-bold ph-arrow-square-out"></i></button>
+                </div>
+                <p style="font-size: 11px; color: var(--muted); margin-bottom: 8px; line-height: 1.4;">Bấm để sao chép biến tự sinh giá trị khi chạy test:</p>
+                <div class="dynamic-tags">
+                  <span class="dynamic-tag" data-tag="{{random_phone}}" title="Bấm để copy số điện thoại tự sinh"><code>{{random_phone}}</code> <small style="color:var(--muted);font-size:10px;">(SĐT)</small></span>
+                  <span class="dynamic-tag" data-tag="{{random_email}}" title="Bấm để copy email tự sinh"><code>{{random_email}}</code> <small style="color:var(--muted);font-size:10px;">(Email)</small></span>
+                  <span class="dynamic-tag" data-tag="{{random_name}}" title="Bấm để copy họ tên tự sinh"><code>{{random_name}}</code> <small style="color:var(--muted);font-size:10px;">(Tên)</small></span>
+                  <span class="dynamic-tag" data-tag="{{timestamp}}" title="Bấm để copy timestamp"><code>{{timestamp}}</code></span>
+                  <span class="dynamic-tag" data-tag="{{date}}" title="Bấm để copy ngày"><code>{{date}}</code></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Strip hiển thị khi Sidebar được thu gọn -->
+          <div class="script-sidebar-collapsed-strip" id="data-sidebar-collapsed-strip" title="Bấm để mở rộng danh sách tệp dữ liệu">
+            <button type="button" class="btn-icon-subtle btn-sidebar-expand-rail" id="btn-expand-data-sidebar" title="Mở rộng danh sách tệp dữ liệu">
+              <i class="ph-bold ph-sidebar-simple"></i>
+            </button>
+            <div class="sidebar-rail-badge" id="data-rail-count">0</div>
+            <div class="sidebar-rail-text">DANH SÁCH DỮ LIỆU</div>
+          </div>
+        </aside>
+
+        <!-- CỘT 2: CHI TIẾT & BIỂU MẪU DỮ LIỆU / TẠO MỚI (1fr) -->
+        <section class="data-middle-panel panel" id="data-middle-panel">
+          <!-- HEAD 1: KHI Ở CHẾ ĐỘ XEM / SỬA FILE HIỆN TẠI -->
+          <div class="script-panel-head data-panel-head" id="data-inspect-head">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button id="btn-toggle-data-sidebar-head" type="button" class="btn-icon-subtle" title="Ẩn / Hiện danh sách tệp dữ liệu">
+                <i class="ph-bold ph-sidebar-simple"></i>
+              </button>
+              <div>
+                <span class="pm-section-tag">01 · THÔNG TIN DỮ LIỆU & BIỂU MẪU</span>
+                <h2 id="data-current-filename">Chọn tệp dữ liệu để bắt đầu</h2>
+              </div>
+            </div>
+            <div class="script-panel-head-actions">
+              <span class="pm-code-status-pill" id="data-status-badge">
+                <i class="ph-bold ph-check"></i> Đang mở từ disk
+              </span>
+              <button id="data-revert-btn" type="button" class="btn-secondary-sm" title="Hoàn tác thay đổi về bản gốc trên disk" disabled>
+                <i class="ph-bold ph-arrow-counter-clockwise"></i> Hoàn tác
+              </button>
+              <button id="data-middle-save-btn" type="button" class="btn-primary-sm" title="Lưu dữ liệu vào tệp (Ctrl+S)">
+                <i class="ph-bold ph-floppy-disk"></i> Lưu
+              </button>
+            </div>
+          </div>
+
+          <!-- HEAD 2: KHI Ở CHẾ ĐỘ TẠO TỆP DỮ LIỆU MỚI (WIZARD) -->
+          <div class="script-panel-head data-panel-head" id="data-create-head" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+              <button id="btn-toggle-data-sidebar-head-create" type="button" class="btn-icon-subtle" title="Ẩn / Hiện danh sách tệp dữ liệu">
+                <i class="ph-bold ph-sidebar-simple"></i>
+              </button>
+              <span class="pm-section-tag" style="background: rgba(99, 102, 241, 0.12); color: var(--accent); padding: 3px 8px; border-radius: 4px; font-weight: 700; flex-shrink: 0;">WIZARD KHỞI TẠO</span>
+              <h2 style="margin: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">
+                <i class="ph-bold ph-magic-wand" style="color: var(--accent);"></i> Tạo Tệp Dữ Liệu Test Mới
+              </h2>
+            </div>
+            <div class="script-panel-head-actions">
+              <button type="button" class="btn-secondary-sm" id="btn-reset-create-dataset" title="Khôi phục về mẫu ban đầu">
+                <i class="ph-bold ph-eraser"></i> Làm mới
+              </button>
+              <button type="button" class="btn-secondary-sm" id="btn-cancel-create-dataset" title="Hủy bỏ và quay lại tệp hiện tại">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i> Hủy
+              </button>
+              <button type="button" class="btn-primary-sm" id="btn-submit-create-dataset" title="Tạo tệp dữ liệu ngay vào thư mục data/">
+                <i class="ph-bold ph-check-circle"></i> Tạo tệp ngay
+              </button>
+            </div>
+          </div>
+
+          <div class="script-middle-scroll-wrap" id="data-middle-scroll">
+            <!-- CHẾ ĐỘ 1: XEM & CHỈNH SỬA BIỂU MẪU TỆP HIỆN TẠI -->
+            <div id="data-inspect-scroll-content" class="data-mode-pane active">
+              <!-- PHẦN 1: THÔNG TIN TỆP & THÔNG SỐ (BANNER) -->
+              <div class="script-section-block pm-section-part1">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">01 · THÔNG SỐ TỆP JSON</span>
+                    <h4 id="data-banner-title">Thông tin tổng quan</h4>
+                  </div>
+                </div>
+                <div class="script-inspect-banner">
+                  <div class="script-inspect-meta">
+                    <div class="script-banner-top">
+                      <span class="script-platform-tag" id="data-banner-type" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);">Dataset JSON</span>
+                      <span class="script-file-badge" id="data-banner-file">data/*.json</span>
+                    </div>
+                    <h3 id="data-banner-desc" class="script-banner-title">Mô tả cấu trúc dữ liệu</h3>
+                    <p id="data-banner-path" class="script-banner-feature"><i class="ph ph-folder"></i> Đường dẫn: <code>data/</code></p>
+                  </div>
+                  <div class="script-inspect-stats-card">
+                    <div class="script-inspect-stat-item"><strong id="data-stat-records-badge">0</strong><small>Bản ghi</small></div>
+                    <div class="script-inspect-stat-item"><strong id="data-stat-size-badge">0 KB</strong><small>Kích thước</small></div>
+                    <div class="script-inspect-stat-item"><strong id="data-stat-linked-badge">0</strong><small>Kịch bản BDD</small></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PHẦN 2: BIỂU MẪU ĐIỀN DỮ LIỆU TRỰC QUAN -->
+              <div class="script-section-block pm-section-part2">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">02 · BIỂU MẪU ĐIỀN DỮ LIỆU</span>
+                    <h4>Các trường dữ liệu (<span id="data-fields-count">0 mục</span>)</h4>
+                  </div>
+                </div>
+                <div id="data-form-view" class="data-view-pane active">
+                  <div id="data-form-container" class="data-form-container">
+                    <!-- Dynamically rendered visual accordion cards -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- PHẦN 3: KỊCH BẢN BDD LIÊN KẾT (TÍNH NĂNG ĐỒNG BỘ HAI CHIỀU) -->
+              <div class="script-section-block pm-section-part3">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">03 · KỊCH BẢN BDD LIÊN KẾT</span>
+                    <h4>Kịch bản sử dụng tệp này (<span id="data-linked-scripts-count">0 kịch bản</span>)</h4>
+                  </div>
+                </div>
+                <div class="data-linked-scripts-container" id="data-linked-scripts-container">
+                  <!-- Dynamically rendered linked BDD scripts chips -->
+                </div>
+              </div>
+            </div>
+
+            <!-- CHẾ ĐỘ 2: BỘ TẠO DỮ LIỆU TEST MỚI (IN-PLACE WIZARD) -->
+            <div id="data-create-scroll-content" class="data-mode-pane" style="display: none;">
+              <!-- BƯỚC 1: THÔNG TIN TỆP -->
+              <div class="script-section-block">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">01 · THÔNG TIN TỆP DỮ LIỆU</span>
+                    <h4>Đặt tên tệp & Mục đích sử dụng</h4>
+                  </div>
+                </div>
+                <div style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+                  <div>
+                    <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px;">
+                      Tên tệp (.json) <span style="color: var(--danger);">*</span>
+                    </label>
+                    <input type="text" id="create-dataset-filename" class="text-input" placeholder="ví dụ: candidateFilterData.json" style="width: 100%;" />
+                    <div class="data-quick-names-wrap" style="margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                      <span style="font-size: 11px; color: var(--muted);"><i class="ph-bold ph-lightbulb"></i> Gợi ý tên:</span>
+                      <button type="button" class="data-quick-name-chip" data-name="candidateFilterData.json">candidateFilterData.json</button>
+                      <button type="button" class="data-quick-name-chip" data-name="paymentCheckoutData.json">paymentCheckoutData.json</button>
+                      <button type="button" class="data-quick-name-chip" data-name="companyProfileData.json">companyProfileData.json</button>
+                      <button type="button" class="data-quick-name-chip" data-name="notificationSettingData.json">notificationSettingData.json</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px;">
+                      Mục đích / Ghi chú cho kịch bản test
+                    </label>
+                    <input type="text" id="create-dataset-desc" class="text-input" placeholder="ví dụ: Bộ dữ liệu kiểm thử lọc ứng viên theo địa điểm và mức lương mong muốn" style="width: 100%;" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- BƯỚC 2: CHỌN MẪU DỮ LIỆU CHUẨN (ARCHETYPE LIBRARY) -->
+              <div class="script-section-block">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">02 · MẪU CẤU TRÚC CHUẨN (ARCHETYPE)</span>
+                    <h4>Chọn kiểu dữ liệu phù hợp với kịch bản test</h4>
+                  </div>
+                </div>
+                <div class="data-template-cards-grid" id="data-template-cards-grid">
+                  <!-- Rendered dynamically or via JS -->
+                </div>
+              </div>
+
+              <!-- BƯỚC 3: TINH CHỈNH DỮ LIỆU & BIẾN FAKER -->
+              <div class="script-section-block">
+                <div class="pm-inspect-section-head" style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <span class="pm-section-tag">03 · TINH CHỈNH DỮ LIỆU BAN ĐẦU</span>
+                    <h4 id="data-create-fields-head-title">Chỉnh sửa các trường dữ liệu mẫu</h4>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-secondary-sm" id="btn-add-create-field">
+                      <i class="ph-bold ph-plus"></i> Thêm trường
+                    </button>
+                    <button type="button" class="btn-secondary-sm" id="btn-add-create-row" style="display: none;">
+                      <i class="ph-bold ph-rows"></i> Thêm dòng
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Faker quick insert bar in Creator -->
+                <div class="data-create-faker-bar" style="padding: 10px 16px; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span style="font-size: 11.5px; font-weight: 700; color: var(--accent); display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="ph-bold ph-magic-wand"></i> Biến Faker:
+                  </span>
+                  <button type="button" class="data-create-faker-chip" data-faker="{{random_phone}}">{{random_phone}}</button>
+                  <button type="button" class="data-create-faker-chip" data-faker="{{random_email}}">{{random_email}}</button>
+                  <button type="button" class="data-create-faker-chip" data-faker="{{random_name}}">{{random_name}}</button>
+                  <button type="button" class="data-create-faker-chip" data-faker="{{date}}">{{date}}</button>
+                  <button type="button" class="data-create-faker-chip" data-faker="{{timestamp}}">{{timestamp}}</button>
+                  <small style="color: var(--muted); font-size: 11px; margin-left: auto;">Bấm để chèn vào ô đang chọn</small>
+                </div>
+
+                <div id="data-create-fields-container" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+                  <!-- Dynamic fields list -->
+                </div>
+              </div>
+
+              <!-- BƯỚC 4: LIÊN KẾT KỊCH BẢN BDD (TÙY CHỌN) -->
+              <div class="script-section-block">
+                <div class="pm-inspect-section-head">
+                  <div>
+                    <span class="pm-section-tag">04 · LIÊN KẾT KỊCH BẢN BDD (TÙY CHỌN)</span>
+                    <h4>Tự động liên kết với Kịch bản BDD</h4>
+                  </div>
+                </div>
+                <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                  <label style="display: flex; flex-direction: column; gap: 6px;">
+                    <span style="font-size: 11.5px; font-weight: 700; color: var(--text); letter-spacing: 0.5px; text-transform: uppercase;">
+                      Chọn kịch bản BDD muốn sử dụng tệp này:
+                    </span>
+                    <select id="create-dataset-linked-script-select" class="select-input" style="width: 100%;">
+                      <option value="">-- Không liên kết ngay (Có thể import thủ công sau) --</option>
+                    </select>
+                  </label>
+                  <div class="data-create-snippet-box" id="create-dataset-snippet-box" style="display: none; padding: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <small style="color: var(--muted); font-size: 11.5px; font-weight: 600;"><i class="ph-bold ph-code"></i> Đoạn mã nạp dữ liệu chuẩn Playwright:</small>
+                      <button type="button" class="btn-icon-subtle" id="btn-copy-create-snippet" title="Sao chép mã nạp dữ liệu"><i class="ph-bold ph-copy"></i></button>
+                    </div>
+                    <code id="create-dataset-snippet-code" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent);">const testData = require('../../../data/dataset.json');</code>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CHÂN TRANG BỘ TẠO -->
+              <div style="padding: 16px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; align-items: center; gap: 10px; background: var(--surface);">
+                <button type="button" class="btn-secondary-sm" id="btn-cancel-create-dataset-bottom">
+                  <i class="ph-bold ph-arrow-counter-clockwise"></i> Hủy bỏ
+                </button>
+                <button type="button" class="btn-secondary-sm" id="btn-reset-create-dataset-bottom">
+                  <i class="ph-bold ph-eraser"></i> Làm mới
+                </button>
+                <button type="button" class="btn-primary-sm" id="btn-submit-create-dataset-bottom" style="font-weight: 700;">
+                  <i class="ph-bold ph-check-circle"></i> Tạo tệp dữ liệu ngay
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CỘT 3: SHARED CODE EDITOR (MÃ NGUỒN JSON THỜI GIAN THỰC) -->
+        <section class="data-right-panel panel" id="data-right-panel">
+          <div class="page-manager-panel-head">
+            <div>
+              <span id="data-code-eyebrow">MÃ NGUỒN DỮ LIỆU (.json)</span>
+              <h2 id="data-code-title">dataset.json</h2>
+            </div>
+            <div class="pm-code-head-meta">
+              <span class="pm-code-status-pill" id="data-code-status-badge">
+                <i class="ph-bold ph-check"></i> Đang mở từ disk
+              </span>
+              <button type="button" class="ghost pm-tool-btn" id="data-format-json-btn" title="Định dạng làm đẹp mã JSON (Format JSON)">
+                <i class="ph-bold ph-code"></i> <span>Format</span>
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="data-btn-toggle-edit" title="Bật/Tắt chế độ soạn thảo mã nguồn trực tiếp">
+                <i class="ph-bold ph-pencil-simple-line"></i> <span id="data-edit-btn-text">Chỉnh sửa</span>
+              </button>
+              <button type="button" class="primary pm-tool-btn" id="data-code-save-btn" title="Lưu thay đổi mã nguồn vào file (Ctrl+S)" style="display:none;">
+                <i class="ph-bold ph-floppy-disk"></i> Lưu
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="data-code-revert-btn" title="Hoàn tác về mã gốc từ đĩa" style="display:none;">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i>
+              </button>
+              <button type="button" class="ghost pm-tool-btn" id="data-code-copy-btn" title="Sao chép toàn bộ mã nguồn">
+                <i class="ph-bold ph-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Syntax-Highlighted Code Editor Stage -->
+          <div class="code-editor-stage script-code-stage data-code-stage" id="data-code-stage">
+            <pre class="code-preview" id="data-raw-preview"><code id="data-raw-code" class="language-json"></code></pre>
+            <textarea id="data-raw-editor" class="code-editor" wrap="off" spellcheck="false" placeholder="Dữ liệu JSON..."></textarea>
+          </div>
+
+          <div class="page-manager-code-help" id="data-code-help">
+            <i class="ph-bold ph-info"></i>
+            <span id="data-code-help-text">Nhấn "Chỉnh sửa" để gõ trực tiếp hoặc Ctrl+S để lưu file. Tự động sao lưu backup (.bak) an toàn.</span>
+          </div>
+        </section>
+      </div>
+
+      <!-- Hidden CSV File Input -->
+      <input type="file" id="data-csv-file-input" accept=".csv" style="display:none;">
+
+      <!-- Modal Dialog: Xem Thử Giá Trị Biến Ngẫu Nhiên -->
+      <dialog id="modal-dynamic-preview" class="app-modal">
+        <div class="app-modal-box" style="max-width: 520px;">
+          <div class="app-modal-head">
+            <div>
+              <h3><i class="ph-bold ph-sparkle"></i> Giá Trị Biến Ngẫu Nhiên Mẫu</h3>
+              <p>Các giá trị động này sẽ tự động được sinh mới mỗi lần test chạy.</p>
+            </div>
+            <button type="button" class="btn-icon-subtle" onclick="document.getElementById('modal-dynamic-preview').close()"><i class="ph ph-x"></i></button>
+          </div>
+          <div class="app-modal-body" id="dynamic-preview-list" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <div class="data-loading-spinner"><i class="ph ph-spinner ph-spin"></i> Đang nạp giá trị mẫu...</div>
+          </div>
+          <div class="app-modal-foot" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--line);">
+            <small style="color: var(--muted); font-size: 11px;">Bấm nút copy để sao chép tag vào clipboard.</small>
+            <button type="button" class="btn-secondary-sm" onclick="document.getElementById('modal-dynamic-preview').close()">Đóng</button>
+          </div>
+        </div>
+      </dialog>
+
+

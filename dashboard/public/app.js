@@ -6824,13 +6824,13 @@ window.addEventListener('keydown', (e) => {
     navigateEvidence(1);
   }
 });
-$('#reveal-button').addEventListener('click', () => loadResource(currentResource, $('#reveal-button').dataset.revealed !== 'true'));
-$('#edit-button').addEventListener('click', editCurrentResource);
-$('#save-resource-button').addEventListener('click', saveCurrentResource);
-$('#cancel-edit-button').addEventListener('click', () => loadResource(currentResource, false, currentResourceCategory));
-$('#delete-button').addEventListener('click', deleteCurrentArtifact);
-$('#previous-evidence').addEventListener('click', () => navigateEvidence(-1));
-$('#next-evidence').addEventListener('click', () => navigateEvidence(1));
+$('#reveal-button')?.addEventListener('click', () => loadResource(currentResource, $('#reveal-button').dataset.revealed !== 'true'));
+$('#edit-button')?.addEventListener('click', editCurrentResource);
+$('#save-resource-button')?.addEventListener('click', saveCurrentResource);
+$('#cancel-edit-button')?.addEventListener('click', () => loadResource(currentResource, false, currentResourceCategory));
+$('#delete-button')?.addEventListener('click', deleteCurrentArtifact);
+$('#previous-evidence')?.addEventListener('click', () => navigateEvidence(-1));
+$('#next-evidence')?.addEventListener('click', () => navigateEvidence(1));
 $('#code-search')?.addEventListener('input', renderCodeTree);
 document.querySelectorAll('.code-root-filter').forEach((button) => button.addEventListener('click', () => {
   activeCodeRoot = button.dataset.root;
@@ -7152,9 +7152,9 @@ function initSidebarCollapse() {
 }
 initSidebarCollapse();
 
-$('#format-resource-button').addEventListener('click', formatCurrentResourceEditor);
-$('#reload-settings-button').addEventListener('click', openSettings);
-$('#save-settings-button').addEventListener('click', saveSettings);
+$('#format-resource-button')?.addEventListener('click', formatCurrentResourceEditor);
+$('#reload-settings-button')?.addEventListener('click', openSettings);
+$('#save-settings-button')?.addEventListener('click', saveSettings);
 [
   '#settings-project-name',
   '#settings-project-subtitle',

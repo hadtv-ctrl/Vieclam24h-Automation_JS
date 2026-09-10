@@ -1,0 +1,316 @@
+      <header class="hero">
+        <div>
+          <p class="eyebrow" id="git-eyebrow">ĐỒNG BỘ MÃ NGUỒN & PHIÊN BẢN</p>
+          <h1>Quản lý Git & Đồng bộ Code.</h1>
+          <p class="subtitle">Kéo mã mới về máy (Pull), đóng gói các kịch bản test, Page Objects, dữ liệu test và cấu hình suite hợp lệ để đẩy lên Git (Push).</p>
+        </div>
+        <div class="git-header-status-group">
+          <div class="git-remote-badge" id="git-remote-badge" title="Kho mã nguồn từ xa">
+            <i class="ph-bold ph-github-logo"></i>
+            <span id="git-remote-url-text">hadinhkms/Automation_playwright_SV</span>
+          </div>
+          <span class="draft-status-pill is-synced" id="git-sync-state-pill" role="status">
+            <i class="ph-bold ph-check-circle" id="git-sync-state-icon"></i> <span id="git-sync-state-text">Đã đồng bộ</span>
+          </span>
+        </div>
+      </header>
+
+      <div class="workspace git-workspace">
+        <!-- KHUNG 1: NHÁNH & TRẠNG THÁI REMOTE (290px) -->
+        <aside class="panel git-panel-branch">
+          <div class="panel-heading">
+            <div>
+              <p>NHÁNH & ĐỒNG BỘ</p>
+              <h2>Nhánh làm việc</h2>
+            </div>
+            <i class="ph-bold ph-git-branch" aria-hidden="true"></i>
+          </div>
+
+          <div class="controls">
+            <!-- Current Branch Card -->
+            <div class="git-branch-card">
+              <div class="git-branch-info">
+                <small>Nhánh hiện tại</small>
+                <div class="git-branch-name">
+                  <i class="ph-bold ph-git-branch"></i>
+                  <strong id="git-current-branch-name">main</strong>
+                </div>
+              </div>
+              <div class="git-sync-counts" id="git-sync-counts">
+                <span class="git-count-pill" id="git-ahead-pill" title="Số commit bạn đã tạo nhưng chưa đẩy lên remote">
+                  <i class="ph-bold ph-arrow-up"></i> <strong id="git-ahead-count">0</strong> Ahead
+                </span>
+                <span class="git-count-pill" id="git-behind-pill" title="Số commit mới trên remote cần kéo về máy">
+                  <i class="ph-bold ph-arrow-down"></i> <strong id="git-behind-count">0</strong> Behind
+                </span>
+              </div>
+            </div>
+
+            <!-- Branch Switcher / Creator -->
+            <div class="git-branch-actions">
+              <label for="git-branch-select">Chuyển nhánh</label>
+              <div class="git-branch-select-row">
+                <select id="git-branch-select" class="git-branch-select">
+                  <option value="main">main</option>
+                </select>
+                <button type="button" class="btn-secondary-sm" id="btn-git-checkout" title="Chuyển sang nhánh đã chọn">
+                  <i class="ph-bold ph-arrow-right"></i>
+                </button>
+              </div>
+              <div class="git-new-branch-toggle">
+                <button type="button" class="btn-link-sm" id="btn-toggle-new-branch">
+                  <i class="ph-bold ph-plus-circle"></i> Tạo nhánh mới (Feature Branch)
+                </button>
+                <div class="git-new-branch-form" id="git-new-branch-form" style="display: none; margin-top: 8px;">
+                  <input type="text" id="git-new-branch-name" placeholder="Ví dụ: feature/login-test" class="input-sm">
+                  <button type="button" class="btn-primary-sm" id="btn-create-branch" style="margin-top: 6px; width: 100%;">Tạo & Chuyển nhánh</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider-subtle"></div>
+
+            <!-- Pull Action Button Group -->
+            <div class="git-pull-group">
+              <div class="git-pull-header">
+                <strong>Kéo mã mới (Git Pull)</strong>
+                <button type="button" class="btn-icon-subtle" id="btn-git-fetch" title="Làm mới trạng thái từ Remote (Fetch)">
+                  <i class="ph-bold ph-arrows-clockwise" id="icon-git-fetch"></i>
+                </button>
+              </div>
+              <p class="panel-desc-sm">Cập nhật các kịch bản test, Page Objects và test data mới nhất từ đồng nghiệp.</p>
+              
+              <label class="toggle-sm" style="margin: 8px 0 12px 0; display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                <input type="checkbox" id="git-pull-auto-stash" checked>
+                <span>Tự động lưu tạm (Stash) nếu có thay đổi dở dang</span>
+              </label>
+
+              <button type="button" class="primary-button" id="btn-git-pull" style="width: 100%;">
+                <i class="ph-bold ph-cloud-arrow-down"></i> Kéo mã mới về máy
+              </button>
+            </div>
+
+            <div class="divider-subtle"></div>
+
+            <!-- Recent Commits Log -->
+            <div class="git-recent-log">
+              <div class="git-recent-log-header">
+                <strong>Lịch sử 10 Commit gần nhất</strong>
+              </div>
+              <ul class="git-commit-list" id="git-commit-list">
+                <li class="git-commit-item-empty">Đang tải lịch sử commit…</li>
+              </ul>
+            </div>
+          </div>
+        </aside>
+
+        <!-- KHUNG 2: DANH SÁCH TỆP THAY ĐỔI & BỘ LỌC BẢO MẬT (Trung tâm) -->
+        <section class="panel git-panel-staging">
+          <div class="panel-heading">
+            <div>
+              <p>TÀI NGUYÊN & PHÂN LOẠI</p>
+              <h2>Các tệp thay đổi (<span id="git-changed-count">0</span>)</h2>
+            </div>
+            <div class="git-staging-tools">
+              <button type="button" class="btn-secondary-sm" id="btn-git-select-all" title="Chọn toàn bộ tệp hợp lệ">
+                <i class="ph-bold ph-check-square"></i> Chọn tất cả
+              </button>
+              <button type="button" class="btn-secondary-sm" id="btn-git-deselect-all" title="Bỏ chọn tất cả">
+                <i class="ph-bold ph-square"></i> Bỏ chọn
+              </button>
+            </div>
+          </div>
+
+          <div class="controls">
+            <!-- Filter Pills -->
+            <div class="git-filter-pills" id="git-filter-pills">
+              <button type="button" class="filter-pill active" data-git-filter="all">Tất cả (<span id="pill-count-all">0</span>)</button>
+              <button type="button" class="filter-pill" data-git-filter="tests">Kịch bản Test (<span id="pill-count-tests">0</span>)</button>
+              <button type="button" class="filter-pill" data-git-filter="pages">Page Objects (<span id="pill-count-pages">0</span>)</button>
+              <button type="button" class="filter-pill" data-git-filter="data">Dữ liệu Test (<span id="pill-count-data">0</span>)</button>
+              <button type="button" class="filter-pill" data-git-filter="suites">Suites & Cấu hình (<span id="pill-count-suites">0</span>)</button>
+            </div>
+
+            <!-- File List Container -->
+            <div class="git-files-container">
+              <div class="git-file-table-wrap">
+                <table class="git-file-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 38px;">Chọn</th>
+                      <th style="width: 140px;">Loại tài nguyên</th>
+                      <th>Đường dẫn tệp tin</th>
+                      <th style="width: 120px;">Trạng thái</th>
+                      <th style="width: 80px; text-align: right;">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="git-file-table-body">
+                    <tr>
+                      <td colspan="5" class="git-empty-row">
+                        <div class="git-empty-state">
+                          <i class="ph-bold ph-check-circle" style="color: #22c55e; font-size: 28px;"></i>
+                          <p>Mã nguồn của bạn đang sạch (Clean working tree). Không có thay đổi nào chưa commit.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Visual Diff Preview Section -->
+            <div class="git-diff-card" id="git-diff-card" style="display: none;">
+              <div class="git-diff-header">
+                <div class="git-diff-title">
+                  <i class="ph-bold ph-file-code"></i>
+                  <span>Xem trước Diff: <strong id="git-diff-filename">filename.js</strong></span>
+                </div>
+                <button type="button" class="btn-icon-subtle" id="btn-close-diff" title="Đóng xem trước diff">
+                  <i class="ph-bold ph-x"></i>
+                </button>
+              </div>
+              <pre class="git-diff-pre"><code id="git-diff-content" class="language-diff"></code></pre>
+            </div>
+
+            <!-- Security & Exclusion Shield Card -->
+            <div class="git-security-shield-card">
+              <div class="git-shield-head">
+                <div class="git-shield-title">
+                  <i class="ph-bold ph-shield-check" style="color: #22c55e; font-size: 20px;"></i>
+                  <strong>Khiên Bảo Vệ Mã Nguồn & Tài Liệu Bí Mật (Security Guard)</strong>
+                </div>
+                <span class="badge-shield-active">Đang kích hoạt</span>
+              </div>
+              <p class="git-shield-desc">
+                Hệ thống tự động loại trừ và bảo vệ an toàn cho các tệp bí mật, báo cáo và dữ liệu tạm thời. Các tệp này sẽ <b>không bao giờ</b> bị đưa vào commit hay push lên máy chủ:
+              </p>
+              <div class="git-shield-tags">
+                <span class="shield-tag"><i class="ph-bold ph-lock-key"></i> .env & Credentials</span>
+                <span class="shield-tag"><i class="ph-bold ph-chart-bar"></i> playwright-report/</span>
+                <span class="shield-tag"><i class="ph-bold ph-video-camera"></i> test-results/ (Video, Trace)</span>
+                <span class="shield-tag"><i class="ph-bold ph-camera"></i> evidence/ (Ảnh chụp)</span>
+                <span class="shield-tag"><i class="ph-bold ph-file-dashed"></i> .dashboard-drafts/</span>
+                <span class="shield-tag"><i class="ph-bold ph-cpu"></i> ai/personal/ & Logs</span>
+              </div>
+              <div id="git-blocked-files-list" class="git-blocked-files-list" style="display: none; margin-top: 10px;">
+                <small style="color: var(--danger); font-weight: 600;">Phát hiện tệp thuộc danh mục chặn (đã tự động cách ly):</small>
+                <ul id="git-blocked-items-ul" style="margin: 4px 0 0 0; padding-left: 18px; font-size: 11.5px; color: var(--muted); font-family: monospace;"></ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- KHUNG 3: QUALITY GATE & COMMIT/PUSH (380px) -->
+        <aside class="panel git-panel-commit">
+          <div class="panel-heading">
+            <div>
+              <p>KIỂM ĐỊNH & ĐẨY LÊN</p>
+              <h2>Đóng gói Commit</h2>
+            </div>
+            <i class="ph-bold ph-cloud-arrow-up" aria-hidden="true"></i>
+          </div>
+
+          <div class="controls">
+            <!-- Framework Quality Gate Indicator Card -->
+            <div class="git-qg-card" id="git-qg-card">
+              <div class="git-qg-header">
+                <div class="git-qg-title">
+                  <i class="ph-bold ph-shield-star" id="git-qg-icon" style="color: #0A65CC; font-size: 18px;"></i>
+                  <span>Framework Quality Gate</span>
+                </div>
+                <span class="git-qg-badge is-passed" id="git-qg-badge">Đạt chuẩn</span>
+              </div>
+              <p class="git-qg-summary" id="git-qg-summary">Đã kiểm tra cấu trúc mã nguồn Playwright và Page Objects hợp lệ.</p>
+              <div class="git-qg-issues" id="git-qg-issues" style="display: none;">
+                <ul id="git-qg-issues-list"></ul>
+              </div>
+              <div class="git-qg-actions">
+                <button type="button" class="btn-secondary-sm" id="btn-git-run-qg" style="width: 100%;">
+                  <i class="ph-bold ph-play"></i> Kiểm tra lại chuẩn mã nguồn
+                </button>
+              </div>
+            </div>
+
+            <div class="divider-subtle"></div>
+
+            <!-- Commit Message Composer -->
+            <form id="git-commit-form" class="git-commit-form">
+              <div class="git-form-row">
+                <label for="git-commit-type">Loại thay đổi (Conventional Commits)</label>
+                <select id="git-commit-type" class="input-sm">
+                  <option value="test" selected>test - Thêm hoặc sửa kịch bản test</option>
+                  <option value="data">data - Cập nhật file dữ liệu test (JSON/CSV)</option>
+                  <option value="suite">suite - Thiết lập hoặc cập nhật Test Suite</option>
+                  <option value="feat">feat - Tính năng automation mới</option>
+                  <option value="fix">fix - Sửa lỗi kịch bản hoặc locator</option>
+                  <option value="refactor">refactor - Tối ưu hóa mã nguồn</option>
+                  <option value="docs">docs - Cập nhật tài liệu hướng dẫn</option>
+                </select>
+              </div>
+
+              <div class="git-form-row">
+                <label for="git-commit-scope">Phạm vi / Tính năng (Scope)</label>
+                <input type="text" id="git-commit-scope" placeholder="Ví dụ: loginFlow, jobApply, sampleData" class="input-sm">
+              </div>
+
+              <div class="git-form-row">
+                <label for="git-commit-subject">Mô tả tóm tắt nội dung thay đổi *</label>
+                <textarea id="git-commit-subject" rows="3" placeholder="Ví dụ: thêm kịch bản kiểm tra form đăng ký ứng viên mới" required class="input-sm" maxlength="300"></textarea>
+              </div>
+
+              <!-- Protected Branch Warning & Feature Branch Creator -->
+              <div class="git-protected-card" id="git-protected-card" style="display: none;">
+                <div class="git-protected-head">
+                  <i class="ph-bold ph-shield-warning" style="color: #f59e0b; font-size: 16px;"></i>
+                  <strong>Nhánh 'main' được bảo vệ (Protected Branch)</strong>
+                </div>
+                <p>Không được phép đẩy trực tiếp vào main. Vui lòng nhập tên nhánh Feature để hệ thống đẩy lên và tạo Pull Request gửi Lead phê duyệt:</p>
+                <div class="git-feature-branch-row">
+                  <label for="git-feature-branch-input">Tên nhánh Feature mới *</label>
+                  <input type="text" id="git-feature-branch-input" placeholder="Ví dụ: feature/login-test" class="input-sm">
+                </div>
+              </div>
+
+              <!-- Live Preview of Commit Message -->
+              <div class="git-commit-preview-box">
+                <small>Xem trước Commit Message:</small>
+                <code id="git-commit-preview-text">test: cập nhật bài test</code>
+              </div>
+
+              <!-- Primary Commit & Push Button -->
+              <div class="git-commit-actions" style="margin-top: 14px;">
+                <button type="submit" class="primary-button" id="btn-git-commit-push" style="width: 100%; font-weight: 700; height: 42px;" disabled>
+                  <i class="ph-bold ph-cloud-arrow-up" id="icon-git-commit-push"></i>
+                  <span id="text-git-commit-push">Commit & Push Lên Remote</span>
+                </button>
+              </div>
+
+              <!-- Pull Request Success Box -->
+              <div class="git-pr-success-box" id="git-pr-success-box" style="display: none; margin-top: 12px;">
+                <div class="git-pr-success-header">
+                  <i class="ph-bold ph-git-pull-request"></i>
+                  <strong>Đã đẩy lên nhánh Feature thành công!</strong>
+                </div>
+                <p id="git-pr-success-desc">Mã nguồn đã được đưa lên máy chủ an toàn. Hãy mở Pull Request trên GitHub để gửi Lead xem xét và duyệt vào nhánh main:</p>
+                <a href="#" target="_blank" rel="noopener noreferrer" class="primary-button btn-open-pr" id="btn-open-github-pr" style="display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none; width: 100%; font-weight: 700;">
+                  <i class="ph-bold ph-arrow-square-out"></i> Mở Pull Request Trên GitHub (Gửi Lead Duyệt)
+                </a>
+              </div>
+            </form>
+
+            <!-- Live Output Terminal Log -->
+            <div class="git-terminal-box" id="git-terminal-box" style="margin-top: 14px;">
+              <div class="git-terminal-head">
+                <div class="git-terminal-title">
+                  <i class="ph-bold ph-terminal-window"></i>
+                  <span>Git Execution Log</span>
+                </div>
+                <button type="button" class="btn-icon-subtle" id="btn-clear-git-log" title="Xóa log">
+                  <i class="ph-bold ph-trash"></i>
+                </button>
+              </div>
+              <pre class="git-terminal-body" id="git-terminal-body">Hệ thống Git Studio sẵn sàng. Bấm "Kiểm tra máy chủ", "Kéo mã mới" hoặc "Commit & Push" để thực hiện.</pre>
+            </div>
+          </div>
+        </aside>
+      </div>

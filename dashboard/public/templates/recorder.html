@@ -1,0 +1,293 @@
+      <header class="hero">
+        <div>
+          <p class="eyebrow"><i class="ph-bold ph-video-camera"></i> RECORDER STUDIO</p>
+          <h1>Ghi tương tác & Chuẩn hóa BDD.</h1>
+          <p class="subtitle">Ghi lại thao tác thực tế trên trình duyệt, tự động map vào Page Object và sinh kịch bản BDD an toàn với Sandbox & Backup.</p>
+        </div>
+        <div class="hero-actions">
+          <span id="recorder-badge" class="rec-status-badge idle"><i class="ph-fill ph-circle"></i> Sẵn sàng</span>
+          <small>Trạng thái bộ ghi kịch bản</small>
+        </div>
+      </header>
+
+      <!-- STEPPER PROGRESS BAR -->
+      <nav class="recorder-stepper-bar" aria-label="Tiến trình ghi và tạo kịch bản">
+        <button type="button" class="stepper-step active" data-step="1">
+          <span class="step-badge">1</span>
+          <div class="step-info">
+            <strong>Bước 1: Ghi tương tác UI</strong>
+            <small id="step1-status-text">Mở Codegen & ghi thao tác</small>
+          </div>
+        </button>
+        <div class="stepper-divider"></div>
+        <button type="button" class="stepper-step" data-step="2">
+          <span class="step-badge">2</span>
+          <div class="step-info">
+            <strong>Bước 2: Cấu hình Mapping POM</strong>
+            <small id="step2-status-text">Map method & kịch bản BDD</small>
+          </div>
+        </button>
+        <div class="stepper-divider"></div>
+        <button type="button" class="stepper-step" data-step="3">
+          <span class="step-badge">3</span>
+          <div class="step-info">
+            <strong>Bước 3: Kiểm duyệt mã & Lưu</strong>
+            <small id="step3-status-text">Xem trước & Sandbox Guard</small>
+          </div>
+        </button>
+      </nav>
+
+      <!-- WIZARD STEP PANELS -->
+      <div class="recorder-wizard-container">
+
+        <!-- STEP 1 PANEL -->
+        <div id="rec-step-pane-1" class="rec-step-pane active">
+          <div class="step-pane-grid step1-layout">
+            <div class="panel step-card-main">
+              <div class="panel-heading">
+                <div><p>BƯỚC 1</p><h2>Thiết lập & Khởi động Trình duyệt ghi</h2></div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <button id="rec-reset-btn" type="button" class="btn-text-sm" title="Khôi phục trạng thái hoặc đóng phiên ghi cũ nếu bị treo"><i class="ph ph-arrow-counter-clockwise"></i> Reset</button>
+                  <span class="step-tag-pill">01 • Thu thập</span>
+                </div>
+              </div>
+              <div class="recorder-form-body">
+                <label>URL khởi đầu
+                  <input id="rec-url" type="url" placeholder="https://example.com" value="">
+                </label>
+                <div class="inline-fields" style="grid-template-columns: 1fr 1fr;">
+                  <label>Phân hệ
+                    <select id="rec-platform">
+                      <option value="desktop" selected>Desktop Web (1920x1080)</option>
+                      <option value="mobile-web">Mobile Web (390x844)</option>
+                    </select>
+                  </label>
+                  <label id="rec-device-wrapper" style="display:none;">Thiết bị Mobile
+                    <select id="rec-device">
+                      <option value="iPhone 14">iPhone 14</option>
+                      <option value="Pixel 7">Pixel 7</option>
+                      <option value="Galaxy S9+">Galaxy S9+</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="recorder-actions-bar" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+                  <button id="rec-start-btn" type="button" class="btn-record start"><i class="ph-fill ph-record"></i> Bắt đầu ghi (Codegen)</button>
+                  <button id="rec-stop-btn" type="button" class="btn-record stop" disabled><i class="ph-fill ph-stop"></i> Dừng ghi & Lấy mã</button>
+                </div>
+                <div class="wizard-tip-box">
+                  <i class="ph-bold ph-lightbulb"></i>
+                  <div>
+                    <strong>Hướng dẫn:</strong>
+                    <p>Nhấn <b>"Bắt đầu ghi"</b> để mở trình duyệt. Bạn thao tác bình thường trên web, sau đó nhấn <b>"Dừng ghi & Lấy mã"</b> hoặc chọn 1 bản ghi cũ ở bảng bên phải để sang Bước 2.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel step-card-side">
+              <div class="panel-heading">
+                <div><p>LỊCH SỬ GHI</p><h2>Các bản ghi thô gần đây</h2></div>
+                <div class="heading-btn-group">
+                  <button id="rec-clear-all-btn" type="button" class="btn-icon-danger" title="Xóa tất cả bản ghi thô"><i class="ph-bold ph-trash"></i></button>
+                  <button id="rec-refresh-list-btn" type="button" class="btn-text-sm" title="Làm mới danh sách"><i class="ph ph-arrows-clockwise"></i></button>
+                </div>
+              </div>
+              <div class="recorder-form-body">
+                <div id="recent-recordings-list" class="recent-rec-list" style="max-height: 280px;">
+                  <small class="rec-empty-hint">Chưa có bản ghi nào.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2 PANEL -->
+        <div id="rec-step-pane-2" class="rec-step-pane" style="display:none;">
+          <div class="step-pane-grid step2-layout">
+            <!-- Left: Formatted Raw Code with Syntax Highlighting -->
+            <div class="panel step-card-left">
+              <div class="panel-heading">
+                <div>
+                  <p>MÃ THÔ VỪA GHI</p>
+                  <h2>Playwright Script (<strong id="rec-actions-count">0</strong> hành động)</h2>
+                </div>
+                <div class="heading-btn-group">
+                  <button id="rec-copy-raw-btn" type="button" class="btn-secondary-sm"><i class="ph ph-copy"></i> Sao chép</button>
+                </div>
+              </div>
+              <div class="raw-code-container">
+                <div id="rec-raw-code-highlighted" class="code-highlight-viewer"></div>
+              </div>
+            </div>
+
+            <!-- Right: POM Mapping Wizard -->
+            <div class="panel step-card-right">
+              <div class="panel-heading">
+                <div><p>BƯỚC 2</p><h2>Cấu hình Mapping Page Object & BDD</h2></div>
+                <span class="step-tag-pill">02 • Mapping</span>
+              </div>
+              <div class="recorder-form-body">
+                <div class="pom-mode-switcher" role="radiogroup" aria-label="Chế độ Page Object">
+                  <label class="pom-mode-card active">
+                    <input type="radio" name="rec-pom-mode" value="existing" checked> 
+                    <div class="pom-mode-indicator">
+                      <i class="ph-bold ph-folder-open"></i>
+                    </div>
+                    <div class="pom-mode-text">
+                      <strong>Bổ sung vào Page Object</strong>
+                      <span>Tái sử dụng Page class đã có sẵn</span>
+                    </div>
+                  </label>
+                  <label class="pom-mode-card">
+                    <input type="radio" name="rec-pom-mode" value="new"> 
+                    <div class="pom-mode-indicator">
+                      <i class="ph-bold ph-plus-circle"></i>
+                    </div>
+                    <div class="pom-mode-text">
+                      <strong>Tạo Page Object mới</strong>
+                      <span>Tạo file Page class riêng biệt</span>
+                    </div>
+                  </label>
+                </div>
+
+                <!-- Mode Explanation Guide -->
+                <div id="rec-mode-guide-box" class="pom-mode-guide">
+                  <i class="ph-bold ph-info"></i>
+                  <span id="rec-mode-guide-text">Hệ thống sẽ giữ nguyên code hiện tại, tự động thêm các locator mới vào constructor và chèn 1 method mới vào class đã chọn.</span>
+                </div>
+
+                <div id="rec-existing-page-box">
+                  <label class="form-label">
+                    <div class="label-heading">
+                      <span>Chọn Page Object đích</span>
+                      <span class="label-badge">Tự động quét</span>
+                    </div>
+                    <select id="rec-existing-page-select"></select>
+                  </label>
+                  <div id="rec-existing-methods-hint" class="existing-methods-hint"></div>
+                </div>
+
+                <div id="rec-new-page-box" style="display:none;">
+                  <label class="form-label">
+                    <div class="label-heading">
+                      <span>Tên Page Object mới</span>
+                      <span class="label-badge">PascalCase</span>
+                    </div>
+                    <input id="rec-new-page-name" placeholder="Ví dụ: JobDetailPage">
+                  </label>
+                </div>
+
+                <div class="inline-fields" style="grid-template-columns: 1.2fr 1fr;">
+                  <label class="form-label">
+                    <div class="label-heading">
+                      <span>Tên Method hành động</span>
+                      <span class="label-badge">camelCase</span>
+                    </div>
+                    <input id="rec-method-name" placeholder="Ví dụ: applyJobWithoutCV">
+                  </label>
+                  <label class="form-label">
+                    <div class="label-heading">
+                      <span>Tên Kịch bản / Feature BDD</span>
+                    </div>
+                    <input id="rec-feature-name" placeholder="Ví dụ: Ung Tuyen Khong CV">
+                  </label>
+                </div>
+
+                <div class="mapping-extra-options">
+                  <label class="toggle-switch-card">
+                    <input id="rec-include-evidence" type="checkbox" checked>
+                    <div class="toggle-switch-text">
+                      <strong>Tự động chụp màn hình bằng chứng (ScreenshotHelper)</strong>
+                      <span>Chụp ảnh tự động ở mốc tải trang hoàn tất và sau khi hoàn thành chuỗi thao tác</span>
+                    </div>
+                  </label>
+                </div>
+
+                <!-- Wizard Actions Bar -->
+                <div class="wizard-nav-actions">
+                  <button id="step2-back-btn" type="button" class="btn-wizard-back"><i class="ph ph-arrow-left"></i> Quay lại Bước 1</button>
+                  <button id="rec-convert-btn" type="button" class="btn-convert-wizard"><i class="ph-bold ph-magic-wand"></i> Chuyển đổi & Sang Bước 3 <i class="ph ph-arrow-right"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3 PANEL -->
+        <div id="rec-step-pane-3" class="rec-step-pane" style="display:none;">
+          <div class="panel step3-container-card">
+            <div class="panel-heading">
+              <div><p>BƯỚC 3</p><h2>Kiểm duyệt mã nguồn, Sandbox Guard & Lưu Framework</h2></div>
+              <span class="step-tag-pill">03 • Kiểm duyệt</span>
+            </div>
+
+            <div class="recorder-form-body">
+              <div class="draft-viewer-toolbar">
+                <div class="code-draft-tabs">
+                  <button type="button" class="code-draft-tab active" data-draft="pom">
+                    <i class="ph-bold ph-file-js"></i> 
+                    <span id="draft-pom-tab-title">Page Object</span>
+                    <span class="draft-badge-pom">POM</span>
+                  </button>
+                  <button type="button" class="code-draft-tab" data-draft="spec">
+                    <i class="ph-bold ph-file-code"></i> 
+                    <span id="draft-spec-tab-title">BDD Spec</span>
+                    <span class="draft-badge-spec">BDD Spec</span>
+                  </button>
+                </div>
+                <div class="draft-toolbar-actions">
+                  <span class="lang-tag"><i class="ph-bold ph-code"></i> JavaScript • Playwright</span>
+                  <button id="draft-auto-capture-btn" type="button" class="btn-secondary-sm" title="Tự động phân tích và chèn evidence capture chuẩn vào bản nháp BDD Spec"><i class="ph-bold ph-camera"></i> Tự động chèn Evidence</button>
+                  <button id="draft-copy-btn" type="button" class="btn-secondary-sm"><i class="ph ph-copy"></i> Sao chép</button>
+                  <button id="draft-format-btn" type="button" class="btn-secondary-sm" title="Khôi phục định dạng ban đầu"><i class="ph ph-arrows-clockwise"></i> Khôi phục gốc</button>
+                </div>
+              </div>
+
+              <div class="code-draft-panes">
+                <!-- POM Pane -->
+                <div id="draft-pom-pane" class="code-draft-pane active">
+                  <div class="draft-path-badge"><i class="ph-bold ph-file-js"></i> <span id="draft-pom-path">pages/desktop/...</span></div>
+                  <div class="code-editor-stage draft-editor-stage">
+                    <pre id="draft-pom-preview" class="code-preview"><code id="draft-pom-code"></code></pre>
+                    <textarea id="draft-pom-editor" class="code-editor" wrap="off" spellcheck="false" placeholder="// Mã Page Object được sinh ra sẽ xuất hiện tại đây..."></textarea>
+                  </div>
+                </div>
+
+                <!-- Spec Pane -->
+                <div id="draft-spec-pane" class="code-draft-pane" style="display:none;">
+                  <div class="draft-path-badge"><i class="ph-bold ph-file-code"></i> <span id="draft-spec-path">tests/e2e/desktop/...</span></div>
+                  <div class="code-editor-stage draft-editor-stage">
+                    <pre id="draft-spec-preview" class="code-preview"><code id="draft-spec-code"></code></pre>
+                    <textarea id="draft-spec-editor" class="code-editor" wrap="off" spellcheck="false" placeholder="// Mã Spec BDD được sinh ra sẽ xuất hiện tại đây..."></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Warning Panel -->
+              <div id="rec-warnings-box" class="rec-warnings-box" style="display:none;">
+                <div class="warnings-header"><i class="ph-bold ph-warning"></i> <span>Cảnh báo chất lượng Locator (<strong id="rec-warnings-count">0</strong>)</span></div>
+                <ul id="rec-warnings-list" class="warnings-list"></ul>
+              </div>
+
+              <!-- Framework Guard Status Bar -->
+              <div id="rec-guard-status" class="guard-status-box" style="display:none;">
+                <div class="guard-icon" id="rec-guard-icon"><i class="ph-bold ph-shield-check"></i></div>
+                <div class="guard-details">
+                  <strong id="rec-guard-title">Framework Guard: Sẵn sàng</strong>
+                  <p id="rec-guard-desc">Mã sẽ được kiểm tra cấu trúc nghiêm ngặt qua <code>check:framework</code> ngay sau khi lưu.</p>
+                </div>
+              </div>
+
+              <!-- Wizard Actions Bar (Consistent Bottom Layout) -->
+              <div class="wizard-nav-actions">
+                <button id="step3-back-btn" type="button" class="btn-wizard-back"><i class="ph ph-arrow-left"></i> Quay lại Bước 2</button>
+                <div class="wizard-nav-actions-right">
+                  <button id="rec-save-btn" type="button" class="btn-save-project" disabled><i class="ph-bold ph-floppy-disk"></i> Lưu vào Framework (Tự động Backup & Check)</button>
+                  <button id="rec-run-spec-btn" type="button" class="btn-run-targeted" style="display:none;"><i class="ph-bold ph-play"></i> 🚀 Chạy thử kịch bản này ngay</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>

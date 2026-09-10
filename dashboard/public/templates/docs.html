@@ -1,0 +1,260 @@
+      <header class="hero docs-hero">
+        <div>
+          <p class="eyebrow"><i class="ph-bold ph-book-open"></i> KNOWLEDGE BASE & AI PLAYBOOK</p>
+          <h1>Trung tâm Hướng dẫn & AI Playbook</h1>
+          <p class="subtitle">Kho tri thức kiểm thử, thư viện Prompt AI chuẩn BDD/POM, tra cứu lệnh CLI và cẩm nang vận hành.</p>
+        </div>
+        <div class="hero-actions docs-hero-actions">
+          <div class="docs-quick-pills">
+            <button type="button" class="doc-quick-pill active" id="pill-quick-prompts">
+              <i class="ph-bold ph-sparkle"></i> Thư viện Prompts
+            </button>
+            <button type="button" class="doc-quick-pill" id="pill-quick-cli">
+              <i class="ph-bold ph-terminal-window"></i> Tra cứu CLI
+            </button>
+            <button type="button" class="doc-quick-pill" id="pill-quick-guide" data-quick-doc="docs/SETUP_GUIDE.md">
+              <i class="ph-bold ph-rocket-launch"></i> Cài đặt nhanh
+            </button>
+            <button type="button" class="doc-quick-pill ghost" id="doc-refresh-btn" title="Tải lại danh mục tài liệu">
+              <i class="ph-bold ph-arrows-clockwise"></i> Làm mới
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Sub-navigation Bar -->
+      <div class="docs-subnav-container">
+        <div class="docs-subnav" role="tablist" aria-label="Phân hệ hướng dẫn">
+          <button type="button" class="docs-subtab active" data-docs-subtab="prompts" role="tab" aria-selected="true">
+            <i class="ph-bold ph-sparkle"></i>
+            <span>Thư viện Prompt AI</span>
+            <span class="docs-subtab-badge">Mới</span>
+          </button>
+          <button type="button" class="docs-subtab" data-docs-subtab="cli" role="tab" aria-selected="false">
+            <i class="ph-bold ph-terminal-window"></i>
+            <span>Tra cứu lệnh CLI</span>
+          </button>
+          <button type="button" class="docs-subtab" data-docs-subtab="guides" role="tab" aria-selected="false">
+            <i class="ph-bold ph-book-open"></i>
+            <span>Cẩm nang tài liệu</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= Sub-Panel 1: Thư viện Prompt AI ================= -->
+      <div id="docs-subpanel-prompts" class="docs-subpanel active">
+        <!-- Interactive Prompt Builder -->
+        <div class="prompt-builder-card">
+          <div class="prompt-builder-head">
+            <div class="prompt-builder-title-group">
+              <span class="prompt-builder-icon"><i class="ph-bold ph-magic-wand"></i></span>
+              <div>
+                <h3>Trình tạo Prompt Thông Minh (Interactive Prompt Builder)</h3>
+                <p>Điền nhanh thông tin bài test để tự động tạo Prompt chuẩn Framework, 1-Click sao chép vào VS Code Copilot, Cursor hoặc Claude</p>
+              </div>
+            </div>
+            <div class="prompt-builder-type-pills" id="prompt-builder-type-pills">
+              <button type="button" class="builder-type-btn active" data-type="bdd_spec"><i class="ph-bold ph-tree-structure"></i> Kịch bản BDD Spec</button>
+              <button type="button" class="builder-type-btn" data-type="page_object"><i class="ph-bold ph-browsers"></i> Page Object Model</button>
+              <button type="button" class="builder-type-btn" data-type="fix_flaky"><i class="ph-bold ph-first-aid"></i> Fix Test Flaky / Lỗi</button>
+              <button type="button" class="builder-type-btn" data-type="test_data"><i class="ph-bold ph-database"></i> Sinh Test Data JSON</button>
+              <button type="button" class="builder-type-btn" data-type="qa_audit"><i class="ph-bold ph-shield-check"></i> Senior QA Review</button>
+            </div>
+          </div>
+
+          <div class="prompt-builder-body">
+            <div class="prompt-builder-inputs">
+              <div class="builder-field">
+                <label for="builder-input-feature"><i class="ph-bold ph-tag"></i> Tên tính năng / Kịch bản</label>
+                <input type="text" id="builder-input-feature" placeholder="Ví dụ: Đăng ký tài khoản ứng viên mới" value="Đăng ký tài khoản ứng viên mới">
+              </div>
+              <div class="builder-field">
+                <label for="builder-input-precondition"><i class="ph-bold ph-signpost"></i> Tiền điều kiện (Precondition)</label>
+                <input type="text" id="builder-input-precondition" placeholder="Ví dụ: Khách vãng lai truy cập từ trang chủ" value="Khách vãng lai truy cập từ trang chủ (Chưa đăng nhập)">
+              </div>
+              <div class="builder-field">
+                <label for="builder-input-steps"><i class="ph-bold ph-list-numbers"></i> Các bước kiểm thử (Steps & Assertions)</label>
+                <textarea id="builder-input-steps" rows="3" placeholder="Ví dụ: 1. Click nút Đăng ký -> 2. Nhập họ tên, email, mật khẩu -> 3. Kiểm tra điều hướng">1. Nhấp nút 'Đăng ký ngay' trên thanh điều hướng trang chủ
+2. Điền đầy đủ thông tin biểu mẫu đăng ký ứng viên hợp lệ
+3. Nhấp nút 'Tạo tài khoản' và kiểm tra thông báo thành công
+4. Xác minh hệ thống tự động chuyển hướng vào màn hình Onboarding</textarea>
+              </div>
+            </div>
+
+            <div class="prompt-builder-preview">
+              <div class="preview-header">
+                <span><i class="ph-bold ph-terminal"></i> Prompt sinh ra (Chuẩn Framework):</span>
+                <button type="button" class="btn-copy-prompt-main" id="btn-copy-builder-prompt">
+                  <i class="ph-bold ph-copy"></i> <span>Sao chép Prompt</span>
+                </button>
+              </div>
+              <pre class="prompt-preview-box" id="prompt-preview-box"></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Curated Prompt Cards Grid -->
+        <div class="prompt-templates-section">
+          <div class="prompt-section-header">
+            <div>
+              <h3><i class="ph-bold ph-squares-four"></i> Thư Viện Prompt Mẫu Cho QA & Tester</h3>
+              <p>Mẫu prompt tiêu chuẩn có thể copy dùng ngay cho từng tình huống kiểm thử cụ thể</p>
+            </div>
+            <div class="prompt-filter-tags" id="prompt-filter-tags">
+              <button type="button" class="prompt-tag-btn active" data-filter="all">Tất cả (6)</button>
+              <button type="button" class="prompt-tag-btn" data-filter="spec">BDD Spec</button>
+              <button type="button" class="prompt-tag-btn" data-filter="pom">Page Object</button>
+              <button type="button" class="prompt-tag-btn" data-filter="heal">Fix Lỗi & Flaky</button>
+              <button type="button" class="prompt-tag-btn" data-filter="data">Test Data</button>
+              <button type="button" class="prompt-tag-btn" data-filter="qa">Senior QA Audit</button>
+            </div>
+          </div>
+          <div class="prompt-cards-grid" id="prompt-cards-grid"></div>
+        </div>
+      </div>
+
+      <!-- ================= Sub-Panel 2: Tra cứu lệnh CLI ================= -->
+      <div id="docs-subpanel-cli" class="docs-subpanel" hidden>
+        <div class="cli-cheatsheet-card">
+          <div class="cli-cheatsheet-header">
+            <div>
+              <h3><i class="ph-bold ph-terminal-window"></i> Tra Cứu Lệnh Dòng Lệnh Nhanh (CLI Cheat Sheet)</h3>
+              <p>Tổng hợp câu lệnh Playwright & Framework thường dùng hàng ngày kèm 1-Click sao chép</p>
+            </div>
+            <div class="cli-filter-tags" id="cli-filter-tags">
+              <button type="button" class="cli-tag-btn active" data-filter="all">Tất cả (10)</button>
+              <button type="button" class="cli-tag-btn" data-filter="suite">Chạy Test Suite</button>
+              <button type="button" class="cli-tag-btn" data-filter="debug">Debug & UI Mode</button>
+              <button type="button" class="cli-tag-btn" data-filter="report">Báo Cáo</button>
+              <button type="button" class="cli-tag-btn" data-filter="quality">Quality Gate</button>
+            </div>
+          </div>
+          <div class="cli-table-wrapper">
+            <table class="cli-cheatsheet-table" id="cli-cheatsheet-table">
+              <thead>
+                <tr>
+                  <th style="width: 300px;">Câu lệnh Terminal</th>
+                  <th>Mục đích & Tác dụng</th>
+                  <th style="width: 140px;">Phân nhóm</th>
+                  <th style="width: 110px; text-align: center;">Sao chép</th>
+                </tr>
+              </thead>
+              <tbody id="cli-cheatsheet-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= Sub-Panel 3: Cẩm nang tài liệu Markdown ================= -->
+      <div id="docs-subpanel-guides" class="docs-subpanel" hidden>
+        <div class="panel docs-studio-panel">
+          <!-- Left Sidebar: Explorer -->
+          <aside class="docs-sidebar">
+            <div class="docs-search-box">
+              <i class="ph-bold ph-magnifying-glass docs-search-icon"></i>
+              <input id="docs-search-input" type="search" placeholder="Tìm kiếm tài liệu, prompt, skill..." autocomplete="off">
+              <span class="docs-search-badge" title="Phím tắt">/</span>
+            </div>
+
+            <!-- Filter Chips -->
+            <div class="docs-filter-chips" role="tablist">
+              <button type="button" class="doc-chip active" data-filter="all">Tất cả</button>
+              <button type="button" class="doc-chip" data-filter="guides"><i class="ph-bold ph-book"></i> Hướng dẫn</button>
+              <button type="button" class="doc-chip" data-filter="prompts"><i class="ph-bold ph-sparkle"></i> Prompts AI</button>
+              <button type="button" class="doc-chip" data-filter="skills"><i class="ph-bold ph-brain"></i> Skills</button>
+            </div>
+
+            <!-- Document Catalog List -->
+            <div id="docs-tree-list" class="docs-tree-list"></div>
+
+            <div class="docs-sidebar-footer">
+              <span id="docs-total-count"><i class="ph-bold ph-files"></i> Đang tải...</span>
+              <span class="docs-version-pill">v1.0.0</span>
+            </div>
+          </aside>
+
+          <!-- Right Pane: Viewer & Editor with Mini TOC -->
+          <main class="docs-content-pane">
+            <!-- Sticky Top Toolbar -->
+            <div class="docs-toolbar">
+              <div class="docs-toolbar-meta">
+                <div class="docs-breadcrumb" id="docs-breadcrumb">
+                  <span class="crumb-root"><i class="ph-bold ph-book-open"></i> Tài liệu</span>
+                  <span class="crumb-sep">/</span>
+                  <span class="crumb-cat" id="docs-crumb-category">Hướng dẫn</span>
+                  <span class="crumb-sep">/</span>
+                  <strong class="crumb-file" id="docs-crumb-filename">SETUP_GUIDE.md</strong>
+                </div>
+                <div class="docs-meta-pills">
+                  <span class="doc-type-pill" id="docs-type-pill">MARKDOWN</span>
+                  <button type="button" class="doc-path-pill" id="docs-path-pill" title="Bấm để sao chép đường dẫn file">
+                    <i class="ph-bold ph-file-code"></i>
+                    <span id="docs-path-text">docs/SETUP_GUIDE.md</span>
+                    <i class="ph-bold ph-copy doc-path-copy-icon"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="docs-toolbar-actions">
+                <button type="button" class="btn-doc-tool" id="doc-btn-copy-path" title="Sao chép đường dẫn file">
+                  <i class="ph-bold ph-copy"></i>
+                  <span>Sao chép path</span>
+                </button>
+                <button type="button" class="btn-doc-tool" id="doc-btn-copy-content" title="Sao chép toàn bộ nội dung Markdown">
+                  <i class="ph-bold ph-clipboard-text"></i>
+                  <span>Sao chép nội dung</span>
+                </button>
+                <button type="button" class="btn-doc-tool btn-doc-edit" id="doc-btn-edit">
+                  <i class="ph-bold ph-pencil-simple"></i>
+                  <span>Chỉnh sửa</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Content Area with TOC split -->
+            <div class="docs-main-layout">
+              <!-- Empty State -->
+              <div class="docs-empty-state" id="docs-empty-state">
+                <div class="docs-empty-icon">
+                  <i class="ph-duotone ph-book-open"></i>
+                </div>
+                <h3>Chọn một tài liệu hoặc prompt</h3>
+                <p>Nội dung Markdown, quy tắc kiểm thử và hướng dẫn sẽ hiển thị tại đây.</p>
+              </div>
+
+              <!-- Markdown Body Container -->
+              <article class="docs-body-container" id="docs-body-container" hidden>
+                <div id="docs-markdown-body" class="docs-markdown-body markdown"></div>
+              </article>
+
+              <!-- Mini Table of Contents (Right Rail) -->
+              <aside class="docs-toc-pane" id="docs-toc-pane" hidden>
+                <div class="docs-toc-header">
+                  <i class="ph-bold ph-list-dashes"></i>
+                  <span>Mục lục bài viết</span>
+                </div>
+                <nav class="docs-toc-list" id="docs-toc-list"></nav>
+              </aside>
+
+              <!-- Editor Container -->
+              <div class="docs-editor-pane" id="docs-editor-pane" hidden>
+                <div class="docs-editor-header">
+                  <span><i class="ph-bold ph-code"></i> Chế độ chỉnh sửa Markdown</span>
+                  <small id="docs-editor-filepath">docs/SETUP_GUIDE.md</small>
+                </div>
+                <textarea id="docs-edit-textarea" class="docs-edit-textarea" spellcheck="false" aria-label="Nội dung Markdown"></textarea>
+                <div class="docs-editor-actions">
+                  <button type="button" class="btn-doc-tool" id="doc-btn-format">
+                    <i class="ph-bold ph-magic-wand"></i> Định dạng
+                  </button>
+                  <button type="button" class="btn-doc-tool" id="doc-btn-cancel-edit">
+                    Hủy bỏ
+                  </button>
+                  <button type="button" class="btn-doc-tool btn-doc-save" id="doc-btn-save">
+                    <i class="ph-fill ph-floppy-disk"></i> Lưu thay đổi
+                  </button>
+                </div>
+              </div>
+            </div>
+          </main>
+      </div>

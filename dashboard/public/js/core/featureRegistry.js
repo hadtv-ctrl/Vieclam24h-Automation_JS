@@ -6,6 +6,7 @@
 
 import { eventBus } from './eventBus.js';
 import { stateStore } from './stateStore.js';
+import { templateLoader } from './templateLoader.js';
 
 export class FeatureRegistry {
   constructor() {
@@ -67,7 +68,16 @@ export class FeatureRegistry {
     // 3. Update DOM view visibility
     this._updateDomTabsAndPanels(targetViewId);
 
-    // 4. Mount target view
+    // 4. On-demand Template Loading (Phase 5)
+    if (templateLoader.hasTemplate(targetViewId) && !templateLoader.isLoaded(targetViewId)) {
+      try {
+        await templateLoader.loadViewTemplate(targetViewId);
+      } catch (err) {
+        console.error(`[FeatureRegistry] Template load error for "${targetViewId}":`, err);
+      }
+    }
+
+    // 5. Mount target view
     if (this._views.has(targetViewId)) {
       const nextView = this._views.get(targetViewId);
       try {
@@ -79,7 +89,7 @@ export class FeatureRegistry {
 
     if (currentGen !== this._navigationGen) return;
 
-    // 5. Emit event
+    // 6. Emit event
     eventBus.emit('view:changed', { from: prevViewId, to: targetViewId });
   }
 
