@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Monolith being incrementally decomposed via Plan 09 strangler pattern
 // --- APPLY CONFIG ---
 function normalizeFontSizePx(value) {
   const match = /^(\d+(?:\.\d+)?)px$/i.exec(String(value || '').trim());

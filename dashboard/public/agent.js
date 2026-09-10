@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Scheduled for extraction to agent slice in Plan 09 Phase 4.7
 (() => {
   'use strict';
   const byId = id => document.getElementById(id);

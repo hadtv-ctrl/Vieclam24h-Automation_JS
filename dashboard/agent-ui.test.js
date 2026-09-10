@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Scheduled for splitting in Plan 09 Phase 4
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

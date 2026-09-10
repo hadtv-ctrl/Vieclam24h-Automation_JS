@@ -11,6 +11,7 @@ export class FeatureRegistry {
   constructor() {
     this._views = new Map();
     this._activeViewId = null;
+    this._navigationGen = 0;
   }
 
   registerView(id, definition) {
@@ -43,6 +44,7 @@ export class FeatureRegistry {
       console.warn(`[FeatureRegistry] Unknown view: "${targetViewId}". Defaulting to container search.`);
     }
 
+    const currentGen = ++this._navigationGen;
     const prevViewId = this._activeViewId;
     if (prevViewId === targetViewId) return;
 
@@ -55,6 +57,8 @@ export class FeatureRegistry {
         console.error(`[FeatureRegistry] Error unmounting "${prevViewId}":`, err);
       }
     }
+
+    if (currentGen !== this._navigationGen) return;
 
     // 2. Update active state
     this._activeViewId = targetViewId;
@@ -72,6 +76,8 @@ export class FeatureRegistry {
         console.error(`[FeatureRegistry] Error mounting "${targetViewId}":`, err);
       }
     }
+
+    if (currentGen !== this._navigationGen) return;
 
     // 5. Emit event
     eventBus.emit('view:changed', { from: prevViewId, to: targetViewId });
