@@ -7724,7 +7724,7 @@ function setRecorderStep(step) {
     const s = Number(btn.dataset.step);
     btn.classList.toggle('active', s === step);
     btn.classList.toggle('completed', s < step);
-    btn.disabled = s > maxUnlockedRecorderStep;
+    btn.disabled = false;
   });
 
   // Update step subtext
@@ -7873,13 +7873,13 @@ function initRecorderStudioListeners() {
   isRecorderStudioListenersInitialized = true;
 
   document.querySelectorAll('.recorder-stepper-bar .stepper-step').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const targetStep = Number(btn.dataset.step);
-    if (targetStep <= maxUnlockedRecorderStep) {
-      setRecorderStep(targetStep);
-    }
+    btn.addEventListener('click', () => {
+      const targetStep = Number(btn.dataset.step);
+      if (targetStep >= 1 && targetStep <= 3) {
+        setRecorderStep(targetStep);
+      }
+    });
   });
-});
 
 $('#step2-back-btn')?.addEventListener('click', () => setRecorderStep(1));
 $('#step3-back-btn')?.addEventListener('click', () => setRecorderStep(2));
