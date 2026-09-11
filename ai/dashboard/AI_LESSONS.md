@@ -151,3 +151,23 @@ Only record a lesson after the defect is confirmed and its root cause is underst
 - Regression check: In Chromium at 1920x1080 and 1440x900, verify `#brand-logo` renders `<img>` with clean scaling; test valid SVG, valid PNG, empty URL, and broken image URLs; toggle dark and light modes and verify razor-sharp contrast across both.
 - Related files: `dashboard/public/app.js`, `dashboard/public/styles.css`, `core/system/gitSyncService.js`.
 
+### 2026-09-10 — Dynamic template loading requires lifecycle-aware event binding and null-guarded mutations
+
+- Area: Dynamic Template Lifecycle & Event Binding Architecture.
+- Symptom: Action buttons, tabs, wizards, and controls across Page Manager, Recorder Studio, Git Sync, BDD Studio, and Test Suites do nothing when clicked; views occasionally fail to load files or freeze in loading states.
+- Root cause:
+  1. *Static Startup Binding on On-Demand DOM*: In Phase 5 modularization, views were extracted to `templates/*.html` to drop initial DOM tags from 3,453 to 463. However, `app.js` evaluated hundreds of top-level `document.getElementById(...)?.addEventListener(...)` at startup before templates were injected. Optional chaining (`?.`) prevented boot errors but silently failed to attach listeners. When templates were loaded on-demand later, buttons had zero listeners attached.
+  2. *Unguarded DOM Mutations (Domino Crashing)*: Shared helpers (`setInputValue`, `renderSettings`, `fillSettingSelect`) mutated `.value` or `.checked` assuming elements existed in DOM. Throwing an unhandled `TypeError: Cannot set properties of null` aborted the entire JS thread, freezing subsequent file loads and event dispatches.
+  3. *Modular Slice API Drift*: Slices queried non-existent endpoints (e.g. `/api/pages` instead of `/api/object-repository/pages`), returning 404 and leaving views stuck.
+  4. *Hub-Satellite Split-Brain*: Changes in Hub `D:\_Automation-Project` without running `npm run sync:satellites` left running satellite servers (e.g. `D:\_SieuVietGroup` on port 4180) serving stale client code.
+- Correct pattern:
+  1. Wrap view listeners in idempotent lifecycle initializers (`init<View>Listeners()`) guarded by DOM element presence (`if (!root || !document.getElementById(primaryBtn)) return; isInitialized = true;`).
+  2. Invoke view initializers inside both slice `mount()` and view open routines (`open<View>()`), or use document-level event delegation (`document.addEventListener('click', e => { const btn = e.target.closest(sel); if (btn) ... })`).
+  3. Guard all DOM property writes with existence checks before assigning values.
+  4. Align slice API endpoints strictly with canonical server routes.
+  5. Always execute `npm run sync:satellites` after modifying shared code in Hub.
+- Preventive rule: Never attach startup `addEventListener` to elements inside lazy-loaded templates. Always guard DOM property writes. Always verify slice API endpoints against backend contracts. Always synchronize satellites upon completing Hub updates.
+- Regression check: Run Playwright probe exercising all 10 views, subtabs, and primary buttons; verify zero console errors, clean DOM updates, and 20/20 API suite passes.
+- Related files: `dashboard/public/app.js`, `dashboard/public/templates/*.html`, `dashboard/public/js/views/*/*Slice.js`, `scripts/sync-satellites.js`.
+
+
