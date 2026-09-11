@@ -6242,8 +6242,15 @@ function switchDocsSubtab(targetSubtab) {
   Object.entries(panels).forEach(([key, panel]) => {
     if (panel) {
       const match = key === targetSubtab;
-      panel.hidden = !match;
-      panel.classList.toggle('active', match);
+      if (match) {
+        panel.removeAttribute('hidden');
+        panel.classList.add('active');
+        panel.style.display = 'flex';
+      } else {
+        panel.setAttribute('hidden', '');
+        panel.classList.remove('active');
+        panel.style.display = 'none';
+      }
     }
   });
 
