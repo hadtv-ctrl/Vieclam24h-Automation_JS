@@ -61,4 +61,22 @@
   2. Sau khi chọn xong multi-select dropdown, luôn kích hoạt cơ chế `closeActiveDropdownIfAny()` thực hiện click ra ngoài (`force: true` vào nhãn form) để kích hoạt sự kiện `onClickOutside` đóng popover an toàn.
   3. Precondition đăng nhập phải kiểm tra ngữ cảnh test (`featureName.includes('onboarding')`) để giữ nguyên popup Onboarding khi đang kiểm thử luồng Onboarding.
 
+### [LEARN-004] Đồng Bộ Hóa Bất Đồng Bộ Giữa Tải Modular HTML Template Và View Controller Trong Dashboard
+- **Nguồn trích xuất:** BUG-DASHBOARD-EMPTY-VIEWS-ON-MODULAR-TEMPLATES
+- **Role quan sát:** Senior Automation QA Engineer & Fullstack Dashboard Maintainer
+- **Quan sát (Observation):**
+  1. Khi tách mã nguồn HTML của monolithic dashboard (4,112 dòng) thành các file template con trong `templates/*.html`, việc tải template diễn ra bất đồng bộ qua `fetch()`.
+  2. Các hàm controller trong `app.js` (`openPageManager`, `initVisualBuilder`, `openSuitesManager`, `openDataManager`) chạy đồng bộ ngay khi người dùng click vào tab chuyển view. Tại thời điểm controller chạy, template chưa kịp chèn vào DOM, các truy vấn `document.getElementById` trả về `null` dẫn đến việc các danh sách (kịch bản BDD, Page Objects, Test Suites, Data) hoàn toàn trắng trơn hoặc bị kẹt vô tận ở spinner `Đang đọc các kịch bản...`.
+  3. Cờ khởi tạo (`suitesViewInitialized`, `isVisualBuilderInitialized`) bị gán `true` khi phần tử chưa tồn tại trong DOM, khóa vĩnh viễn việc lắng nghe sự kiện của các nút filter, search và refresh.
+- **Bằng chứng (Evidence):** `dashboard/public/app.js`, `dashboard/public/templates/*.html`, `dashboard/public/js/core/templateLoader.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Technical Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Xây dựng cầu nối `ensureViewTemplate(viewId)` và `preloadAllViewTemplates()` ngay tại bootstrap của script client chính để tải trước toàn bộ template.
+  2. Luôn đặt `await ensureViewTemplate(viewId)` tại cả sự kiện click tab chuyển view và dòng đầu tiên của từng view controller.
+  3. Chỉ cho phép các cờ khởi tạo (`isInitialized = true`) được bật khi phần tử DOM cốt lõi (`search-input`, `list-container`) thực sự tồn tại trong DOM.
+
+
 

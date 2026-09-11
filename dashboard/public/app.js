@@ -139,7 +139,9 @@ $('#theme-button')?.addEventListener('click', () => {
 applyTheme(preferredTheme());
 
 function fillSelect(selector, values, allLabel) {
-  $(selector).innerHTML = values.map((value) =>
+  const el = $(selector);
+  if (!el) return;
+  el.innerHTML = values.map((value) =>
     `<option value="${escapeHtml(value)}">${value === 'all' ? allLabel : escapeHtml(value)}</option>`
   ).join('');
 }
@@ -14377,17 +14379,17 @@ window.addEventListener('focus', updateGlobalHeaderTokenQuota);
    SUITES VIEW CONTROLLER (TIỆN ÍCH > KỊCH BẢN TEST SUITE)
 ============================================================================== */
 async function openSuitesManager() {
+  await ensureViewTemplate('suites-view');
   initSuitesView();
   if (!settingsCache) {
     try {
       const settings = await request('/api/settings');
-      renderSettings(settings);
+      settingsCache = settings;
     } catch (err) {
       console.error('Lỗi tải suites settings:', err);
     }
-  } else {
-    renderSuitesView(settingsCache.suites || {});
   }
+  renderSuitesView(settingsCache?.suites || window.dashboardSuites || {});
 }
 
 document.getElementById('runner-goto-suites-btn')?.addEventListener('click', () => {

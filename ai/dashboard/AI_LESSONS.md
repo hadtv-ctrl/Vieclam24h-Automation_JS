@@ -151,3 +151,22 @@ Only record a lesson after the defect is confirmed and its root cause is underst
 - Regression check: In Chromium at 1920x1080 and 1440x900, verify `#brand-logo` renders `<img>` with clean scaling; test valid SVG, valid PNG, empty URL, and broken image URLs; toggle dark and light modes and verify razor-sharp contrast across both.
 - Related files: `dashboard/public/app.js`, `dashboard/public/styles.css`, `core/system/gitSyncService.js`.
 
+### 2026-09-11 — Modular HTML template loading must be awaited before invoking view controllers
+
+- Area: Modular Studio Architecture, View Tab Switching & Data Rendering.
+- Symptom: Dashboard displays empty lists / zero items across BDD Test Scripts (stuck on "Đang đọc các kịch bản..."), Page Objects (blank list, 0 pages), Test Suites (total 0 suites), and Data Studio upon navigation.
+- Root cause:
+  1. Commit `0d41463` extracted 4,112 lines of studio view HTML from `index.html` into 12 standalone template files (`templates/*.html`).
+  2. Tab click event listeners in `app.js` executed view controllers (`openPageManager()`, `initVisualBuilder()`, `openSuitesManager()`) synchronously *before* the asynchronous template loader fetched and injected the HTML into the container.
+  3. When DOM queries ran against container elements (`#script-files-list`, `#page-manager-existing-list`, `#suites-sidebar-list`), they returned `null`, silently skipping rendering or locking initialization flags (`suitesViewInitialized = true`, `isVisualBuilderInitialized = true`). Once the template finally loaded into the DOM, its static placeholder spinner or 0-count badges remained permanently.
+- Correct pattern:
+  1. Implement an explicit `ensureViewTemplate(viewId)` promise cache in `app.js` that checks whether the container has children, fetches `/templates/${name}.html` if empty, and populates `innerHTML`.
+  2. Invoke `preloadAllViewTemplates()` immediately at bootstrap to asynchronously preload all 12 templates (~5-10ms on localhost).
+  3. `await ensureViewTemplate(...)` both in `.view-tab` click handlers and at the entry point of each individual view controller.
+  4. Guard initialization functions (`initSuitesView`, `initVisualBuilderControls`, `initDataStudioControls`, `initGitStudio`) so they only latch `true` when DOM elements actually exist.
+  5. Connect `window.onViewSwitched(targetViewId)` to allow cross-slice and event bus navigation to cleanly trigger view controllers.
+- Preventive rule: Any view controller querying the DOM must guarantee that its container markup is fully mounted prior to reading or binding elements. Never rely on implicit asynchronous script execution order between classic scripts and ES modules.
+- Regression check: In browser, switch between Runner, BDD Studio, Page Objects, Test Suites, Data Studio, Fixtures, and Settings; verify all items (25 scripts, 19 pages, 19 suites, 5 datasets) render instantly with correct hero counts and zero stuck spinners.
+- Related files: `dashboard/public/app.js`, `dashboard/public/js/core/templateLoader.js`, `dashboard/public/js/core/featureRegistry.js`, `dashboard/public/js/legacy/legacyAdapter.js`, `dashboard/public/templates/*.html`.
+
+
