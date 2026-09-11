@@ -168,6 +168,22 @@ Only record a lesson after the defect is confirmed and its root cause is underst
   5. Always execute `npm run sync:satellites` after modifying shared code in Hub.
 - Preventive rule: Never attach startup `addEventListener` to elements inside lazy-loaded templates. Always guard DOM property writes. Always verify slice API endpoints against backend contracts. Always synchronize satellites upon completing Hub updates.
 - Regression check: Run Playwright probe exercising all 10 views, subtabs, and primary buttons; verify zero console errors, clean DOM updates, and 20/20 API suite passes.
-- Related files: `dashboard/public/app.js`, `dashboard/public/templates/*.html`, `dashboard/public/js/views/*/*Slice.js`, `scripts/sync-satellites.js`.
+### 2026-09-11 — Universal document-level delegation, boolean attribute removal, and stepper decoupling for subtabs
+
+- Area: Subtabs, Sub-subtabs, Stepper Tabs, and Filter Pills across All Dashboard Views.
+- Symptom: Clicking subtabs (Docs prompts/cli/guides, BDD inspect/edit/create, Page Manager create/inspect, Data Studio create/inspect, Resources reports/evidence), stepper tabs (BDD Wizard 1-6, Recorder 1-3), or filter pills (builder type, prompt tags, CLI tags, doc chips, data types, platforms) does nothing, fails to switch panels, or remains visually frozen.
+- Root cause:
+  1. *Subtabs in Dynamic Templates Missing Handlers*: Subtab switching functions (`switchDocsSubtab`, `switchResourceCategory`, `goToWizardStep`, `setRecorderStep`) were scoped locally or bound at startup via `querySelectorAll`, binding to 0 elements when templates weren't loaded yet.
+  2. *CSS `[hidden]` Boolean Attribute Conflict*: Setting `panel.hidden = false` in JS does not remove the boolean attribute `hidden=""` in certain browser environments. When CSS specifies `.docs-subpanel[hidden] { display: none !important; }`, the panel stays hidden until `panel.removeAttribute('hidden')` is explicitly called.
+  3. *Stepper Gating & Disabled Blocking*: BDD and Recorder stepper tabs were gated behind form validation or `btn.disabled = true`, preventing users from clicking between sub-subtabs to explore or preview steps.
+  4. *Exposing Functions to Global Window*: Slice modules and dynamically loaded templates could not invoke legacy controllers because key switch functions were not exposed on `window`.
+- Correct pattern:
+  1. Implement Universal Document-Level Event Delegation in `app.js` (`document.addEventListener('click', e => { ... e.target.closest(...) })`) for all subtabs, sub-subtabs, filter pills, and stepper buttons.
+  2. Use explicit `panel.removeAttribute('hidden')`, `panel.classList.add('active')`, and `panel.style.display = 'flex'` / `'block'`.
+  3. Decouple sequential step validation from direct tab clicks (validation is only enforced on the "Next" / "Tiếp theo" button, allowing free direct tab inspection).
+  4. Expose all switcher functions on `window` (`window.switchDocsSubtab`, `window.switchResourceCategory`, `window.goToWizardStep`, `window.setRecorderStep`, `window.openDocsView`, `window.openRecorderStudio`).
+- Preventive rule: Never rely on local element listeners for subtabs residing inside dynamic HTML templates. Always use universal document delegation or slice mount lifecycle binding. Always explicitly remove boolean `hidden` attributes. Always run automated multi-view subtab clickability suites (e.g. 55/55 PASS) across the satellite constellation.
+- Regression check: Run automated Playwright suite exercising all 55 subtab, sub-subtab, filter pill, and stepper actions; verify 55/55 PASS with 0 timeouts and 0 unexpected console errors.
+- Related files: `dashboard/public/app.js`, `dashboard/public/js/main.js`, `dashboard/public/templates/*.html`, `dashboard/public/js/views/*/*Slice.js`.
 
 
