@@ -6657,6 +6657,13 @@ function initDocsViewListeners() {
     }
   });
 
+  function copyDocPath() {
+    if (currentDocFile) {
+      navigator.clipboard?.writeText(currentDocFile);
+      showToast('Đã sao chép đường dẫn file!', 'success');
+    }
+  }
+
   document.getElementById('doc-btn-copy-path')?.addEventListener('click', copyDocPath);
   document.getElementById('docs-path-pill')?.addEventListener('click', copyDocPath);
 
