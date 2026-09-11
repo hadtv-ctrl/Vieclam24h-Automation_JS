@@ -19,11 +19,11 @@ export class SuitesSlice {
 
   async mount() {
     this._mounted = true;
-    this._bindDomEvents();
-    this._registerBridgeActions();
     if (typeof window.openSuitesManager === 'function') {
       try { await window.openSuitesManager(); } catch (_) {}
     }
+    this._bindDomEvents();
+    this._registerBridgeActions();
     await this.loadSuites();
   }
 
@@ -36,6 +36,12 @@ export class SuitesSlice {
   _bindDomEvents() {
     const root = document.getElementById('suites-view');
     if (!root) return;
+
+    // Tránh duplicate event listeners nếu app.js đã gắn listener quản lý toàn diện suites view
+    if (typeof window.initSuitesView === 'function' || typeof window.openSuitesManager === 'function') {
+      return;
+    }
+
     const on = (sel, evt, fn) => {
       const el = root.querySelector(sel);
       if (!el) return;
@@ -53,8 +59,18 @@ export class SuitesSlice {
       this.notify('Đã làm mới danh sách Test Suites.');
     });
 
-    on('#suites-subnav-create', 'click', () => this.createSuite());
-    on('#suites-subnav-delete-btn', 'click', () => this.deleteSuite());
+    on('#suites-subnav-create', 'click', () => {
+      if (typeof window.createNewSuite === 'function') {
+        return window.createNewSuite();
+      }
+      this.createSuite();
+    });
+    on('#suites-subnav-delete-btn', 'click', () => {
+      if (typeof window.deleteCurrentSuite === 'function') {
+        return window.deleteCurrentSuite();
+      }
+      this.deleteSuite();
+    });
 
     // Filter pills
     root.querySelectorAll('.suite-filter-pill').forEach((pill) => {
@@ -72,8 +88,18 @@ export class SuitesSlice {
   _registerBridgeActions() {
     const reg = (name, fn) => this._disposers.push(windowBridge.exposeAction(name, fn));
     reg('selectSuite', (id) => this.selectSuite(id));
-    reg('createSuite', () => this.createSuite());
-    reg('deleteCurrentSuite', () => this.deleteSuite());
+    reg('createSuite', () => {
+      if (typeof window.createNewSuite === 'function') {
+        return window.createNewSuite();
+      }
+      return this.createSuite();
+    });
+    reg('deleteCurrentSuite', () => {
+      if (typeof window.deleteCurrentSuite === 'function') {
+        return window.deleteCurrentSuite();
+      }
+      return this.deleteSuite();
+    });
   }
 
   async loadSuites() {
@@ -81,10 +107,13 @@ export class SuitesSlice {
       const res = await apiClient.get('/api/config');
       this.suites = res?.suites || res?.features?.suites || {};
       stateStore.setState({ suites: { items: this.suites } }, 'suitesSlice.loadSuites');
-      this.renderSuitesList();
       const keys = Object.keys(this.suites);
       if (keys.length > 0 && !this.selectedSuiteId) {
-        this.selectSuite(keys[0]);
+        this.selectedSuiteId = keys[0];
+        stateStore.setState({ suites: { selected: keys[0] } }, 'suitesSlice.loadSuites');
+      }
+      if (typeof window._legacySelectSuite !== 'function') {
+        this.renderSuitesList();
       }
     } catch (err) {
       console.error('[SuitesSlice] Failed to load suites:', err);
@@ -95,24 +124,29 @@ export class SuitesSlice {
     if (!suiteId) return;
     this.selectedSuiteId = suiteId;
     stateStore.setState({ suites: { selected: suiteId } }, 'suitesSlice.selectSuite');
-    this.renderSuitesList();
-    this.renderSuiteDetails(this.suites[suiteId]);
+    if (typeof window._legacySelectSuite === 'function') {
+      window._legacySelectSuite(suiteId);
+    } else {
+      this.renderSuitesList();
+      this.renderSuiteDetails(this.suites[suiteId]);
+    }
   }
 
-  createSuite() {
-    const name = prompt('Nhập định danh cho Test Suite mới (ví dụ: regression-smoke):');
-    if (!name) return;
-    const cleanId = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
-    if (this.suites[cleanId]) return this.notify('Test Suite này đã tồn tại.');
 
-    this.suites[cleanId] = {
-      label: name.trim(),
-      description: 'Test Suite mới tạo',
-      tags: ['@smoke'],
-      projects: ['chromium'],
+  createSuite() {
+    if (typeof window.createNewSuite === 'function') {
+      return window.createNewSuite();
+    }
+    const newId = `suite-${Date.now().toString(36)}`;
+    this.suites[newId] = {
+      label: 'Kịch bản mới',
+      description: '',
+      type: 'single',
+      platform: 'desktop',
+      workers: 2,
     };
-    this.selectSuite(cleanId);
-    this.notify(`Đã tạo Test Suite "${cleanId}".`);
+    this.selectSuite(newId);
+    this.notify('Đã tạo kịch bản Test Suite mới.');
   }
 
   deleteSuite(suiteId = this.selectedSuiteId) {

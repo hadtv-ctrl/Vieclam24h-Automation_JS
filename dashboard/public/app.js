@@ -3890,6 +3890,8 @@ function selectSuite(id) {
   updateSuitePreview(id, suitesCache[id]);
   updateSuiteRunButtonState();
 }
+window.selectSuite = selectSuite;
+window._legacySelectSuite = selectSuite;
 
 function updateSuitePlatformContext(platform, currentValues = {}) {
   const isMob = platform === 'mobile';
@@ -4034,6 +4036,57 @@ function updateSuitePlatformContext(platform, currentValues = {}) {
   }
 }
 
+function renderCompositeChildrenList(suiteId, selectedChildren = []) {
+  const childrenList = $('#suite-composite-children-list');
+  if (!childrenList) return;
+  const singleEntries = Object.entries(suitesCache).filter(([k, s]) => k !== suiteId && s.type !== 'composite');
+
+  if (singleEntries.length === 0) {
+    childrenList.innerHTML = `
+      <div style="padding:16px; text-align:center; color:var(--muted); font-size:12px; background:var(--surface); border-radius:8px; border:1px dashed var(--line);">
+        Chưa có kịch bản con đơn lẻ nào. Hãy tạo kịch bản con Desktop hoặc Mobile trước để gom vào Suite Cha này.
+      </div>
+    `;
+    return;
+  }
+
+  childrenList.innerHTML = singleEntries.map(([cid, cs]) => {
+    const isChecked = selectedChildren.includes(cid);
+    const plat = cs.platform || (cs.project === 'mobile-chrome' ? 'mobile' : 'desktop');
+    const isMob = plat === 'mobile';
+    const platBadgeClass = isMob ? 'mobile' : 'desktop';
+    const platIcon = isMob ? 'ph-device-mobile' : 'ph-desktop';
+    const platLabel = isMob ? 'Mobile' : 'Desktop';
+    const specsCount = Array.isArray(cs.specs) ? `${cs.specs.length} files` : (cs.grep ? `Tag: ${cs.grep}` : 'All files');
+
+    return `
+      <label class="suite-child-card-label ${isChecked ? 'selected' : ''}">
+        <div class="suite-child-card-left">
+          <input type="checkbox" class="suite-child-cb suite-child-card-checkbox" value="${escapeHtml(cid)}" ${isChecked ? 'checked' : ''}>
+          <div class="suite-child-card-info">
+            <span class="suite-child-card-title">
+              <i class="ph-bold ${platIcon}" style="color:${isMob ? '#10b981' : '#3b82f6'};"></i>
+              ${escapeHtml(cs.label || cid)}
+            </span>
+            <span class="suite-child-card-desc">${escapeHtml(cs.description || `Kịch bản kiểm thử ${platLabel}`)}</span>
+          </div>
+        </div>
+        <div class="suite-child-card-right">
+          <span class="suite-child-badge ${platBadgeClass}">${platLabel}</span>
+          <span class="suite-child-meta">${escapeHtml(specsCount)}</span>
+        </div>
+      </label>
+    `;
+  }).join('');
+
+  childrenList.querySelectorAll('.suite-child-cb').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      cb.closest('.suite-child-card-label')?.classList.toggle('selected', cb.checked);
+      syncCurrentSuiteFromInputs();
+    });
+  });
+}
+
 function loadSuiteIntoEditor(id, suite) {
   const emptyBox = $('#suite-middle-empty');
   const formInner = $('#suite-editor-form');
@@ -4089,55 +4142,7 @@ function loadSuiteIntoEditor(id, suite) {
   if (isComposite) {
     // Render child suites checkboxes
     if ($('#suite-composite-workers')) $('#suite-composite-workers').value = suite.workers || 2;
-    const childrenList = $('#suite-composite-children-list');
-    if (childrenList) {
-      const selectedChildren = Array.isArray(suite.suites) ? suite.suites : [];
-      const singleEntries = Object.entries(suitesCache).filter(([k, s]) => k !== id && s.type !== 'composite');
-
-      if (singleEntries.length === 0) {
-        childrenList.innerHTML = `
-          <div style="padding:16px; text-align:center; color:var(--muted); font-size:12px; background:var(--surface); border-radius:8px; border:1px dashed var(--line);">
-            Chưa có kịch bản con đơn lẻ nào. Hãy tạo kịch bản con Desktop hoặc Mobile trước để gom vào Suite Cha này.
-          </div>
-        `;
-      } else {
-        childrenList.innerHTML = singleEntries.map(([cid, cs]) => {
-          const isChecked = selectedChildren.includes(cid);
-          const plat = cs.platform || (cs.project === 'mobile-chrome' ? 'mobile' : 'desktop');
-          const isMob = plat === 'mobile';
-          const platBadgeClass = isMob ? 'mobile' : 'desktop';
-          const platIcon = isMob ? 'ph-device-mobile' : 'ph-desktop';
-          const platLabel = isMob ? 'Mobile' : 'Desktop';
-          const specsCount = Array.isArray(cs.specs) ? `${cs.specs.length} files` : (cs.grep ? `Tag: ${cs.grep}` : 'All files');
-
-          return `
-            <label class="suite-child-card-label ${isChecked ? 'selected' : ''}">
-              <div class="suite-child-card-left">
-                <input type="checkbox" class="suite-child-cb suite-child-card-checkbox" value="${escapeHtml(cid)}" ${isChecked ? 'checked' : ''}>
-                <div class="suite-child-card-info">
-                  <span class="suite-child-card-title">
-                    <i class="ph-bold ${platIcon}" style="color:${isMob ? '#10b981' : '#3b82f6'};"></i>
-                    ${escapeHtml(cs.label || cid)}
-                  </span>
-                  <span class="suite-child-card-desc">${escapeHtml(cs.description || `Kịch bản kiểm thử ${platLabel}`)}</span>
-                </div>
-              </div>
-              <div class="suite-child-card-right">
-                <span class="suite-child-badge ${platBadgeClass}">${platLabel}</span>
-                <span class="suite-child-meta">${escapeHtml(specsCount)}</span>
-              </div>
-            </label>
-          `;
-        }).join('');
-
-        childrenList.querySelectorAll('.suite-child-cb').forEach((cb) => {
-          cb.addEventListener('change', () => {
-            cb.closest('.suite-child-card-label')?.classList.toggle('selected', cb.checked);
-            syncCurrentSuiteFromInputs();
-          });
-        });
-      }
-    }
+    renderCompositeChildrenList(id, Array.isArray(suite.suites) ? suite.suites : []);
   } else {
     // Single suite settings
     const platform = suite.platform || (suite.project === 'mobile-chrome' ? 'mobile' : 'desktop');
@@ -4577,6 +4582,17 @@ function syncCurrentSuiteFromInputs() {
   if ($('#suite-active-title')) $('#suite-active-title').textContent = label;
   if ($('#suite-active-key-label')) $('#suite-active-key-label').textContent = currentSelectedSuiteId;
 
+  const typeBadge = $('#suite-type-badge');
+  if (typeBadge) {
+    if (isComposite) {
+      typeBadge.className = 'suite-type-badge composite';
+      typeBadge.innerHTML = '<i class="ph-bold ph-folders"></i> Suite Cha (Tổng hợp)';
+    } else {
+      typeBadge.className = 'suite-type-badge single';
+      typeBadge.innerHTML = '<i class="ph-bold ph-file-text"></i> Suite Con (Đơn lẻ)';
+    }
+  }
+
   renderSuitesSidebarList();
   renderSuiteDropdown();
   updateSuitePreview(currentSelectedSuiteId, updatedSuite);
@@ -4718,6 +4734,14 @@ function initSuitesView() {
 
   $('#btn-toggle-suites-sidebar-head')?.addEventListener('click', toggleSuitesSidebar);
 
+  // Delegated click for suites sidebar list ensures robust selection
+  document.getElementById('suites-sidebar-list')?.addEventListener('click', (e) => {
+    const item = e.target.closest('.suite-nav-item, [data-suite-id]');
+    if (item && item.dataset.suiteId && suitesCache[item.dataset.suiteId]) {
+      selectSuite(item.dataset.suiteId);
+    }
+  });
+
   // Dropdown Picker change
   $('#suite-picker-select')?.addEventListener('change', (e) => {
     const chosenId = e.target.value;
@@ -4811,6 +4835,40 @@ function initSuitesView() {
       $('#suite-kind-pill-single')?.classList.toggle('active', !isComp);
       if ($('#suite-single-section')) $('#suite-single-section').style.display = isComp ? 'none' : 'block';
       if ($('#suite-composite-section')) $('#suite-composite-section').style.display = isComp ? 'block' : 'none';
+
+      // Dynamically update Suite Type badge
+      const typeBadge = $('#suite-type-badge');
+      if (typeBadge) {
+        if (isComp) {
+          typeBadge.className = 'suite-type-badge composite';
+          typeBadge.innerHTML = '<i class="ph-bold ph-folders"></i> Suite Cha (Tổng hợp)';
+        } else {
+          typeBadge.className = 'suite-type-badge single';
+          typeBadge.innerHTML = '<i class="ph-bold ph-file-text"></i> Suite Con (Đơn lẻ)';
+        }
+      }
+
+      if (isComp) {
+        if ($('#suite-composite-workers') && !$('#suite-composite-workers').value) {
+          $('#suite-composite-workers').value = 2;
+        }
+        const curSuite = suitesCache[currentSelectedSuiteId] || {};
+        const selected = Array.isArray(curSuite.suites) ? curSuite.suites : [];
+        renderCompositeChildrenList(currentSelectedSuiteId, selected);
+      } else {
+        const platRadio = document.querySelector('input[name="suite-single-platform"]:checked');
+        const plat = platRadio ? platRadio.value : 'desktop';
+        const curSuite = suitesCache[currentSelectedSuiteId] || {};
+        updateSuitePlatformContext(plat, {
+          project: curSuite.project,
+          device: curSuite.device,
+          preset: curSuite.viewport?.preset,
+          width: curSuite.viewport?.width,
+          height: curSuite.viewport?.height,
+          specs: curSuite.specs
+        });
+      }
+
       syncCurrentSuiteFromInputs();
     });
   });
@@ -5621,7 +5679,11 @@ document.addEventListener('click', (e) => {
   // 16. Suites Manager Subtab & Pills
   const suitesCreate = e.target.closest('#suites-subnav-create');
   if (suitesCreate) {
-    if (typeof openSuiteCreateModal === 'function') openSuiteCreateModal();
+    if (typeof createNewSuite === 'function') {
+      createNewSuite();
+    } else if (typeof openSuiteCreateModal === 'function') {
+      openSuiteCreateModal();
+    }
     return;
   }
   const suiteFilter = e.target.closest('.suite-filter-pill');
@@ -6764,7 +6826,14 @@ function setGuideStep(step) {
     b.classList.toggle('completed', s < stepNum);
   });
   document.querySelectorAll('.guide-pane').forEach((p) => {
-    p.classList.toggle('active', p.id === `guide-pane-${stepNum}`);
+    const isActive = p.id === `guide-pane-${stepNum}`;
+    p.classList.toggle('active', isActive);
+    if (isActive) {
+      p.removeAttribute('hidden');
+      p.style.display = 'flex';
+    } else {
+      p.style.display = 'none';
+    }
   });
   const numEl = document.getElementById('guide-current-step-num');
   const titleEl = document.getElementById('guide-current-step-title');
@@ -6775,21 +6844,28 @@ function setGuideStep(step) {
   if (pctEl) pctEl.textContent = `${stepNum * 20}% Hoàn thành`;
   if (barEl) barEl.style.width = `${stepNum * 20}%`;
 }
-
-document.querySelectorAll('.guide-nav-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    setGuideStep(btn.dataset.guideStep);
-  });
-});
+window.setGuideStep = setGuideStep;
 
 document.addEventListener('click', (e) => {
+  const clearAllBtn = e.target.closest('#rec-clear-all-btn');
+  if (clearAllBtn) {
+    if (typeof window.handleClearAllRecordings === 'function') {
+      window.handleClearAllRecordings();
+    }
+    return;
+  }
+  const guideBtn = e.target.closest('.guide-nav-btn, [data-guide-step]');
+  if (guideBtn && guideBtn.dataset.guideStep) {
+    setGuideStep(guideBtn.dataset.guideStep);
+    return;
+  }
   const nextBtn = e.target.closest('[data-next-step]');
-  if (nextBtn) {
+  if (nextBtn && nextBtn.dataset.nextStep) {
     setGuideStep(nextBtn.dataset.nextStep);
     return;
   }
   const prevBtn = e.target.closest('[data-prev-step]');
-  if (prevBtn) {
+  if (prevBtn && prevBtn.dataset.prevStep) {
     setGuideStep(prevBtn.dataset.prevStep);
     return;
   }
@@ -7611,6 +7687,20 @@ function onRecorderStatusUpdate(status) {
   }
 }
 
+function formatRecordingDate(isoOrTimestamp) {
+  if (!isoOrTimestamp) return '';
+  const d = new Date(isoOrTimestamp);
+  if (isNaN(d.getTime())) return '';
+  const YYYY = d.getFullYear();
+  const MM = String(d.getMonth() + 1).padStart(2, '0');
+  const DD = String(d.getDate()).padStart(2, '0');
+  const HH = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${YYYY}-${MM}-${DD} ${HH}:${mm}:${ss}`;
+}
+window.formatRecordingDate = formatRecordingDate;
+
 function renderRecentRecordings(recordings) {
   const container = $('#recent-recordings-list');
   if (!container) return;
@@ -7627,7 +7717,7 @@ function renderRecentRecordings(recordings) {
         <span class="rec-item-name">${escapeHtml(rec.fileName)}</span>
       </div>
       <div class="rec-item-meta">
-        <small class="rec-time">${new Date(rec.modifiedAt).toLocaleTimeString('vi-VN')}</small>
+        <small class="rec-time">${formatRecordingDate(rec.modifiedAt)}</small>
         <button type="button" class="rec-delete-btn" data-filename="${escapeHtml(rec.fileName)}" title="Xóa bản ghi này">
           <i class="ph-bold ph-trash"></i>
         </button>
@@ -7663,7 +7753,7 @@ function renderRecentRecordings(recordings) {
   });
 }
 
-$('#rec-clear-all-btn')?.addEventListener('click', async () => {
+async function handleClearAllRecordings() {
   if (!confirm('Bạn có chắc chắn muốn xóa TẤT CẢ các bản ghi thô trong lịch sử không?')) return;
 
   try {
@@ -7673,7 +7763,8 @@ $('#rec-clear-all-btn')?.addEventListener('click', async () => {
   } catch (error) {
     notify(`Dọn dẹp lịch sử thất bại: ${error.message}`);
   }
-});
+}
+window.handleClearAllRecordings = handleClearAllRecordings;
 
 async function loadRawRecordingFile(fileName) {
   try {
@@ -7922,6 +8013,8 @@ $('#rec-refresh-list-btn')?.addEventListener('click', async () => {
   await checkRecorderStatus();
   notify('Đã làm mới danh sách bản ghi.');
 });
+
+$('#rec-clear-all-btn')?.addEventListener('click', handleClearAllRecordings);
 
 $('#rec-copy-raw-btn')?.addEventListener('click', () => {
   if (!recorderState.currentRawScript) {
@@ -14692,6 +14785,13 @@ document.getElementById('runner-goto-suites-btn')?.addEventListener('click', () 
 
 window.initSuitesView = initSuitesView;
 window.openSuitesManager = openSuitesManager;
+window.selectSuite = selectSuite;
+window._legacySelectSuite = selectSuite;
+window.createNewSuite = createNewSuite;
+window.duplicateCurrentSuite = duplicateCurrentSuite;
+window.deleteCurrentSuite = deleteCurrentSuite;
+window.loadSuiteIntoEditor = loadSuiteIntoEditor;
+window.updateSuitePreview = updateSuitePreview;
 
 /* ==============================================================================
    SYSTEM UPDATER CONTROLLER
