@@ -784,6 +784,9 @@ async function openExplorer() {
     if (evidenceBadge) evidenceBadge.textContent = resourceCatalog.evidence?.length || 0;
 
     renderResourceList($('#resource-search')?.value || '');
+  } catch (error) {
+    console.error('Failed to open explorer:', error);
+  }
 }
 window.openExplorer = openExplorer;
 
