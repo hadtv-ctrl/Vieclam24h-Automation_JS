@@ -5596,7 +5596,17 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  // 15. Recorder Subtabs (.code-draft-tab)
+  // 15. Recorder Stepper Tabs (.recorder-stepper-bar .stepper-step)
+  const recorderStepper = e.target.closest('.recorder-stepper-bar .stepper-step');
+  if (recorderStepper && recorderStepper.dataset.step) {
+    const stepNum = parseInt(recorderStepper.dataset.step, 10);
+    if (stepNum >= 1 && stepNum <= 3 && typeof setRecorderStep === 'function') {
+      setRecorderStep(stepNum);
+    }
+    return;
+  }
+
+  // 16. Recorder Subtabs (.code-draft-tab)
   const recorderTab = e.target.closest('.code-draft-tab');
   if (recorderTab && recorderTab.dataset.draft) {
     const draftType = recorderTab.dataset.draft;
@@ -7734,6 +7744,7 @@ function setRecorderStep(step) {
     targetPane.style.display = 'block';
   }
 }
+window.setRecorderStep = setRecorderStep;
 
 function renderWarnings(warnings = []) {
   const box = $('#rec-warnings-box');
