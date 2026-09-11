@@ -151,22 +151,39 @@ Only record a lesson after the defect is confirmed and its root cause is underst
 - Regression check: In Chromium at 1920x1080 and 1440x900, verify `#brand-logo` renders `<img>` with clean scaling; test valid SVG, valid PNG, empty URL, and broken image URLs; toggle dark and light modes and verify razor-sharp contrast across both.
 - Related files: `dashboard/public/app.js`, `dashboard/public/styles.css`, `core/system/gitSyncService.js`.
 
-### 2026-09-11 — Modular HTML template loading must be awaited before invoking view controllers
+### 2026-09-10 — Dynamic template loading requires lifecycle-aware event binding and null-guarded mutations
 
-- Area: Modular Studio Architecture, View Tab Switching & Data Rendering.
-- Symptom: Dashboard displays empty lists / zero items across BDD Test Scripts (stuck on "Đang đọc các kịch bản..."), Page Objects (blank list, 0 pages), Test Suites (total 0 suites), and Data Studio upon navigation.
+- Area: Dynamic Template Lifecycle & Event Binding Architecture.
+- Symptom: Action buttons, tabs, wizards, and controls across Page Manager, Recorder Studio, Git Sync, BDD Studio, and Test Suites do nothing when clicked; views occasionally fail to load files or freeze in loading states.
 - Root cause:
-  1. Commit `0d41463` extracted 4,112 lines of studio view HTML from `index.html` into 12 standalone template files (`templates/*.html`).
-  2. Tab click event listeners in `app.js` executed view controllers (`openPageManager()`, `initVisualBuilder()`, `openSuitesManager()`) synchronously *before* the asynchronous template loader fetched and injected the HTML into the container.
-  3. When DOM queries ran against container elements (`#script-files-list`, `#page-manager-existing-list`, `#suites-sidebar-list`), they returned `null`, silently skipping rendering or locking initialization flags (`suitesViewInitialized = true`, `isVisualBuilderInitialized = true`). Once the template finally loaded into the DOM, its static placeholder spinner or 0-count badges remained permanently.
+  1. *Static Startup Binding on On-Demand DOM*: In Phase 5 modularization, views were extracted to `templates/*.html` to drop initial DOM tags from 3,453 to 463. However, `app.js` evaluated hundreds of top-level `document.getElementById(...)?.addEventListener(...)` at startup before templates were injected. Optional chaining (`?.`) prevented boot errors but silently failed to attach listeners. When templates were loaded on-demand later, buttons had zero listeners attached.
+  2. *Unguarded DOM Mutations (Domino Crashing)*: Shared helpers (`setInputValue`, `renderSettings`, `fillSettingSelect`) mutated `.value` or `.checked` assuming elements existed in DOM. Throwing an unhandled `TypeError: Cannot set properties of null` aborted the entire JS thread, freezing subsequent file loads and event dispatches.
+  3. *Modular Slice API Drift*: Slices queried non-existent endpoints (e.g. `/api/pages` instead of `/api/object-repository/pages`), returning 404 and leaving views stuck.
+  4. *Hub-Satellite Split-Brain*: Changes in Hub `D:\_Automation-Project` without running `npm run sync:satellites` left running satellite servers (e.g. `D:\_SieuVietGroup` on port 4180) serving stale client code.
 - Correct pattern:
-  1. Implement an explicit `ensureViewTemplate(viewId)` promise cache in `app.js` that checks whether the container has children, fetches `/templates/${name}.html` if empty, and populates `innerHTML`.
-  2. Invoke `preloadAllViewTemplates()` immediately at bootstrap to asynchronously preload all 12 templates (~5-10ms on localhost).
-  3. `await ensureViewTemplate(...)` both in `.view-tab` click handlers and at the entry point of each individual view controller.
-  4. Guard initialization functions (`initSuitesView`, `initVisualBuilderControls`, `initDataStudioControls`, `initGitStudio`) so they only latch `true` when DOM elements actually exist.
-  5. Connect `window.onViewSwitched(targetViewId)` to allow cross-slice and event bus navigation to cleanly trigger view controllers.
-- Preventive rule: Any view controller querying the DOM must guarantee that its container markup is fully mounted prior to reading or binding elements. Never rely on implicit asynchronous script execution order between classic scripts and ES modules.
-- Regression check: In browser, switch between Runner, BDD Studio, Page Objects, Test Suites, Data Studio, Fixtures, and Settings; verify all items (25 scripts, 19 pages, 19 suites, 5 datasets) render instantly with correct hero counts and zero stuck spinners.
-- Related files: `dashboard/public/app.js`, `dashboard/public/js/core/templateLoader.js`, `dashboard/public/js/core/featureRegistry.js`, `dashboard/public/js/legacy/legacyAdapter.js`, `dashboard/public/templates/*.html`.
+  1. Wrap view listeners in idempotent lifecycle initializers (`init<View>Listeners()`) guarded by DOM element presence (`if (!root || !document.getElementById(primaryBtn)) return; isInitialized = true;`).
+  2. Invoke view initializers inside both slice `mount()` and view open routines (`open<View>()`), or use document-level event delegation (`document.addEventListener('click', e => { const btn = e.target.closest(sel); if (btn) ... })`).
+  3. Guard all DOM property writes with existence checks before assigning values.
+  4. Align slice API endpoints strictly with canonical server routes.
+  5. Always execute `npm run sync:satellites` after modifying shared code in Hub.
+- Preventive rule: Never attach startup `addEventListener` to elements inside lazy-loaded templates. Always guard DOM property writes. Always verify slice API endpoints against backend contracts. Always synchronize satellites upon completing Hub updates.
+- Regression check: Run Playwright probe exercising all 10 views, subtabs, and primary buttons; verify zero console errors, clean DOM updates, and 20/20 API suite passes.
+### 2026-09-11 — Universal document-level delegation, boolean attribute removal, and stepper decoupling for subtabs
+
+- Area: Subtabs, Sub-subtabs, Stepper Tabs, and Filter Pills across All Dashboard Views.
+- Symptom: Clicking subtabs (Docs prompts/cli/guides, BDD inspect/edit/create, Page Manager create/inspect, Data Studio create/inspect, Resources reports/evidence), stepper tabs (BDD Wizard 1-6, Recorder 1-3), or filter pills (builder type, prompt tags, CLI tags, doc chips, data types, platforms) does nothing, fails to switch panels, or remains visually frozen.
+- Root cause:
+  1. *Subtabs in Dynamic Templates Missing Handlers*: Subtab switching functions (`switchDocsSubtab`, `switchResourceCategory`, `goToWizardStep`, `setRecorderStep`) were scoped locally or bound at startup via `querySelectorAll`, binding to 0 elements when templates weren't loaded yet.
+  2. *CSS `[hidden]` Boolean Attribute Conflict*: Setting `panel.hidden = false` in JS does not remove the boolean attribute `hidden=""` in certain browser environments. When CSS specifies `.docs-subpanel[hidden] { display: none !important; }`, the panel stays hidden until `panel.removeAttribute('hidden')` is explicitly called.
+  3. *Stepper Gating & Disabled Blocking*: BDD and Recorder stepper tabs were gated behind form validation or `btn.disabled = true`, preventing users from clicking between sub-subtabs to explore or preview steps.
+  4. *Exposing Functions to Global Window*: Slice modules and dynamically loaded templates could not invoke legacy controllers because key switch functions were not exposed on `window`.
+- Correct pattern:
+  1. Implement Universal Document-Level Event Delegation in `app.js` (`document.addEventListener('click', e => { ... e.target.closest(...) })`) for all subtabs, sub-subtabs, filter pills, and stepper buttons.
+  2. Use explicit `panel.removeAttribute('hidden')`, `panel.classList.add('active')`, and `panel.style.display = 'flex'` / `'block'`.
+  3. Decouple sequential step validation from direct tab clicks (validation is only enforced on the "Next" / "Tiếp theo" button, allowing free direct tab inspection).
+  4. Expose all switcher functions on `window` (`window.switchDocsSubtab`, `window.switchResourceCategory`, `window.goToWizardStep`, `window.setRecorderStep`, `window.openDocsView`, `window.openRecorderStudio`).
+- Preventive rule: Never rely on local element listeners for subtabs residing inside dynamic HTML templates. Always use universal document delegation or slice mount lifecycle binding. Always explicitly remove boolean `hidden` attributes. Always run automated multi-view subtab clickability suites (e.g. 55/55 PASS) across the satellite constellation.
+- Regression check: Run automated Playwright suite exercising all 55 subtab, sub-subtab, filter pill, and stepper actions; verify 55/55 PASS with 0 timeouts and 0 unexpected console errors.
+- Related files: `dashboard/public/app.js`, `dashboard/public/js/main.js`, `dashboard/public/templates/*.html`, `dashboard/public/js/views/*/*Slice.js`.
 
 

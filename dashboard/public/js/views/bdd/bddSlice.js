@@ -22,6 +22,9 @@ export class BddSlice {
     this._mounted = true;
     this._bindDomEvents();
     this._registerBridgeActions();
+    if (typeof window.initVisualBuilder === 'function') {
+      try { await window.initVisualBuilder(); } catch (_) {}
+    }
     await this.loadScripts();
   }
 

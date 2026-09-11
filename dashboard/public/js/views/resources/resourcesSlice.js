@@ -19,6 +19,9 @@ export class ResourcesSlice {
     this._mounted = true;
     this._bindDomEvents();
     this._registerBridgeActions();
+    if (typeof window.openExplorer === 'function') {
+      try { await window.openExplorer(); } catch (_) {}
+    }
     await this.loadResources();
   }
 
@@ -41,6 +44,16 @@ export class ResourcesSlice {
     on('#btn-refresh-resources', 'click', () => {
       this.loadResources();
       this.notify('Đã làm mới báo cáo và tài nguyên.');
+    });
+
+    root.querySelectorAll('.resource-seg-btn').forEach((btn) => {
+      const h = () => {
+        if (typeof window.switchResourceCategory === 'function') {
+          window.switchResourceCategory(btn.dataset.category);
+        }
+      };
+      btn.addEventListener('click', h);
+      this._disposers.push(() => btn.removeEventListener('click', h));
     });
   }
 

@@ -56,9 +56,9 @@ Object.entries(SLICE_REGISTRY).forEach(([id, { slice, title }]) => {
   });
 });
 
-// 3. Initialize Shared Shell & Legacy Adapter
 sharedShell.init();
 legacyAdapter.init();
+templateLoader.preloadAll().catch((err) => console.warn('[TemplateLoader] Preload warning:', err));
 
 // 4. Expose Studio Core Foundation on Window
 if (typeof window !== 'undefined') {
