@@ -467,7 +467,7 @@ test.<span class="fn">describe</span>(<span class="str">'Apply Job Flow @e2e @de
           <div class="metric"><strong>60s</strong><span>timeout mặc định</span></div>
           <div class="metric"><strong>N</strong><span>workers (PW_WORKERS, mặc định 2)</span></div>
           <div class="metric"><strong>2×</strong><span>retry khi chạy trên CI</span></div>
-          <div class="metric"><strong>7</strong><span>projects (Desktop, Mobile, API)</span></div>
+          <div class="metric"><strong>7</strong><span>projects (Smoke &amp; Regression đa nền tảng)</span></div>
         </div>
       </div>
       <footer class="footer"><span>Môi trường: QC (qc.sieuviet-team.com) · Staging · Production</span><span>07</span></footer>
@@ -500,12 +500,20 @@ test.<span class="fn">describe</span>(<span class="str">'Apply Job Flow @e2e @de
       <div class="content two-col">
         <div>
           <h2><code class="cyan">fillExperience()</code> được thực thi như thế nào?</h2>
-          <div class="code" style="margin-top:26px">
+          <div class="code" style="margin-top:16px">
             <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
-            <pre><span class="cm">// spec</span>
+            <pre><span class="cm">// 1. [Spec] Ra lệnh "Làm gì" (01, 02)</span>
 <span class="kw">await</span> jobApplyPage.<span class="fn">fillExperience</span>(
   applyData.experience
-);</pre>
+);
+
+<span class="cm">// 2. [Page Object] Xử lý "Làm thế nào" (03 → 06)</span>
+<span class="kw">async</span> <span class="fn">fillExperience</span>(exp) {
+  <span class="kw">await</span> <span class="kw">this</span>.<span class="fn">fillInput</span>(<span class="kw">this</span>.companyInput, exp.company); <span class="cm">// 03, 04 BasePage</span>
+  <span class="kw">await</span> <span class="kw">this</span>.<span class="fn">fillInput</span>(<span class="kw">this</span>.jobTitleInput, exp.title);  <span class="cm">// 05 UiActions</span>
+  <span class="kw">await</span> <span class="kw">this</span>.saveBtn.<span class="fn">click</span>();
+  <span class="kw">await</span> <span class="kw">this</span>.screenshot.<span class="fn">capture</span>(<span class="str">'after_save_exp'</span>);      <span class="cm">// 06 Evidence</span>
+}</pre>
           </div>
         </div>
         <div>
