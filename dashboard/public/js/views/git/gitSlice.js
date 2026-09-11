@@ -18,6 +18,9 @@ export class GitSlice {
     this._mounted = true;
     this._bindDomEvents();
     this._registerBridgeActions();
+    if (typeof window.openGitStudio === 'function') {
+      try { await window.openGitStudio(); } catch (_) {}
+    }
     await this.fetchGitStatus();
   }
 

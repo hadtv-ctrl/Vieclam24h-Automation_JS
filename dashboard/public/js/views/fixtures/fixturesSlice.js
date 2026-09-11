@@ -21,6 +21,9 @@ export class FixturesSlice {
     this._mounted = true;
     this._bindDomEvents();
     this._registerBridgeActions();
+    if (typeof window.openFixturesStudio === 'function') {
+      try { await window.openFixturesStudio(); } catch (_) {}
+    }
     await this.loadFixtures();
   }
 

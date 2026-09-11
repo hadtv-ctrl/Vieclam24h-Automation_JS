@@ -23,6 +23,9 @@ export class DataSlice {
     this._mounted = true;
     this._bindDomEvents();
     this._registerBridgeActions();
+    if (typeof window.openDataManager === 'function') {
+      try { await window.openDataManager(); } catch (_) {}
+    }
     await this.loadDatasets();
     if (this.datasets.length > 0 && !this.currentFile) {
       await this.selectDataset(this.datasets[0].fileName);

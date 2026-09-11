@@ -139,9 +139,7 @@ $('#theme-button')?.addEventListener('click', () => {
 applyTheme(preferredTheme());
 
 function fillSelect(selector, values, allLabel) {
-  const el = $(selector);
-  if (!el) return;
-  el.innerHTML = values.map((value) =>
+  $(selector).innerHTML = values.map((value) =>
     `<option value="${escapeHtml(value)}">${value === 'all' ? allLabel : escapeHtml(value)}</option>`
   ).join('');
 }
@@ -768,6 +766,9 @@ async function deleteCurrentArtifact() {
 }
 
 async function openExplorer() {
+  if (typeof initResourcesViewListeners === 'function') {
+    initResourcesViewListeners();
+  }
   try {
     resourceCatalog = await request('/api/resources');
     $('#resource-summary').innerHTML = `
@@ -2027,6 +2028,9 @@ function populatePageSelectorDropdown() {
 }
 
 async function openPageManager() {
+  if (typeof initPageManagerListeners === 'function') {
+    initPageManagerListeners();
+  }
   pageManagerLocators = [];
   pageManagerActions = [];
   initPageManagerCodeEditor();
@@ -4668,6 +4672,8 @@ function runCurrentSuiteNow() {
 
 function initSuitesView() {
   if (suitesViewInitialized) return;
+  const root = document.getElementById('suites-view');
+  if (!root || !document.getElementById('suites-save-btn')) return;
   suitesViewInitialized = true;
 
 
@@ -5835,6 +5841,9 @@ function getDocMetadata(filePath) {
 }
 
 async function openDocsView(targetDoc = null) {
+  if (typeof initDocsViewListeners === 'function') {
+    initDocsViewListeners();
+  }
   try {
     const res = await request('/api/resources');
     docsCatalog = res.documents || [];
@@ -6386,102 +6395,104 @@ async function loadDocFile(filePath) {
 }
 
 // Event Listeners for Docs View
-document.getElementById('docs-search-input')?.addEventListener('input', (e) => {
-  renderDocsTreeList(e.target.value, currentDocFilter);
-});
+let isDocsViewListenersInitialized = false;
+function initDocsViewListeners() {
+  if (isDocsViewListenersInitialized) return;
+  const root = document.getElementById('docs-view');
+  if (!root || !document.getElementById('doc-refresh-btn')) return;
+  isDocsViewListenersInitialized = true;
 
-document.querySelectorAll('.doc-chip').forEach((chip) => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('.doc-chip').forEach((c) => c.classList.remove('active'));
-    chip.classList.add('active');
-    currentDocFilter = chip.dataset.filter || 'all';
-    renderDocsTreeList(document.getElementById('docs-search-input')?.value || '', currentDocFilter);
+  document.getElementById('docs-search-input')?.addEventListener('input', (e) => {
+    renderDocsTreeList(e.target.value, currentDocFilter);
   });
-});
 
-document.getElementById('doc-refresh-btn')?.addEventListener('click', async () => {
-  try {
-    const res = await request('/api/resources');
-    docsCatalog = res.documents || [];
-    isDeveloperSession = Boolean(res.isDeveloper);
-    updateDocsRoleIndicator();
-    renderDocsTreeList(document.getElementById('docs-search-input')?.value || '', currentDocFilter);
-    showToast('Đã làm mới danh mục tài liệu!', 'success');
-  } catch (err) {
-    notify(`Lỗi làm mới: ${err.message}`);
-  }
-});
-
-function copyDocPath() {
-  if (currentDocFile) {
-    navigator.clipboard?.writeText(currentDocFile);
-    showToast(`Đã sao chép đường dẫn: ${currentDocFile}`, 'success');
-  }
-}
-
-document.getElementById('doc-btn-copy-path')?.addEventListener('click', copyDocPath);
-document.getElementById('docs-path-pill')?.addEventListener('click', copyDocPath);
-
-document.getElementById('doc-btn-copy-content')?.addEventListener('click', () => {
-  const content = document.getElementById('docs-edit-textarea')?.value || '';
-  if (content) {
-    navigator.clipboard?.writeText(content);
-    showToast('Đã sao chép toàn bộ nội dung Markdown!', 'success');
-  }
-});
-
-document.getElementById('doc-btn-edit')?.addEventListener('click', () => {
-  if (!currentDocFile) return;
-  const editBtn = document.getElementById('doc-btn-edit');
-  if (editBtn && editBtn.disabled) {
-    showToast('Tài liệu chuẩn được bảo vệ - Chỉ nhà phát triển mới có quyền chỉnh sửa!', 'error');
-    return;
-  }
-  const bodyContainer = document.getElementById('docs-body-container');
-  const editorPane = document.getElementById('docs-editor-pane');
-  if (bodyContainer) bodyContainer.hidden = true;
-  if (editorPane) editorPane.hidden = false;
-  document.getElementById('docs-edit-textarea')?.focus();
-});
-
-document.getElementById('doc-btn-cancel-edit')?.addEventListener('click', () => {
-  const bodyContainer = document.getElementById('docs-body-container');
-  const editorPane = document.getElementById('docs-editor-pane');
-  if (bodyContainer) bodyContainer.hidden = false;
-  if (editorPane) editorPane.hidden = true;
-});
-
-document.getElementById('doc-btn-format')?.addEventListener('click', () => {
-  const textarea = document.getElementById('docs-edit-textarea');
-  if (textarea) {
-    textarea.value = formatMarkdownText(textarea.value);
-    showToast('Đã tự động định dạng Markdown!', 'success');
-  }
-});
-
-document.getElementById('doc-btn-save')?.addEventListener('click', async () => {
-  const saveBtn = document.getElementById('doc-btn-save');
-  if (!currentDocFile) return;
-  if (saveBtn) saveBtn.disabled = true;
-  try {
-    const content = document.getElementById('docs-edit-textarea')?.value || '';
-    const headers = { 'Content-Type': 'application/json' };
-    if (isDeveloperSession) {
-      headers['X-Developer-Mode'] = 'true';
-    }
-    const result = await request('/api/resource', {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ path: currentDocFile, content }),
+  document.querySelectorAll('.doc-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.doc-chip').forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      currentDocFilter = chip.dataset.filter || 'all';
+      renderDocsTreeList(document.getElementById('docs-search-input')?.value || '', currentDocFilter);
     });
-    showToast(result.message || 'Đã lưu tài liệu thành công!', 'success');
-    await loadDocFile(currentDocFile);
-  } catch (err) {
-    notify(`Lỗi lưu tài liệu: ${err.message}`);
-  } finally {
-    if (saveBtn) saveBtn.disabled = false;
-  }
-});
+  });
+
+  document.getElementById('doc-refresh-btn')?.addEventListener('click', async () => {
+    try {
+      const res = await request('/api/resources');
+      docsCatalog = res.documents || [];
+      isDeveloperSession = Boolean(res.isDeveloper);
+      updateDocsRoleIndicator();
+      renderDocsTreeList(document.getElementById('docs-search-input')?.value || '', currentDocFilter);
+      showToast('Đã làm mới danh mục tài liệu!', 'success');
+    } catch (err) {
+      notify(`Lỗi làm mới: ${err.message}`);
+    }
+  });
+
+  document.getElementById('doc-btn-copy-path')?.addEventListener('click', copyDocPath);
+  document.getElementById('docs-path-pill')?.addEventListener('click', copyDocPath);
+
+  document.getElementById('doc-btn-copy-content')?.addEventListener('click', () => {
+    const content = document.getElementById('docs-edit-textarea')?.value || '';
+    if (content) {
+      navigator.clipboard?.writeText(content);
+      showToast('Đã sao chép toàn bộ nội dung Markdown!', 'success');
+    }
+  });
+
+  document.getElementById('doc-btn-edit')?.addEventListener('click', () => {
+    if (!currentDocFile) return;
+    const editBtn = document.getElementById('doc-btn-edit');
+    if (editBtn && editBtn.disabled) {
+      showToast('Tài liệu chuẩn được bảo vệ - Chỉ nhà phát triển mới có quyền chỉnh sửa!', 'error');
+      return;
+    }
+    const bodyContainer = document.getElementById('docs-body-container');
+    const editorPane = document.getElementById('docs-editor-pane');
+    if (bodyContainer) bodyContainer.hidden = true;
+    if (editorPane) editorPane.hidden = false;
+    document.getElementById('docs-edit-textarea')?.focus();
+  });
+
+  document.getElementById('doc-btn-cancel-edit')?.addEventListener('click', () => {
+    const bodyContainer = document.getElementById('docs-body-container');
+    const editorPane = document.getElementById('docs-editor-pane');
+    if (bodyContainer) bodyContainer.hidden = false;
+    if (editorPane) editorPane.hidden = true;
+  });
+
+  document.getElementById('doc-btn-format')?.addEventListener('click', () => {
+    const textarea = document.getElementById('docs-edit-textarea');
+    if (textarea) {
+      textarea.value = formatMarkdownText(textarea.value);
+      showToast('Đã tự động định dạng Markdown!', 'success');
+    }
+  });
+
+  document.getElementById('doc-btn-save')?.addEventListener('click', async () => {
+    const saveBtn = document.getElementById('doc-btn-save');
+    if (!currentDocFile) return;
+    if (saveBtn) saveBtn.disabled = true;
+    try {
+      const content = document.getElementById('docs-edit-textarea')?.value || '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (isDeveloperSession) {
+        headers['X-Developer-Mode'] = 'true';
+      }
+      const result = await request('/api/resource', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ path: currentDocFile, content }),
+      });
+      showToast(result.message || 'Đã lưu tài liệu thành công!', 'success');
+      await loadDocFile(currentDocFile);
+    } catch (err) {
+      notify(`Lỗi lưu tài liệu: ${err.message}`);
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  });
+}
+window.initDocsViewListeners = initDocsViewListeners;
 
 // Backward compatibility alias for any existing caller
 async function openSettingsDocuments() {
@@ -6800,46 +6811,63 @@ if (resSearchClearBtn && resSearchInput) {
   });
 }
 
-document.querySelectorAll('.resource-plat-pill').forEach((pill) => {
-  pill.addEventListener('click', () => {
-    activeEvidencePlatform = pill.dataset.platform;
-    document.querySelectorAll('.resource-plat-pill').forEach((p) => p.classList.toggle('active', p === pill));
-    renderResourceList($('#resource-search')?.value || '');
-  });
-});
+let isResourcesViewListenersInitialized = false;
+function initResourcesViewListeners() {
+  if (isResourcesViewListenersInitialized) return;
+  const root = document.getElementById('resources-view');
+  if (!root || !document.getElementById('resource-refresh-btn')) return;
+  isResourcesViewListenersInitialized = true;
 
-$('#resource-toggle-tree-btn')?.addEventListener('click', () => {
-  areFoldersExpanded = !areFoldersExpanded;
-  const folders = document.querySelectorAll('#resource-list details');
-  folders.forEach((f) => {
-    f.open = areFoldersExpanded;
-    if (f.dataset.folder) {
-      if (areFoldersExpanded) openEvidenceFolders.add(f.dataset.folder);
-      else openEvidenceFolders.delete(f.dataset.folder);
-    }
-    if (f.dataset.reportFolder) {
-      if (areFoldersExpanded) openReportFolders.add(f.dataset.reportFolder);
-      else openReportFolders.delete(f.dataset.reportFolder);
+  document.querySelectorAll('.resource-plat-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      activeEvidencePlatform = pill.dataset.platform;
+      document.querySelectorAll('.resource-plat-pill').forEach((p) => p.classList.toggle('active', p === pill));
+      renderResourceList($('#resource-search')?.value || '');
+    });
+  });
+
+  $('#resource-toggle-tree-btn')?.addEventListener('click', () => {
+    areFoldersExpanded = !areFoldersExpanded;
+    const folders = document.querySelectorAll('#resource-list details');
+    folders.forEach((f) => {
+      f.open = areFoldersExpanded;
+      if (f.dataset.folder) {
+        if (areFoldersExpanded) openEvidenceFolders.add(f.dataset.folder);
+        else openEvidenceFolders.delete(f.dataset.folder);
+      }
+      if (f.dataset.reportFolder) {
+        if (areFoldersExpanded) openReportFolders.add(f.dataset.reportFolder);
+        else openReportFolders.delete(f.dataset.reportFolder);
+      }
+    });
+    const btn = $('#resource-toggle-tree-btn');
+    if (btn) {
+      if (areFoldersExpanded) {
+        btn.innerHTML = '<i class="ph-bold ph-arrows-in-simple"></i><span>Thu gọn</span>';
+        btn.title = 'Thu gọn tất cả thư mục';
+      } else {
+        btn.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i><span>Mở tất cả</span>';
+        btn.title = 'Mở rộng tất cả thư mục';
+      }
     }
   });
-  const btn = $('#resource-toggle-tree-btn');
-  if (btn) {
-    if (areFoldersExpanded) {
-      btn.innerHTML = '<i class="ph-bold ph-arrows-in-simple"></i><span>Thu gọn</span>';
-      btn.title = 'Thu gọn tất cả thư mục';
-    } else {
-      btn.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i><span>Mở tất cả</span>';
-      btn.title = 'Mở rộng tất cả thư mục';
-    }
-  }
-});
 
-$('#resource-refresh-btn')?.addEventListener('click', async () => {
-  const btn = $('#resource-refresh-btn');
-  if (btn) btn.classList.add('rotating');
-  await openExplorer();
-  if (btn) setTimeout(() => btn.classList.remove('rotating'), 500);
-});
+  $('#resource-refresh-btn')?.addEventListener('click', async () => {
+    const btn = $('#resource-refresh-btn');
+    if (btn) btn.classList.add('rotating');
+    await openExplorer();
+    if (btn) setTimeout(() => btn.classList.remove('rotating'), 500);
+  });
+
+  $('#reveal-button')?.addEventListener('click', () => loadResource(currentResource, $('#reveal-button').dataset.revealed !== 'true'));
+  $('#edit-button')?.addEventListener('click', editCurrentResource);
+  $('#save-resource-button')?.addEventListener('click', saveCurrentResource);
+  $('#cancel-edit-button')?.addEventListener('click', () => loadResource(currentResource, false, currentResourceCategory));
+  $('#delete-button')?.addEventListener('click', deleteCurrentArtifact);
+  $('#previous-evidence')?.addEventListener('click', () => navigateEvidence(-1));
+  $('#next-evidence')?.addEventListener('click', () => navigateEvidence(1));
+}
+window.initResourcesViewListeners = initResourcesViewListeners;
 
 // Điều hướng ảnh bằng bàn phím mũi tên Trái / Phải
 window.addEventListener('keydown', (e) => {
@@ -6856,13 +6884,6 @@ window.addEventListener('keydown', (e) => {
     navigateEvidence(1);
   }
 });
-$('#reveal-button')?.addEventListener('click', () => loadResource(currentResource, $('#reveal-button').dataset.revealed !== 'true'));
-$('#edit-button')?.addEventListener('click', editCurrentResource);
-$('#save-resource-button')?.addEventListener('click', saveCurrentResource);
-$('#cancel-edit-button')?.addEventListener('click', () => loadResource(currentResource, false, currentResourceCategory));
-$('#delete-button')?.addEventListener('click', deleteCurrentArtifact);
-$('#previous-evidence')?.addEventListener('click', () => navigateEvidence(-1));
-$('#next-evidence')?.addEventListener('click', () => navigateEvidence(1));
 $('#code-search')?.addEventListener('input', renderCodeTree);
 document.querySelectorAll('.code-root-filter').forEach((button) => button.addEventListener('click', () => {
   activeCodeRoot = button.dataset.root;
@@ -6886,148 +6907,157 @@ $('#code-edit-button')?.addEventListener('click', enterCodeEditMode);
 $('#code-format-button')?.addEventListener('click', formatCurrentCodeEditor);
 $('#code-cancel-button')?.addEventListener('click', leaveCodeEditMode);
 $('#code-save-button')?.addEventListener('click', saveCodeFile);
-$('#page-manager-add-locator')?.addEventListener('click', () => { pageManagerLocators.push({ name: '', expression: '' }); renderPageManagerRows(); updatePageManagerPreview(); debounceSavePageDraft(); });
-$('#page-manager-add-action')?.addEventListener('click', () => { pageManagerActions.push({ name: '', locatorName: pageManagerLocators[0]?.name || '', operation: 'click' }); renderPageManagerRows(); updatePageManagerPreview(); debounceSavePageDraft(); });
-$('#page-manager-create')?.addEventListener('click', createPageFromManager);
-$('#pm-btn-save-draft')?.addEventListener('click', () => savePageDraft(true));
-$('#pm-btn-save-draft-footer')?.addEventListener('click', () => savePageDraft(true));
-$('#pm-btn-reset-draft')?.addEventListener('click', () => clearPageDraft(false));
-$('#page-manager-refresh')?.addEventListener('click', openPageManager);
-['#page-manager-platform', '#page-manager-title', '#page-manager-class', '#page-manager-description'].forEach((selector) => $(selector)?.addEventListener('input', () => { updatePageManagerPreview(); debounceSavePageDraft(); }));
-$('#page-manager-platform')?.addEventListener('change', () => { updatePageManagerPreview(); debounceSavePageDraft(); });
+let isPageManagerListenersInitialized = false;
+function initPageManagerListeners() {
+  if (isPageManagerListenersInitialized) return;
+  const root = document.getElementById('page-manager-view');
+  if (!root || !document.getElementById('pm-refresh-btn')) return;
+  isPageManagerListenersInitialized = true;
 
-// Event listeners mới cho Page Manager Side-by-Side & Subnav chuẩn BDD
-$('#pm-subnav-inspect')?.addEventListener('click', () => {
-  if (currentInspectedPage) {
-    inspectPage(currentInspectedPage.relativePath);
-  } else if (repoPages.length > 0) {
-    inspectPage(repoPages[0].relativePath);
-  }
-});
-$('#pm-subnav-edit')?.addEventListener('click', () => toggleDirectCodeEdit(true));
-$('#pm-subnav-create')?.addEventListener('click', switchToCreatePageMode);
-$('#pm-subnav-delete-btn')?.addEventListener('click', handleDeleteCurrentPage);
-$('#pm-subnav-add-locator-btn')?.addEventListener('click', openAddLocatorToPageModal);
-$('#pm-inspect-edit-btn')?.addEventListener('click', () => toggleDirectCodeEdit(true));
-$('#pm-subnav-save-btn')?.addEventListener('click', saveCurrentPageCode);
-$('#pm-refresh-btn')?.addEventListener('click', async () => {
-  await openPageManager();
-  notify('Đã làm mới danh sách Page Objects.');
-});
+  $('#page-manager-add-locator')?.addEventListener('click', () => { pageManagerLocators.push({ name: '', expression: '' }); renderPageManagerRows(); updatePageManagerPreview(); debounceSavePageDraft(); });
+  $('#page-manager-add-action')?.addEventListener('click', () => { pageManagerActions.push({ name: '', locatorName: pageManagerLocators[0]?.name || '', operation: 'click' }); renderPageManagerRows(); updatePageManagerPreview(); debounceSavePageDraft(); });
+  $('#page-manager-create')?.addEventListener('click', createPageFromManager);
+  $('#pm-btn-save-draft')?.addEventListener('click', () => savePageDraft(true));
+  $('#pm-btn-save-draft-footer')?.addEventListener('click', () => savePageDraft(true));
+  $('#pm-btn-reset-draft')?.addEventListener('click', () => clearPageDraft(false));
+  $('#page-manager-refresh')?.addEventListener('click', openPageManager);
+  ['#page-manager-platform', '#page-manager-title', '#page-manager-class', '#page-manager-description'].forEach((selector) => $(selector)?.addEventListener('input', () => { updatePageManagerPreview(); debounceSavePageDraft(); }));
+  $('#page-manager-platform')?.addEventListener('change', () => { updatePageManagerPreview(); debounceSavePageDraft(); });
 
-$('#pm-btn-inspect-mode')?.addEventListener('click', () => {
-  if (currentInspectedPage) {
-    inspectPage(currentInspectedPage.relativePath);
-  } else if (repoPages.length > 0) {
-    inspectPage(repoPages[0].relativePath);
-  }
-});
-$('#pm-btn-cancel-create')?.addEventListener('click', () => {
-  if (currentInspectedPage) {
-    inspectPage(currentInspectedPage.relativePath);
-  } else if (repoPages.length > 0) {
-    inspectPage(repoPages[0].relativePath);
-  }
-});
-$('#pm-btn-create-mode')?.addEventListener('click', switchToCreatePageMode);
-$('#page-manager-select-page')?.addEventListener('change', (e) => {
-  if (e.target.value) inspectPage(e.target.value, false);
-});
-$('#pm-quick-search-input')?.addEventListener('input', () => {
-  if (currentInspectedPage) {
-    renderInspectedLocators(currentInspectedPage.locators || []);
-    renderInspectedActions(currentInspectedPage.methods || []);
-  }
-});
-$('#pm-btn-toggle-edit')?.addEventListener('click', () => toggleDirectCodeEdit());
-$('#pm-btn-save-code')?.addEventListener('click', saveCurrentPageCode);
-$('#pm-btn-revert-code')?.addEventListener('click', () => {
-  if (window.pageManagerCodeEditor) {
-    window.pageManagerCodeEditor.revert();
-  }
-});
-$('#pm-btn-copy-code')?.addEventListener('click', copyCurrentPageManagerCode);
-$('#pm-btn-toggle-wrap')?.addEventListener('click', () => {
-  const stage = $('#pm-code-stage');
-  if (!stage) return;
-  const isWrapped = stage.classList.toggle('word-wrap');
-  const btn = $('#pm-btn-toggle-wrap');
-  if (btn) {
-    btn.classList.toggle('active', isWrapped);
-    btn.title = isWrapped
-      ? 'Chuyển sang chế độ cuộn ngang (giữ nguyên độ dài dòng code)'
-      : 'Bật/Tắt tự động xuống dòng (Word Wrap) hoặc cuộn ngang';
-  }
-  const icon = $('#pm-wrap-icon');
-  if (icon) {
-    icon.className = isWrapped ? 'ph-bold ph-text-align-justify' : 'ph-bold ph-text-align-left';
-  }
-  notify(isWrapped ? 'Đã bật chế độ tự động xuống dòng (Word Wrap)' : 'Đã bật chế độ cuộn ngang (Horizontal Scroll)', 'info');
-});
-
-$('#pm-btn-add-quick-locator')?.addEventListener('click', openAddLocatorToPageModal);
-$('#btn-close-add-locator-modal')?.addEventListener('click', closeAddLocatorToPageModal);
-$('#btn-cancel-add-locator')?.addEventListener('click', closeAddLocatorToPageModal);
-$('#btn-save-add-locator')?.addEventListener('click', saveAddLocatorToPage);
-
-// Quick Add Locator Inline Form
-$('#pm-btn-inline-add-loc')?.addEventListener('click', addInlineLocatorToPage);
-['#pm-inline-loc-name', '#pm-inline-loc-expr'].forEach((sel) => {
-  $(sel)?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addInlineLocatorToPage();
+  // Event listeners mới cho Page Manager Side-by-Side & Subnav chuẩn BDD
+  $('#pm-subnav-inspect')?.addEventListener('click', () => {
+    if (currentInspectedPage) {
+      inspectPage(currentInspectedPage.relativePath);
+    } else if (repoPages.length > 0) {
+      inspectPage(repoPages[0].relativePath);
     }
   });
-});
-
-// Quick Add Action Form & Buttons
-$('#pm-subnav-add-action-btn')?.addEventListener('click', focusAddActionInput);
-$('#pm-btn-add-action-toggle')?.addEventListener('click', focusAddActionInput);
-$('#pm-btn-inline-add-act')?.addEventListener('click', addInlineActionToPage);
-$('#pm-inline-act-name')?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    addInlineActionToPage();
-  }
-});
-$('#pm-inline-act-loc')?.addEventListener('change', (e) => {
-  const nameInput = $('#pm-inline-act-name');
-  const locVal = e.target.value;
-  const op = $('#pm-inline-act-op')?.value || 'click';
-  if (nameInput && !nameInput.value && locVal) {
-    const cleanLoc = locVal.replace(/^this\./, '').replace(/^btn|^button/i, '');
-    const capitalized = cleanLoc.charAt(0).toUpperCase() + cleanLoc.slice(1);
-    if (op === 'click') nameInput.value = `click${capitalized}`;
-    else if (op === 'fill') nameInput.value = `input${capitalized}`;
-    else if (op === 'check') nameInput.value = `check${capitalized}`;
-    else if (op === 'hover') nameInput.value = `hover${capitalized}`;
-    else if (op === 'assert') nameInput.value = `expect${capitalized}Visible`;
-  }
-});
-$('#pm-inline-act-op')?.addEventListener('change', () => {
-  const locVal = $('#pm-inline-act-loc')?.value;
-  const nameInput = $('#pm-inline-act-name');
-  const op = $('#pm-inline-act-op')?.value || 'click';
-  if (nameInput && locVal && (!nameInput.value || /^(click|input|check|hover|expect)/.test(nameInput.value))) {
-    const cleanLoc = locVal.replace(/^this\./, '').replace(/^btn|^button/i, '');
-    const capitalized = cleanLoc.charAt(0).toUpperCase() + cleanLoc.slice(1);
-    if (op === 'click') nameInput.value = `click${capitalized}`;
-    else if (op === 'fill') nameInput.value = `input${capitalized}`;
-    else if (op === 'check') nameInput.value = `check${capitalized}`;
-    else if (op === 'hover') nameInput.value = `hover${capitalized}`;
-    else if (op === 'assert') nameInput.value = `expect${capitalized}Visible`;
-  }
-});
-
-$('#pm-filter-input')?.addEventListener('input', renderPageManagerFiles);
-document.querySelectorAll('#pm-sidebar .pm-filter-pill').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#pm-sidebar .pm-filter-pill').forEach((p) => p.classList.toggle('active', p === btn));
-    existingPageFilter = btn.dataset.platform || 'all';
-    renderPageManagerFiles();
+  $('#pm-subnav-edit')?.addEventListener('click', () => toggleDirectCodeEdit(true));
+  $('#pm-subnav-create')?.addEventListener('click', switchToCreatePageMode);
+  $('#pm-subnav-delete-btn')?.addEventListener('click', handleDeleteCurrentPage);
+  $('#pm-subnav-add-locator-btn')?.addEventListener('click', openAddLocatorToPageModal);
+  $('#pm-inspect-edit-btn')?.addEventListener('click', () => toggleDirectCodeEdit(true));
+  $('#pm-subnav-save-btn')?.addEventListener('click', saveCurrentPageCode);
+  $('#pm-refresh-btn')?.addEventListener('click', async () => {
+    await openPageManager();
+    notify('Đã làm mới danh sách Page Objects.');
   });
-});
+
+  $('#pm-btn-inspect-mode')?.addEventListener('click', () => {
+    if (currentInspectedPage) {
+      inspectPage(currentInspectedPage.relativePath);
+    } else if (repoPages.length > 0) {
+      inspectPage(repoPages[0].relativePath);
+    }
+  });
+  $('#pm-btn-cancel-create')?.addEventListener('click', () => {
+    if (currentInspectedPage) {
+      inspectPage(currentInspectedPage.relativePath);
+    } else if (repoPages.length > 0) {
+      inspectPage(repoPages[0].relativePath);
+    }
+  });
+  $('#pm-btn-create-mode')?.addEventListener('click', switchToCreatePageMode);
+  $('#page-manager-select-page')?.addEventListener('change', (e) => {
+    if (e.target.value) inspectPage(e.target.value, false);
+  });
+  $('#pm-quick-search-input')?.addEventListener('input', () => {
+    if (currentInspectedPage) {
+      renderInspectedLocators(currentInspectedPage.locators || []);
+      renderInspectedActions(currentInspectedPage.methods || []);
+    }
+  });
+  $('#pm-btn-toggle-edit')?.addEventListener('click', () => toggleDirectCodeEdit());
+  $('#pm-btn-save-code')?.addEventListener('click', saveCurrentPageCode);
+  $('#pm-btn-revert-code')?.addEventListener('click', () => {
+    if (window.pageManagerCodeEditor) {
+      window.pageManagerCodeEditor.revert();
+    }
+  });
+  $('#pm-btn-copy-code')?.addEventListener('click', copyCurrentPageManagerCode);
+  $('#pm-btn-toggle-wrap')?.addEventListener('click', () => {
+    const stage = $('#pm-code-stage');
+    if (!stage) return;
+    const isWrapped = stage.classList.toggle('word-wrap');
+    const btn = $('#pm-btn-toggle-wrap');
+    if (btn) {
+      btn.classList.toggle('active', isWrapped);
+      btn.title = isWrapped
+        ? 'Chuyển sang chế độ cuộn ngang (giữ nguyên độ dài dòng code)'
+        : 'Bật/Tắt tự động xuống dòng (Word Wrap) hoặc cuộn ngang';
+    }
+    const icon = $('#pm-wrap-icon');
+    if (icon) {
+      icon.className = isWrapped ? 'ph-bold ph-text-align-justify' : 'ph-bold ph-text-align-left';
+    }
+    notify(isWrapped ? 'Đã bật chế độ tự động xuống dòng (Word Wrap)' : 'Đã bật chế độ cuộn ngang (Horizontal Scroll)', 'info');
+  });
+
+  $('#pm-btn-add-quick-locator')?.addEventListener('click', openAddLocatorToPageModal);
+  $('#btn-close-add-locator-modal')?.addEventListener('click', closeAddLocatorToPageModal);
+  $('#btn-cancel-add-locator')?.addEventListener('click', closeAddLocatorToPageModal);
+  $('#btn-save-add-locator')?.addEventListener('click', saveAddLocatorToPage);
+
+  // Quick Add Locator Inline Form
+  $('#pm-btn-inline-add-loc')?.addEventListener('click', addInlineLocatorToPage);
+  ['#pm-inline-loc-name', '#pm-inline-loc-expr'].forEach((sel) => {
+    $(sel)?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addInlineLocatorToPage();
+      }
+    });
+  });
+
+  // Quick Add Action Form & Buttons
+  $('#pm-subnav-add-action-btn')?.addEventListener('click', focusAddActionInput);
+  $('#pm-btn-add-action-toggle')?.addEventListener('click', focusAddActionInput);
+  $('#pm-btn-inline-add-act')?.addEventListener('click', addInlineActionToPage);
+  $('#pm-inline-act-name')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addInlineActionToPage();
+    }
+  });
+  $('#pm-inline-act-loc')?.addEventListener('change', (e) => {
+    const nameInput = $('#pm-inline-act-name');
+    const locVal = e.target.value;
+    const op = $('#pm-inline-act-op')?.value || 'click';
+    if (nameInput && !nameInput.value && locVal) {
+      const cleanLoc = locVal.replace(/^this\./, '').replace(/^btn|^button/i, '');
+      const capitalized = cleanLoc.charAt(0).toUpperCase() + cleanLoc.slice(1);
+      if (op === 'click') nameInput.value = `click${capitalized}`;
+      else if (op === 'fill') nameInput.value = `input${capitalized}`;
+      else if (op === 'check') nameInput.value = `check${capitalized}`;
+      else if (op === 'hover') nameInput.value = `hover${capitalized}`;
+      else if (op === 'assert') nameInput.value = `expect${capitalized}Visible`;
+    }
+  });
+  $('#pm-inline-act-op')?.addEventListener('change', () => {
+    const locVal = $('#pm-inline-act-loc')?.value;
+    const nameInput = $('#pm-inline-act-name');
+    const op = $('#pm-inline-act-op')?.value || 'click';
+    if (nameInput && locVal && (!nameInput.value || /^(click|input|check|hover|expect)/.test(nameInput.value))) {
+      const cleanLoc = locVal.replace(/^this\./, '').replace(/^btn|^button/i, '');
+      const capitalized = cleanLoc.charAt(0).toUpperCase() + cleanLoc.slice(1);
+      if (op === 'click') nameInput.value = `click${capitalized}`;
+      else if (op === 'fill') nameInput.value = `input${capitalized}`;
+      else if (op === 'check') nameInput.value = `check${capitalized}`;
+      else if (op === 'hover') nameInput.value = `hover${capitalized}`;
+      else if (op === 'assert') nameInput.value = `expect${capitalized}Visible`;
+    }
+  });
+
+  $('#pm-filter-input')?.addEventListener('input', renderPageManagerFiles);
+  document.querySelectorAll('#pm-sidebar .pm-filter-pill').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#pm-sidebar .pm-filter-pill').forEach((p) => p.classList.toggle('active', p === btn));
+      existingPageFilter = btn.dataset.platform || 'all';
+      renderPageManagerFiles();
+    });
+  });
+}
+window.initPageManagerListeners = initPageManagerListeners;
 
 // Sidebar Collapse / Expand feature for BDD Studio and Page Manager
 function initSidebarCollapse() {
@@ -7254,6 +7284,9 @@ let recorderState = {
 let recorderStatusInterval = null;
 
 async function openRecorderStudio() {
+  if (typeof initRecorderStudioListeners === 'function') {
+    initRecorderStudioListeners();
+  }
   if (!settingsCache) {
     try {
       const settings = await request('/api/settings');
@@ -7584,7 +7617,14 @@ function renderExistingMethodsHint(page) {
 }
 
 // RECORDER UI EVENT HANDLERS
-document.querySelectorAll('.recorder-stepper-bar .stepper-step').forEach((btn) => {
+let isRecorderStudioListenersInitialized = false;
+function initRecorderStudioListeners() {
+  if (isRecorderStudioListenersInitialized) return;
+  const root = document.getElementById('recorder-view');
+  if (!root || !document.getElementById('rec-start-btn')) return;
+  isRecorderStudioListenersInitialized = true;
+
+  document.querySelectorAll('.recorder-stepper-bar .stepper-step').forEach((btn) => {
   btn.addEventListener('click', () => {
     const targetStep = Number(btn.dataset.step);
     if (targetStep <= maxUnlockedRecorderStep) {
@@ -8027,6 +8067,9 @@ $('#rec-run-spec-btn')?.addEventListener('click', async () => {
 
   notify(`Đã nạp file ${recorderState.savedSpecPath} vào Runner. Nhấn "Chạy test" để bắt đầu!`);
 });
+}
+window.initRecorderStudioListeners = initRecorderStudioListeners;
+window.openRecorderStudio = openRecorderStudio;
 
 initialize();
 initPlanThreeControls();
@@ -9293,6 +9336,8 @@ function formatCurrentDatasetJson() {
 
 function initDataStudioControls() {
   if (isDataStudioInitialized) return;
+  const root = document.getElementById('data-view');
+  if (!root || !document.getElementById('data-save-btn')) return;
   isDataStudioInitialized = true;
 
   // 1. Tìm kiếm và Filter Pills
@@ -9581,6 +9626,8 @@ function initDataStudioControls() {
   });
 
 }
+window.initDataStudioControls = initDataStudioControls;
+window.openDataManager = openDataManager;
 
 /* ==========================================================================
    VISUAL STEP BUILDER (NO-CODE BDD DESIGNER)
@@ -13076,7 +13123,8 @@ async function submitCreateBddScript() {
 }
 
 async function initVisualBuilder() {
-  if (!isVisualBuilderInitialized) {
+  const root = document.getElementById('builder-view');
+  if (!isVisualBuilderInitialized && root && document.getElementById('script-refresh-btn')) {
     isVisualBuilderInitialized = true;
     initVisualBuilderControls();
   }
@@ -13096,6 +13144,7 @@ async function initVisualBuilder() {
     console.error('Lỗi khởi tạo Visual Builder:', err);
   }
 }
+window.initVisualBuilder = initVisualBuilder;
 
 window.initBlankStarterSteps = function () {
   if ($('#builder-feature-name') && !$('#builder-feature-name').value) {
@@ -14379,24 +14428,25 @@ window.addEventListener('focus', updateGlobalHeaderTokenQuota);
    SUITES VIEW CONTROLLER (TIỆN ÍCH > KỊCH BẢN TEST SUITE)
 ============================================================================== */
 async function openSuitesManager() {
-  await ensureViewTemplate('suites-view');
   initSuitesView();
   if (!settingsCache) {
     try {
       const settings = await request('/api/settings');
-      settingsCache = settings;
+      renderSettings(settings);
     } catch (err) {
       console.error('Lỗi tải suites settings:', err);
     }
+  } else {
+    renderSuitesView(settingsCache.suites || {});
   }
-  renderSuitesView(settingsCache?.suites || window.dashboardSuites || {});
 }
 
 document.getElementById('runner-goto-suites-btn')?.addEventListener('click', () => {
   document.querySelector('.nav-dropdown-item[data-view="suites-view"]')?.click();
 });
 
-initSuitesView();
+window.initSuitesView = initSuitesView;
+window.openSuitesManager = openSuitesManager;
 
 /* ==============================================================================
    SYSTEM UPDATER CONTROLLER
@@ -15135,6 +15185,7 @@ async function openGitStudio() {
   if (gitStudioLoading) return;
   gitStudioLoading = true;
   try {
+    initGitStudio();
     await loadGitStatus(false);
     await runGitQualityGate();
   } finally {
@@ -15144,6 +15195,8 @@ async function openGitStudio() {
 
 function initGitStudio() {
   if (gitStudioState.isInitialized) return;
+  const root = document.getElementById('git-view');
+  if (!root || !document.getElementById('btn-git-fetch')) return;
   gitStudioState.isInitialized = true;
 
   // Lắng nghe nút Fetch
@@ -15284,7 +15337,8 @@ function initGitStudio() {
   }, 1000);
 }
 
-initGitStudio();
+window.initGitStudio = initGitStudio;
+window.openGitStudio = openGitStudio;
 
 // =============================================================================
 // PHÂN HỆ: QUẢN LÝ FIXTURES, PRECONDITIONS & TEARDOWN STUDIO (PLAN 08)
@@ -15295,10 +15349,13 @@ let currentSelectedFixture = null;
 let isFixturesStudioInitialized = false;
 
 async function openFixturesStudio() {
-  if (!isFixturesStudioInitialized) {
+  const root = document.getElementById('fixtures-view');
+  if (!isFixturesStudioInitialized && root && document.getElementById('btn-open-create-fixture-modal')) {
     initFixturesStudioListeners();
     isFixturesStudioInitialized = true;
   }
+window.openFixturesStudio = openFixturesStudio;
+window.initFixturesStudioListeners = initFixturesStudioListeners;
   // Đảm bảo filter mặc định (Tất cả) luôn được kích hoạt đồng bộ
   if (!currentFixtureFilter) currentFixtureFilter = 'all';
   const fxPills = document.querySelectorAll('#fixtures-filter-pills .pm-filter-pill, #fixtures-filter-pills .fx-filter-pill');

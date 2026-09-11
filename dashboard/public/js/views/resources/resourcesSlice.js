@@ -19,6 +19,9 @@ export class ResourcesSlice {
     this._mounted = true;
     this._bindDomEvents();
     this._registerBridgeActions();
+    if (typeof window.openExplorer === 'function') {
+      try { await window.openExplorer(); } catch (_) {}
+    }
     await this.loadResources();
   }
 
