@@ -7945,6 +7945,14 @@ $('#rec-url')?.addEventListener('blur', (e) => {
 });
 
 $('#rec-start-btn')?.addEventListener('click', async () => {
+  const startBtn = $('#rec-start-btn');
+  if (!startBtn || startBtn.disabled || recorderState.isRecording || startBtn.dataset.loading === 'true') {
+    return;
+  }
+  startBtn.dataset.loading = 'true';
+  startBtn.disabled = true;
+  startBtn.innerHTML = '<i class="ph ph-spinner-gap"></i> Đang mở trình duyệt...';
+
   const currentEnvKey = $('#filter-env')?.value || $('#environment')?.value || settingsCache?.runtime?.defaultEnvironment || 'qc';
   const defaultUrl = settingsCache?.environments?.[currentEnvKey]?.baseURL || 'https://example.com';
   let inputUrl = $('#rec-url')?.value.trim() || defaultUrl;
@@ -7962,10 +7970,6 @@ $('#rec-start-btn')?.addEventListener('click', async () => {
   const url = inputUrl;
   const platform = $('#rec-platform')?.value || 'desktop';
   const device = platform === 'mobile-web' ? $('#rec-device')?.value : '';
-  const startBtn = $('#rec-start-btn');
-
-  startBtn.disabled = true;
-  startBtn.innerHTML = '<i class="ph ph-spinner-gap"></i> Đang mở trình duyệt...';
 
   try {
     const result = await request('/api/recorder/start', {
@@ -7979,6 +7983,7 @@ $('#rec-start-btn')?.addEventListener('click', async () => {
     notify(`Không thể mở trình duyệt ghi: ${error.message}`);
     await checkRecorderStatus();
   } finally {
+    startBtn.dataset.loading = 'false';
     startBtn.innerHTML = '<i class="ph-fill ph-record"></i> Bắt đầu ghi (Codegen)';
   }
 });

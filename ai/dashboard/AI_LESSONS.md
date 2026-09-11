@@ -186,4 +186,20 @@ Only record a lesson after the defect is confirmed and its root cause is underst
 - Regression check: Run automated Playwright suite exercising all 55 subtab, sub-subtab, filter pill, and stepper actions; verify 55/55 PASS with 0 timeouts and 0 unexpected console errors.
 - Related files: `dashboard/public/app.js`, `dashboard/public/js/main.js`, `dashboard/public/templates/*.html`, `dashboard/public/js/views/*/*Slice.js`.
 
+### 2026-09-11 — Subprocess codegen lifecycle requires concurrency mutex and non-conflicting slice event binding
+
+- Area: UI Recorder & Codegen Studio (`recorder-view`, `recorderSlice.js`, `recorderRoutes.js`).
+- Symptom: Clicking "Bắt đầu ghi (Codegen)" launches 2 browser recording windows and 2 Playwright Inspectors simultaneously; stopping the recording leaves the first browser orphaned in the background.
+- Root cause:
+  1. *Duplicate Event Listeners*: Both `app.js` (`initRecorderStudioListeners`) and modular slice `recorderSlice.js` (`_bindDomEvents`) attached `click` listeners to `#rec-start-btn`, firing two concurrent `POST /api/recorder/start` requests on a single button click.
+  2. *Backend Concurrency Race Condition*: `recorderRoutes.js` lacked an `isStarting` mutex lock and assigned `activeRecorder` only after a 600ms startup delay. The second request arrived while the first was waiting, saw `activeRecorder === null`, and spawned a second independent `playwright codegen` child process.
+- Correct pattern:
+  1. Do not attach duplicate DOM click listeners in modular slices when legacy `app.js` is active and managing the view wizard (`if (typeof window.openRecorderStudio === 'function') return;`).
+  2. Guard button handlers on the frontend with loading flags (`startBtn.dataset.loading = 'true'`) and immediate disabled state.
+  3. Implement an `isStarting` mutex on backend endpoints spawning external subprocesses, reject concurrent calls with HTTP 409 Conflict, and assign `activeRecorder` immediately upon process spawn.
+- Preventive rule: Never allow dual registration of DOM action listeners across legacy and modular layers. Always protect asynchronous subprocess spawn routes with mutual exclusion locks.
+- Regression check: Run `npm run test:dashboard:api` (asserting `POST /api/recorder/start` concurrent calls reject with 409 and accept only 1 session) and `tests/dashboard/foundation-parity.spec.js`.
+- Related files: `dashboard/public/js/views/recorder/recorderSlice.js`, `dashboard/public/app.js`, `dashboard/routes/recorderRoutes.js`, `tests/dashboard-api/recorder.test.js`.
+
+
 

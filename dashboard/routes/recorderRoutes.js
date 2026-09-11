@@ -21,6 +21,7 @@ const { createBackup } = require('../services/resourceService');
 const { publish } = require('../services/runnerService');
 
 let activeRecorder = null;
+let isStarting = false;
 
 async function handleRecorderRoutes(request, response, url, context = {}) {
   if (!url.pathname.startsWith('/api/recorder/')) return false;
@@ -28,6 +29,10 @@ async function handleRecorderRoutes(request, response, url, context = {}) {
   const recordingsDir = ensureRecordingsDir(root);
 
   if (request.method === 'POST' && url.pathname === '/api/recorder/start') {
+    if (isStarting) {
+      return sendJson(response, 409, { error: 'Tiến trình ghi đang được khởi động, vui lòng đợi.' });
+    }
+    isStarting = true;
     try {
       const body = await parseBody(request);
       const activeConfig = getDashboardConfig();
@@ -64,6 +69,9 @@ async function handleRecorderRoutes(request, response, url, context = {}) {
       let stderrBuffer = '';
       let earlyExitCode = null;
 
+      // Gán activeRecorder ngay lập tức để bất kỳ request/tín hiệu hủy nào cũng nhận diện được child process
+      activeRecorder = { child, url: targetUrl, platform, fileName, outputPath, startTime: new Date().toISOString() };
+
       child.stderr?.on('data', (chunk) => { stderrBuffer = (stderrBuffer + chunk.toString()).slice(-4000); });
       child.on('exit', (code) => {
         earlyExitCode = code;
@@ -78,11 +86,12 @@ async function handleRecorderRoutes(request, response, url, context = {}) {
         return sendJson(response, 500, { error: `Không thể mở Playwright Codegen: tiến trình đã thoát sớm (mã thoát: ${earlyExitCode}). ${stderrBuffer.trim()}` });
       }
 
-      activeRecorder = { child, url: targetUrl, platform, fileName, outputPath, startTime: new Date().toISOString() };
       publish('recorder_status', { isRecording: true, url: targetUrl, platform, fileName, startTime: activeRecorder.startTime });
       return sendJson(response, 200, { message: 'Đã khởi chạy Playwright Codegen.', fileName, url: targetUrl });
     } catch (err) {
       return sendJson(response, 400, { error: err.message });
+    } finally {
+      isStarting = false;
     }
   }
 

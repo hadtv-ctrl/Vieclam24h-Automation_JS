@@ -33,6 +33,12 @@ export class RecorderSlice {
   _bindDomEvents() {
     const root = document.getElementById('recorder-view');
     if (!root) return;
+
+    // Tránh duplicate event listeners nếu app.js đã gắn listener quản lý toàn diện wizard
+    if (typeof window.initRecorderStudioListeners === 'function' || typeof window.openRecorderStudio === 'function') {
+      return;
+    }
+
     const on = (sel, evt, fn) => {
       const el = root.querySelector(sel);
       if (!el) return;
@@ -54,12 +60,38 @@ export class RecorderSlice {
 
   _registerBridgeActions() {
     const reg = (name, fn) => this._disposers.push(windowBridge.exposeAction(name, fn));
-    reg('startRecorderSession', (url) => this.startRecording(url));
-    reg('stopRecorderSession', () => this.stopRecording());
-    reg('resetRecorderSession', () => this.resetRecording());
+    reg('startRecorderSession', (url) => {
+      const root = document.getElementById('recorder-view');
+      const startBtn = root?.querySelector('#rec-start-btn');
+      if (startBtn && typeof window.openRecorderStudio === 'function') {
+        if (url && root.querySelector('#rec-url')) root.querySelector('#rec-url').value = url;
+        startBtn.click();
+      } else {
+        return this.startRecording(url);
+      }
+    });
+    reg('stopRecorderSession', () => {
+      const root = document.getElementById('recorder-view');
+      const stopBtn = root?.querySelector('#rec-stop-btn');
+      if (stopBtn && typeof window.openRecorderStudio === 'function') {
+        stopBtn.click();
+      } else {
+        return this.stopRecording();
+      }
+    });
+    reg('resetRecorderSession', () => {
+      const root = document.getElementById('recorder-view');
+      const resetBtn = root?.querySelector('#rec-reset-btn');
+      if (resetBtn && typeof window.openRecorderStudio === 'function') {
+        resetBtn.click();
+      } else {
+        return this.resetRecording();
+      }
+    });
   }
 
   async startRecording(url) {
+    if (this.status === 'recording') return;
     const root = document.getElementById('recorder-view');
     const inputUrl = url || root?.querySelector('#rec-url')?.value?.trim() || root?.querySelector('#recorder-url-input')?.value?.trim() || this.activeUrl;
     const platform = root?.querySelector('#rec-platform')?.value || 'desktop';
