@@ -3421,6 +3421,7 @@ function updateSuiteSummaryBox(suiteId) {
         `;
       }).join('');
     }
+    updateExecutionPlanBox(suiteId);
     return;
   }
 
@@ -5540,6 +5541,7 @@ async function initialize() {
 
     window.dashboardSuites = config.suites || {};
     renderRunnerSuiteOptions(window.dashboardSuites);
+    updateExecutionPlanBox($('#runner-suite-select')?.value);
 
     if (config.defaults?.environment) $('#environment').value = config.defaults.environment;
     if (config.defaults?.workers) $('#workers').value = config.defaults.workers;
