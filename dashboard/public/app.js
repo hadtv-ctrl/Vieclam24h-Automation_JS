@@ -8656,7 +8656,24 @@ function setDataDirty(dirty) {
 }
 
 async function openDataManager() {
+  if (window.__STUDIO_CORE__?.templateLoader) {
+    const tl = window.__STUDIO_CORE__.templateLoader;
+    if (tl.hasTemplate('data-view') && !tl.isLoaded('data-view')) {
+      try {
+        await tl.loadViewTemplate('data-view');
+      } catch (err) {
+        console.warn('[openDataManager] templateLoader error:', err);
+      }
+    }
+  }
+  if (!document.getElementById('data-save-btn')) {
+    await new Promise(r => setTimeout(r, 60));
+  }
   initDataStudioControls();
+  if (!dataRawEditorController) {
+    await new Promise(r => setTimeout(r, 80));
+    initDataStudioControls();
+  }
   await loadDataFilesList();
   if (datasetsCache.length > 0) {
     const fileToSelect = currentDataFile || datasetsCache[0].fileName;
@@ -8769,9 +8786,7 @@ function renderDataFilesList() {
           }
           switchToDataInspectMode();
         }
-        if (file !== currentDataFile) {
-          selectDataset(file);
-        }
+        selectDataset(file);
       }
     });
   });
@@ -8884,7 +8899,7 @@ async function selectDataset(fileName, force = false) {
   try {
     const res = await request(`/api/data/dataset?file=${encodeURIComponent(fileName)}`);
     currentDataset = res.data;
-    originalDatasetRaw = JSON.stringify(res.data, null, 2);
+    originalDatasetRaw = res.raw || JSON.stringify(res.data, null, 2);
     setDataDirty(false);
 
     const fileDescriptions = {
@@ -8934,8 +8949,12 @@ async function selectDataset(fileName, force = false) {
     renderGroupedFormView();
 
     if (dataRawEditorController) {
-      dataRawEditorController.setValue(originalDatasetRaw, true);
+      dataRawEditorController.setValue(originalDatasetRaw, { markClean: true });
+    } else {
+      const edFallback = document.getElementById('data-raw-editor');
+      if (edFallback) edFallback.value = originalDatasetRaw;
     }
+    updateRawJsonPreview();
 
     await renderLinkedBddScripts(res.fileName);
   } catch (err) {
@@ -10162,6 +10181,15 @@ function initDataStudioControls() {
 }
 window.initDataStudioControls = initDataStudioControls;
 window.openDataManager = openDataManager;
+window.legacySelectDataset = selectDataset;
+window.legacySaveDataset = saveCurrentDataset;
+window.selectDataset = selectDataset;
+window.loadDataFilesList = loadDataFilesList;
+window.renderDataFilesList = renderDataFilesList;
+window.saveCurrentDataset = saveCurrentDataset;
+window.switchToDataInspectMode = switchToDataInspectMode;
+window.switchToDataCreateMode = switchToDataCreateMode;
+window.updateRawJsonPreview = updateRawJsonPreview;
 
 /* ==========================================================================
    VISUAL STEP BUILDER (NO-CODE BDD DESIGNER)

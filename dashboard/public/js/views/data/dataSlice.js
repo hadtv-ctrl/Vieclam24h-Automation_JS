@@ -21,11 +21,16 @@ export class DataSlice {
 
   async mount() {
     this._mounted = true;
-    this._bindDomEvents();
     this._registerBridgeActions();
     if (typeof window.openDataManager === 'function') {
-      try { await window.openDataManager(); } catch (_) {}
+      try {
+        await window.openDataManager();
+        return;
+      } catch (err) {
+        console.warn('[DataSlice] openDataManager error:', err);
+      }
     }
+    this._bindDomEvents();
     await this.loadDatasets();
     if (this.datasets.length > 0 && !this.currentFile) {
       await this.selectDataset(this.datasets[0].fileName);
@@ -39,6 +44,10 @@ export class DataSlice {
   }
 
   _bindDomEvents() {
+    // Tránh duplicate event listeners nếu app.js đã quản lý toàn diện Test Data Studio
+    if (typeof window.openDataManager === 'function') {
+      return;
+    }
     const root = document.getElementById('data-view');
     if (!root) return;
     const on = (sel, evt, fn) => {
@@ -69,6 +78,12 @@ export class DataSlice {
   }
 
   async loadDatasets() {
+    if (typeof window.loadDataFilesList === 'function') {
+      try {
+        await window.loadDataFilesList();
+        return;
+      } catch (_) {}
+    }
     try {
       const res = await apiClient.get('/api/data/datasets');
       this.datasets = res.datasets || [];
@@ -82,11 +97,26 @@ export class DataSlice {
 
   async selectDataset(fileName) {
     if (!fileName) return;
+    this.currentFile = fileName;
+    if (typeof window.legacySelectDataset === 'function') {
+      try {
+        await window.legacySelectDataset(fileName, true);
+        return;
+      } catch (err) {
+        console.error('[DataSlice] legacySelectDataset error:', err);
+      }
+    } else if (typeof window.selectDataset === 'function' && window.selectDataset !== this.selectDataset) {
+      try {
+        await window.selectDataset(fileName, true);
+        return;
+      } catch (err) {
+        console.error('[DataSlice] selectDataset error:', err);
+      }
+    }
     try {
       const res = await apiClient.get(`/api/data/dataset?file=${encodeURIComponent(fileName)}`);
-      this.currentFile = fileName;
       this.currentData = res.data ?? res;
-      const rawText = JSON.stringify(this.currentData, null, 2);
+      const rawText = res.raw || JSON.stringify(this.currentData, null, 2);
       editorSession.openFile(`data/${fileName}`, rawText);
       stateStore.setState({ data: { currentFile: fileName, currentData: this.currentData } }, 'dataSlice.selectDataset');
       this.renderFilesList();
@@ -97,6 +127,21 @@ export class DataSlice {
   }
 
   async saveDataset() {
+    if (typeof window.legacySaveDataset === 'function') {
+      try {
+        await window.legacySaveDataset();
+        return;
+      } catch (err) {
+        console.error('[DataSlice] legacySaveDataset error:', err);
+      }
+    } else if (typeof window.saveCurrentDataset === 'function' && window.saveCurrentDataset !== this.saveDataset) {
+      try {
+        await window.saveCurrentDataset();
+        return;
+      } catch (err) {
+        console.error('[DataSlice] saveCurrentDataset error:', err);
+      }
+    }
     if (!this.currentFile) return;
     const content = editorSession.getBuffer();
     try {
@@ -131,6 +176,11 @@ export class DataSlice {
   }
 
   async deleteDataset(fileName = this.currentFile) {
+    const btn = document.getElementById('data-delete-file-btn');
+    if (btn) {
+      btn.click();
+      return;
+    }
     if (!fileName) return;
     if (!confirm(`Bạn có chắc chắn muốn xóa tệp dữ liệu "${fileName}"?`)) return;
     try {
@@ -147,17 +197,24 @@ export class DataSlice {
 
   switchSubnav(mode) {
     this.subnavMode = mode;
+    if (typeof window.switchToDataInspectMode === 'function' && mode === 'inspect') {
+      window.switchToDataInspectMode();
+      return;
+    }
+    if (typeof window.switchToDataCreateMode === 'function' && mode === 'create') {
+      window.switchToDataCreateMode();
+      return;
+    }
     const inspectBtn = document.getElementById('btn-tab-data-inspect');
     const createBtn = document.getElementById('btn-tab-data-create');
-    const inspectPanel = document.getElementById('data-inspect-panel');
-    const createPanel = document.getElementById('data-create-panel');
+    const inspectView = document.getElementById('data-inspect-scroll-content');
+    const createView = document.getElementById('data-create-scroll-content');
     const actions = document.getElementById('data-subnav-actions');
     if (inspectBtn) inspectBtn.classList.toggle('active', mode === 'inspect');
     if (createBtn) createBtn.classList.toggle('active', mode === 'create');
-    if (inspectPanel) inspectPanel.style.display = mode === 'inspect' ? '' : 'none';
-    if (createPanel) createPanel.style.display = mode === 'create' ? '' : 'none';
+    if (inspectView) inspectView.style.display = mode === 'inspect' ? 'block' : 'none';
+    if (createView) createView.style.display = mode === 'create' ? 'block' : 'none';
     if (actions) actions.style.display = mode === 'inspect' ? '' : 'none';
-    this.renderFilesList();
   }
 
   renderStats() {
@@ -173,47 +230,26 @@ export class DataSlice {
   }
 
   renderFilesList() {
-    const container = document.getElementById('data-files-list');
-    if (!container) return;
-    const filtered = this.datasets.filter((ds) => !this.searchQuery || ds.fileName.toLowerCase().includes(this.searchQuery));
-    if (filtered.length === 0) {
-      container.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--muted); font-size: 12.5px;">Không tìm thấy tệp dữ liệu.</div>';
+    if (typeof window.renderDataFilesList === 'function') {
+      window.renderDataFilesList();
       return;
     }
-    container.innerHTML = filtered.map((ds) => {
-      const isSel = this.subnavMode === 'inspect' && this.currentFile === ds.fileName;
-      return `
-        <div class="dashboard-list-card data-file-card-item ${isSel ? 'is-selected active' : ''}" data-file="${ds.fileName}">
-          <span class="dashboard-list-card__icon ${ds.isArray ? 'desktop' : 'api'}">
-            <i class="ph-bold ${ds.isArray ? 'ph-rows' : 'ph-tree-structure'}"></i>
-          </span>
-          <div class="dashboard-list-card__body">
-            <div class="script-card-title">${ds.fileName}</div>
-            <div style="color: var(--muted); font-size: 11px; margin-top: 4px;">
-              ${ds.recordCount || 0} ${ds.isArray ? 'dòng' : 'mục'} • ${(ds.size / 1024).toFixed(1)} KB
-            </div>
-          </div>
-        </div>`;
-    }).join('');
-    container.querySelectorAll('.data-file-card-item').forEach((card) => {
-      card.addEventListener('click', () => {
-        const file = card.dataset.file;
-        if (file && file !== this.currentFile) this.selectDataset(file);
-      });
-    });
   }
 
   renderEditor(content) {
-    const textarea = document.getElementById('data-raw-json-editor') || document.getElementById('data-file-content');
+    const textarea = document.getElementById('data-raw-editor') || document.getElementById('data-raw-json-editor') || document.getElementById('data-file-content');
     if (textarea) {
       textarea.value = content;
       editorSession.bindKeybindings(textarea, () => this.saveDataset());
     }
+    if (typeof window.updateRawJsonPreview === 'function') {
+      window.updateRawJsonPreview();
+    }
   }
 
   copyJson() {
-    const text = editorSession.getBuffer();
-    if (navigator.clipboard) {
+    const text = document.getElementById('data-raw-editor')?.value || editorSession.getBuffer();
+    if (navigator.clipboard && text) {
       navigator.clipboard.writeText(text);
       this.notify('Đã sao chép JSON vào clipboard.');
     }
