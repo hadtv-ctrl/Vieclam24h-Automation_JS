@@ -74,29 +74,45 @@ function defineQaConfig(customConfig = {}) {
     platformDir = process.env.TEST_PLATFORM;
   }
 
-  // ─── Suite-grouped report structure ────────────────────────────────────────
-  // When launched from a suite (QA_SUITE_NAME is set), reports are grouped:
-  //   playwright-report / [date] / [suite-name] / [HH-MM-SS] / [script]
-  // When launched standalone, keep the original structure:
-  //   playwright-report / [date] / [platform] / [script] / [timestamp] report
+  // ─── Unified report path structure ──────────────────────────────────────────
+  // Pattern: playwright-report / [date] / [name] / [HH-MM-SS] / index.html
+  //
+  //   Suite cha (composite) → name = tên suite cha   (e.g. smoke-all)
+  //   Suite con (leaf)      → name = tên suite con   (e.g. smoke-desktop)
+  //   Script đơn lẻ        → name = tên script file (e.g. register_by_email-bdd)
+  //
   const suiteName = process.env.QA_SUITE_NAME || '';
-  const safeStartTime = reportTime.slice(0, 8); // HH-MM-SS only
-  // Suite run → ONE combined report at [date]/[suite]/[HH-MM-SS]/
-  // Standalone run → per-script report at [date]/[platform]/[script]/[timestamp]/
-  const reportDir = suiteName
-    ? path.join(
-        'playwright-report',
-        reportDate,
-        suiteName,
-        safeStartTime
-      )
-    : path.join(
-        'playwright-report',
-        reportDate,
-        platformDir,
-        scriptFolder,
-        `[${reportDate} ${reportTime} ${runRandomId}] report`
-      );
+  const safeStartTime = reportTime.slice(0, 8); // HH-MM-SS only (e.g. 19-58-00)
+
+  // ─── runFolderName priority: suite > tags > script > all-scripts ─────────
+  // 1. Suite (cha/con): use QA_SUITE_NAME (e.g. smoke-all, smoke-desktop)
+  // 2. Tag run:          use grep tag(s)  (e.g. @smoke, @smoke+@applyjob)
+  // 3. Single script:    use spec filename (e.g. register_by_email-bdd)
+  // 4. Full e2e run:     fallback 'all-scripts'
+
+  // Collect grep tags from argv (--grep @smoke or --grep @smoke|@applyjob)
+  const grepTags = (() => {
+    const raw = process.env.QA_GREP_TAGS || '';
+    if (raw) return raw;
+    const grepIdx = process.argv.indexOf('--grep');
+    if (grepIdx === -1) return '';
+    const grepVal = process.argv[grepIdx + 1] || '';
+    // Convert pattern like @smoke|@applyjob → @smoke+@applyjob (folder-safe)
+    return grepVal
+      .replace(/[\r\n\0]/g, '')
+      .replace(/\|/g, '+')
+      .replace(/[^\w@+\-]/g, '')
+      .slice(0, 60);
+  })();
+
+  const runFolderName = suiteName || grepTags || scriptFolder;
+
+  const reportDir = path.join(
+    'playwright-report',
+    reportDate,
+    runFolderName,
+    safeStartTime
+  );
 
   // Dynamic absolute resolution for internal reporters to prevent missing module errors in client projects
   let htmlSummaryReporterPath = path.resolve(__dirname, '../reporters/htmlSummaryReporter.js');
@@ -104,9 +120,7 @@ function defineQaConfig(customConfig = {}) {
   let suiteReporterPath = path.resolve(__dirname, '../reporters/suiteReporter.js');
 
   const baseConfig = {
-    outputDir: suiteName
-      ? path.join('test-results', reportDate, suiteName, safeStartTime)
-      : path.join('test-results', reportDate, platformDir, scriptFolder),
+    outputDir: path.join('test-results', reportDate, runFolderName, safeStartTime),
     metadata: { runId },
     timeout: testTimeout,
     testDir: './tests',
@@ -142,7 +156,7 @@ function defineQaConfig(customConfig = {}) {
         suiteReporterPath,
         {
           // Output to the time folder (parent of the per-script folders)
-          outputFolder: path.join('playwright-report', reportDate, suiteName, safeStartTime),
+          outputFolder: reportDir,
           suiteName,
           suiteLabel: process.env.QA_SUITE_LABEL || suiteName,
         },

@@ -96,6 +96,10 @@ function runtimeEnv(options) {
     NODE_ENV: options.environment,
     QA_SUITE_NAME: options.suiteKey || sanitizeSuiteName(options.suiteLabel),
     QA_SUITE_LABEL: String(options.suiteLabel || options.suiteKey || ''),
+    // Grep tags folder name: @smoke → '@smoke', @smoke|@e2e → '@smoke+@e2e'
+    QA_GREP_TAGS: options.grep
+      ? String(options.grep).replace(/\|/g, '+').replace(/[^\w@+\-]/g, '').slice(0, 60)
+      : '',
     QA_PLATFORM: platform,
     PW_WORKERS: String(options.workers),
     PW_RETRIES: String(retries),

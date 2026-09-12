@@ -177,6 +177,13 @@ const envVars = {
   // Pass suite key to defineConfig so reports are grouped under the suite folder
   QA_SUITE_NAME: matchedEntry ? matchedEntry[0] : suiteName,
   QA_SUITE_LABEL: suite && suite.label ? suite.label : (matchedEntry ? matchedEntry[0] : suiteName),
+  // Grep tags: collect all --grep values from args array for folder naming
+  QA_GREP_TAGS: (() => {
+    const grepIdx = args.indexOf('--grep');
+    if (grepIdx === -1) return '';
+    return (args[grepIdx + 1] || '')
+      .replace(/\|/g, '+').replace(/[^\w@+\-]/g, '').slice(0, 60);
+  })(),
 };
 
 if (suite?.viewport) {
