@@ -37,7 +37,6 @@ function validateOptions(input, root = process.env.QA_PROJECT_ROOT || process.cw
   const environment = String(input.environment || settings.runtime.defaultEnvironment);
   const grep = String(input.grep || '').trim();
   const workers = Number(input.workers || settings.runtime.workers);
-  const suiteKey = typeof input.suiteKey === 'string' ? input.suiteKey.replace(/[^\w\-]/g, '-').slice(0, 60) : '';
   const suiteLabel = typeof input.suiteLabel === 'string' ? input.suiteLabel.slice(0, 80) : '';
 
   let viewport = null;
@@ -70,7 +69,7 @@ function validateOptions(input, root = process.env.QA_PROJECT_ROOT || process.cw
   if (grep.length > 80 || /[\r\n\0]/.test(grep)) throw new Error('Tag/grep không hợp lệ.');
 
   const spec = specs.length === 1 ? specs[0] : (specs.length > 1 ? specs.join(' ') : 'all');
-  return { project, projects, environment, spec, specs, grep, workers, headed: input.headed === true, viewport, suiteLabel, suiteKey };
+  return { project, projects, environment, spec, specs, grep, workers, headed: input.headed === true, viewport, suiteLabel };
 }
 
 function runtimeEnv(options) {
@@ -86,20 +85,8 @@ function runtimeEnv(options) {
   const vpWidth = options.viewport?.width || runtime.viewport.width;
   const vpHeight = options.viewport?.height || runtime.viewport.height;
 
-    const sanitizeSuiteName = (name) => String(name || '')
-    .replace(/[^\w\-. ]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .slice(0, 60);
-
   return {
     NODE_ENV: options.environment,
-    QA_SUITE_NAME: options.suiteKey || sanitizeSuiteName(options.suiteLabel),
-    QA_SUITE_LABEL: String(options.suiteLabel || options.suiteKey || ''),
-    // Grep tags folder name: @smoke → '@smoke', @smoke|@e2e → '@smoke+@e2e'
-    QA_GREP_TAGS: options.grep
-      ? String(options.grep).replace(/\|/g, '+').replace(/[^\w@+\-]/g, '').slice(0, 60)
-      : '',
     QA_PLATFORM: platform,
     PW_WORKERS: String(options.workers),
     PW_RETRIES: String(retries),

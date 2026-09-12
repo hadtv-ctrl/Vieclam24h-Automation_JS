@@ -7047,81 +7047,27 @@ $('#test-discord-button')?.addEventListener('click', async () => {
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
-function buildSuiteExecutionPayload(suiteId, isHeaded = false) {
-  const allSuites = window.dashboardSuites || suitesCache || {};
-  const suite = allSuites[suiteId] || {};
-  const env = $('#environment')?.value || 'qc';
-
-  if (suite.type === 'composite' || (Array.isArray(suite.suites) && suite.suites.length > 0)) {
-    const childKeys = Array.isArray(suite.suites) ? suite.suites : [];
-    const compProjects = [];
-    const compGreps = [];
-    const compSpecs = [];
-    let compWorkers = Number(suite.workers || 2);
-
-    for (const cid of childKeys) {
-      const child = allSuites[cid];
-      if (!child) continue;
-      if (child.project && child.project !== 'all') {
-        compProjects.push(child.project);
-      } else if (child.platform === 'mobile') {
-        compProjects.push('Mobile Chrome Smoke Tests', 'Mobile Chrome Regression Tests');
-      } else if (child.platform === 'desktop') {
-        compProjects.push('Desktop Smoke Tests', 'Desktop Regression Tests');
-      }
-      if (child.grep) compGreps.push(child.grep);
-      if (Array.isArray(child.specs) && child.specs.length > 0 && child.specs !== 'all') {
-        compSpecs.push(...child.specs);
-      } else if (child.spec && child.spec !== 'all') {
-        compSpecs.push(child.spec);
-      }
-      if (child.workers) compWorkers = Math.max(compWorkers, Number(child.workers));
-    }
-
-    const payload = {
-      environment: env,
-      project: 'all',
-      projects: [...new Set(compProjects)],
-      grep: compGreps.length > 0 ? [...new Set(compGreps)].join('|') : '',
-      workers: compWorkers,
-      viewport: suite.viewport,
-      suiteLabel: suite.label || suiteId,
-      suiteKey: suiteId,
-      headed: Boolean(isHeaded),
-    };
-    if (compSpecs.length > 0) {
-      payload.specs = [...new Set(compSpecs)];
-    } else {
-      payload.spec = 'all';
-    }
-    return payload;
-  }
-
-  let specs = suite.specs;
-  if (!specs && suite.spec) specs = suite.spec === 'all' ? 'all' : [suite.spec];
-
-  const payload = {
-    environment: env,
-    project: suite.project || 'all',
-    grep: suite.grep || '',
-    workers: Number(suite.workers || 2),
-    viewport: suite.viewport,
-    suiteLabel: suite.label || suiteId,
-      suiteKey: suiteId,
-    headed: Boolean(isHeaded),
-  };
-  if (Array.isArray(specs) && specs.length > 0) {
-    payload.specs = specs;
-  } else {
-    payload.spec = 'all';
-  }
-  return payload;
-}
-
   let payload = {};
   if (currentRunnerMode === 'suite') {
     const suiteId = $('#runner-suite-select')?.value;
-    payload = buildSuiteExecutionPayload(suiteId, $('#headed')?.checked);
+    const suite = window.dashboardSuites?.[suiteId] || {};
+    let specs = suite.specs;
+    if (!specs && suite.spec) specs = suite.spec === 'all' ? 'all' : [suite.spec];
+
+    payload = {
+      environment: $('#environment').value,
+      project: suite.project || 'all',
+      grep: suite.grep || '',
+      workers: Number(suite.workers || 2),
+      viewport: suite.viewport,
+      suiteLabel: suite.label || suiteId,
+      headed: $('#headed').checked,
+    };
+    if (Array.isArray(specs) && specs.length > 0) {
+      payload.specs = specs;
+    } else {
+      payload.spec = 'all';
+    }
   } else {
     let manualScope = 'all';
     document.querySelectorAll('.runner-scope-tab-btn').forEach((btn) => {
@@ -7163,7 +7109,22 @@ function buildSuiteExecutionPayload(suiteId, isHeaded = false) {
 function selectedOptions() {
   if (currentRunnerMode === 'suite') {
     const suiteId = $('#runner-suite-select')?.value;
-    return buildSuiteExecutionPayload(suiteId, true);
+    const suite = window.dashboardSuites?.[suiteId] || {};
+    let specs = suite.specs;
+    if (!specs && suite.spec) specs = suite.spec === 'all' ? 'all' : [suite.spec];
+    const opts = {
+      environment: $('#environment').value,
+      project: suite.project || 'all',
+      grep: suite.grep || '',
+      workers: Number(suite.workers || 2),
+      headed: true,
+    };
+    if (Array.isArray(specs) && specs.length > 0) {
+      opts.specs = specs;
+    } else {
+      opts.spec = 'all';
+    }
+    return opts;
   }
   let manualScope = 'all';
   document.querySelectorAll('.runner-scope-tab-btn').forEach((btn) => {

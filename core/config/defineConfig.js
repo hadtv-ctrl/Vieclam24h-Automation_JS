@@ -74,53 +74,20 @@ function defineQaConfig(customConfig = {}) {
     platformDir = process.env.TEST_PLATFORM;
   }
 
-  // ─── Unified report path structure ──────────────────────────────────────────
-  // Pattern: playwright-report / [date] / [name] / [HH-MM-SS] / index.html
-  //
-  //   Suite cha (composite) → name = tên suite cha   (e.g. smoke-all)
-  //   Suite con (leaf)      → name = tên suite con   (e.g. smoke-desktop)
-  //   Script đơn lẻ        → name = tên script file (e.g. register_by_email-bdd)
-  //
-  const suiteName = process.env.QA_SUITE_NAME || '';
-  const safeStartTime = reportTime.slice(0, 8); // HH-MM-SS only (e.g. 19-58-00)
-
-  // ─── runFolderName priority: suite > tags > script > all-scripts ─────────
-  // 1. Suite (cha/con): use QA_SUITE_NAME (e.g. smoke-all, smoke-desktop)
-  // 2. Tag run:          use grep tag(s)  (e.g. @smoke, @smoke+@applyjob)
-  // 3. Single script:    use spec filename (e.g. register_by_email-bdd)
-  // 4. Full e2e run:     fallback 'all-scripts'
-
-  // Collect grep tags from argv (--grep @smoke or --grep @smoke|@applyjob)
-  const grepTags = (() => {
-    const raw = process.env.QA_GREP_TAGS || '';
-    if (raw) return raw;
-    const grepIdx = process.argv.indexOf('--grep');
-    if (grepIdx === -1) return '';
-    const grepVal = process.argv[grepIdx + 1] || '';
-    // Convert pattern like @smoke|@applyjob → @smoke+@applyjob (folder-safe)
-    return grepVal
-      .replace(/[\r\n\0]/g, '')
-      .replace(/\|/g, '+')
-      .replace(/[^\w@+\-]/g, '')
-      .slice(0, 60);
-  })();
-
-  const runFolderName = suiteName || grepTags || scriptFolder;
-
   const reportDir = path.join(
     'playwright-report',
     reportDate,
-    runFolderName,
-    safeStartTime
+    platformDir,
+    scriptFolder,
+    `[${reportDate} ${reportTime} ${runRandomId}] report`
   );
 
   // Dynamic absolute resolution for internal reporters to prevent missing module errors in client projects
   let htmlSummaryReporterPath = path.resolve(__dirname, '../reporters/htmlSummaryReporter.js');
   let workerHtmlReporterPath = path.resolve(__dirname, '../reporters/workerHtmlReporter.js');
-  let suiteReporterPath = path.resolve(__dirname, '../reporters/suiteReporter.js');
 
   const baseConfig = {
-    outputDir: path.join('test-results', reportDate, runFolderName, safeStartTime),
+    outputDir: path.join('test-results', reportDate, platformDir, scriptFolder),
     metadata: { runId },
     timeout: testTimeout,
     testDir: './tests',
@@ -151,16 +118,6 @@ function defineQaConfig(customConfig = {}) {
           runId,
         },
       ],
-      // Suite-level aggregated report: only active when QA_SUITE_NAME is set
-      ...(suiteName ? [[
-        suiteReporterPath,
-        {
-          // Output to the time folder (parent of the per-script folders)
-          outputFolder: reportDir,
-          suiteName,
-          suiteLabel: process.env.QA_SUITE_LABEL || suiteName,
-        },
-      ]] : []),
     ],
     use: {
       baseURL: envConfig.baseURL || 'https://example.com',
