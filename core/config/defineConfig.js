@@ -74,20 +74,37 @@ function defineQaConfig(customConfig = {}) {
     platformDir = process.env.TEST_PLATFORM;
   }
 
-  const reportDir = path.join(
-    'playwright-report',
-    reportDate,
-    platformDir,
-    scriptFolder,
-    `[${reportDate} ${reportTime} ${runRandomId}] report`
-  );
+  // ─── Suite-grouped report structure ────────────────────────────────────────
+  // When launched from a suite (QA_SUITE_NAME is set), reports are grouped:
+  //   playwright-report / [date] / [suite-name] / [HH-MM-SS] / [script]
+  // When launched standalone, keep the original structure:
+  //   playwright-report / [date] / [platform] / [script] / [timestamp] report
+  const suiteName = process.env.QA_SUITE_NAME || '';
+  const safeStartTime = reportTime.slice(0, 8); // HH-MM-SS only
+  const reportDir = suiteName
+    ? path.join(
+        'playwright-report',
+        reportDate,
+        suiteName,
+        safeStartTime,
+        scriptFolder
+      )
+    : path.join(
+        'playwright-report',
+        reportDate,
+        platformDir,
+        scriptFolder,
+        `[${reportDate} ${reportTime} ${runRandomId}] report`
+      );
 
   // Dynamic absolute resolution for internal reporters to prevent missing module errors in client projects
   let htmlSummaryReporterPath = path.resolve(__dirname, '../reporters/htmlSummaryReporter.js');
   let workerHtmlReporterPath = path.resolve(__dirname, '../reporters/workerHtmlReporter.js');
 
   const baseConfig = {
-    outputDir: path.join('test-results', reportDate, platformDir, scriptFolder),
+    outputDir: suiteName
+      ? path.join('test-results', reportDate, suiteName, safeStartTime, scriptFolder)
+      : path.join('test-results', reportDate, platformDir, scriptFolder),
     metadata: { runId },
     timeout: testTimeout,
     testDir: './tests',
