@@ -81,13 +81,14 @@ function defineQaConfig(customConfig = {}) {
   //   playwright-report / [date] / [platform] / [script] / [timestamp] report
   const suiteName = process.env.QA_SUITE_NAME || '';
   const safeStartTime = reportTime.slice(0, 8); // HH-MM-SS only
+  // Suite run → ONE combined report at [date]/[suite]/[HH-MM-SS]/
+  // Standalone run → per-script report at [date]/[platform]/[script]/[timestamp]/
   const reportDir = suiteName
     ? path.join(
         'playwright-report',
         reportDate,
         suiteName,
-        safeStartTime,
-        scriptFolder
+        safeStartTime
       )
     : path.join(
         'playwright-report',
@@ -104,7 +105,7 @@ function defineQaConfig(customConfig = {}) {
 
   const baseConfig = {
     outputDir: suiteName
-      ? path.join('test-results', reportDate, suiteName, safeStartTime, scriptFolder)
+      ? path.join('test-results', reportDate, suiteName, safeStartTime)
       : path.join('test-results', reportDate, platformDir, scriptFolder),
     metadata: { runId },
     timeout: testTimeout,
@@ -141,9 +142,7 @@ function defineQaConfig(customConfig = {}) {
         suiteReporterPath,
         {
           // Output to the time folder (parent of the per-script folders)
-          outputFolder: suiteName
-            ? path.join('playwright-report', reportDate, suiteName, safeStartTime)
-            : reportDir,
+          outputFolder: path.join('playwright-report', reportDate, suiteName, safeStartTime),
           suiteName,
           suiteLabel: process.env.QA_SUITE_LABEL || suiteName,
         },
