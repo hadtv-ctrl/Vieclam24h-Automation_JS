@@ -3448,89 +3448,6 @@ function updateSuiteSummaryBox(suiteId) {
   updateExecutionPlanBox(suiteId);
 }
 
-function resolveSuiteSpecs(suite) {
-  if (!suite) return [];
-  const allSpecs = (testCatalog && Array.isArray(testCatalog.specs)) ? testCatalog.specs : [];
-  const specTags = (testCatalog && testCatalog.specTags) ? testCatalog.specTags : {};
-  const specProjects = (testCatalog && testCatalog.specProjects) ? testCatalog.specProjects : {};
-
-  if (suite.type === 'composite') {
-    const childIds = Array.isArray(suite.suites) ? suite.suites : [];
-    const allChildSuites = window.dashboardSuites || {};
-    const result = [];
-    const seen = new Set();
-    childIds.forEach((cid) => {
-      const child = allChildSuites[cid];
-      if (child) {
-        const childSpecs = resolveSuiteSpecs(child);
-        childSpecs.forEach((item) => {
-          const key = `${item.spec}:${child.label || cid}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            result.push({
-              ...item,
-              suiteLabel: child.label || cid,
-            });
-          }
-        });
-      }
-    });
-    return result;
-  }
-
-  let specs = suite.specs;
-  if (!specs && suite.spec) specs = suite.spec === 'all' ? 'all' : [suite.spec];
-
-  let matched = [];
-  if (Array.isArray(specs) && specs.length > 0 && specs[0] !== 'all') {
-    matched = allSpecs.filter((s) => specs.some((pattern) => s === pattern || s.endsWith(pattern)));
-    if (matched.length === 0) matched = specs;
-  } else {
-    matched = allSpecs.filter((spec) => {
-      if (suite.platform === 'desktop' && !spec.includes('desktop')) return false;
-      if (suite.platform === 'mobile' && !spec.includes('mobile-web')) return false;
-      if (suite.platform === 'api' && !spec.includes('api')) return false;
-
-      if (suite.project && suite.project !== 'all') {
-        const projs = specProjects[spec] || [];
-        if (projs.length > 0 && !projs.includes(suite.project)) {
-          const isDesktopSuit = suite.project.toLowerCase().includes('desktop') && spec.includes('desktop');
-          const isMobileSuit = suite.project.toLowerCase().includes('mobile') && spec.includes('mobile');
-          const isApiSuit = suite.project.toLowerCase().includes('api') && spec.includes('api');
-          if (!isDesktopSuit && !isMobileSuit && !isApiSuit) return false;
-        }
-      }
-
-      if (suite.grep) {
-        const tags = specTags[spec] || [];
-        const cleanGrep = String(suite.grep).trim();
-        const grepTags = cleanGrep.match(/@[\w-]+/g) || [];
-        if (grepTags.length > 0) {
-          const hasTag = grepTags.some((gt) => tags.some((t) => t.toLowerCase() === gt.toLowerCase()));
-          if (!hasTag) return false;
-        } else {
-          try {
-            const re = new RegExp(cleanGrep, 'i');
-            const hasMatch = tags.some((t) => re.test(t)) || re.test(spec);
-            if (!hasMatch) return false;
-          } catch (_) {
-            if (!tags.some((t) => t.toLowerCase().includes(cleanGrep.toLowerCase()))) return false;
-          }
-        }
-      }
-
-      return true;
-    });
-  }
-
-  return matched.map((spec) => ({
-    spec,
-    tags: specTags[spec] || [],
-    projects: specProjects[spec] || (suite.project ? [suite.project] : []),
-    suiteLabel: suite.label || '',
-  }));
-}
-
 function updateExecutionPlanBox(targetSuiteId) {
   const planBox = $('#run-execution-plan');
   const countEl = $('#execution-plan-count');
@@ -3541,13 +3458,16 @@ function updateExecutionPlanBox(targetSuiteId) {
   const mode = currentRunnerMode || 'suite';
   let resolvedSpecs = [];
   let targetLabel = '';
+  const allSuites = window.dashboardSuites || suitesCache || {};
 
   if (mode === 'suite') {
     const suiteId = targetSuiteId || $('#runner-suite-select')?.value;
-    const suite = window.dashboardSuites?.[suiteId];
+    const suite = allSuites[suiteId];
     if (suite) {
       targetLabel = `Suite: ${suite.label || suiteId}`;
-      resolvedSpecs = resolveSuiteSpecs(suite);
+      if (typeof resolveSuiteSpecs === 'function') {
+        resolvedSpecs = resolveSuiteSpecs(suite, allSuites);
+      }
     } else {
       targetLabel = 'Chưa chọn Suite';
     }
@@ -3557,9 +3477,9 @@ function updateExecutionPlanBox(targetSuiteId) {
       if (btn.classList.contains('active')) manualScope = btn.dataset.manualScope;
     });
     const project = $('#project')?.value || 'all';
-    const allSpecs = testCatalog?.specs || [];
-    const specTags = testCatalog?.specTags || {};
-    const specProjects = testCatalog?.specProjects || {};
+    const allSpecs = (typeof testCatalog !== 'undefined' && Array.isArray(testCatalog?.specs)) ? testCatalog.specs : [];
+    const specTags = (typeof testCatalog !== 'undefined' && testCatalog?.specTags) ? testCatalog.specTags : {};
+    const specProjects = (typeof testCatalog !== 'undefined' && testCatalog?.specProjects) ? testCatalog.specProjects : {};
 
     const hasProjectMapping = specProjects && Object.keys(specProjects).length > 0;
     const projectSpecs = project === 'all' || !hasProjectMapping
@@ -3570,10 +3490,14 @@ function updateExecutionPlanBox(targetSuiteId) {
       const selectedFile = $('#spec')?.value;
       targetLabel = 'Thủ công: 1 File test';
       if (selectedFile && selectedFile !== 'all') {
+        const isMob = selectedFile.includes('mobile');
+        const isApi = selectedFile.includes('api');
         resolvedSpecs = [{
-          spec: selectedFile,
+          path: selectedFile,
+          name: selectedFile.split('/').pop(),
+          platform: isMob ? 'mobile' : (isApi ? 'api' : 'desktop'),
           tags: specTags[selectedFile] || [],
-          projects: specProjects[selectedFile] || [project],
+          childOrigin: null,
         }];
       }
     } else if (manualScope === 'grep') {
@@ -3588,25 +3512,43 @@ function updateExecutionPlanBox(targetSuiteId) {
           return selectedTags.length > 0
             ? selectedTags.some((st) => tags.some((t) => t.toLowerCase() === st.toLowerCase()))
             : tags.some((t) => t.toLowerCase().includes(grepLower) || grepLower.includes(t.toLowerCase()));
-        }).map((spec) => ({
-          spec,
-          tags: specTags[spec] || [],
-          projects: specProjects[spec] || [project],
-        }));
+        }).map((spec) => {
+          const isMob = spec.includes('mobile');
+          const isApi = spec.includes('api');
+          return {
+            path: spec,
+            name: spec.split('/').pop(),
+            platform: isMob ? 'mobile' : (isApi ? 'api' : 'desktop'),
+            tags: specTags[spec] || [],
+            childOrigin: null,
+          };
+        });
       } else {
-        resolvedSpecs = projectSpecs.map((spec) => ({
-          spec,
-          tags: specTags[spec] || [],
-          projects: specProjects[spec] || [project],
-        }));
+        resolvedSpecs = projectSpecs.map((spec) => {
+          const isMob = spec.includes('mobile');
+          const isApi = spec.includes('api');
+          return {
+            path: spec,
+            name: spec.split('/').pop(),
+            platform: isMob ? 'mobile' : (isApi ? 'api' : 'desktop'),
+            tags: specTags[spec] || [],
+            childOrigin: null,
+          };
+        });
       }
     } else {
       targetLabel = `Thủ công: ${project === 'all' ? 'Tất cả file' : project}`;
-      resolvedSpecs = projectSpecs.map((spec) => ({
-        spec,
-        tags: specTags[spec] || [],
-        projects: specProjects[spec] || [project],
-      }));
+      resolvedSpecs = projectSpecs.map((spec) => {
+        const isMob = spec.includes('mobile');
+        const isApi = spec.includes('api');
+        return {
+          path: spec,
+          name: spec.split('/').pop(),
+          platform: isMob ? 'mobile' : (isApi ? 'api' : 'desktop'),
+          tags: specTags[spec] || [],
+          childOrigin: null,
+        };
+      });
     }
   }
 
@@ -3624,21 +3566,23 @@ function updateExecutionPlanBox(targetSuiteId) {
   }
 
   listEl.innerHTML = resolvedSpecs.map((item) => {
-    const filename = item.spec.split('/').pop();
-    const isMobile = item.spec.includes('mobile-web') || item.spec.includes('mobile');
-    const isApi = item.spec.includes('api');
+    const specPath = item.path || item.spec || '';
+    const filename = item.name || specPath.split('/').pop();
+    const plat = item.platform || (specPath.includes('mobile') ? 'mobile' : (specPath.includes('api') ? 'api' : 'desktop'));
+    const isApi = plat === 'api' || specPath.includes('api');
+    const isMobile = plat === 'mobile' || specPath.includes('mobile');
     const platLabel = isApi ? 'API' : (isMobile ? 'Mobile' : 'Desktop');
     const platIcon = isApi ? 'ph-plugs-connected' : (isMobile ? 'ph-device-mobile' : 'ph-desktop');
     const displayTags = (item.tags || []).slice(0, 3);
 
     return `
-      <div class="plan-spec-item" title="${escapeHtml(item.spec)}">
+      <div class="plan-spec-item" title="${escapeHtml(specPath)}">
         <div class="plan-spec-main">
           <i class="ph-bold ph-file-js"></i>
           <span class="plan-spec-name">${escapeHtml(filename)}</span>
         </div>
         <div class="plan-spec-meta">
-          ${item.suiteLabel ? `<span class="plan-pill pill-suite"><i class="ph-bold ph-stack"></i> ${escapeHtml(item.suiteLabel.split('(')[0].trim())}</span>` : ''}
+          ${item.childOrigin ? `<span class="plan-pill pill-suite"><i class="ph-bold ph-stack"></i> ${escapeHtml(item.childOrigin.split('(')[0].trim())}</span>` : ''}
           <span class="plan-pill pill-platform"><i class="ph-bold ${platIcon}"></i> ${platLabel}</span>
           ${displayTags.map((t) => `<span class="plan-pill pill-tag">${escapeHtml(t)}</span>`).join('')}
         </div>
