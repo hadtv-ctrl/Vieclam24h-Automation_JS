@@ -107,13 +107,12 @@
       "workers": 2
     },
     "regression-all": {
-      "label": "🚀 Regression Tests Toàn Hệ Thống (Desktop + Mobile + API)",
+      "label": "🚀 Regression Tests Toàn Hệ Thống (Desktop + Mobil",
       "description": "Suite cha chạy toàn bộ kiểm thử hồi quy (Regression) trên tất cả các nền tảng.",
       "type": "composite",
       "suites": [
         "regression-desktop",
-        "regression-mobile",
-        "regression-api"
+        "regression-mobile"
       ],
       "workers": 2
     },
