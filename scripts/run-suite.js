@@ -176,6 +176,7 @@ const envVars = {
   NODE_ENV: env,
   // Pass suite key to defineConfig so reports are grouped under the suite folder
   QA_SUITE_NAME: matchedEntry ? matchedEntry[0] : suiteName,
+  QA_SUITE_LABEL: suite && suite.label ? suite.label : (matchedEntry ? matchedEntry[0] : suiteName),
 };
 
 if (suite?.viewport) {

@@ -95,6 +95,7 @@ function runtimeEnv(options) {
   return {
     NODE_ENV: options.environment,
     QA_SUITE_NAME: options.suiteKey || sanitizeSuiteName(options.suiteLabel),
+    QA_SUITE_LABEL: String(options.suiteLabel || options.suiteKey || ''),
     QA_PLATFORM: platform,
     PW_WORKERS: String(options.workers),
     PW_RETRIES: String(retries),

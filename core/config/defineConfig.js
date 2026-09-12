@@ -100,6 +100,7 @@ function defineQaConfig(customConfig = {}) {
   // Dynamic absolute resolution for internal reporters to prevent missing module errors in client projects
   let htmlSummaryReporterPath = path.resolve(__dirname, '../reporters/htmlSummaryReporter.js');
   let workerHtmlReporterPath = path.resolve(__dirname, '../reporters/workerHtmlReporter.js');
+  let suiteReporterPath = path.resolve(__dirname, '../reporters/suiteReporter.js');
 
   const baseConfig = {
     outputDir: suiteName
@@ -135,6 +136,18 @@ function defineQaConfig(customConfig = {}) {
           runId,
         },
       ],
+      // Suite-level aggregated report: only active when QA_SUITE_NAME is set
+      ...(suiteName ? [[
+        suiteReporterPath,
+        {
+          // Output to the time folder (parent of the per-script folders)
+          outputFolder: suiteName
+            ? path.join('playwright-report', reportDate, suiteName, safeStartTime)
+            : reportDir,
+          suiteName,
+          suiteLabel: process.env.QA_SUITE_LABEL || suiteName,
+        },
+      ]] : []),
     ],
     use: {
       baseURL: envConfig.baseURL || 'https://example.com',
