@@ -44,13 +44,34 @@ export class BddSlice {
       this._disposers.push(() => el.removeEventListener(evt, fn));
     };
 
-    on('#bdd-search-input', 'input', (e) => {
+    // Fix: template uses #script-search-input, not #bdd-search-input
+    on('#script-search-input', 'input', (e) => {
       this.searchQuery = (e.target.value || '').toLowerCase();
       this.renderScriptsList();
     });
 
     on('#btn-bdd-compile', 'click', () => this.compileScript());
     on('#btn-bdd-save', 'click', () => this.saveScript());
+
+    // Sidebar collapse / expand (toggle class 'sidebar-collapsed' on the workspace panel)
+    const toggleSidebar = () => {
+      const workspace = root.querySelector('.script-workspace-panel');
+      if (workspace) workspace.classList.toggle('sidebar-collapsed');
+    };
+    const collapseSidebar = () => {
+      const workspace = root.querySelector('.script-workspace-panel');
+      if (workspace) workspace.classList.add('sidebar-collapsed');
+    };
+    const expandSidebar = () => {
+      const workspace = root.querySelector('.script-workspace-panel');
+      if (workspace) workspace.classList.remove('sidebar-collapsed');
+    };
+
+    on('#btn-collapse-script-sidebar', 'click', collapseSidebar);
+    on('#btn-toggle-script-sidebar-head', 'click', toggleSidebar);
+    on('#btn-toggle-script-sidebar-head-edit', 'click', toggleSidebar);
+    on('#btn-expand-script-sidebar', 'click', expandSidebar);
+    on('#script-sidebar-collapsed-strip', 'click', expandSidebar);
   }
 
   _registerBridgeActions() {
