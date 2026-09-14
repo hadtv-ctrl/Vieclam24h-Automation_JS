@@ -44,12 +44,13 @@ export class PagesSlice {
       this._disposers.push(() => el.removeEventListener(evt, fn));
     };
 
-    on('#page-search-input', 'input', (e) => {
+    // Search & refresh support both slice IDs and template IDs
+    on('#page-search-input, #pm-filter-input', 'input', (e) => {
       this.searchQuery = (e.target.value || '').toLowerCase();
       this.renderPagesList();
     });
 
-    on('#btn-refresh-pages', 'click', () => {
+    on('#btn-refresh-pages, #pm-refresh-btn', 'click', () => {
       this.loadPages();
       this.notify('Đã làm mới danh sách Page Objects.');
     });
@@ -57,6 +58,48 @@ export class PagesSlice {
     // Subtabs
     on('#btn-tab-pm-inspect', 'click', () => this.switchSubnav('inspect'));
     on('#btn-tab-pm-source', 'click', () => this.switchSubnav('source'));
+
+    // Sidebar collapse / expand: delegate cleanly to universal controller with fallback
+    on('#btn-collapse-pm-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('pm', true, true);
+      } else {
+        root.querySelector('#page-manager-workspace')?.classList.add('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-pm-sidebar-head', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('pm');
+      } else {
+        root.querySelector('#page-manager-workspace')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-pm-sidebar-head-create', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('pm');
+      } else {
+        root.querySelector('#page-manager-workspace')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-expand-pm-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('pm', false);
+      } else {
+        root.querySelector('#page-manager-workspace')?.classList.remove('sidebar-collapsed');
+      }
+    });
+    on('#pm-sidebar-collapsed-strip', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('pm', false);
+      } else {
+        root.querySelector('#page-manager-workspace')?.classList.remove('sidebar-collapsed');
+      }
+    });
   }
 
   _registerBridgeActions() {

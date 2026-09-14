@@ -68,7 +68,8 @@ test.describe('Mobile Feature: Đăng ký tài khoản người tìm việc bằ
     await test.step('And Tôi bấm nút Đăng ký để hoàn tất trên mobile', async () => {
       await expect(loginPopup.submitBtn).toBeVisible();
       await loginPopup.clickSubmit();
-      await loginPopup.capture('after_mobile_register_successfully', true);
+      // Không truyền fullPage=true: ScreenshotHelper tự detect nếu popup còn mở → viewport; nếu đã redirect → full page
+      await loginPopup.capture('after_mobile_register_successfully');
     });
   });
 });

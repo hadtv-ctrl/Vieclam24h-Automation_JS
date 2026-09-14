@@ -14,9 +14,9 @@ test.describe('Feature: Cập nhật thông tin Onboarding sau khi đăng nhập
       await expect(onboardingPopup.locationInput).toBeVisible({ timeout: 15000 });
       await onboardingPopup.capture('before_select_location');
       await onboardingPopup.selectLocationButton(onboardingData.location.button); // Sử dụng dữ liệu
-      await onboardingPopup.capture('after_select_location');
+      await onboardingPopup.capture('after_select_location_button');
       await onboardingPopup.selectLocationOption(onboardingData.location.option); // Sử dụng dữ liệu
-      await onboardingPopup.capture('after_select_location');
+      await onboardingPopup.capture('after_select_location_option');
       await onboardingPopup.clickNextAndWaitForNextStep(onboardingPopup.step2Title);
     });
 
