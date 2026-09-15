@@ -164,12 +164,15 @@
                 <div class="git-diff-title">
                   <i class="ph-bold ph-file-code"></i>
                   <span>Xem trước Diff: <strong id="git-diff-filename">filename.js</strong></span>
+                  <span class="git-diff-stats" id="git-diff-stats"></span>
                 </div>
                 <button type="button" class="btn-icon-subtle" id="btn-close-diff" title="Đóng xem trước diff">
                   <i class="ph-bold ph-x"></i>
                 </button>
               </div>
-              <pre class="git-diff-pre"><code id="git-diff-content" class="language-diff"></code></pre>
+              <div class="git-diff-container" id="git-diff-container">
+                <div id="git-diff-content"></div>
+              </div>
             </div>
 
             <!-- Security & Exclusion Shield Card -->
@@ -274,7 +277,7 @@
               <!-- Live Preview of Commit Message -->
               <div class="git-commit-preview-box">
                 <small>Xem trước Commit Message:</small>
-                <code id="git-commit-preview-text">test: cập nhật bài test</code>
+                <code id="git-commit-preview-text" class="is-empty">(Nhập mô tả tóm tắt bên trên để tạo commit message)</code>
               </div>
 
               <!-- Primary Commit & Push Button -->
@@ -283,6 +286,9 @@
                   <i class="ph-bold ph-cloud-arrow-up" id="icon-git-commit-push"></i>
                   <span id="text-git-commit-push">Commit & Push Lên Remote</span>
                 </button>
+                <small id="git-commit-btn-hint" class="git-btn-hint" style="display: none; color: #f59e0b; margin-top: 6px; font-size: 11.5px; text-align: center; width: 100%;">
+                  <i class="ph-bold ph-info"></i> Vui lòng nhập mô tả thay đổi để kích hoạt nút
+                </small>
               </div>
 
               <!-- Pull Request Success Box -->

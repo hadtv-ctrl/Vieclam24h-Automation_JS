@@ -15238,9 +15238,17 @@ function updateGitCommitPreview() {
   if (!previewEl) return;
   const type = typeEl?.value || 'test';
   const scope = (scopeEl?.value || '').trim();
-  const subject = (subjectEl?.value || '').trim() || 'cập nhật bài test';
+  const rawSubject = (subjectEl?.value || '').trim();
+  const hasSubject = rawSubject.length > 0;
   const prefix = scope ? `${type}(${scope}): ` : `${type}: `;
-  previewEl.textContent = `${prefix}${subject}`;
+
+  if (hasSubject) {
+    previewEl.textContent = `${prefix}${rawSubject}`;
+    previewEl.classList.remove('is-empty');
+  } else {
+    previewEl.textContent = `${prefix}(Vui lòng nhập mô tả tóm tắt nội dung thay đổi)`;
+    previewEl.classList.add('is-empty');
+  }
 
   // Tự động gợi ý tên nhánh Feature khi người dùng nhập scope
   if (gitStudioState.status?.isProtectedBranch && featureBranchInput && scope && (!featureBranchInput.value || featureBranchInput.value.startsWith('feature/'))) {
@@ -15257,6 +15265,7 @@ function updateGitCommitButtonState() {
   const featureBranchInput = document.getElementById('git-feature-branch-input');
   const btnText = document.getElementById('text-git-commit-push');
   const btnIcon = document.getElementById('icon-git-commit-push');
+  const hintEl = document.getElementById('git-commit-btn-hint');
   if (!btn) return;
 
   const isProtected = !!gitStudioState.status?.isProtectedBranch;
@@ -15265,7 +15274,26 @@ function updateGitCommitButtonState() {
   const qgOk = gitStudioState.isQualityGatePassed;
   const hasBranchIfProtected = !isProtected || (featureBranchInput?.value || '').trim().length > 0;
 
-  btn.disabled = !(hasFiles && hasSubject && qgOk && hasBranchIfProtected);
+  const canSubmit = hasFiles && hasSubject && qgOk && hasBranchIfProtected;
+  btn.disabled = !canSubmit;
+
+  if (hintEl) {
+    if (!hasFiles) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '<i class="ph-bold ph-info"></i> Chọn ít nhất 1 tệp trong danh sách để đóng gói commit';
+    } else if (!hasSubject) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '<i class="ph-bold ph-info"></i> Nhập <strong>"Mô tả tóm tắt nội dung thay đổi"</strong> để mở khóa nút';
+    } else if (!hasBranchIfProtected) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '<i class="ph-bold ph-info"></i> Nhập <strong>"Tên nhánh Feature mới"</strong> (main được bảo vệ)';
+    } else if (!qgOk) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '<i class="ph-bold ph-warning"></i> Cần kiểm tra đạt chuẩn Framework Quality Gate trước';
+    } else {
+      hintEl.style.display = 'none';
+    }
+  }
 
   if (btnText && btnIcon) {
     if (isProtected) {
@@ -15558,29 +15586,88 @@ async function loadGitBranches(providedBranches = null) {
   }
 }
 
+function renderVisualGitDiff(diffText) {
+  if (!diffText || !diffText.trim()) {
+    return {
+      html: '<div class="git-diff-empty">Không có thay đổi nào trong tệp này.</div>',
+      additions: 0,
+      deletions: 0,
+    };
+  }
+
+  const lines = diffText.split('\n');
+  let additions = 0;
+  let deletions = 0;
+  let oldLineNum = 0;
+  let newLineNum = 0;
+
+  const rows = lines.map((rawLine) => {
+    const escaped = escapeHtml(rawLine);
+
+    if (rawLine.startsWith('diff --git') || rawLine.startsWith('index ') || rawLine.startsWith('--- ') || rawLine.startsWith('+++ ')) {
+      return `<div class="git-diff-row diff-line-header"><div class="git-diff-gutter">...</div><div class="git-diff-sign"> </div><div class="git-diff-text">${escaped}</div></div>`;
+    }
+
+    if (rawLine.startsWith('@@')) {
+      const match = rawLine.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+      if (match) {
+        oldLineNum = parseInt(match[1], 10);
+        newLineNum = parseInt(match[2], 10);
+      }
+      return `<div class="git-diff-row diff-line-chunk"><div class="git-diff-gutter">@@</div><div class="git-diff-sign"> </div><div class="git-diff-text">${escaped}</div></div>`;
+    }
+
+    if (rawLine.startsWith('+')) {
+      additions++;
+      const curNew = newLineNum ? newLineNum++ : '+';
+      return `<div class="git-diff-row diff-line-add"><div class="git-diff-gutter">${curNew}</div><div class="git-diff-sign">+</div><div class="git-diff-text">${escaped.slice(1)}</div></div>`;
+    }
+
+    if (rawLine.startsWith('-')) {
+      deletions++;
+      const curOld = oldLineNum ? oldLineNum++ : '-';
+      return `<div class="git-diff-row diff-line-del"><div class="git-diff-gutter">${curOld}</div><div class="git-diff-sign">-</div><div class="git-diff-text">${escaped.slice(1)}</div></div>`;
+    }
+
+    const curNew = newLineNum ? newLineNum++ : '';
+    if (oldLineNum) oldLineNum++;
+    const textContent = rawLine.startsWith(' ') ? escaped.slice(1) : escaped;
+    return `<div class="git-diff-row diff-line-ctx"><div class="git-diff-gutter">${curNew}</div><div class="git-diff-sign"> </div><div class="git-diff-text">${textContent}</div></div>`;
+  });
+
+  return {
+    html: `<div class="git-diff-table">${rows.join('')}</div>`,
+    additions,
+    deletions,
+  };
+}
+
 async function viewGitFileDiff(filePath) {
   const diffCard = document.getElementById('git-diff-card');
   const fileNameEl = document.getElementById('git-diff-filename');
   const diffContentEl = document.getElementById('git-diff-content');
+  const statsEl = document.getElementById('git-diff-stats');
   if (!diffCard || !diffContentEl) return;
 
   if (fileNameEl) fileNameEl.textContent = filePath;
-  diffContentEl.textContent = 'Đang tải nội dung diff…';
+  if (statsEl) statsEl.innerHTML = '';
+  diffContentEl.innerHTML = '<div class="git-diff-empty">Đang tải nội dung diff…</div>';
   diffCard.style.display = 'block';
   diffCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   try {
     const res = await request('/api/git/diff?file=' + encodeURIComponent(filePath));
     if (res.ok) {
-      diffContentEl.textContent = res.diff;
-      if (window.Prism && Prism.languages.diff) {
-        diffContentEl.innerHTML = Prism.highlight(res.diff, Prism.languages.diff, 'diff');
+      const { html, additions, deletions } = renderVisualGitDiff(res.diff);
+      diffContentEl.innerHTML = html;
+      if (statsEl) {
+        statsEl.innerHTML = `<span class="git-diff-badge-add">+${additions}</span><span class="git-diff-badge-del">-${deletions}</span>`;
       }
     } else {
-      diffContentEl.textContent = 'Lỗi: ' + (res.error || 'Không thể lấy diff');
+      diffContentEl.innerHTML = '<div class="git-diff-empty" style="color: var(--danger);">Lỗi: ' + escapeHtml(res.error || 'Không thể lấy diff') + '</div>';
     }
   } catch (err) {
-    diffContentEl.textContent = 'Lỗi kết nối khi lấy diff: ' + err.message;
+    diffContentEl.innerHTML = '<div class="git-diff-empty" style="color: var(--danger);">Lỗi kết nối khi lấy diff: ' + escapeHtml(err.message) + '</div>';
   }
 }
 

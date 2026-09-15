@@ -362,6 +362,129 @@
   white-space: pre-wrap;
 }
 
+/* Enhanced Visual Diff & Stats */
+.git-diff-stats {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.git-diff-badge-add {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+.git-diff-badge-del {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+.git-diff-container {
+  background: #0d1117;
+  max-height: 380px;
+  overflow: auto;
+  font-family: var(--font-mono, 'JetBrains Mono', Consolas, monospace);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.git-diff-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.git-diff-row {
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.1s ease;
+}
+
+.git-diff-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.git-diff-row.diff-line-header {
+  background: #161b22;
+  color: #8b949e;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.git-diff-row.diff-line-chunk {
+  background: rgba(56, 139, 253, 0.12);
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+.git-diff-row.diff-line-add {
+  background: rgba(46, 160, 67, 0.18);
+  color: #3fb950;
+}
+
+.git-diff-row.diff-line-del {
+  background: rgba(248, 81, 73, 0.18);
+  color: #f85149;
+}
+
+.git-diff-row.diff-line-ctx {
+  color: #c9d1d9;
+}
+
+.git-diff-gutter {
+  width: 44px;
+  min-width: 44px;
+  padding: 2px 8px;
+  text-align: right;
+  color: #6e7681;
+  user-select: none;
+  font-size: 11px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.git-diff-sign {
+  width: 24px;
+  min-width: 24px;
+  text-align: center;
+  user-select: none;
+  font-weight: 700;
+}
+
+.git-diff-text {
+  flex: 1;
+  padding: 2px 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.git-diff-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+}
+
+#git-commit-preview-text.is-empty {
+  color: var(--muted);
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.git-btn-hint {
+  display: block;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
 /* Security Shield Card */
 .git-security-shield-card {
   margin-top: 14px;
@@ -649,4 +772,4 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
 }
-
+
