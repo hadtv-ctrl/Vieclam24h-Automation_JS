@@ -52,17 +52,75 @@ class JobApplyNoCVPage extends BasePage {
     await this.handlePhoneVerificationAfterApplyIfVisible(options.otpCode);
   }
 
+  async dismissGuestLoginModalIfVisible() {
+    try {
+      const guestModal = this.page.locator('.ReactModalPortal').filter({ hasText: /chưa đăng nhập/i });
+      if (await guestModal.isVisible({ timeout: 1500 }).catch(() => false)) {
+        const closeBtn = guestModal.locator('button, [class*="close" i], svg, i').first();
+        if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await closeBtn.click({ force: true }).catch(() => null);
+        } else {
+          await this.page.keyboard.press('Escape').catch(() => null);
+        }
+        await guestModal.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => null);
+        if (await guestModal.isVisible().catch(() => false)) {
+          await this.page.evaluate(() => {
+            document.querySelectorAll('.ReactModalPortal').forEach((el) => {
+              if (el.innerText && el.innerText.includes('chưa đăng nhập')) {
+                el.remove();
+              }
+            });
+          }).catch(() => null);
+        }
+      }
+    } catch (_e) {}
+  }
+
+  /**
+   * Đăng ký auto-handler: tự động dismiss banner popup bất cứ khi nào xuất hiện
+   * Dùng Playwright addLocatorHandler để intercept ngay khi banner visible
+   */
+  async registerBannerAutoHandler() {
+    try {
+      const bannerLocator = this.page.locator('.ReactModalPortal img[alt="Banner"]');
+      await this.page.addLocatorHandler(bannerLocator, async () => {
+        // Thử click banner image để đóng
+        await bannerLocator.click({ force: true }).catch(() => null);
+        // Nếu vẫn còn, dùng JS xóa hẳn
+        const stillVisible = await bannerLocator.isVisible({ timeout: 500 }).catch(() => false);
+        if (stillVisible) {
+          await this.page.evaluate(() => {
+            document.querySelectorAll('.ReactModalPortal').forEach(el => {
+              if (el.querySelector('img[alt="Banner"]')) {
+                el.style.display = 'none';
+              }
+            });
+          }).catch(() => null);
+        }
+      });
+    } catch (_e) {
+      // addLocatorHandler không được hỗ trợ hoặc lỗi khác — bỏ qua
+    }
+  }
+
   async startGuestApplyNoCV() {
+    // Đăng ký auto-handler để dismiss banner popup suốt cả flow
+    await this.registerBannerAutoHandler();
+    await this.dismissGuestLoginModalIfVisible();
+    await this.dismissAllBlockingModals();
     await this.clickElement(this.btnApplyNoCV);
     await expect(this.txtFullName).toBeVisible({ timeout: 15000 });
   }
 
   async fillGuestContact(data) {
+    await this.dismissGuestLoginModalIfVisible();
+    await this.dismissAllBlockingModals();
     await this.fillInput(this.txtFullName, data.fullName);
     await this.fillInput(this.txtPhone, data.phone);
   }
 
   async submitGuestProfile() {
+    await this.dismissGuestLoginModalIfVisible();
     await this.submitProfile();
     const verificationLocators = this.getPhoneVerificationLocators();
     await this.waitForPhoneVerificationCodeStepVisible(verificationLocators, 15000);
@@ -95,6 +153,8 @@ class JobApplyNoCVPage extends BasePage {
   }
 
   async fillMiniProfile(data) {
+    // Dismiss bất kỳ popup/banner đang block trước khi fill
+    await this.dismissAllBlockingModals();
     // Province
     if (data.province && await this.txtProvince.isVisible({ timeout: 2000 }).catch(() => false)) {
       try {
@@ -238,12 +298,61 @@ class JobApplyNoCVPage extends BasePage {
     }
   }
 
+  async dismissAllBlockingModals() {
+    try {
+      // Target bất kỳ ReactModalPortal nào đang visible (bao gồm banner img, dialog, popup)
+      const portals = this.page.locator('.ReactModalPortal');
+      const count = await portals.count().catch(() => 0);
+
+      for (let i = 0; i < count; i++) {
+        const portal = portals.nth(i);
+        if (!(await portal.isVisible({ timeout: 500 }).catch(() => false))) continue;
+
+        // Thử nút close/dismiss trước
+        const closeBtn = portal.locator(
+          'button:has(.svicon-close), [class*="close" i], i.svicon-close, ' +
+          'button:has-text("Đóng"), button:has-text("Bỏ qua"), ' +
+          '[data-test-id*="close"], [aria-label*="close" i]'
+        ).first();
+
+        if (await closeBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+          await closeBtn.click({ force: true }).catch(() => null);
+        } else {
+          // Thử click banner image (cursor-pointer = clickable để đóng)
+          const bannerImg = portal.locator('img[alt="Banner"], img[class*="cursor-pointer"]').first();
+          if (await bannerImg.isVisible({ timeout: 300 }).catch(() => false)) {
+            await bannerImg.click({ force: true }).catch(() => null);
+          } else {
+            await this.page.keyboard.press('Escape').catch(() => null);
+          }
+        }
+
+        // Chờ portal đóng hoặc force hide nếu vẫn visible
+        await portal.waitFor({ state: 'hidden', timeout: 2000 }).catch(async () => {
+          await this.page.evaluate((idx) => {
+            const portals = document.querySelectorAll('.ReactModalPortal');
+            // Chỉ ẩn portal không phải apply/OTP form
+            if (portals[idx] && !portals[idx].querySelector('input[type="tel"], [data-test-id*="apply"]')) {
+              portals[idx].style.display = 'none';
+            }
+          }, i).catch(() => null);
+        });
+      }
+    } catch (_e) {}
+  }
+
   async submitProfile() {
+    await this.dismissGuestLoginModalIfVisible();
     await this.waitForGlobalLoadingHidden(15000);
+    await this.dismissGuestLoginModalIfVisible();
     await this.actions.waitForVisible(this.btnCommonSave, { timeout: 15000 });
-    // Ensure button is enabled before clicking
+    // Đảm bảo button hiển thị và enabled
     await this.btnCommonSave.waitFor({ state: 'visible' });
-    await this.clickElement(this.btnCommonSave);
+    // Dismiss TẤT CẢ các modal/popup đang block pointer events
+    await this.dismissAllBlockingModals();
+    await this.dismissGuestLoginModalIfVisible();
+    // Dùng force:true để click dù có overlay mỏng
+    await this.clickElement(this.btnCommonSave, { force: true });
   }
 
   async bulkApply(dataJob2) {

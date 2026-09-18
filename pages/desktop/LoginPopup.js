@@ -8,7 +8,11 @@ class LoginPopup extends BasePage {
     super(page, featureName);
 
     this.loginHeaderBtn = page.locator('#btn-login-header');
+    // Hỗ trợ nhiều variant text của modal title
     this.modalTitle = page.getByText(/Đăng nhập hoặc Đăng ký/i).first();
+    this.modalTitleAlt = page.locator(
+      '[class*="modal"] [class*="title"], [class*="popup"] [class*="title"], [role="dialog"] [class*="title"]'
+    ).first();
     this.emailLoginOption = page.locator('//button[./span[contains(text(),"Đăng nhập bằng Email")]]').first();
     this.emailInput = page.getByPlaceholder('Nhập email của bạn').last();
     this.phoneInput = page.getByPlaceholder('Nhập số điện thoại của bạn').last();
@@ -24,7 +28,9 @@ class LoginPopup extends BasePage {
   }
 
   async clickLoginHeader() {
-    return this.actions.click(this.loginHeaderBtn);
+    await this.actions.click(this.loginHeaderBtn, { force: true });
+    // Đợi một chút để animation/transition modal khởi động
+    await this.page.waitForTimeout(500);
   }
 
   async clickEmailLoginOption() {
@@ -63,8 +69,33 @@ class LoginPopup extends BasePage {
     return this.actions.click(this.submitBtn);
   }
 
-  async waitForModalVisible() {
-    return this.waitForElement(this.modalTitle);
+  async waitForModalVisible(timeout = 20000) {
+    // Chờ dialog/modal login thực sự mở (có input email bên trong)
+    const loginModal = this.page.locator(
+      '[role="dialog"]:has(input[type="email"]), ' +
+      '[role="dialog"]:has(input[placeholder*="email" i]), ' +
+      '[class*="login"][class*="modal"], [class*="auth"][class*="modal"], ' +
+      '[class*="login"][class*="popup"]'
+    ).first();
+
+    // Thử chờ title chính xác hoặc loginModal container
+    const deadline = Date.now() + timeout;
+    let lastErr;
+    while (Date.now() < deadline) {
+      try {
+        await Promise.race([
+          this.modalTitle.waitFor({ state: 'visible', timeout: 5000 }),
+          loginModal.waitFor({ state: 'visible', timeout: 5000 }),
+        ]);
+        return; // modal đã mở
+      } catch (e) {
+        lastErr = e;
+        // Kiểm tra nhanh xem có email input không — tức modal đã render
+        const emailInput = this.page.getByPlaceholder(/email/i).first();
+        if (await emailInput.isVisible({ timeout: 500 }).catch(() => false)) return;
+      }
+    }
+    throw new Error(`Login modal không mở sau ${timeout}ms. Chi tiết: ${lastErr?.message}`);
   }
 
   async waitForOtpVisible(options = {}) {

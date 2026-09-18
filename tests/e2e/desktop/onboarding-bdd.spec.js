@@ -1,8 +1,10 @@
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const onboardingData = require('../../../data/onboardingData.json'); // Nạp dữ liệu từ file JSON
+const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
 test.describe('Feature: Cập nhật thông tin Onboarding sau khi đăng nhập @onboarding @desktop @e2e', () => {
-  test('Kiểm tra luồng Onboarding của người dùng đã đăng nhập', async ({ authenticatedUser, onboardingPopup }) => {
+  test('Kiểm tra luồng Onboarding của người dùng đã đăng nhập', async ({ page, authenticatedUser }) => {
+    const onboardingPopup = new OnboardingPopup(page);
     test.setTimeout(240000);
 
     await test.step('Given Tiền điều kiện: Người dùng đã đăng nhập và thấy modal Onboarding (Bước 1)', async () => {

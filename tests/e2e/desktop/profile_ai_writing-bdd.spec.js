@@ -1,12 +1,16 @@
 const { test } = require('../../../core/fixtures/baseTest');
 const aiProfileData = require('../../../data/aiProfileData.json');
+const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
 test.describe('Feature: Dùng trợ lý AI để hoàn thiện hồ sơ @profile @ai @desktop @e2e', () => {
   test('Người dùng viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI', async ({
+    page,
     authenticatedUser,
-    onboardingPopup,
-    userProfilePage,
+    pages,
   }) => {
+    const homePage = pages.homePage;
+    const onboardingPopup = new OnboardingPopup(page);
+    const userProfilePage = pages.userProfilePage;
     test.slow();
     test.setTimeout(600000);
 
@@ -17,6 +21,7 @@ test.describe('Feature: Dùng trợ lý AI để hoàn thiện hồ sơ @profile
         modalHiddenTimeout: 10000,
         modalDetachedTimeout: 10000,
       });
+      await homePage.closeBlockingModalIfVisible();
       await userProfilePage.navigateToMyProfile();
       await userProfilePage.capture('precondition_my_profile_opened');
     });
