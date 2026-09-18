@@ -9,8 +9,13 @@ class JobApplyNoCVPage extends BasePage {
     
     // Locators
     this.btnApplyNoCV = this.page.getByRole('button', { name: /Ứng tuyển không cần CV/i }).first();
-    this.txtFullName = this.page.getByRole('textbox', { name: /Nhập họ và tên/i });
-    this.txtPhone = this.page.getByRole('textbox', { name: /Nhập số điện thoại/i });
+    // Container của apply form — dùng để scope locators tránh conflict với HeadlessUI popups
+    this.applyModal = this.page.locator('[data-test-id="unified-apply__apply-job-modal"]')
+      .or(this.page.locator('.ReactModalPortal [role="dialog"]:has(input[name="mobile"])'))
+      .first();
+    // Locators được scope vào apply modal để tránh ambiguous match với login/verification popups
+    this.txtFullName = this.applyModal.getByRole('textbox', { name: /Nhập họ và tên/i }).first();
+    this.txtPhone = this.applyModal.getByRole('textbox', { name: /Nhập số điện thoại/i }).first();
     this.txtProvince = this.page.getByText('Chọn tỉnh', { exact: true })
       .or(this.page.getByRole('textbox', { name: /Chọn tỉnh/i }))
       .or(this.page.locator('[data-test-id="common__select-input"]').filter({ hasText: /Chọn tỉnh/i }))
@@ -77,35 +82,28 @@ class JobApplyNoCVPage extends BasePage {
   }
 
   /**
-   * Đăng ký auto-handler: tự động dismiss banner popup bất cứ khi nào xuất hiện
-   * Dùng Playwright addLocatorHandler để intercept ngay khi banner visible
+   * Đăng ký auto-handler cho banner quảng cáo (ReactModalPortal img[alt="Banner"]).
+   * Chỉ xử lý banner — KHÔNG tự động dismiss HeadlessUI portals
+   * để tránh đóng nhầm bước phone verification sau khi submit form.
    */
-  async registerBannerAutoHandler() {
+  async registerOverlayAutoHandlers() {
     try {
+      // Handler: Banner quảng cáo (img alt=Banner) trong ReactModalPortal.
+      // Dùng JS hide thay vì real click để tránh phát sinh click event có thể đóng dropdown đang mở.
       const bannerLocator = this.page.locator('.ReactModalPortal img[alt="Banner"]');
       await this.page.addLocatorHandler(bannerLocator, async () => {
-        // Thử click banner image để đóng
-        await bannerLocator.click({ force: true }).catch(() => null);
-        // Nếu vẫn còn, dùng JS xóa hẳn
-        const stillVisible = await bannerLocator.isVisible({ timeout: 500 }).catch(() => false);
-        if (stillVisible) {
-          await this.page.evaluate(() => {
-            document.querySelectorAll('.ReactModalPortal').forEach(el => {
-              if (el.querySelector('img[alt="Banner"]')) {
-                el.style.display = 'none';
-              }
-            });
-          }).catch(() => null);
-        }
+        await this.page.evaluate(() => {
+          document.querySelectorAll('.ReactModalPortal').forEach(el => {
+            if (el.querySelector('img[alt="Banner"]')) el.style.display = 'none';
+          });
+        }).catch(() => null);
       });
-    } catch (_e) {
-      // addLocatorHandler không được hỗ trợ hoặc lỗi khác — bỏ qua
-    }
+    } catch (_e) {}
   }
 
   async startGuestApplyNoCV() {
-    // Đăng ký auto-handler để dismiss banner popup suốt cả flow
-    await this.registerBannerAutoHandler();
+    // Đăng ký auto-handlers cho tất cả overlay có thể xuất hiện trong flow
+    await this.registerOverlayAutoHandlers();
     await this.dismissGuestLoginModalIfVisible();
     await this.dismissAllBlockingModals();
     await this.clickElement(this.btnApplyNoCV);
@@ -119,10 +117,43 @@ class JobApplyNoCVPage extends BasePage {
     await this.fillInput(this.txtPhone, data.phone);
   }
 
-  async submitGuestProfile() {
+  /**
+   * Submit form guest apply và xử lý bước xác thực số điện thoại.
+   * Sau khi submit, hệ thống có thể show dialog nhập phone + click Tiếp tục trước khi hiển thị OTP.
+   * @param {string} [phoneNumber] - Số điện thoại để điền nếu dialog yêu cầu (tùy chọn)
+   */
+  async submitGuestProfile(phoneNumber = null) {
     await this.dismissGuestLoginModalIfVisible();
     await this.submitProfile();
     const verificationLocators = this.getPhoneVerificationLocators();
+
+    // Reset headlessui-portal-root visibility phòng trường hợp bị ẩn từ dismiss trước đó
+    await this.page.evaluate(() => {
+      const root = document.querySelector('#headlessui-portal-root');
+      if (root && root.style.display === 'none') root.style.removeProperty('display');
+    }).catch(() => null);
+
+    // Target trực tiếp phone input trong verification dialog (trong headlessui-portal-root)
+    // Không dùng verificationLocators.phoneInput vì nó có thể chọn nhầm apply form input
+    const verificationDialogPhone = this.page.locator(
+      '#headlessui-portal-root input[name="phone"], ' +
+      '#headlessui-portal-root input[inputmode="numeric"], ' +
+      '#headlessui-portal-root input[placeholder*="điện thoại" i]'
+    ).first();
+
+    const verificationDialogVisible = await verificationDialogPhone.isVisible({ timeout: 8000 }).catch(() => false);
+    if (verificationDialogVisible && phoneNumber) {
+      // Luôn fill phone vào verification dialog (không check inputValue - input này LUÔN rỗng)
+      await verificationDialogPhone.fill(phoneNumber).catch(() => null);
+      // Click Tiếp tục để chuyển sang bước OTP
+      const continueBtn = this.page.locator('#headlessui-portal-root button:has-text("Tiếp tục")').first();
+      if (await continueBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await continueBtn.click({ force: true }).catch(() => null);
+      } else {
+        await this.clickElement(verificationLocators.submitButton, { timeout: 5000, force: true });
+      }
+    }
+
     await this.waitForPhoneVerificationCodeStepVisible(verificationLocators, 15000);
     await this.capture('phone_verification_code_step');
   }
@@ -153,12 +184,19 @@ class JobApplyNoCVPage extends BasePage {
   }
 
   async fillMiniProfile(data) {
-    // Dismiss bất kỳ popup/banner đang block trước khi fill
+    // Dismiss login popup và banner trước khi fill
     await this.dismissAllBlockingModals();
+    await this.page.evaluate(() => {
+      // Proactively hide bất kỳ banner nào đang hiện
+      document.querySelectorAll('.ReactModalPortal').forEach(el => {
+        if (el.querySelector('img[alt="Banner"]')) el.style.display = 'none';
+      });
+    }).catch(() => null);
     // Province
     if (data.province && await this.txtProvince.isVisible({ timeout: 2000 }).catch(() => false)) {
       try {
-        await this.clickElement(this.txtProvince);
+        // Dùng force:true để bypass headlessui backdrop nếu lưu đại
+        await this.clickElement(this.txtProvince, { force: true });
         const provinceOption = this.page
           .getByRole('button', { name: data.province })
           .or(this.page.locator('[data-test-id="common__select-menu"]').getByText(data.province, { exact: true }))
@@ -174,7 +212,8 @@ class JobApplyNoCVPage extends BasePage {
     // District: match relatively because option labels may differ slightly from source data.
     if (data.districts && await this.txtDistrict.isVisible({ timeout: 2000 }).catch(() => false)) {
       try {
-        await this.clickElement(this.txtDistrict);
+        // Dùng force:true để bypass headlessui backdrop nếu lưu đại
+        await this.clickElement(this.txtDistrict, { force: true });
         for (const district of data.districts) {
           const districtName = String(district || '').trim();
           if (!districtName) continue;
@@ -216,7 +255,7 @@ class JobApplyNoCVPage extends BasePage {
       try {
         const introElement = this.txtIntro;
         if (await introElement.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await this.clickElement(introElement);
+          await this.clickElement(introElement, { force: true });
           await this.fillInput(introElement, data.intro);
         }
       } catch (e) {
@@ -226,25 +265,37 @@ class JobApplyNoCVPage extends BasePage {
 
     // Birth Year (Optional based on job)
     if (data.birthYear && await this.txtBirthYear.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await this.clickElement(this.txtBirthYear);
-      const yearOption = this.page.getByRole('button', { name: data.birthYear })
-        .or(this.page.locator('[data-test-id="common__select-menu"]').getByText(data.birthYear, { exact: true }))
-        .or(this.page.getByText(data.birthYear, { exact: true }))
-        .first();
-      await this.clickElement(yearOption);
+      try {
+        // Dùng force:true để bypass overlay headlessui nếu dropdown district để lại backdrop
+        await this.clickElement(this.txtBirthYear, { force: true });
+        const yearOption = this.page.getByRole('button', { name: data.birthYear })
+          .or(this.page.locator('[data-test-id="common__select-menu"]').getByText(data.birthYear, { exact: true }))
+          .or(this.page.getByText(data.birthYear, { exact: true }))
+          .first();
+        await this.clickElement(yearOption, { timeout: 10000 });
+      } catch (err) {
+        console.log('Birth year option click notice:', err.message);
+        await this.closeActiveDropdownIfAny();
+      }
     }
 
     // Ensure any dropdown is closed
     await this.closeActiveDropdownIfAny();
 
     if (data.education && await this.txtEducation.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await this.clickElement(this.txtEducation);
-      const eduOption = this.page.getByRole('button', { name: data.education })
-        .or(this.page.locator('[data-test-id="common__select-menu"]').getByText(data.education, { exact: true }))
-        .or(this.page.getByText(data.education, { exact: true }))
-        .last();
-      await this.clickElement(eduOption);
-      await this.closeActiveDropdownIfAny();
+      try {
+        // Dùng force:true để bypass overlay backdrop nếu còn tồn đọng
+        await this.clickElement(this.txtEducation, { force: true });
+        const eduOption = this.page.getByRole('button', { name: data.education })
+          .or(this.page.locator('[data-test-id="common__select-menu"]').getByText(data.education, { exact: true }))
+          .or(this.page.getByText(data.education, { exact: true }))
+          .last();
+        await this.clickElement(eduOption, { timeout: 10000 });
+        await this.closeActiveDropdownIfAny();
+      } catch (err) {
+        console.log('Education option click notice:', err.message);
+        await this.closeActiveDropdownIfAny();
+      }
     }
 
     // Gender can be absent in some no-CV mini profile forms.
@@ -337,6 +388,30 @@ class JobApplyNoCVPage extends BasePage {
             }
           }, i).catch(() => null);
         });
+      }
+    } catch (_e) {}
+
+    // Dismiss HeadlessUI login popup ("Đăng nhập hoặc Đăng ký").
+    // Phân biệt với phone verification dialog bằng sự hiện diện của nút Google/Email login.
+    // QUAN TRỌNG: KHÔNG dùng JS hide trên #headlessui-portal-root vì persist trong session
+    // và sẽ che khuất phone verification dialog xuất hiện sau khi submit form.
+    try {
+      const headlessLoginPopup = this.page.locator(
+        '#headlessui-portal-root:has(button:has-text("Google")):has(button:has-text("Email"))'
+      );
+      if (await headlessLoginPopup.isVisible({ timeout: 800 }).catch(() => false)) {
+        // Click nút X (đầu tiên trong popup) để đóng
+        const closeBtn = headlessLoginPopup.locator('button').first();
+        if (await closeBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+          await closeBtn.click({ force: true }).catch(() => null);
+        } else {
+          await this.page.keyboard.press('Escape').catch(() => null);
+        }
+        // Thử Escape lần 2 nếu vẫn còn (KHÔNG dùng JS hide để tránh ảnh hưởng verification dialog)
+        const stillVisible = await headlessLoginPopup.isVisible({ timeout: 1000 }).catch(() => false);
+        if (stillVisible) {
+          await this.page.keyboard.press('Escape').catch(() => null);
+        }
       }
     } catch (_e) {}
   }

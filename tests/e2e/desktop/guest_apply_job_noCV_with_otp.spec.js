@@ -63,7 +63,7 @@ test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @a
       await jobApplyNoCVPage.fillGuestContact(guestApplyData);
       await jobApplyNoCVPage.fillMiniProfile(guestApplyData);
       await jobApplyNoCVPage.capture('guest_nocv_profile_filled');
-      await jobApplyNoCVPage.submitGuestProfile();
+      await jobApplyNoCVPage.submitGuestProfile(guestApplyData.phone);
     });
 
     await test.step('And Người dùng nhập OTP để hoàn tất đăng ký đăng nhập', async () => {
