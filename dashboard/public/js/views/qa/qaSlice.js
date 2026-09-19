@@ -10,6 +10,7 @@
  */
 import { apiClient } from '../../core/apiClient.js';
 import { eventBus } from '../../core/eventBus.js';
+import { renderMarkdown, parseFrontMatter } from './markdownView.js';
 
 const PRIORITY_ORDER = { P0: 0, P1: 1, P2: 2, P3: 3 };
 // Chỉ 4 lớp ưu tiên này có rule trong qa.css. Ghép chuỗi tự do sẽ sinh ra lớp chết
@@ -37,6 +38,9 @@ export class QaSlice {
     this.decisions = null;
     this.activeTab = 'docs';
     this.priorityFilter = 'all';
+    this.documents = [];
+    this.activeDocPath = null;
+    this.docFilter = '';
   }
 
   async mount() {
@@ -71,9 +75,10 @@ export class QaSlice {
     };
 
     on(root.querySelector('#qa-btn-refresh'), 'click', () => this.reload(true));
-    on(root.querySelector('#qa-detail-close'), 'click', () => {
-      const box = root.querySelector('#qa-docs-detail');
-      if (box) box.hidden = true;
+    on(root.querySelector('#qa-reader-back'), 'click', () => this.showOverview());
+    on(root.querySelector('#qa-docs-filter'), 'input', (event) => {
+      this.docFilter = event.target.value || '';
+      this.renderDocList();
     });
 
     root.querySelectorAll('[data-qa-tab]').forEach((btn) => {
@@ -110,14 +115,16 @@ export class QaSlice {
     const root = this._root();
     if (!root) return;
     try {
-      const [trace, candidates, decisions] = await Promise.all([
+      const [trace, candidates, decisions, documents] = await Promise.all([
         apiClient.get('/api/qa/trace'),
         apiClient.get('/api/qa/candidates', { limit: 50 }),
         apiClient.get('/api/qa/decisions'),
+        apiClient.get('/api/qa/documents'),
       ]);
       this.trace = trace;
       this.candidates = Array.isArray(candidates.candidates) ? candidates.candidates : [];
       this.decisions = decisions;
+      this.documents = Array.isArray(documents.documents) ? documents.documents : [];
     } catch (error) {
       this._showAlert(`Không tải được dữ liệu QA: ${error.message}`, 'danger');
       return;
@@ -128,6 +135,10 @@ export class QaSlice {
 
   renderAll() {
     this._flushRenderDisposers();
+    // Làm mới không được đá người đọc về tổng quan; chỉ về nếu file đã biến mất.
+    if (this.activeDocPath && !this.documents.some((d) => d.path === this.activeDocPath)) {
+      this.activeDocPath = null;
+    }
     this._renderSourceBar();
     this._renderStats();
     this.renderDocs();
@@ -253,13 +264,13 @@ export class QaSlice {
   renderDocs() {
     const root = this._root();
     if (!root || !this.trace) return;
-    const wrap = root.querySelector('#qa-docs-table-wrap');
+    const workspace = root.querySelector('#qa-docs-workspace');
     const tbody = root.querySelector('#qa-docs-tbody');
-    if (!wrap || !tbody) return;
+    if (!workspace || !tbody) return;
     tbody.textContent = '';
 
     if (this.trace.available === false) {
-      wrap.hidden = true;
+      workspace.hidden = true;
       this._setEmpty('qa-docs-empty', [
         'Chưa có analyzer trong repo này',
         (this.trace.analyzer && this.trace.analyzer.error) || '',
@@ -269,8 +280,8 @@ export class QaSlice {
     }
 
     const reqs = this.trace.requirements || [];
-    if (!reqs.length) {
-      wrap.hidden = true;
+    if (!reqs.length && !this.documents.length) {
+      workspace.hidden = true;
       this._setEmpty('qa-docs-empty', [
         'Repo này chưa có tài liệu requirement',
         `Chưa thấy thư mục "${(this.trace.dirs || {}).requirements}/" hoặc thư mục đó chưa có file nào đúng quy ước.`,
@@ -283,51 +294,223 @@ export class QaSlice {
     }
 
     this._setEmpty('qa-docs-empty', null);
-    reqs.forEach((r) => {
-      const btn = this._el('button', 'Xem chi tiết', 'btn-secondary-sm');
-      btn.type = 'button';
-      const handler = () => this._showDetail(r);
-      btn.addEventListener('click', handler);
-      this._renderDisposers.push(() => btn.removeEventListener('click', handler));
-      const action = this._el('td');
-      action.appendChild(btn);
+    workspace.hidden = false;
 
+    reqs.forEach((r) => {
+      const firstFile = (r.files || [])[0];
+      const cellFile = firstFile
+        ? this._docLink(firstFile, (r.files || []).join(', '))
+        : this._cell('—', 'qa-dim');
+      const action = this._el('td');
+      if (firstFile) {
+        const btn = this._el('button', 'Mở tài liệu', 'btn-secondary-sm');
+        btn.type = 'button';
+        const handler = () => this.openDocument(firstFile);
+        btn.addEventListener('click', handler);
+        this._renderDisposers.push(() => btn.removeEventListener('click', handler));
+        action.appendChild(btn);
+      }
       tbody.appendChild(this._row([
         this._cell(r.id, 'qa-mono'),
         this._cell(r.acCount),
         this._cell(r.tcCount),
-        this._cell((r.files || []).join(', '), 'qa-mono qa-dim'),
+        cellFile,
         action,
       ]));
     });
-    wrap.hidden = false;
+
+    this.renderDocList();
+    // Giữ nguyên trạng thái đang đọc sau mỗi lượt render, và nạp lại nội dung vì file có thể
+    // đã đổi trên đĩa giữa hai lần Làm mới.
+    if (this.activeDocPath) this.openDocument(this.activeDocPath);
+    else this.showOverview();
   }
 
-  _showDetail(req) {
+  /** Ô "File" bấm được — đường dẫn chính là thứ người ta muốn mở. */
+  _docLink(relPath, label) {
+    const td = this._el('td');
+    const btn = this._el('button', label || relPath, 'qa-file-link qa-mono');
+    btn.type = 'button';
+    btn.title = `Mở ${relPath}`;
+    const handler = () => this.openDocument(relPath);
+    btn.addEventListener('click', handler);
+    this._renderDisposers.push(() => btn.removeEventListener('click', handler));
+    td.appendChild(btn);
+    return td;
+  }
+
+  renderDocList() {
     const root = this._root();
-    const box = root && root.querySelector('#qa-docs-detail');
-    const title = root && root.querySelector('#qa-detail-title');
-    const body = root && root.querySelector('#qa-detail-body');
-    if (!box || !title || !body) return;
-    title.textContent = `${req.id} — ${req.acCount} acceptance criteria, ${req.tcCount} test case`;
-    body.textContent = '';
+    const list = root && root.querySelector('#qa-docs-list');
+    const empty = root && root.querySelector('#qa-docs-list-empty');
+    if (!list || !empty) return;
+    list.textContent = '';
 
-    body.appendChild(this._el('p', 'Acceptance criteria:', 'qa-detail-label'));
-    const list = this._el('ul', null, 'qa-detail-list');
-    (req.acs || []).slice().sort().forEach((ac) => {
-      const covered = (this.trace.findings.major || []).some((f) => f.kind === 'ac-khong-co-tc' && f.id === ac);
-      list.appendChild(this._el('li', covered ? `${ac} — chưa có test case` : `${ac} — đã có test case`));
-    });
-    body.appendChild(list);
+    const needle = (this.docFilter || '').trim().toLowerCase();
+    const matches = this.documents.filter((d) => !needle
+      || d.path.toLowerCase().includes(needle)
+      || (d.ids || []).some((id) => id.toLowerCase().includes(needle)));
 
-    body.appendChild(this._el('p', 'File nguồn:', 'qa-detail-label'));
-    const files = this._el('ul', null, 'qa-detail-list qa-mono');
-    (req.files || []).forEach((f) => files.appendChild(this._el('li', f)));
-    body.appendChild(files);
-    box.hidden = false;
+    empty.hidden = matches.length > 0;
+
+    const GROUPS = [
+      { kind: 'requirement', label: 'Requirement' },
+      { kind: 'test-case', label: 'Test case' },
+    ];
+    for (const group of GROUPS) {
+      const items = matches.filter((d) => d.kind === group.kind);
+      if (!items.length) continue;
+      list.appendChild(this._el('p', `${group.label} (${items.length})`, 'qa-docs-group'));
+      for (const doc of items) list.appendChild(this._docListItem(doc));
+    }
   }
 
-  // --- panel 2: ứng viên automation ---
+  _docListItem(doc) {
+    const active = this.activeDocPath === doc.path;
+    const btn = this._el('button', null, `qa-doc-item${active ? ' is-active' : ''}`);
+    btn.type = 'button';
+    btn.setAttribute('aria-current', active ? 'true' : 'false');
+    btn.appendChild(this._el('span', doc.name, 'qa-doc-item-name'));
+
+    const ids = doc.ids || [];
+    if (ids.length) {
+      const shown = ids.slice(0, 4).join(' · ');
+      btn.appendChild(this._el(
+        'span',
+        ids.length > 4 ? `${shown} · +${ids.length - 4}` : shown,
+        'qa-doc-item-ids',
+      ));
+    }
+
+    const handler = () => this.openDocument(doc.path);
+    btn.addEventListener('click', handler);
+    this._renderDisposers.push(() => btn.removeEventListener('click', handler));
+    return btn;
+  }
+
+  showOverview() {
+    const root = this._root();
+    if (!root) return;
+    this.activeDocPath = null;
+    const overview = root.querySelector('#qa-reader-overview');
+    const doc = root.querySelector('#qa-reader-doc');
+    if (overview) overview.hidden = false;
+    if (doc) doc.hidden = true;
+    this.renderDocList();
+  }
+
+  async openDocument(relPath) {
+    const root = this._root();
+    if (!root || !relPath) return;
+    const overview = root.querySelector('#qa-reader-overview');
+    const pane = root.querySelector('#qa-reader-doc');
+    const body = root.querySelector('#qa-reader-body');
+    const chips = root.querySelector('#qa-reader-chips');
+    if (!pane || !body) return;
+
+    this.activeDocPath = relPath;
+    if (overview) overview.hidden = true;
+    pane.hidden = false;
+    this.renderDocList();
+
+    body.textContent = '';
+    if (chips) chips.textContent = '';
+    body.appendChild(this._el('p', 'Đang mở tài liệu…', 'qa-reader-loading'));
+
+    let doc;
+    try {
+      doc = await apiClient.get('/api/qa/document', { path: relPath });
+    } catch (error) {
+      body.textContent = '';
+      body.appendChild(this._el(
+        'div',
+        error.status === 404
+          ? `Không tìm thấy ${relPath} trong danh sách tài liệu đọc được của repo này.`
+          : `Không mở được tài liệu: ${error.message}`,
+        'qa-reader-error',
+      ));
+      this._setReaderHead(relPath, null);
+      return;
+    }
+
+    // Người dùng có thể đã bấm sang tài liệu khác trong lúc chờ mạng.
+    if (this.activeDocPath !== relPath) return;
+
+    const { meta, body: markdown } = parseFrontMatter(doc.content);
+    this._setReaderHead(doc.path, doc, meta);
+    this._renderDocMeta(meta);
+    if (chips) this._renderDocChips(chips, doc);
+
+    body.textContent = '';
+    body.appendChild(renderMarkdown(markdown));
+    body.scrollTop = 0;
+  }
+
+  /** Frontmatter thành dải key/value gọn ở đầu — đây là thứ người đọc liếc trước tiên. */
+  _renderDocMeta(meta) {
+    const box = this._root() && this._root().querySelector('#qa-reader-meta');
+    if (!box) return;
+    box.textContent = '';
+    // `title` đã lên tiêu đề, `id` đã nằm trong chip — nhắc lại chỉ tốn chỗ.
+    const SKIP = new Set(['title', 'id', 'slug']);
+    for (const [key, value] of meta) {
+      if (SKIP.has(key.toLowerCase()) || !value) continue;
+      box.appendChild(this._el('dt', key));
+      box.appendChild(this._el('dd', value));
+    }
+  }
+
+  _setReaderHead(relPath, doc, meta = []) {
+    const root = this._root();
+    if (!root) return;
+    const kind = root.querySelector('#qa-reader-kind');
+    const title = root.querySelector('#qa-reader-title');
+    const pathEl = root.querySelector('#qa-reader-path');
+    const label = doc && doc.kind === 'test-case' ? 'TÀI LIỆU TEST CASE' : 'TÀI LIỆU REQUIREMENT';
+    // Tiêu đề thật của tài liệu nằm trong frontmatter; tên file chỉ là phương án dự phòng.
+    const fromMeta = (meta.find(([k]) => k.toLowerCase() === 'title') || [])[1];
+    if (kind) kind.textContent = doc ? label : 'TÀI LIỆU';
+    if (title) title.textContent = doc ? (fromMeta || doc.name) : relPath;
+    if (pathEl) {
+      pathEl.textContent = doc
+        ? `${doc.path} · ${Math.max(1, Math.round(doc.bytes / 1024))} KB`
+        : relPath;
+    }
+  }
+
+  /**
+   * Chip phía trên tài liệu: với requirement thì hiện từng AC kèm trạng thái đã/chưa có
+   * test case. Đây chính là câu hỏi người đọc mang theo khi mở file, nên trả lời ngay
+   * thay vì bắt họ tự đối chiếu với bảng ở tab khác.
+   */
+  _renderDocChips(container, doc) {
+    container.textContent = '';
+    const req = (this.trace.requirements || []).find((r) => (r.files || []).includes(doc.path));
+
+    if (doc.kind === 'requirement' && req) {
+      const uncovered = new Set(
+        (this.trace.findings.major || [])
+          .filter((f) => f.kind === 'ac-khong-co-tc')
+          .map((f) => f.id),
+      );
+      for (const ac of (req.acs || []).slice().sort()) {
+        const covered = !uncovered.has(ac);
+        const chip = this._el('span', null, `qa-chip ${covered ? 'qa-chip-covered' : 'qa-chip-uncovered'}`);
+        chip.appendChild(this._el('span', ac));
+        chip.appendChild(this._el('span', covered ? 'có TC' : 'chưa có TC'));
+        chip.title = covered ? `${ac} đã có test case` : `${ac} chưa có test case nào phủ`;
+        container.appendChild(chip);
+      }
+      return;
+    }
+
+    for (const id of (doc.ids || []).slice(0, 24)) {
+      container.appendChild(this._el('span', id, 'qa-chip'));
+    }
+    if ((doc.ids || []).length > 24) {
+      container.appendChild(this._el('span', `+${doc.ids.length - 24}`, 'qa-chip'));
+    }
+  }
 
   renderCandidates() {
     const root = this._root();

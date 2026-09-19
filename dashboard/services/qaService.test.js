@@ -13,6 +13,7 @@ const path = require('path');
 
 const {
   getTrace, getCandidates, getDecisions, saveDecisionAnswer, readQaConfig, isAnswered,
+  listDocuments, readDocument, MAX_DOCUMENT_BYTES,
 } = require('./qaService');
 
 // scripts/lib/sync-manifest.js là công cụ vận hành RIÊNG CỦA HUB nên nằm trong excludes,
@@ -66,6 +67,102 @@ const FULL = {
   'test-cases/REQ-001.md': TC_DOC,
   'tests/e2e/login.spec.js': SPEC,
 };
+
+test('listDocuments liệt kê cả requirement lẫn test-case, kèm mã trong từng file', () => {
+  withRepo(FULL, (root) => {
+    const r = listDocuments(root);
+    assert.equal(r.available, true);
+    assert.deepEqual(r.documents.map((d) => d.path), ['requirements/REQ-001.md', 'test-cases/REQ-001.md']);
+    assert.equal(r.documents[0].kind, 'requirement');
+    assert.equal(r.documents[1].kind, 'test-case');
+    assert.deepEqual(r.documents[0].ids, ['REQ-001']);
+    assert.deepEqual(r.documents[1].ids.sort(), ['TC-001', 'TC-002']);
+  });
+});
+
+test('repo chưa có tài liệu thì trả danh sách rỗng, không ném lỗi', () => {
+  withRepo({}, (root) => {
+    const r = listDocuments(root);
+    assert.equal(r.available, true);
+    assert.deepEqual(r.documents, []);
+  });
+});
+
+test('readDocument trả nội dung thô, không diễn giải', () => {
+  withRepo(FULL, (root) => {
+    const doc = readDocument(root, 'requirements/REQ-001.md');
+    assert.equal(doc.path, 'requirements/REQ-001.md');
+    assert.equal(doc.kind, 'requirement');
+    assert.equal(doc.content, REQ_DOC, 'phải là byte gốc, không được chuẩn hoá gì');
+    assert.ok(doc.bytes > 0);
+  });
+});
+
+test('CHỈ đọc được file nằm trong danh sách — mọi đường dẫn khác bị từ chối', () => {
+  withRepo({ ...FULL, 'bi-mat.md': 'nội dung nhạy cảm', 'core/config/dashboardConfig.json': '{}' }, (root) => {
+    const outside = [
+      '../../../etc/passwd',
+      'requirements/../../bi-mat.md',
+      'bi-mat.md',
+      'core/config/dashboardConfig.json',
+      'tests/e2e/login.spec.js',
+      'requirements/khong-ton-tai.md',
+      '/etc/passwd',
+      'C:/Windows/win.ini',
+    ];
+    for (const p of outside) {
+      assert.throws(() => readDocument(root, p), (err) => err.status === 404, `lọt: ${p}`);
+    }
+    assert.throws(() => readDocument(root, ''), (err) => err.status === 400);
+    assert.throws(() => readDocument(root, null), (err) => err.status === 400);
+  });
+});
+
+test('dấu phân cách kiểu Windows vẫn khớp đúng file', () => {
+  withRepo(FULL, (root) => {
+    const win = ['requirements', 'REQ-001.md'].join(String.fromCharCode(92));
+    assert.equal(readDocument(root, win).path, 'requirements/REQ-001.md');
+  });
+});
+
+test('tài liệu vượt giới hạn bị từ chối thay vì kéo cả MB vào trình duyệt', () => {
+  const huge = 'x'.repeat(MAX_DOCUMENT_BYTES + 10);
+  withRepo({ ...FULL, 'requirements/REQ-002-lon.md': `# REQ-002${String.fromCharCode(10)}${huge}` }, (root) => {
+    assert.throws(
+      () => readDocument(root, 'requirements/REQ-002-lon.md'),
+      (err) => err.status === 413,
+    );
+    // File khác trong cùng thư mục vẫn đọc bình thường.
+    assert.ok(readDocument(root, 'requirements/REQ-001.md').content.length > 0);
+  });
+});
+
+test('đọc tài liệu KHÔNG ghi gì vào requirements/ hay test-cases/', () => {
+  withRepo(FULL, (root) => {
+    const snap = () => ['requirements', 'test-cases'].flatMap((d) => fs.readdirSync(path.join(root, d))
+      .map((f) => `${d}/${f}:${fs.statSync(path.join(root, d, f)).mtimeMs}:${fs.statSync(path.join(root, d, f)).size}`)).sort();
+    const before = snap();
+    listDocuments(root);
+    readDocument(root, 'requirements/REQ-001.md');
+    readDocument(root, 'test-cases/REQ-001.md');
+    assert.deepEqual(snap(), before);
+  });
+});
+
+test('tài liệu đi theo cấu hình thư mục riêng của repo, không hard-code', () => {
+  withRepo({
+    'docs/nghiep-vu/REQ-001.md': REQ_DOC,
+    'core/config/dashboardConfig.json': JSON.stringify({
+      environments: { qc: { label: 'QC', baseURL: 'https://qc.example.com' } },
+      runtime: { defaultEnvironment: 'qc' },
+      qa: { requirements: 'docs/nghiep-vu' },
+    }),
+  }, (root) => {
+    const r = listDocuments(root);
+    assert.deepEqual(r.documents.map((d) => d.path), ['docs/nghiep-vu/REQ-001.md']);
+    assert.ok(readDocument(root, 'docs/nghiep-vu/REQ-001.md').content.includes('REQ-001'));
+  });
+});
 
 test('repo trống trả bootstrap, không ném lỗi', () => {
   withRepo({}, (root) => {
