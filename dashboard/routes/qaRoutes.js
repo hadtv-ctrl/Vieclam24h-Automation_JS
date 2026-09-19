@@ -9,6 +9,8 @@ const {
   getCandidates,
   getDecisions,
   saveDecisionAnswer,
+  listDocuments,
+  readDocument,
 } = require('../services/qaService');
 const { sendJson, parseBody } = require('./routeUtils');
 
@@ -33,6 +35,27 @@ async function handleQaRoutes(request, response, url, context = {}) {
       sendJson(response, 200, getCandidates(root, limit));
     } catch (error) {
       sendJson(response, 500, { error: `Không lấy được danh sách ứng viên automation: ${error.message}` });
+    }
+    return true;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/qa/documents') {
+    try {
+      sendJson(response, 200, listDocuments(root));
+    } catch (error) {
+      sendJson(response, 500, { error: `Không liệt kê được tài liệu: ${error.message}` });
+    }
+    return true;
+  }
+
+  // Trả nội dung THÔ. Không dựng HTML ở đây: phía trình duyệt dựng bằng createElement,
+  // vì tài liệu do dự án viết và hoàn toàn có thể chứa thẻ HTML.
+  if (request.method === 'GET' && url.pathname === '/api/qa/document') {
+    try {
+      sendJson(response, 200, readDocument(root, url.searchParams.get('path')));
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 500;
+      sendJson(response, status, { error: error.message });
     }
     return true;
   }

@@ -57,29 +57,64 @@
         </button>
       </nav>
 
-      <!-- TÀI LIỆU -->
-      <section class="panel qa-panel" id="qa-panel-docs" role="tabpanel">
+      <!-- TÀI LIỆU — master/detail: chọn file bên trái, đọc bên phải.
+           Mặc định bên phải là bảng tổng quan truy vết, để không mất cái nhìn toàn cảnh. -->
+      <section class="qa-panel qa-panel-docs" id="qa-panel-docs" role="tabpanel">
         <div class="qa-empty" id="qa-docs-empty" hidden></div>
-        <div class="qa-table-wrap" id="qa-docs-table-wrap" hidden>
-          <table class="qa-table">
-            <thead>
-              <tr>
-                <th style="width: 34%">Requirement</th>
-                <th style="width: 10%">Số AC</th>
-                <th style="width: 14%">Số test case</th>
-                <th style="width: 34%">File</th>
-                <th style="width: 8%"></th>
-              </tr>
-            </thead>
-            <tbody id="qa-docs-tbody"></tbody>
-          </table>
-        </div>
-        <div class="panel qa-detail" id="qa-docs-detail" hidden>
-          <div class="qa-detail-head">
-            <strong id="qa-detail-title"></strong>
-            <button type="button" class="btn-secondary-sm" id="qa-detail-close"><i class="ph-bold ph-x"></i> Đóng</button>
-          </div>
-          <div class="qa-detail-body" id="qa-detail-body"></div>
+
+        <div class="qa-docs-workspace" id="qa-docs-workspace" hidden>
+          <aside class="panel qa-docs-sidebar">
+            <div class="qa-docs-search">
+              <i class="ph-bold ph-magnifying-glass"></i>
+              <input type="search" id="qa-docs-filter" class="qa-docs-filter"
+                     placeholder="Lọc theo mã hoặc tên file…" autocomplete="off">
+            </div>
+            <div class="qa-docs-list" id="qa-docs-list"></div>
+            <p class="qa-docs-list-empty" id="qa-docs-list-empty" hidden>Không có tài liệu nào khớp.</p>
+          </aside>
+
+          <section class="panel qa-docs-reader" id="qa-docs-reader">
+            <!-- Mặc định: bảng truy vết -->
+            <div class="qa-reader-pane" id="qa-reader-overview">
+              <header class="qa-reader-head">
+                <div>
+                  <p class="eyebrow"><i class="ph-bold ph-table"></i> TỔNG QUAN TRUY VẾT</p>
+                  <h2 class="qa-reader-title">Requirement của repo này</h2>
+                </div>
+              </header>
+              <div class="qa-table-wrap" id="qa-docs-table-wrap">
+                <table class="qa-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 18%">Requirement</th>
+                      <th style="width: 10%">Số AC</th>
+                      <th style="width: 14%">Số test case</th>
+                      <th style="width: 44%">File</th>
+                      <th style="width: 14%"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="qa-docs-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Khi chọn một tài liệu -->
+            <div class="qa-reader-pane" id="qa-reader-doc" hidden>
+              <header class="qa-reader-head">
+                <div class="qa-reader-headings">
+                  <p class="eyebrow" id="qa-reader-kind"></p>
+                  <h2 class="qa-reader-title" id="qa-reader-title"></h2>
+                  <p class="qa-reader-path qa-mono" id="qa-reader-path"></p>
+                </div>
+                <button type="button" class="btn-secondary-sm" id="qa-reader-back">
+                  <i class="ph-bold ph-arrow-left"></i> Tổng quan
+                </button>
+              </header>
+              <dl class="qa-reader-meta" id="qa-reader-meta"></dl>
+              <div class="qa-reader-chips" id="qa-reader-chips"></div>
+              <article class="qa-reader-body" id="qa-reader-body"></article>
+            </div>
+          </section>
         </div>
       </section>
 

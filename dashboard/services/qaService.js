@@ -138,6 +138,99 @@ function getTrace(root) {
   };
 }
 
+/** Giới hạn đọc một tài liệu. Tài liệu nghiệp vụ dài hơn mức này gần như chắc chắn là
+ *  file sinh tự động hoặc bị dán nhầm, và kéo cả MB vào trình duyệt chỉ làm treo UI. */
+const MAX_DOCUMENT_BYTES = 512 * 1024;
+
+/**
+ * Liệt kê các tài liệu ĐỌC ĐƯỢC của repo này.
+ *
+ * Danh sách do chính analyzer quét ra, và nó cũng là DANH SÁCH TRẮNG cho readDocument().
+ * Nhờ vậy không cần tự viết luật chống path traversal: đường dẫn nào không nằm trong danh
+ * sách thì bị từ chối, bất kể nó trông thế nào. Tự kiểm `..` bằng tay là cách mà mọi lỗ
+ * traversal đều bắt đầu.
+ */
+function listDocuments(root) {
+  const status = analyzerStatus();
+  const { dirs } = readQaConfig(root);
+  if (!status.available) return { available: false, analyzer: status, dirs, documents: [] };
+
+  const seen = new Map();
+  const add = (relPath, kind) => {
+    if (!relPath || seen.has(relPath)) return;
+    seen.set(relPath, { path: relPath, kind, name: path.basename(relPath), ids: [] });
+  };
+
+  let reqParse = { files: [], requirements: new Map() };
+  let tcParse = { files: [], testCases: new Map() };
+  try { reqParse = analyzer.parseRequirements(root, dirs.requirements); } catch (_) { /* thư mục không có */ }
+  try { tcParse = analyzer.parseTestCases(root, dirs.testCases); } catch (_) { /* thư mục không có */ }
+
+  for (const f of reqParse.files || []) add(f, 'requirement');
+  for (const f of tcParse.files || []) add(f, 'test-case');
+
+  // Gắn mã REQ/TC vào từng file để danh sách bên trái đọc được mà không cần mở file.
+  for (const req of (reqParse.requirements || new Map()).values()) {
+    for (const f of req.files || []) {
+      const entry = seen.get(f);
+      if (entry && !entry.ids.includes(req.id)) entry.ids.push(req.id);
+    }
+  }
+  for (const tc of (tcParse.testCases || new Map()).values()) {
+    const entry = seen.get(tc.file);
+    if (entry && !entry.ids.includes(tc.id)) entry.ids.push(tc.id);
+  }
+
+  const documents = [...seen.values()].sort(
+    (a, b) => a.kind.localeCompare(b.kind) || a.path.localeCompare(b.path),
+  );
+  return { available: true, analyzer: status, dirs, documents };
+}
+
+/**
+ * Đọc nội dung THÔ của một tài liệu. Không diễn giải, không sửa, không bao giờ ghi.
+ * Việc dựng Markdown thành DOM do phía trình duyệt làm, bằng createElement — tuyệt đối
+ * không dùng innerHTML, vì nội dung này do dự án viết và có thể chứa HTML.
+ */
+function readDocument(root, relPath) {
+  const wanted = String(relPath || '').split('\\').join('/').trim();
+  if (!wanted) throw Object.assign(new Error('Thiếu đường dẫn tài liệu.'), { status: 400 });
+
+  const { documents, available, analyzer: status } = listDocuments(root);
+  if (!available) throw Object.assign(new Error(status.error), { status: 503 });
+
+  const entry = documents.find((d) => d.path === wanted);
+  if (!entry) {
+    throw Object.assign(
+      new Error(`Không có tài liệu "${wanted}" trong danh sách đọc được của repo này.`),
+      { status: 404 },
+    );
+  }
+
+  const absPath = path.join(root, entry.path);
+  let stat;
+  try {
+    stat = fs.statSync(absPath);
+  } catch (_) {
+    throw Object.assign(new Error(`Không đọc được ${entry.path}.`), { status: 404 });
+  }
+  if (stat.size > MAX_DOCUMENT_BYTES) {
+    throw Object.assign(
+      new Error(`Tài liệu lớn hơn giới hạn ${Math.round(MAX_DOCUMENT_BYTES / 1024)} KB.`),
+      { status: 413 },
+    );
+  }
+
+  return {
+    path: entry.path,
+    kind: entry.kind,
+    name: entry.name,
+    ids: entry.ids,
+    bytes: stat.size,
+    content: fs.readFileSync(absPath, 'utf8'),
+  };
+}
+
 function getCandidates(root, limit = 7) {
   const status = analyzerStatus();
   const { dirs } = readQaConfig(root);
@@ -275,6 +368,9 @@ module.exports = {
   readQaConfig,
   getTrace,
   getCandidates,
+  listDocuments,
+  readDocument,
+  MAX_DOCUMENT_BYTES,
   getDecisions,
   saveDecisionAnswer,
   isAnswered,

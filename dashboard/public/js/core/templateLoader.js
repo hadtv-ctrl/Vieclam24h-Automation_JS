@@ -55,7 +55,7 @@ export class TemplateLoader {
 
     const loadPromise = (async () => {
       try {
-        const res = await fetch(`/templates/${templateName}.html?v=5.2`);
+        const res = await fetch(`/templates/${templateName}.html?v=5.3`);
         if (!res.ok) throw new Error(`HTTP ${res.status} loading template "${templateName}"`);
         const html = await res.text();
         this._cache.set(templateName, html);

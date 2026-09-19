@@ -93,6 +93,25 @@
 .qa-table tbody tr:last-child td { border-bottom: none; }
 .qa-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 4%, transparent); }
 .qa-mono { font-family: var(--font-mono); font-size: var(--font-caption); }
+/* Ô "File" trong bảng tổng quan là <button>, không phải <a>: nó mở panel đọc ngay tại chỗ
+   chứ không điều hướng đi đâu. Nhưng phải trông như bấm được. */
+.qa-file-link {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  height: auto;
+  min-height: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--font-caption);
+  text-transform: none;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.qa-file-link:hover { text-decoration: underline; text-underline-offset: 2px; }
 .qa-dim { color: var(--muted); }
 
 .qa-prio { font-weight: 600; }
@@ -224,6 +243,290 @@
 }
 .qa-decision-actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .qa-decision-stamp { font-size: var(--font-caption); color: var(--muted); }
+
+/* ============================================================
+   TÀI LIỆU — master/detail
+   Panel ngoài trong suốt, hai panel con mới là thẻ thật, giống data-workspace-panel.
+   ============================================================ */
+.qa-panel-docs {
+  padding: 14px 0 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.qa-docs-workspace {
+  display: grid;
+  grid-template-columns: 300px minmax(420px, 1fr);
+  gap: 16px;
+  height: calc(100vh - 330px);
+  min-height: 460px;
+}
+.qa-docs-workspace[hidden] { display: none; }
+
+.qa-docs-sidebar {
+  display: flex;
+  flex-direction: column;
+  /* Item của grid mặc định `min-width: auto`, tức không bao giờ hẹp hơn min-content của con.
+     Thiếu dòng này thì ở màn hình hẹp sidebar phình rộng hơn cả khung nhìn. */
+  min-width: 0;
+  min-height: 0;
+  padding: 12px;
+}
+
+.qa-docs-search {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--input);
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.qa-docs-filter {
+  flex: 1;
+  /* <input> có min-content rất rộng theo thuộc tính `size` mặc định; không đặt min-width:0
+     thì flex item này kéo cả sidebar rộng ra. */
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 8px 0;
+  color: var(--text);
+  font-size: var(--font-control);
+  font-family: inherit;
+}
+.qa-docs-filter:focus { outline: none; }
+.qa-docs-filter::-webkit-search-cancel-button { filter: grayscale(1) opacity(0.6); }
+
+.qa-docs-list { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+.qa-docs-group {
+  margin: 10px 0 6px;
+  font-size: var(--font-meta);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.qa-docs-group:first-child { margin-top: 0; }
+
+.qa-doc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  text-align: left;
+  /* ui-primitives.css:6-9 ép mọi <button> thành `height: 34px; min-height: 34px`.
+     Mục này có hai dòng và tên file dài sẽ xuống dòng, nên phải trả chiều cao về auto —
+     không thì nội dung tràn ra ngoài và đè lên mục kế tiếp. */
+  height: auto;
+  min-height: 0;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.qa-doc-item:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.qa-doc-item.is-active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+.qa-doc-item-name {
+  font-size: var(--font-control);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.qa-doc-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: var(--font-meta);
+  color: var(--muted);
+}
+.qa-doc-item-ids {
+  font-family: var(--font-mono);
+  font-size: var(--font-meta);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.qa-docs-list-empty { margin: 12px 4px 0; font-size: var(--font-control); color: var(--muted); }
+
+.qa-docs-reader {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 18px;
+}
+.qa-reader-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; flex: 1; }
+.qa-reader-pane[hidden] { display: none; }
+
+.qa-reader-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+.qa-reader-headings { min-width: 0; }
+.qa-reader-title { margin: 2px 0 0; font-size: var(--font-panel-title); overflow-wrap: anywhere; }
+.qa-reader-path { margin: 4px 0 0; font-size: var(--font-caption); color: var(--muted); overflow-wrap: anywhere; }
+
+.qa-reader-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: var(--font-caption);
+}
+.qa-reader-meta:empty { display: none; }
+.qa-reader-meta dt { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: var(--font-meta); font-weight: 700; align-self: center; }
+.qa-reader-meta dd { margin: 0; overflow-wrap: anywhere; }
+
+.qa-reader-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.qa-reader-chips:empty { display: none; }
+.qa-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: var(--font-meta);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.qa-chip-covered {
+  background: color-mix(in srgb, #10b981 13%, transparent);
+  border-color: color-mix(in srgb, #10b981 35%, var(--line));
+  color: #10b981;
+}
+.qa-chip-uncovered {
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--line));
+  color: var(--warning);
+}
+
+.qa-reader-body { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 6px; max-width: 92ch; }
+.qa-reader-loading { color: var(--muted); font-size: var(--font-control); }
+.qa-reader-error {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--line));
+  color: var(--danger);
+  font-size: var(--font-control);
+}
+
+/* ---------- Markdown đã dựng ---------- */
+.qa-md-h { margin: 18px 0 8px; line-height: 1.35; overflow-wrap: anywhere; }
+.qa-md-h:first-child { margin-top: 0; }
+.qa-md-h1 { font-size: 21px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.qa-md-h2 { font-size: 17px; }
+.qa-md-h3 { font-size: 15px; }
+.qa-md-h4,
+.qa-md-h5,
+.qa-md-h6 { font-size: var(--font-body); color: var(--muted); }
+
+.qa-md-p { margin: 0 0 10px; font-size: var(--font-control); line-height: 1.7; overflow-wrap: anywhere; }
+.qa-md-list { margin: 0 0 10px; padding-left: 22px; font-size: var(--font-control); line-height: 1.7; }
+.qa-md-list .qa-md-list { margin: 4px 0 0; }
+.qa-md-list li { margin-bottom: 4px; overflow-wrap: anywhere; }
+
+.qa-md-code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--code-bg-soft);
+  color: var(--code-text);
+}
+.qa-md-pre {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--code-bg);
+  overflow-x: auto;
+}
+.qa-md-pre code {
+  font-family: var(--font-mono);
+  font-size: var(--font-caption);
+  line-height: 1.6;
+  color: var(--code-text);
+  white-space: pre;
+}
+
+.qa-md-quote {
+  margin: 0 0 12px;
+  padding: 8px 14px;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 60%, var(--line));
+  background: var(--surface-2);
+  border-radius: 0 8px 8px 0;
+  font-size: var(--font-control);
+  line-height: 1.7;
+  color: var(--muted);
+}
+.qa-md-hr { margin: 18px 0; border: none; border-top: 1px solid var(--line); }
+.qa-md-link { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+.qa-md-trace {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.qa-md-table-wrap {
+  margin: 0 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.qa-md-table { width: 100%; border-collapse: collapse; font-size: var(--font-caption); }
+.qa-md-table th,
+.qa-md-table td {
+  padding: 7px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+.qa-md-table th {
+  background: var(--surface-2);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: var(--font-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.qa-md-table tbody tr:last-child td { border-bottom: none; }
+
+@media (max-width: 1050px) {
+  .qa-docs-workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .qa-docs-list { max-height: 260px; }
+  .qa-reader-body { max-height: 60vh; }
+}
 
 @media (max-width: 1050px) {
   .qa-decision-state { margin-left: 0; }
