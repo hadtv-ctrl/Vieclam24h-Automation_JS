@@ -141,3 +141,70 @@ test('ScreenshotHelper detects modal presence and adjusts fullPage automatically
   await helperOverride.takeScreenshot('step_forced_viewport', false);
   assert.equal(overridePage.screenshotCalls[0].fullPage, false);
 });
+
+// --- Điểm nối core/local/ (vùng riêng của dự án, không bao giờ bị sync ghi đè) ---
+
+test('commonUtils nạp bình thường khi core/local/commonUtils.local.js KHÔNG tồn tại', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const localPath = path.join(__dirname, '..', 'local', 'commonUtils.local.js');
+
+  // Chỉ khẳng định hợp đồng khi vùng local đang trống (trường hợp mặc định của Hub).
+  if (fs.existsSync(localPath)) return;
+
+  const utils = require('./commonUtils');
+  assert.equal(typeof utils.generateRandomVNPhone, 'function');
+  assert.equal(typeof utils.generateRandomEmail, 'function');
+  assert.equal(typeof utils.UiActions, 'function');
+  assert.equal(typeof utils.ScreenshotHelper, 'function');
+  assert.match(utils.generateRandomVNPhone(), /^0[93785]\d{8}$/);
+});
+
+test('core/local/commonUtils.local.js được merge vào export khi tồn tại', () => {
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+
+  // Dựng một bản sao commonUtils.js trong cây thư mục tạm có sẵn core/local/,
+  // để không ghi bất cứ thứ gì vào repo thật.
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'commonutils-local-'));
+  try {
+    fs.mkdirSync(path.join(tmp, 'utils'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, 'local'), { recursive: true });
+    for (const f of ['commonUtils.js', 'localExtensions.js']) {
+      fs.copyFileSync(path.join(__dirname, f), path.join(tmp, 'utils', f));
+    }
+    fs.writeFileSync(
+      path.join(tmp, 'local', 'commonUtils.local.js'),
+      "module.exports = { projectOnlyHelper: () => 'from-local' };\n",
+      'utf8',
+    );
+
+    const utils = require(path.join(tmp, 'utils', 'commonUtils.js'));
+    assert.equal(utils.projectOnlyHelper(), 'from-local');
+    assert.equal(typeof utils.generateRandomVNPhone, 'function', 'export chuẩn của Hub phải còn nguyên');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('core/local/commonUtils.local.js lỗi cú pháp không làm sập commonUtils', () => {
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'commonutils-broken-'));
+  try {
+    fs.mkdirSync(path.join(tmp, 'utils'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, 'local'), { recursive: true });
+    for (const f of ['commonUtils.js', 'localExtensions.js']) {
+      fs.copyFileSync(path.join(__dirname, f), path.join(tmp, 'utils', f));
+    }
+    fs.writeFileSync(path.join(tmp, 'local', 'commonUtils.local.js'), 'this is ){ not javascript\n', 'utf8');
+
+    const utils = require(path.join(tmp, 'utils', 'commonUtils.js'));
+    assert.equal(typeof utils.generateRandomVNPhone, 'function');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});

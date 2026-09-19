@@ -54,6 +54,15 @@ const DEFAULT_CONFIG = Object.freeze({
   server: {
     port: 4180,
   },
+  // Vị trí tài liệu QA của TỪNG dự án. Thư mục spec khác nhau giữa các repo
+  // (tests/ ở đây, playwright/tests ở repo khác) nên phải khai được, không hard-code.
+  // dashboardConfig.json nằm trong excludes của sync nên mỗi repo tự giữ giá trị của mình.
+  qa: {
+    requirements: 'requirements',
+    testCases: 'test-cases',
+    specs: 'tests',
+    decisionsFile: 'decisions.json',
+  },
   branding: {
     projectName: "QA Automation Studio",
     projectSubtitle: "Playwright Automation Platform",
@@ -81,6 +90,10 @@ const DEFAULT_CONFIG = Object.freeze({
     notifyOnlyOnFailure: false,
   },
 });
+
+// Các key của môi trường do Hub chuẩn hoá riêng ở trên. Mọi key chuỗi khác được coi là
+// mở rộng của dự án và giữ nguyên. KHÔNG thêm tên field riêng của dự án vào đây.
+const ENV_RESERVED_KEYS = new Set(['label', 'baseURL', 'apiBaseURL']);
 
 const TRACE_OPTIONS = ['off', 'on', 'retain-on-failure', 'on-first-retry'];
 const SCREENSHOT_OPTIONS = ['off', 'on', 'only-on-failure'];
@@ -177,9 +190,15 @@ function normalizeDashboardConfig(input = {}, existingConfig = DEFAULT_CONFIG) {
 
     const envEntry = { label, baseURL, apiBaseURL };
 
-    // Retain any project-defined custom URLs without hardcoding specific names
-    for (const [propKey, propVal] of Object.entries(envValue)) {
-      if (!['label', 'baseURL', 'apiBaseURL', 'carthingsURL', 'companyURL'].includes(propKey) && typeof propVal === 'string') {
+    // Giữ lại MỌI key chuỗi do dự án tự định nghĩa (vd. một URL phụ theo nghiệp vụ)
+    // mà KHÔNG hard-code tên field của bất kỳ dự án nào trong file thuộc sở hữu Hub này.
+    // Nguồn sự thật là dashboardConfig.json — file đã được loại khỏi sync nên mỗi dự án tự giữ.
+    // Ưu tiên: giá trị từ input; nếu input không khai báo thì lấy lại từ config hiện có
+    // để một lần lưu thiếu field không âm thầm xoá URL riêng của dự án.
+    for (const source of [fallback, envValue]) {
+      for (const [propKey, propVal] of Object.entries(source || {})) {
+        if (ENV_RESERVED_KEYS.has(propKey)) continue;
+        if (typeof propVal !== 'string') continue;
         envEntry[propKey] = propVal.trim();
       }
     }
@@ -372,13 +391,30 @@ function normalizeDashboardConfig(input = {}, existingConfig = DEFAULT_CONFIG) {
     }
   }
 
+  // Đường dẫn QA phải là tương đối và nằm trong repo: chặn '..' và đường dẫn tuyệt đối,
+  // vì giá trị này được dùng để quét thư mục.
+  const qaInput = source.qa && typeof source.qa === 'object' ? source.qa : {};
+  const qaFallback = existing.qa || DEFAULT_CONFIG.qa;
+  const asRelPath = (value, fallback) => {
+    const text = asString(value, '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+    if (!text) return fallback;
+    if (/^[a-zA-Z]:/.test(text) || text.split('/').includes('..')) return fallback;
+    return text.slice(0, 200);
+  };
+  const qa = {
+    requirements: asRelPath(qaInput.requirements, qaFallback.requirements),
+    testCases: asRelPath(qaInput.testCases, qaFallback.testCases),
+    specs: asRelPath(qaInput.specs, qaFallback.specs),
+    decisionsFile: asRelPath(qaInput.decisionsFile, qaFallback.decisionsFile),
+  };
+
   const serverInput = source.server && typeof source.server === 'object' ? source.server : {};
   const serverFallback = existing.server || DEFAULT_CONFIG.server || { port: 4180 };
   const server = {
     port: normalizePort(serverInput.port, serverFallback.port),
   };
 
-  return { environments, runtime, server, api, artifacts, branding, suites, discord };
+  return { environments, runtime, server, api, artifacts, branding, suites, discord, qa };
 }
 
 function normalizePort(value, fallback = 4180) {

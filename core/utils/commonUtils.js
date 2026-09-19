@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { randomBytes } = require('crypto');
+const { withLocalOverrides } = require('./localExtensions');
 
 let globalScreenshotSequence = 0;
 
@@ -242,7 +243,7 @@ class ScreenshotHelper {
 
   /**
    * Phát hiện xem hiện tại trên màn hình có Modal / Popup / Dialog / Drawer đang hiển thị không
-   * Tuân thủ quy định tại AI_PROMPTS.md Section 7:
+   * Tuân thủ quy định tại AI_PROMPTS.md Section 8:
    * "Khi không có popup/modal hiển thị, capture full page. Khi popup/modal đang hiển thị, chỉ capture viewport để tập trung vào popup/modal."
    * @returns {Promise<boolean>}
    */
@@ -524,4 +525,15 @@ const generateRandomEmail = () => {
   return `test_auto_${Date.now()}@example.com`;
 };
 
-module.exports = { ScreenshotHelper, UiActions, generateRandomVNPhone, generateRandomEmail };
+const baseExports = { ScreenshotHelper, UiActions, generateRandomVNPhone, generateRandomEmail };
+
+/**
+ * Helper riêng của dự án đặt ở `core/local/commonUtils.local.js` (vùng không bao giờ bị
+ * sync ghi đè), export một object phẳng:
+ *
+ *   module.exports = { generateRandomVNIDCard, generateRandomCompanyName, ... };
+ *
+ * Người gọi giữ nguyên `require('core/utils/commonUtils')` — không phải sửa import nào.
+ * Chi tiết hợp đồng: core/utils/localExtensions.js
+ */
+module.exports = withLocalOverrides('commonUtils.local.js', baseExports);

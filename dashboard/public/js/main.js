@@ -28,6 +28,7 @@ import { resourcesSlice } from './views/resources/resourcesSlice.js';
 import { docsSlice } from './views/docs/docsSlice.js';
 import { compareSlice } from './views/compare/compareSlice.js';
 import { settingsSlice } from './views/settings/settingsSlice.js';
+import { qaSlice } from './views/qa/qaSlice.js';
 
 const SLICE_REGISTRY = {
   'data-view': { slice: dataSlice, title: 'Dữ liệu test' },
@@ -43,9 +44,10 @@ const SLICE_REGISTRY = {
   'docs-view': { slice: docsSlice, title: 'Hướng dẫn' },
   'compare-view': { slice: compareSlice, title: 'So sánh ảnh' },
   'settings-view': { slice: settingsSlice, title: 'Cấu hình hệ thống' },
+  'qa-view': { slice: qaSlice, title: 'QA Docs & Automation' },
 };
 
-// 2. Register all 13 Studio Views with FeatureRegistry
+// 2. Register all 14 Studio Views with FeatureRegistry
 Object.entries(SLICE_REGISTRY).forEach(([id, { slice, title }]) => {
   featureRegistry.registerView(id, {
     id,

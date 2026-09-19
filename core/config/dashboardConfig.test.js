@@ -59,7 +59,10 @@ test('dashboard config rejects invalid environment URLs', () => {
   );
 });
 
-test('normalizeDashboardConfig strips legacy project-specific keys', () => {
+// Hợp đồng MỚI: file Hub này không được hard-code tên field của bất kỳ dự án nào.
+// Trước đây các key lạ bị strip, buộc mỗi vệ tinh phải fork dashboardConfig.js —
+// và bản fork đó bị sync xoá (commit 7ad6984 @ Automation_Carthings).
+test('normalizeDashboardConfig giữ lại mọi key chuỗi do dự án tự định nghĩa', () => {
   const result = normalizeDashboardConfig({
     ...DEFAULT_CONFIG,
     environments: {
@@ -67,15 +70,36 @@ test('normalizeDashboardConfig strips legacy project-specific keys', () => {
         label: 'QC',
         baseURL: 'https://qc.example.com',
         apiBaseURL: 'https://api.example.com',
-        carthingsURL: 'https://qc.other-domain.com',
-        companyURL: 'https://company.other-domain.com',
+        projectPortalURL: 'https://qc.other-domain.com  ',
+        partnerURL: 'https://company.other-domain.com',
+        retries: 7,
+        nested: { ignored: true },
       },
     },
   });
 
-  assert.equal(result.environments.qc.carthingsURL, undefined);
-  assert.equal(result.environments.qc.companyURL, undefined);
+  assert.equal(result.environments.qc.projectPortalURL, 'https://qc.other-domain.com');
+  assert.equal(result.environments.qc.partnerURL, 'https://company.other-domain.com');
   assert.equal(result.environments.qc.baseURL, 'https://qc.example.com');
+  // Chỉ nhận giá trị chuỗi; số/object không lọt vào entry môi trường.
+  assert.equal(result.environments.qc.retries, undefined);
+  assert.equal(result.environments.qc.nested, undefined);
+});
+
+test('key riêng của dự án không bị xoá khi lưu thiếu field', () => {
+  const existing = normalizeDashboardConfig({
+    ...DEFAULT_CONFIG,
+    environments: {
+      qc: { label: 'QC', baseURL: 'https://qc.example.com', projectPortalURL: 'https://portal.example.com' },
+    },
+  });
+
+  const saved = normalizeDashboardConfig(
+    { environments: { qc: { label: 'QC', baseURL: 'https://qc.example.com' } }, runtime: { defaultEnvironment: 'qc' } },
+    existing,
+  );
+
+  assert.equal(saved.environments.qc.projectPortalURL, 'https://portal.example.com');
 });
 
 test('normalizePort handles static port, random, auto, and fallbacks', () => {
