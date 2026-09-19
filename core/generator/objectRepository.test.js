@@ -186,12 +186,62 @@ test('F05: parseFixture handles invalid syntax and sets ready=false, status=erro
 
 test('F06: parseExistingSpecFile recognizes pages.<alias>.<action> from pages fixture', () => {
   const { parseExistingSpecFile } = require('./visualBuilderCompiler');
-  const parsed = parseExistingSpecFile('tests/e2e/desktop/sample_pages_fixture.spec.js', process.cwd());
 
-  assert.ok(parsed.pages && parsed.pages.length > 0);
-  const samplePageEntry = parsed.pages.find((p) => p.className === 'SamplePage');
-  assert.ok(samplePageEntry);
-  assert.ok(samplePageEntry.actions.includes('open'));
+  // Trước đây test này đọc thẳng tests/e2e/desktop/sample_pages_fixture.spec.js của repo.
+  // `tests/` nằm trong FORBIDDEN_SYNC_MODULES nên không bao giờ tới được vệ tinh,
+  // khiến test fail vĩnh viễn ở đó. Tự dựng spec tạm để bộ test độc lập với dự án.
+  const tempRoot = path.join(process.cwd(), '.tmp', 'test_parse_pages_fixture');
+  const specDir = path.join(tempRoot, 'tests', 'e2e', 'desktop');
+  const pagesDir = path.join(tempRoot, 'pages', 'desktop');
+  fs.mkdirSync(specDir, { recursive: true });
+  fs.mkdirSync(pagesDir, { recursive: true });
+
+  // getFixturePageMap(rootDir) quét rootDir/pages/ để ánh xạ alias -> class.
+  fs.writeFileSync(
+    path.join(pagesDir, 'SamplePage.js'),
+    [
+      'class SamplePage {',
+      '  constructor(page, featureName) {',
+      '    this.page = page;',
+      '    this.featureName = featureName;',
+      '  }',
+      '  async open(url) { return url; }',
+      '  async getHeadingText() { return String(this.featureName || ""); }',
+      '}',
+      'module.exports = { SamplePage };',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+
+  const specSource = [
+    "const { test, expect } = require('../../../core/fixtures/baseTest');",
+    '',
+    "test.describe('Kịch bản kiểm thử mẫu với Lazy Page Container @smoke', () => {",
+    "  test('Tự động nạp SamplePage qua pages fixture @e2e', async ({ pages }) => {",
+    "    await test.step('Given Mở trang mẫu', async () => {",
+    "      await pages.sample.open('https://example.com');",
+    '    });',
+    "    await test.step('Then Đọc tiêu đề', async () => {",
+    '      const heading = await pages.sample.getHeadingText();',
+    '      expect(heading).toBeTruthy();',
+    '    });',
+    '  });',
+    '});',
+    '',
+  ].join('\n');
+  fs.writeFileSync(path.join(specDir, 'sample_pages_fixture.spec.js'), specSource, 'utf8');
+
+  try {
+    const parsed = parseExistingSpecFile('tests/e2e/desktop/sample_pages_fixture.spec.js', tempRoot);
+
+    assert.ok(parsed.pages && parsed.pages.length > 0);
+    const samplePageEntry = parsed.pages.find((p) => p.className === 'SamplePage');
+    assert.ok(samplePageEntry);
+    assert.ok(samplePageEntry.actions.includes('open'));
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('scanAllFixtures, createCustomFixture and deleteCustomFixture manage custom fixtures safely', () => {

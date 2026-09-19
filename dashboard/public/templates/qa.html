@@ -1,0 +1,127 @@
+<!-- QA Docs & Automation — fragment nạp vào #qa-view.
+     Mọi id/data-attribute đều mang tiền tố `qa-` vì templateLoader.preloadAll() nạp
+     TẤT CẢ template vào DOM ngay lúc boot; id trùng sẽ cướp getElementById của view khác.
+     Khung theo đúng chuẩn chung: hero > subnav > panel. Không tự chế lại component nào. -->
+
+      <header class="hero qa-hero">
+        <div>
+          <p class="eyebrow"><i class="ph-bold ph-file-magnifying-glass"></i> TÀI LIỆU QA &amp; ỨNG VIÊN AUTOMATION</p>
+          <h1>QA Docs &amp; Automation</h1>
+          <p class="subtitle">Requirement, test case, và những test case automation được nhưng chưa ai viết script.</p>
+        </div>
+        <!-- .hero là flex space-between nên phải đúng HAI con như mọi template khác;
+             để ba con thì khối giữa bị đẩy ra chính giữa tiêu đề và cụm số liệu. -->
+        <div class="hero-actions qa-hero-right">
+          <div class="hero-stats-group" id="qa-stats" hidden>
+            <div class="hero-stat-card"><strong id="qa-stat-req">0</strong><small>Requirement</small></div>
+            <div class="hero-stat-card"><strong id="qa-stat-ac">0</strong><small>Acceptance criteria</small></div>
+            <div class="hero-stat-card"><strong id="qa-stat-tc">0</strong><small>Test case</small></div>
+            <div class="hero-stat-card"><strong id="qa-stat-auto">0</strong><small>Đã có script</small></div>
+            <div class="hero-stat-card qa-stat-danger"><strong id="qa-stat-major">0</strong><small>Vấn đề nghiêm trọng</small></div>
+          </div>
+          <!-- Nút làm mới phải LUÔN hiện: nếu nó nằm trong thanh nguồn (vốn bị ẩn cho tới khi
+               tải xong) thì đúng lúc tải lỗi người dùng sẽ không còn cách nào thử lại. -->
+          <button type="button" class="btn-secondary-sm" id="qa-btn-refresh">
+            <i class="ph-bold ph-arrows-clockwise"></i> Làm mới
+          </button>
+        </div>
+      </header>
+
+      <!-- Thanh nguồn: luôn nói rõ đang đọc thư mục nào. Trỏ sai thư mục cho ra
+           "0 vấn đề" trông y hệt "đã sạch" — đó là lỗi im lặng nguy hiểm nhất ở đây. -->
+      <div class="qa-source-bar" id="qa-source-bar" hidden>
+        <span class="qa-source-label">Đang đọc:</span>
+        <span class="script-file-badge" id="qa-src-requirements">requirements/</span>
+        <span class="script-file-badge" id="qa-src-testcases">test-cases/</span>
+        <span class="script-file-badge" id="qa-src-specs">tests/</span>
+        <span class="qa-source-config" id="qa-src-config"></span>
+      </div>
+
+      <div class="qa-alert qa-alert-warn" id="qa-alert" hidden>
+        <i class="ph-bold ph-warning"></i>
+        <span id="qa-alert-text"></span>
+      </div>
+
+      <nav class="view-subnav qa-subnav" id="qa-subnav" role="tablist" aria-label="Phân hệ QA Docs">
+        <button type="button" class="view-subtab active" data-qa-tab="docs" role="tab" aria-selected="true">
+          <i class="ph-bold ph-files"></i> Tài liệu
+        </button>
+        <button type="button" class="view-subtab" data-qa-tab="candidates" role="tab" aria-selected="false">
+          <i class="ph-bold ph-robot"></i> Ứng viên automation
+        </button>
+        <button type="button" class="view-subtab" data-qa-tab="findings" role="tab" aria-selected="false">
+          <i class="ph-bold ph-warning-octagon"></i> Vấn đề
+        </button>
+        <button type="button" class="view-subtab" data-qa-tab="decisions" role="tab" aria-selected="false">
+          <i class="ph-bold ph-gavel"></i> Quyết định
+        </button>
+      </nav>
+
+      <!-- TÀI LIỆU -->
+      <section class="panel qa-panel" id="qa-panel-docs" role="tabpanel">
+        <div class="qa-empty" id="qa-docs-empty" hidden></div>
+        <div class="qa-table-wrap" id="qa-docs-table-wrap" hidden>
+          <table class="qa-table">
+            <thead>
+              <tr>
+                <th style="width: 34%">Requirement</th>
+                <th style="width: 10%">Số AC</th>
+                <th style="width: 14%">Số test case</th>
+                <th style="width: 34%">File</th>
+                <th style="width: 8%"></th>
+              </tr>
+            </thead>
+            <tbody id="qa-docs-tbody"></tbody>
+          </table>
+        </div>
+        <div class="panel qa-detail" id="qa-docs-detail" hidden>
+          <div class="qa-detail-head">
+            <strong id="qa-detail-title"></strong>
+            <button type="button" class="btn-secondary-sm" id="qa-detail-close"><i class="ph-bold ph-x"></i> Đóng</button>
+          </div>
+          <div class="qa-detail-body" id="qa-detail-body"></div>
+        </div>
+      </section>
+
+      <!-- ỨNG VIÊN AUTOMATION -->
+      <section class="panel qa-panel" id="qa-panel-candidates" role="tabpanel" hidden>
+        <p class="subtitle qa-panel-hint">
+          Test case đã có tài liệu nhưng chưa spec nào tham chiếu tới. Test case khai rõ
+          <em>không automation</em> đã được loại khỏi danh sách này.
+        </p>
+        <div class="qa-filter-row" id="qa-candidate-filters">
+          <button type="button" class="pm-filter-pill active" data-qa-priority="all">Tất cả</button>
+          <button type="button" class="pm-filter-pill" data-qa-priority="P0">P0</button>
+          <button type="button" class="pm-filter-pill" data-qa-priority="P1">P1</button>
+          <button type="button" class="pm-filter-pill" data-qa-priority="P2">P2</button>
+          <button type="button" class="pm-filter-pill" data-qa-priority="P3">P3</button>
+        </div>
+        <div class="qa-empty" id="qa-candidates-empty" hidden></div>
+        <div class="qa-table-wrap" id="qa-candidates-wrap" hidden>
+          <table class="qa-table">
+            <thead>
+              <tr>
+                <th style="width: 14%">Test case</th>
+                <th style="width: 16%">Requirement</th>
+                <th style="width: 12%">AC</th>
+                <th style="width: 10%">Ưu tiên</th>
+                <th style="width: 14%">Khai báo</th>
+                <th style="width: 34%">Nguồn</th>
+              </tr>
+            </thead>
+            <tbody id="qa-candidates-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VẤN ĐỀ -->
+      <section class="panel qa-panel" id="qa-panel-findings" role="tabpanel" hidden>
+        <div class="qa-empty" id="qa-findings-empty" hidden></div>
+        <div class="qa-findings-groups" id="qa-findings-groups"></div>
+      </section>
+
+      <!-- QUYẾT ĐỊNH -->
+      <section class="panel qa-panel" id="qa-panel-decisions" role="tabpanel" hidden>
+        <div class="qa-empty" id="qa-decisions-empty" hidden></div>
+        <div class="qa-decisions-list" id="qa-decisions-list"></div>
+      </section>

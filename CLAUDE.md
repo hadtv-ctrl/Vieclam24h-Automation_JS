@@ -5,9 +5,10 @@
 ## Playwright automation
 
 Only for a Playwright task, read:
-- `ai/shared/AI_PROMPTS.md`
+- `ai/shared/AI_PROMPTS.md` (section 3 covers requirement / test case documents)
 - `ai/shared/TEST_AUTOMATION_LESSONS.md`
 - `.ai/knowledge/qa/`
+- `requirements/` and `test-cases/` when they exist — they are project-owned and never synced
 
 ## Dashboard
 

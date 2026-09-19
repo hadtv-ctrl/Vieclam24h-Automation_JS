@@ -1,0 +1,230 @@
+/* QA Docs & Automation view.
+   Chỉ định nghĩa những gì CHƯA có. Khung hero, .panel, .view-subnav/.view-subtab,
+   .pm-filter-pill, .btn-secondary-sm, .script-file-badge đều tái sử dụng nguyên vẹn.
+
+   Màu chỉ lấy từ token thật trong styles/tokens.css: --bg --surface --surface-2 --input
+   --line --text --muted --accent --accent-deep --danger --warning. KHÔNG viết fallback
+   var(--x, #hex): fallback chỉ che giấu một token không tồn tại, và vì dashboard mặc định
+   nền tối, một fallback sáng sẽ vẽ ra mảng trắng chói giữa trang. Sắc thái lấy bằng
+   color-mix trên token để đổi theo theme và theo --accent do người dùng cấu hình. */
+
+.qa-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Thanh nguồn dữ liệu: luôn cho biết đang đọc thư mục nào — trỏ sai thư mục là
+   lỗi im lặng nguy hiểm nhất của mục này. */
+.qa-source-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-caption);
+}
+.qa-source-bar[hidden] { display: none; }
+.qa-source-label { color: var(--muted); }
+.qa-source-config { color: var(--muted); font-style: italic; }
+
+.qa-view .hero-stats-group[hidden] { display: none; }
+/* hero-actions mặc định là grid canh phải; cụm số liệu và nút xếp dọc, giữa hai hàng
+   có khoảng thở riêng. */
+.qa-hero-right { gap: 10px; }
+.qa-stat-danger strong { color: var(--danger); }
+
+.qa-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: var(--font-control);
+  line-height: 1.5;
+}
+.qa-alert[hidden] { display: none; }
+.qa-alert-warn {
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--line));
+  color: var(--warning);
+}
+/* Hỏng thật khác lời nhắc mềm: cùng một dải vàng thì không ai phân biệt được
+   "màn hình chết vì API lỗi" với "thư mục spec đang rỗng". */
+.qa-alert-danger {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--line));
+  color: var(--danger);
+}
+
+/* .panel đã lo viền, bo góc, nền và đổ bóng. Ở đây chỉ thêm khoảng đệm trong. */
+.qa-panel { padding: 16px 18px 18px; }
+.qa-panel[hidden] { display: none; }
+.qa-panel-hint { margin: 0 0 12px; max-width: 88ch; }
+.qa-filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+
+.qa-table-wrap {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: auto;
+  max-height: 60vh;
+}
+.qa-table-wrap[hidden] { display: none; }
+.qa-table { width: 100%; border-collapse: collapse; font-size: var(--font-control); }
+.qa-table th,
+.qa-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.qa-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: var(--font-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.qa-table tbody tr:last-child td { border-bottom: none; }
+.qa-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+.qa-mono { font-family: var(--font-mono); font-size: var(--font-caption); }
+.qa-dim { color: var(--muted); }
+
+.qa-prio { font-weight: 600; }
+.qa-prio-p0 { color: var(--danger); }
+.qa-prio-p1 { color: #f59e0b; }
+.qa-prio-p2 { color: #eab308; }
+.qa-prio-p3 { color: var(--muted); }
+
+.qa-empty {
+  padding: 22px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.qa-empty[hidden] { display: none; }
+.qa-empty-title { margin: 0 0 8px; font-weight: 600; font-size: var(--font-body); }
+.qa-empty-line {
+  margin: 0 0 6px;
+  font-size: var(--font-control);
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 78ch;
+}
+
+/* .panel lo phần chrome; chỉ cần khoảng cách với bảng ở trên. */
+.qa-detail { margin-top: 14px; padding: 12px 14px; }
+.qa-detail[hidden] { display: none; }
+.qa-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.qa-detail-label { margin: 12px 0 4px; font-size: var(--font-control); font-weight: 600; }
+.qa-detail-list { margin: 0; padding-left: 20px; font-size: var(--font-control); line-height: 1.6; }
+
+.qa-finding-group { margin-bottom: 18px; }
+.qa-finding-head { margin: 0 0 8px; font-size: var(--font-control); font-weight: 700; }
+.qa-finding-major .qa-finding-head { color: var(--danger); }
+.qa-finding-minor .qa-finding-head { color: var(--warning); }
+.qa-finding-info .qa-finding-head { color: var(--muted); }
+.qa-finding-kind { margin: 8px 0 4px; font-size: var(--font-control); font-weight: 600; }
+.qa-finding-list {
+  margin: 0 0 6px;
+  padding-left: 20px;
+  font-size: var(--font-control);
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.qa-decision {
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: var(--surface);
+}
+.qa-decision.is-pending { border-left-color: var(--warning); }
+.qa-decision.is-answered { border-left-color: #10b981; }
+.qa-decision-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.qa-decision-title { font-size: var(--font-body); }
+.qa-decision-state { margin-left: auto; font-size: var(--font-caption); color: var(--muted); }
+.qa-decision-blocks { margin: 0 0 6px; font-size: var(--font-control); color: var(--warning); }
+.qa-decision-context,
+.qa-decision-reason {
+  margin: 0 0 10px;
+  font-size: var(--font-control);
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 88ch;
+}
+.qa-badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: var(--font-meta);
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.qa-badge-blocking {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+  color: var(--danger);
+}
+.qa-badge-urgent {
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--line));
+  color: var(--warning);
+}
+.qa-badge-rec {
+  background: color-mix(in srgb, #10b981 14%, transparent);
+  border-color: color-mix(in srgb, #10b981 35%, var(--line));
+  color: #10b981;
+  margin-left: 6px;
+}
+
+/* .qa-option là một <label> thật. ui-primitives đặt label mặc định thành caption IN HOA,
+   letter-spacing rộng, font-weight 800 — không reset thì cả tiêu đề lẫn dòng hệ quả của
+   mỗi phương án đều hiện ra chữ hoa như đang hét. .toggle trong ui-primitives cũng phải
+   reset y hệt, đây là cái bẫy đã biết của codebase. */
+.qa-option {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--text);
+}
+.qa-option:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.qa-option-text { display: flex; flex-direction: column; gap: 3px; font-size: var(--font-control); }
+.qa-option-conseq { font-size: var(--font-caption); color: var(--muted); line-height: 1.5; }
+
+.qa-field { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.qa-field-label { font-size: var(--font-caption); font-weight: 600; color: var(--muted); }
+/* <textarea> không khớp selector input/select của ui-primitives nên phải tự khai nền. */
+.qa-textarea {
+  resize: vertical;
+  min-height: 44px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: var(--font-control);
+  font-family: inherit;
+  background: var(--input);
+  color: var(--text);
+}
+.qa-decision-actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.qa-decision-stamp { font-size: var(--font-caption); color: var(--muted); }
+
+@media (max-width: 1050px) {
+  .qa-decision-state { margin-left: 0; }
+}

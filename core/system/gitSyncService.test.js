@@ -53,7 +53,12 @@ test('runFrameworkQualityGate evaluates framework structure', () => {
   const qg = runFrameworkQualityGate();
   assert.equal(typeof qg.passed, 'boolean');
   assert.ok(Array.isArray(qg.issues));
-  assert.equal(qg.passed, true);
+  // Không khẳng định "dự án chủ nhà sạch" — đó là chất lượng code của từng dự án,
+  // không phải hợp đồng của hàm này. File test này do Hub sở hữu và được sync xuống
+  // mọi vệ tinh, trong khi `pages/` KHÔNG BAO GIỜ được sync: một vi phạm
+  // page.waitForTimeout() ở vệ tinh sẽ làm test của Hub đỏ vĩnh viễn ở đó.
+  // Điều cần kiểm là cổng báo cáo NHẤT QUÁN: passed <=> không có issue nào.
+  assert.equal(qg.passed, qg.issues.length === 0);
 });
 
 test('syncSuitesAndConfigs dryRun executes safely without network modification', () => {
