@@ -53,25 +53,55 @@ export class BddSlice {
     on('#btn-bdd-compile', 'click', () => this.compileScript());
     on('#btn-bdd-save', 'click', () => this.saveScript());
 
-    // Sidebar collapse / expand (toggle class 'sidebar-collapsed' on the workspace panel)
-    const toggleSidebar = () => {
-      const workspace = root.querySelector('.script-workspace-panel');
-      if (workspace) workspace.classList.toggle('sidebar-collapsed');
-    };
-    const collapseSidebar = () => {
-      const workspace = root.querySelector('.script-workspace-panel');
-      if (workspace) workspace.classList.add('sidebar-collapsed');
-    };
-    const expandSidebar = () => {
-      const workspace = root.querySelector('.script-workspace-panel');
-      if (workspace) workspace.classList.remove('sidebar-collapsed');
-    };
-
-    on('#btn-collapse-script-sidebar', 'click', collapseSidebar);
-    on('#btn-toggle-script-sidebar-head', 'click', toggleSidebar);
-    on('#btn-toggle-script-sidebar-head-edit', 'click', toggleSidebar);
-    on('#btn-expand-script-sidebar', 'click', expandSidebar);
-    on('#script-sidebar-collapsed-strip', 'click', expandSidebar);
+    // Sidebar collapse / expand: delegate cleanly to universal controller with fallback
+    on('#btn-collapse-script-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('bdd', true, true);
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.add('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-script-sidebar-head', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('bdd');
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-script-sidebar-head-edit', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('bdd');
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-script-sidebar-head-create', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('bdd');
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-expand-script-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('bdd', false);
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.remove('sidebar-collapsed');
+      }
+    });
+    on('#script-sidebar-collapsed-strip', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('bdd', false);
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.remove('sidebar-collapsed');
+      }
+    });
   }
 
   _registerBridgeActions() {

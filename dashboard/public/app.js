@@ -2034,6 +2034,9 @@ async function openPageManager() {
   if (typeof initPageManagerListeners === 'function') {
     initPageManagerListeners();
   }
+  if (typeof restoreSidebarState === 'function') {
+    restoreSidebarState('pm');
+  }
   pageManagerLocators = [];
   pageManagerActions = [];
   initPageManagerCodeEditor();
@@ -7213,6 +7216,9 @@ document.querySelectorAll('.view-tab').forEach((button) => button.addEventListen
     toolsBtn?.setAttribute('aria-expanded', 'false');
   }
   document.querySelectorAll('.dashboard-view').forEach((view) => { const active = view.id === button.dataset.view; view.hidden = !active; view.classList.toggle('active', active); });
+  if (typeof restoreAllSidebarStates === 'function') {
+    restoreAllSidebarStates();
+  }
   if (button.dataset.view === 'resources-view') await openExplorer();
   if (button.dataset.view === 'docs-view') await openDocsView();
   if (button.dataset.view === 'page-manager-view') await openPageManager();
@@ -7531,158 +7537,219 @@ function initPageManagerListeners() {
 }
 window.initPageManagerListeners = initPageManagerListeners;
 
-// Sidebar Collapse / Expand feature for BDD Studio and Page Manager
+// Universal Sidebar Collapse / Expand feature for all Studio Workspaces (BDD, Page Manager, Test Suites, Data Studio)
 function initSidebarCollapse() {
-  // 1. BDD Studio Sidebar
-  const scriptWorkspace = document.querySelector('.script-workspace-panel');
-  const btnCollapseScript = document.getElementById('btn-collapse-script-sidebar');
-  const btnExpandScript = document.getElementById('btn-expand-script-sidebar');
-  const railScript = document.getElementById('script-sidebar-collapsed-strip');
-  const btnToggleScriptHead = document.getElementById('btn-toggle-script-sidebar-head');
+  const SIDEBAR_CONFIGS = {
+    bdd: {
+      getWorkspace: () => document.querySelector('#builder-view .script-workspace-panel') || document.querySelector('.script-workspace-panel'),
+      getToggleBtns: () => document.querySelectorAll('#btn-toggle-script-sidebar-head, #btn-toggle-script-sidebar-head-edit, #btn-toggle-script-sidebar-head-create'),
+      storageKey: 'bdd_sidebar_collapsed',
+      expandTitle: 'Mở rộng danh sách kịch bản',
+      collapseTitle: 'Thu gọn danh sách kịch bản',
+      collapsedMsg: '📐 Đã thu gọn danh sách kịch bản. Bấm vào thanh bên hoặc nút trên thanh công cụ để mở lại.',
+    },
+    pm: {
+      getWorkspace: () => document.querySelector('#page-manager-view #page-manager-workspace') || document.getElementById('page-manager-workspace') || document.querySelector('.page-manager-workspace'),
+      getToggleBtns: () => document.querySelectorAll('#btn-toggle-pm-sidebar-head, #btn-toggle-pm-sidebar-head-create'),
+      storageKey: 'pm_sidebar_collapsed',
+      expandTitle: 'Mở rộng danh sách Page',
+      collapseTitle: 'Thu gọn danh sách Page',
+      collapsedMsg: '📐 Đã thu gọn danh sách Page. Bấm vào thanh bên hoặc nút trên thanh công cụ để mở lại.',
+    },
+    data: {
+      getWorkspace: () => document.querySelector('#data-view #data-workspace-panel') || document.getElementById('data-workspace-panel') || document.querySelector('.data-workspace-panel'),
+      getToggleBtns: () => document.querySelectorAll('#btn-toggle-data-sidebar-head, #btn-toggle-data-sidebar-head-create'),
+      storageKey: 'testdata_sidebar_collapsed',
+      expandTitle: 'Mở rộng danh sách dữ liệu',
+      collapseTitle: 'Thu gọn danh sách dữ liệu',
+      collapsedMsg: '📐 Đã thu gọn danh sách dữ liệu. Bấm vào thanh bên hoặc nút trên thanh công cụ để mở lại.',
+    },
+    suites: {
+      getWorkspace: () => document.querySelector('#suites-view #suites-workspace') || document.getElementById('suites-workspace') || document.querySelector('.suites-workspace'),
+      getToggleBtns: () => document.querySelectorAll('#btn-toggle-suites-sidebar-head'),
+      storageKey: 'suites_sidebar_collapsed',
+      expandTitle: 'Mở rộng danh sách Test Suite',
+      collapseTitle: 'Thu gọn danh sách Test Suite',
+      collapsedMsg: '📐 Đã thu gọn danh sách Test Suite. Bấm vào thanh bên hoặc nút trên thanh công cụ để mở lại.',
+    },
+  };
 
-  function setScriptSidebarCollapsed(collapsed) {
-    if (!scriptWorkspace) return;
-    scriptWorkspace.classList.toggle('sidebar-collapsed', collapsed);
-    if (btnToggleScriptHead) {
-      btnToggleScriptHead.classList.toggle('btn-sidebar-toggle-active', collapsed);
-      btnToggleScriptHead.title = collapsed ? 'Mở rộng danh sách kịch bản' : 'Thu gọn danh sách kịch bản';
+  function setSidebarCollapsed(type, collapsed, showToast = false) {
+    const conf = SIDEBAR_CONFIGS[type];
+    if (!conf) return;
+    const workspace = conf.getWorkspace();
+    if (!workspace) return;
+
+    workspace.classList.toggle('sidebar-collapsed', collapsed);
+    const toggleBtns = conf.getToggleBtns();
+    toggleBtns.forEach((btn) => {
+      btn.classList.toggle('btn-sidebar-toggle-active', collapsed);
+      btn.title = collapsed ? conf.expandTitle : conf.collapseTitle;
+    });
+
+    try {
+      localStorage.setItem(conf.storageKey, collapsed ? '1' : '0');
+    } catch (_) {}
+
+    if (collapsed && showToast && typeof notify === 'function') {
+      notify(conf.collapsedMsg);
     }
-    try { localStorage.setItem('bdd_sidebar_collapsed', collapsed ? '1' : '0'); } catch (_) {}
   }
 
-  btnCollapseScript?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setScriptSidebarCollapsed(true);
-    notify('📐 Đã thu gọn danh sách kịch bản. Bấm vào thanh bên hoặc nút trên thanh công cụ để mở lại.');
-  });
-
-  btnExpandScript?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setScriptSidebarCollapsed(false);
-  });
-
-  railScript?.addEventListener('click', () => {
-    setScriptSidebarCollapsed(false);
-  });
-
-  btnToggleScriptHead?.addEventListener('click', () => {
-    const isCollapsed = scriptWorkspace?.classList.contains('sidebar-collapsed');
-    setScriptSidebarCollapsed(!isCollapsed);
-  });
-
-  try {
-    if (localStorage.getItem('bdd_sidebar_collapsed') === '1') {
-      setScriptSidebarCollapsed(true);
-    }
-  } catch (_) {}
-
-  // 2. Page Manager Sidebar
-  const pmWorkspace = document.getElementById('page-manager-workspace');
-  const btnCollapsePm = document.getElementById('btn-collapse-pm-sidebar');
-  const btnExpandPm = document.getElementById('btn-expand-pm-sidebar');
-  const railPm = document.getElementById('pm-sidebar-collapsed-strip');
-  const btnTogglePmHead = document.getElementById('btn-toggle-pm-sidebar-head');
-
-  function setPmSidebarCollapsed(collapsed) {
-    if (!pmWorkspace) return;
-    pmWorkspace.classList.toggle('sidebar-collapsed', collapsed);
-    if (btnTogglePmHead) {
-      btnTogglePmHead.classList.toggle('btn-sidebar-toggle-active', collapsed);
-      btnTogglePmHead.title = collapsed ? 'Mở rộng danh sách Page' : 'Thu gọn danh sách Page';
-    }
-    try { localStorage.setItem('pm_sidebar_collapsed', collapsed ? '1' : '0'); } catch (_) {}
+  function toggleSidebar(type) {
+    const conf = SIDEBAR_CONFIGS[type];
+    if (!conf) return;
+    const workspace = conf.getWorkspace();
+    if (!workspace) return;
+    const isCurrentlyCollapsed = workspace.classList.contains('sidebar-collapsed');
+    setSidebarCollapsed(type, !isCurrentlyCollapsed, !isCurrentlyCollapsed);
   }
 
-  btnCollapsePm?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setPmSidebarCollapsed(true);
-    notify('📐 Đã thu gọn danh sách Page. Bấm vào thanh bên hoặc nút trên thanh công cụ để mở lại.');
-  });
-
-  btnExpandPm?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setPmSidebarCollapsed(false);
-  });
-
-  railPm?.addEventListener('click', () => {
-    setPmSidebarCollapsed(false);
-  });
-
-  btnTogglePmHead?.addEventListener('click', () => {
-    const isCollapsed = pmWorkspace?.classList.contains('sidebar-collapsed');
-    setPmSidebarCollapsed(!isCollapsed);
-  });
-
-  try {
-    if (localStorage.getItem('pm_sidebar_collapsed') === '1') {
-      setPmSidebarCollapsed(true);
-    }
-  } catch (_) {}
-
-  // 3. Test Data Studio Sidebar
-  const dataWorkspace = document.getElementById('data-workspace-panel');
-  const btnCollapseData = document.getElementById('btn-collapse-data-sidebar');
-  const btnExpandData = document.getElementById('btn-expand-data-sidebar');
-  const railData = document.getElementById('data-sidebar-collapsed-strip');
-  const btnToggleDataHead = document.getElementById('btn-toggle-data-sidebar-head');
-
-  function setDataSidebarCollapsed(collapsed) {
-    if (!dataWorkspace) return;
-    dataWorkspace.classList.toggle('sidebar-collapsed', collapsed);
-    if (btnToggleDataHead) {
-      btnToggleDataHead.classList.toggle('btn-sidebar-toggle-active', collapsed);
-      btnToggleDataHead.title = collapsed ? 'Mở rộng danh sách dữ liệu' : 'Thu gọn danh sách dữ liệu';
-    }
-    try { localStorage.setItem('testdata_sidebar_collapsed', collapsed ? '1' : '0'); } catch (_) {}
+  function restoreSidebarState(type) {
+    const conf = SIDEBAR_CONFIGS[type];
+    if (!conf) return;
+    try {
+      if (localStorage.getItem(conf.storageKey) === '1') {
+        setSidebarCollapsed(type, true, false);
+      } else {
+        setSidebarCollapsed(type, false, false);
+      }
+    } catch (_) {}
   }
 
-  btnCollapseData?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setDataSidebarCollapsed(true);
-    notify('📐 Đã thu gọn danh sách dữ liệu. Bấm vào thanh bên hoặc nút trên thanh công cụ để mở lại.');
-  });
+  function restoreAllSidebarStates() {
+    Object.keys(SIDEBAR_CONFIGS).forEach(restoreSidebarState);
+  }
 
-  btnExpandData?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setDataSidebarCollapsed(false);
-  });
+  // Expose globally
+  window.setSidebarCollapsed = setSidebarCollapsed;
+  window.toggleSidebar = toggleSidebar;
+  window.restoreSidebarState = restoreSidebarState;
+  window.restoreAllSidebarStates = restoreAllSidebarStates;
 
-  railData?.addEventListener('click', () => {
-    setDataSidebarCollapsed(false);
-  });
-
-  btnToggleDataHead?.addEventListener('click', () => {
-    const isCollapsed = dataWorkspace?.classList.contains('sidebar-collapsed');
-    setDataSidebarCollapsed(!isCollapsed);
-  });
-
-  try {
-    if (localStorage.getItem('testdata_sidebar_collapsed') === '1') {
-      setDataSidebarCollapsed(true);
+  // Universal Document-Level Event Delegation (Handles dynamically loaded templates at any time)
+  document.addEventListener('click', (e) => {
+    // 1. Collapse button clicked (Left Arrow)
+    const collapseBtn = e.target.closest(
+      '#btn-collapse-script-sidebar, #btn-collapse-pm-sidebar, #btn-collapse-data-sidebar, #btn-collapse-suites-sidebar, .btn-sidebar-collapse'
+    );
+    if (collapseBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (collapseBtn.id === 'btn-collapse-script-sidebar' || collapseBtn.closest('#builder-view, .script-workspace-panel')) {
+        setSidebarCollapsed('bdd', true, true);
+      } else if (collapseBtn.id === 'btn-collapse-pm-sidebar' || collapseBtn.closest('#page-manager-view, .page-manager-workspace')) {
+        setSidebarCollapsed('pm', true, true);
+      } else if (collapseBtn.id === 'btn-collapse-data-sidebar' || collapseBtn.closest('#data-view, .data-workspace-panel')) {
+        setSidebarCollapsed('data', true, true);
+      } else if (collapseBtn.id === 'btn-collapse-suites-sidebar' || collapseBtn.closest('#suites-view, .suites-workspace')) {
+        setSidebarCollapsed('suites', true, true);
+      }
+      return;
     }
-  } catch (_) {}
 
-  // 4. Phím tắt Ctrl + B / Cmd + B để bật tắt sidebar
+    // 2. Expand rail button or collapsed strip clicked
+    const expandTrigger = e.target.closest(
+      '#btn-expand-script-sidebar, #btn-expand-pm-sidebar, #btn-expand-data-sidebar, #btn-expand-suites-sidebar, ' +
+      '#script-sidebar-collapsed-strip, #pm-sidebar-collapsed-strip, #data-sidebar-collapsed-strip, #suites-sidebar-collapsed-strip, ' +
+      '.btn-sidebar-expand-rail, .script-sidebar-collapsed-strip'
+    );
+    if (expandTrigger) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (
+        expandTrigger.id === 'btn-expand-script-sidebar' ||
+        expandTrigger.id === 'script-sidebar-collapsed-strip' ||
+        expandTrigger.closest('#builder-view, .script-workspace-panel')
+      ) {
+        setSidebarCollapsed('bdd', false, false);
+      } else if (
+        expandTrigger.id === 'btn-expand-pm-sidebar' ||
+        expandTrigger.id === 'pm-sidebar-collapsed-strip' ||
+        expandTrigger.closest('#page-manager-view, .page-manager-workspace')
+      ) {
+        setSidebarCollapsed('pm', false, false);
+      } else if (
+        expandTrigger.id === 'btn-expand-data-sidebar' ||
+        expandTrigger.id === 'data-sidebar-collapsed-strip' ||
+        expandTrigger.closest('#data-view, .data-workspace-panel')
+      ) {
+        setSidebarCollapsed('data', false, false);
+      } else if (
+        expandTrigger.id === 'btn-expand-suites-sidebar' ||
+        expandTrigger.id === 'suites-sidebar-collapsed-strip' ||
+        expandTrigger.closest('#suites-view, .suites-workspace')
+      ) {
+        setSidebarCollapsed('suites', false, false);
+      }
+      return;
+    }
+
+    // 3. Header toggle button clicked (Square icon / ph-sidebar-simple in panel head)
+    const toggleBtn = e.target.closest(
+      '#btn-toggle-script-sidebar-head, #btn-toggle-script-sidebar-head-edit, #btn-toggle-script-sidebar-head-create, ' +
+      '#btn-toggle-pm-sidebar-head, #btn-toggle-pm-sidebar-head-create, ' +
+      '#btn-toggle-data-sidebar-head, #btn-toggle-data-sidebar-head-create, ' +
+      '#btn-toggle-suites-sidebar-head'
+    );
+    if (toggleBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (
+        toggleBtn.id === 'btn-toggle-script-sidebar-head' ||
+        toggleBtn.id === 'btn-toggle-script-sidebar-head-edit' ||
+        toggleBtn.id === 'btn-toggle-script-sidebar-head-create' ||
+        toggleBtn.closest('#builder-view, .script-workspace-panel')
+      ) {
+        toggleSidebar('bdd');
+      } else if (
+        toggleBtn.id === 'btn-toggle-pm-sidebar-head' ||
+        toggleBtn.id === 'btn-toggle-pm-sidebar-head-create' ||
+        toggleBtn.closest('#page-manager-view, .page-manager-workspace')
+      ) {
+        toggleSidebar('pm');
+      } else if (
+        toggleBtn.id === 'btn-toggle-data-sidebar-head' ||
+        toggleBtn.id === 'btn-toggle-data-sidebar-head-create' ||
+        toggleBtn.closest('#data-view, .data-workspace-panel')
+      ) {
+        toggleSidebar('data');
+      } else if (
+        toggleBtn.id === 'btn-toggle-suites-sidebar-head' ||
+        toggleBtn.closest('#suites-view, .suites-workspace')
+      ) {
+        toggleSidebar('suites');
+      }
+      return;
+    }
+  });
+
+  // 4. Keyboard Shortcut Ctrl+B / Cmd+B
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
-      const activeBuilder = document.getElementById('builder-view')?.classList.contains('active') || !document.getElementById('builder-view')?.hidden;
-      const activePm = document.getElementById('page-manager-view')?.classList.contains('active') || !document.getElementById('page-manager-view')?.hidden;
-      const activeData = document.getElementById('data-view')?.classList.contains('active') || !document.getElementById('data-view')?.hidden;
+      const activeBuilder = document.getElementById('builder-view')?.classList.contains('active') || (!document.getElementById('builder-view')?.hidden && document.getElementById('builder-view')?.offsetHeight > 0);
+      const activePm = document.getElementById('page-manager-view')?.classList.contains('active') || (!document.getElementById('page-manager-view')?.hidden && document.getElementById('page-manager-view')?.offsetHeight > 0);
+      const activeData = document.getElementById('data-view')?.classList.contains('active') || (!document.getElementById('data-view')?.hidden && document.getElementById('data-view')?.offsetHeight > 0);
+      const activeSuites = document.getElementById('suites-view')?.classList.contains('active') || (!document.getElementById('suites-view')?.hidden && document.getElementById('suites-view')?.offsetHeight > 0);
+
       if (activeBuilder) {
         e.preventDefault();
-        const isCollapsed = scriptWorkspace?.classList.contains('sidebar-collapsed');
-        setScriptSidebarCollapsed(!isCollapsed);
+        toggleSidebar('bdd');
       } else if (activePm) {
         e.preventDefault();
-        const isCollapsed = pmWorkspace?.classList.contains('sidebar-collapsed');
-        setPmSidebarCollapsed(!isCollapsed);
+        toggleSidebar('pm');
       } else if (activeData) {
         e.preventDefault();
-        const isCollapsed = dataWorkspace?.classList.contains('sidebar-collapsed');
-        setDataSidebarCollapsed(!isCollapsed);
+        toggleSidebar('data');
+      } else if (activeSuites) {
+        e.preventDefault();
+        toggleSidebar('suites');
       }
     }
   });
+
+  // Restore initial states if any DOM is already rendered
+  restoreAllSidebarStates();
 }
 initSidebarCollapse();
 
@@ -8634,6 +8701,9 @@ async function openDataManager() {
   if (!dataRawEditorController) {
     await new Promise(r => setTimeout(r, 80));
     initDataStudioControls();
+  }
+  if (typeof restoreSidebarState === 'function') {
+    restoreSidebarState('data');
   }
   await loadDataFilesList();
   if (datasetsCache.length > 0) {
@@ -13658,6 +13728,9 @@ async function initVisualBuilder() {
     isVisualBuilderInitialized = true;
     initVisualBuilderControls();
   }
+  if (typeof restoreSidebarState === 'function') {
+    restoreSidebarState('bdd');
+  }
   populateBuilderSpecOptions();
   await loadProjectScripts();
   await loadWizardDatasets();
@@ -14944,6 +15017,9 @@ window.addEventListener('focus', updateGlobalHeaderTokenQuota);
 ============================================================================== */
 async function openSuitesManager() {
   initSuitesView();
+  if (typeof restoreSidebarState === 'function') {
+    restoreSidebarState('suites');
+  }
   if (!settingsCache) {
     try {
       const settings = await request('/api/settings');
@@ -15162,9 +15238,17 @@ function updateGitCommitPreview() {
   if (!previewEl) return;
   const type = typeEl?.value || 'test';
   const scope = (scopeEl?.value || '').trim();
-  const subject = (subjectEl?.value || '').trim() || 'cập nhật bài test';
+  const rawSubject = (subjectEl?.value || '').trim();
+  const hasSubject = rawSubject.length > 0;
   const prefix = scope ? `${type}(${scope}): ` : `${type}: `;
-  previewEl.textContent = `${prefix}${subject}`;
+
+  if (hasSubject) {
+    previewEl.textContent = `${prefix}${rawSubject}`;
+    previewEl.classList.remove('is-empty');
+  } else {
+    previewEl.textContent = `${prefix}(Vui lòng nhập mô tả tóm tắt nội dung thay đổi)`;
+    previewEl.classList.add('is-empty');
+  }
 
   // Tự động gợi ý tên nhánh Feature khi người dùng nhập scope
   if (gitStudioState.status?.isProtectedBranch && featureBranchInput && scope && (!featureBranchInput.value || featureBranchInput.value.startsWith('feature/'))) {
@@ -15181,6 +15265,7 @@ function updateGitCommitButtonState() {
   const featureBranchInput = document.getElementById('git-feature-branch-input');
   const btnText = document.getElementById('text-git-commit-push');
   const btnIcon = document.getElementById('icon-git-commit-push');
+  const hintEl = document.getElementById('git-commit-btn-hint');
   if (!btn) return;
 
   const isProtected = !!gitStudioState.status?.isProtectedBranch;
@@ -15189,7 +15274,26 @@ function updateGitCommitButtonState() {
   const qgOk = gitStudioState.isQualityGatePassed;
   const hasBranchIfProtected = !isProtected || (featureBranchInput?.value || '').trim().length > 0;
 
-  btn.disabled = !(hasFiles && hasSubject && qgOk && hasBranchIfProtected);
+  const canSubmit = hasFiles && hasSubject && qgOk && hasBranchIfProtected;
+  btn.disabled = !canSubmit;
+
+  if (hintEl) {
+    if (!hasFiles) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '<i class="ph-bold ph-info"></i> Chọn ít nhất 1 tệp trong danh sách để đóng gói commit';
+    } else if (!hasSubject) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '<i class="ph-bold ph-info"></i> Nhập <strong>"Mô tả tóm tắt nội dung thay đổi"</strong> để mở khóa nút';
+    } else if (!hasBranchIfProtected) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '<i class="ph-bold ph-info"></i> Nhập <strong>"Tên nhánh Feature mới"</strong> (main được bảo vệ)';
+    } else if (!qgOk) {
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = '<i class="ph-bold ph-warning"></i> Cần kiểm tra đạt chuẩn Framework Quality Gate trước';
+    } else {
+      hintEl.style.display = 'none';
+    }
+  }
 
   if (btnText && btnIcon) {
     if (isProtected) {
@@ -15482,29 +15586,88 @@ async function loadGitBranches(providedBranches = null) {
   }
 }
 
+function renderVisualGitDiff(diffText) {
+  if (!diffText || !diffText.trim()) {
+    return {
+      html: '<div class="git-diff-empty">Không có thay đổi nào trong tệp này.</div>',
+      additions: 0,
+      deletions: 0,
+    };
+  }
+
+  const lines = diffText.split('\n');
+  let additions = 0;
+  let deletions = 0;
+  let oldLineNum = 0;
+  let newLineNum = 0;
+
+  const rows = lines.map((rawLine) => {
+    const escaped = escapeHtml(rawLine);
+
+    if (rawLine.startsWith('diff --git') || rawLine.startsWith('index ') || rawLine.startsWith('--- ') || rawLine.startsWith('+++ ')) {
+      return `<div class="git-diff-row diff-line-header"><div class="git-diff-gutter">...</div><div class="git-diff-sign"> </div><div class="git-diff-text">${escaped}</div></div>`;
+    }
+
+    if (rawLine.startsWith('@@')) {
+      const match = rawLine.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+      if (match) {
+        oldLineNum = parseInt(match[1], 10);
+        newLineNum = parseInt(match[2], 10);
+      }
+      return `<div class="git-diff-row diff-line-chunk"><div class="git-diff-gutter">@@</div><div class="git-diff-sign"> </div><div class="git-diff-text">${escaped}</div></div>`;
+    }
+
+    if (rawLine.startsWith('+')) {
+      additions++;
+      const curNew = newLineNum ? newLineNum++ : '+';
+      return `<div class="git-diff-row diff-line-add"><div class="git-diff-gutter">${curNew}</div><div class="git-diff-sign">+</div><div class="git-diff-text">${escaped.slice(1)}</div></div>`;
+    }
+
+    if (rawLine.startsWith('-')) {
+      deletions++;
+      const curOld = oldLineNum ? oldLineNum++ : '-';
+      return `<div class="git-diff-row diff-line-del"><div class="git-diff-gutter">${curOld}</div><div class="git-diff-sign">-</div><div class="git-diff-text">${escaped.slice(1)}</div></div>`;
+    }
+
+    const curNew = newLineNum ? newLineNum++ : '';
+    if (oldLineNum) oldLineNum++;
+    const textContent = rawLine.startsWith(' ') ? escaped.slice(1) : escaped;
+    return `<div class="git-diff-row diff-line-ctx"><div class="git-diff-gutter">${curNew}</div><div class="git-diff-sign"> </div><div class="git-diff-text">${textContent}</div></div>`;
+  });
+
+  return {
+    html: `<div class="git-diff-table">${rows.join('')}</div>`,
+    additions,
+    deletions,
+  };
+}
+
 async function viewGitFileDiff(filePath) {
   const diffCard = document.getElementById('git-diff-card');
   const fileNameEl = document.getElementById('git-diff-filename');
   const diffContentEl = document.getElementById('git-diff-content');
+  const statsEl = document.getElementById('git-diff-stats');
   if (!diffCard || !diffContentEl) return;
 
   if (fileNameEl) fileNameEl.textContent = filePath;
-  diffContentEl.textContent = 'Đang tải nội dung diff…';
+  if (statsEl) statsEl.innerHTML = '';
+  diffContentEl.innerHTML = '<div class="git-diff-empty">Đang tải nội dung diff…</div>';
   diffCard.style.display = 'block';
   diffCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   try {
     const res = await request('/api/git/diff?file=' + encodeURIComponent(filePath));
     if (res.ok) {
-      diffContentEl.textContent = res.diff;
-      if (window.Prism && Prism.languages.diff) {
-        diffContentEl.innerHTML = Prism.highlight(res.diff, Prism.languages.diff, 'diff');
+      const { html, additions, deletions } = renderVisualGitDiff(res.diff);
+      diffContentEl.innerHTML = html;
+      if (statsEl) {
+        statsEl.innerHTML = `<span class="git-diff-badge-add">+${additions}</span><span class="git-diff-badge-del">-${deletions}</span>`;
       }
     } else {
-      diffContentEl.textContent = 'Lỗi: ' + (res.error || 'Không thể lấy diff');
+      diffContentEl.innerHTML = '<div class="git-diff-empty" style="color: var(--danger);">Lỗi: ' + escapeHtml(res.error || 'Không thể lấy diff') + '</div>';
     }
   } catch (err) {
-    diffContentEl.textContent = 'Lỗi kết nối khi lấy diff: ' + err.message;
+    diffContentEl.innerHTML = '<div class="git-diff-empty" style="color: var(--danger);">Lỗi kết nối khi lấy diff: ' + escapeHtml(err.message) + '</div>';
   }
 }
 

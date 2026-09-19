@@ -83,6 +83,40 @@ export class SuitesSlice {
       pill.addEventListener('click', h);
       this._disposers.push(() => pill.removeEventListener('click', h));
     });
+
+    // Sidebar collapse / expand: delegate cleanly to universal controller with fallback
+    on('#btn-collapse-suites-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('suites', true, true);
+      } else {
+        root.querySelector('#suites-workspace')?.classList.add('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-suites-sidebar-head', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('suites');
+      } else {
+        root.querySelector('#suites-workspace')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-expand-suites-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('suites', false);
+      } else {
+        root.querySelector('#suites-workspace')?.classList.remove('sidebar-collapsed');
+      }
+    });
+    on('#suites-sidebar-collapsed-strip', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('suites', false);
+      } else {
+        root.querySelector('#suites-workspace')?.classList.remove('sidebar-collapsed');
+      }
+    });
   }
 
   _registerBridgeActions() {

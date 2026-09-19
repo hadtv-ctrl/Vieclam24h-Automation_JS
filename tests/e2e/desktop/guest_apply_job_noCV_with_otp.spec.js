@@ -2,15 +2,18 @@ const { test } = require('../../../core/fixtures/baseTest');
 const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
 const { generateRandomVNPhone } = require('../../../core/utils/commonUtils');
+const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
+const { JobApplyNoCVPage } = require('../../../pages/desktop/JobApplyNoCVPage');
+const { PopupConsent } = require('../../../pages/desktop/PopupConsent');
 
 test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @applyjob @desktop @e2e', () => {
   test('Guest đăng nhập bằng OTP khi ứng tuyển việc không cần CV thành công', async ({
-    onboardingPopup,
-    homePage,
-    jobSearchPage,
-    createJobApplyNoCVPage,
-    createPopupConsent,
+    page,
+    pages,
   }, testInfo) => {
+    const homePage = pages.homePage;
+    const jobSearchPage = pages.jobSearchPage;
+    const onboardingPopup = new OnboardingPopup(page);
     test.slow();
     test.setTimeout(600000);
 
@@ -43,13 +46,14 @@ test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @a
     });
 
     await test.step('When Người dùng mở chi tiết một việc không cần CV', async () => {
+      await homePage.closeBlockingModalIfVisible();
       await homePage.clickNoCVJobLink();
       await jobSearchPage.firstJobLink.waitFor({ state: 'visible', timeout: 15000 });
       await jobSearchPage.capture('nocv_jobs_list_visible', true);
 
       const jobPage = await jobSearchPage.clickFirstJob();
-      jobApplyNoCVPage = createJobApplyNoCVPage(jobPage);
-      popupConsent = createPopupConsent(jobPage);
+      jobApplyNoCVPage = new JobApplyNoCVPage(jobPage);
+      popupConsent = new PopupConsent(jobPage);
       await jobApplyNoCVPage.capture('job_detail_opened', true);
       await jobApplyNoCVPage.startGuestApplyNoCV();
       await jobApplyNoCVPage.capture('guest_nocv_form_opened');
@@ -59,7 +63,7 @@ test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @a
       await jobApplyNoCVPage.fillGuestContact(guestApplyData);
       await jobApplyNoCVPage.fillMiniProfile(guestApplyData);
       await jobApplyNoCVPage.capture('guest_nocv_profile_filled');
-      await jobApplyNoCVPage.submitGuestProfile();
+      await jobApplyNoCVPage.submitGuestProfile(guestApplyData.phone);
     });
 
     await test.step('And Người dùng nhập OTP để hoàn tất đăng ký đăng nhập', async () => {

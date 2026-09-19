@@ -1,17 +1,29 @@
+const path = require('path');
 const { test, expect } = require('../../../core/fixtures/baseTest');
+const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
 test.describe('Feature: Tải lên và chuyển đổi CV tại Hồ sơ của tôi @profile @desktop @e2e', () => {
-  test('Người dùng tải lên và chuyển đổi CV thành công', async ({ authenticatedUser, userProfilePage }) => {
-    test.setTimeout(120000); // Tăng timeout cho luồng detect CV tốn thời gian
+  test('Người dùng tải lên và chuyển đổi CV thành công', async ({ page, authenticatedUser, pages }) => {
+    const userProfilePage = pages.userProfilePage;
+    const homePage = pages.homePage;
+    const onboardingPopup = new OnboardingPopup(page);
+    test.slow();
+    test.setTimeout(240000); // Tăng timeout cho luồng detect CV tốn thời gian
 
     await test.step('Given Tiền điều kiện: Người dùng đã đăng nhập và sẵn sàng tại trang Hồ sơ', async () => {
-      // Đăng nhập trước khi vào hồ sơ
-      await userProfilePage.navigate('/ho-so-cua-toi.html');
+      await onboardingPopup.closeIfVisible(undefined, {
+        modalTimeout: 15000,
+        closeBtnTimeout: 5000,
+        modalHiddenTimeout: 10000,
+      });
+      await homePage.closeBlockingModalIfVisible();
+      await userProfilePage.navigateToMyProfile();
       await userProfilePage.capture('precondition_ho_so_cua_toi_loaded', true);
     });
 
     await test.step('When Tôi nhấn nút Tải lên CV và chọn file template', async () => {
-      await userProfilePage.uploadProfileCV('data/TemplateCV.pdf');
+      const cvPath = path.resolve(__dirname, '../../../data/TemplateCV.pdf');
+      await userProfilePage.uploadProfileCV(cvPath);
     });
 
     await test.step('And Tôi xác nhận đính kèm CV', async () => {
@@ -26,7 +38,6 @@ test.describe('Feature: Tải lên và chuyển đổi CV tại Hồ sơ của t
 
     await test.step('And Tôi có thể chuyển sang cập nhật Tiêu chí tìm việc', async () => {
       await userProfilePage.clickSearchCriteria();
-      // clickSearchCriteria opens a menu/modal
       await userProfilePage.capture('search_criteria_opened', true);
     });
   });

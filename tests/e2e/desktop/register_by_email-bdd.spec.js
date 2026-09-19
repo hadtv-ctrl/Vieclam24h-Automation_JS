@@ -1,10 +1,13 @@
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const userData = require('../../../data/users.json');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../../core/utils/commonUtils');
+const { LoginPopup } = require('../../../pages/desktop/LoginPopup');
 
 test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Email @register @smoke @smoke-desktop @desktop @e2e', () => {
-  test('Kiểm tra luồng đăng ký bằng Email', async ({ loginPopup, homePage }, testInfo) => {
-    test.setTimeout(120000);
+  test('Kiểm tra luồng đăng ký bằng Email', async ({ page, pages }, testInfo) => {
+    const homePage = pages.homePage;
+    const loginPopup = new LoginPopup(page);
+    test.setTimeout(180000);
 
     testInfo.annotations.push({
       type: 'Precondition',
@@ -22,15 +25,35 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Emai
     await test.step('And Tôi tắt tất cả các popup quảng cáo nếu có', async () => {
       try {
         await homePage.closeAdsIfVisible();
+        await homePage.closeBlockingModalIfVisible();
       } catch (e) {
         await homePage.capture('no_popup_found');
       }
     });
 
     await test.step('When Tôi bấm vào nút "Đăng ký/Đăng nhập" trên Header', async () => {
+      await homePage.closeBlockingModalIfVisible();
       await loginPopup.capture('before_click_login_header');
-      await loginPopup.clickLoginHeader();
-      await loginPopup.waitForModalVisible();
+
+      // Retry: thử click tối đa 3 lần nếu modal chưa mở
+      let opened = false;
+      for (let attempt = 1; attempt <= 3 && !opened; attempt++) {
+        await loginPopup.clickLoginHeader();
+        try {
+          await loginPopup.waitForModalVisible(10000);
+          opened = true;
+        } catch {
+          if (attempt < 3) {
+            // Đóng thêm overlay nếu có rồi thử lại
+            await homePage.closeAdsIfVisible().catch(() => null);
+            await homePage.closeBlockingModalIfVisible().catch(() => null);
+          }
+        }
+      }
+      if (!opened) {
+        await loginPopup.capture('login_modal_failed_to_open');
+        throw new Error('Login modal không mở được sau 3 lần thử');
+      }
       await loginPopup.capture('after_login_modal_opened');
     });
 

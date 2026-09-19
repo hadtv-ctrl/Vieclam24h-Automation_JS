@@ -7,7 +7,7 @@ class HomePage extends BasePage {
   constructor(page, featureName) {
     super(page, featureName);
 
-    this.closeAdsBtns = page.locator('//button[./i[contains(@class,"svicon-close")]]');
+    this.closeAdsBtns = page.locator('[data-test-id="common__close-button"], .svicon-close, [class*="svicon-close"], button:has(.svicon-close), [aria-label*="close" i]');
     this.mobileEntryPopup = page.locator('.mbep-popup');
     this.mobileEntryPopupCloseBtn = this.mobileEntryPopup.getByRole('button').first();
     this.genericModalCloseBtn = page.locator(
@@ -48,14 +48,28 @@ class HomePage extends BasePage {
   }
 
   async closeBlockingModalIfVisible() {
-    if (await this.privacyConsentAgreeBtn.isVisible({ timeout: 2000 })) {
+    if (await this.privacyConsentAgreeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await this.actions.click(this.privacyConsentAgreeBtn, { force: true });
-      await this.privacyConsentAgreeBtn.waitFor({ state: 'hidden', timeout: 5000 });
+      await this.privacyConsentAgreeBtn.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => null);
     }
 
-    if (await this.genericModalCloseBtn.isVisible({ timeout: 2000 })) {
+    if (await this.genericModalCloseBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await this.actions.click(this.genericModalCloseBtn, { force: true });
-      await this.genericModalCloseBtn.waitFor({ state: 'hidden', timeout: 5000 });
+      await this.genericModalCloseBtn.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => null);
+    }
+
+    const dialog = this.page.getByRole('dialog');
+    if (await dialog.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const closeEl = dialog.locator('i, svg, button, [class*="close" i]').last();
+      if (await closeEl.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await closeEl.click({ force: true }).catch(() => null);
+      }
+      await this.page.keyboard.press('Escape').catch(() => null);
+      if (await dialog.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await this.page.evaluate(() => {
+          document.querySelectorAll('.ReactModalPortal').forEach(el => el.remove());
+        }).catch(() => null);
+      }
     }
   }
 
@@ -64,17 +78,52 @@ class HomePage extends BasePage {
   }
 
   async closeAdsIfVisible() {
-    if (await this.mobileEntryPopup.isVisible()) {
-      await this.actions.click(this.mobileEntryPopupCloseBtn, { force: true });
-      await this.mobileEntryPopup.waitFor({ state: 'hidden', timeout: 10000 });
-    }
-
     try {
-      await this.actions.waitForVisible(this.closeAdsBtns.first(), { timeout: 8000 });
+      await this.closeBlockingModalIfVisible();
+
+      // Dismiss notification banner ("Tải app ngay", thông báo nâng cấp hệ thống...)
+      // Banner này thường ở sticky top, không có nút X nhưng có button dẫn đến app
+      const notificationBanner = this.page.locator(
+        'div:has(img[alt*="notification" i]):has(button), ' +
+        'div:has(img[alt*="mobile" i]):has(button), ' +
+        '[class*="notification-bar"], [class*="notify-bar"], [class*="app-banner"], ' +
+        '[class*="top-bar"]:has(button)'
+      ).first();
+      if (await notificationBanner.isVisible({ timeout: 2000 }).catch(() => false)) {
+        // Tìm nút X / close trong banner
+        const bannerClose = notificationBanner.locator(
+          'button:not(:has-text("Tải app")):not(:has-text("Download")), [class*="close" i], i.svicon-close'
+        ).first();
+        if (await bannerClose.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await bannerClose.click({ force: true }).catch(() => null);
+        } else {
+          // Nếu không có nút close, ẩn bằng JS
+          await this.page.evaluate(() => {
+            document.querySelectorAll(
+              'div:has(img[alt*="notification"]), div:has(img[alt*="mobile"]), [class*="notification-bar"], [class*="app-banner"]'
+            ).forEach(el => { if (el.offsetHeight < 100) el.style.display = 'none'; });
+          }).catch(() => null);
+        }
+      }
+
+      if (await this.mobileEntryPopup.isVisible({ timeout: 2000 }).catch(() => false)) {
+        const mbepClose = this.mobileEntryPopup.locator('button:has(.svicon-close), [class*="close" i], button, i, svg').first();
+        if (await mbepClose.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await mbepClose.click({ force: true }).catch(() => null);
+        }
+        await this.mobileEntryPopup.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => null);
+        if (await this.mobileEntryPopup.isVisible().catch(() => false)) {
+          await this.page.evaluate(() => {
+            document.querySelectorAll('.mbep-popup').forEach(el => el.remove());
+          }).catch(() => null);
+        }
+      }
+
       const count = await this.closeAdsBtns.count();
       for (let i = 0; i < count; i++) {
-        if (await this.closeAdsBtns.nth(i).isVisible()) {
-          await this.actions.click(this.closeAdsBtns.nth(i), { force: true });
+        const btn = this.closeAdsBtns.nth(i);
+        if (await btn.isVisible().catch(() => false)) {
+          await btn.click({ force: true }).catch(() => null);
         }
       }
     } catch (error) {

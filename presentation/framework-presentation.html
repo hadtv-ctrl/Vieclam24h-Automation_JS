@@ -316,7 +316,7 @@
 </head>
 <body>
   <main class="deck" aria-label="Bài thuyết trình Automation Testing Framework">
-    <section class="slide active">
+        <section class="slide active">
       <header class="topline"><p class="eyebrow">Engineering Presentation</p><span class="chapter">01 / Mở đầu</span></header>
       <div class="content">
         <h1>Automation Testing<br><span class="accent">Framework</span></h1>
@@ -324,7 +324,7 @@
         <div class="rule"></div>
         <p style="color:var(--muted);font-size:15px">Page Object Model · Đa nền tảng (Desktop + Mobile Web + API) · Parent-Child Suites · Web Studio Dashboard · CI/CD</p>
       </div>
-      <footer class="footer"><span class="brand"><i class="brand-mark"></i><strong>Việc Làm 24h</strong></span><span>Playwright Automation</span></footer>
+      <footer class="footer"><span class="brand"><i class="brand-mark"></i><strong>Việc Làm 24h</strong></span><span>01</span></footer>
     </section>
 
     <section class="slide">
@@ -365,7 +365,95 @@
     </section>
 
     <section class="slide">
-      <header class="topline"><p class="eyebrow">Luồng thực thi</p><span class="chapter">04 / Runtime</span></header>
+      <header class="topline"><p class="eyebrow">Chiến lược locator</p><span class="chapter">04 / Element & POM</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Nhìn element theo <span class="cyan">ý nghĩa người dùng</span>, không theo CSS trang trí.</h2>
+          <p class="lead" style="margin-top:22px;font-size:clamp(17px,1.45vw,22px)">Mở DevTools bằng F12 hoặc dùng Pick Locator trong Playwright UI Mode; kiểm tra role, accessible name, label, placeholder và test id.</p>
+          <div class="rule"></div>
+          <p style="color:var(--muted);font-size:16px">Sau khi xác nhận locator ổn định, đặt nó trong constructor của Page Object và bọc thao tác thành method nghiệp vụ.</p>
+        </div>
+        <div class="locator-ladder">
+          <div><code>getByRole('button', { name: ... })</code></div>
+          <div><code>getByLabel() / getByPlaceholder()</code></div>
+          <div><code>getByTestId()</code></div>
+          <div><code>getByText()</code></div>
+          <div><code>CSS ngắn, có scope rõ ràng</code></div>
+          <div><code>XPath — chỉ khi không có lựa chọn tốt hơn</code></div>
+        </div>
+      </div>
+      <footer class="footer"><span>Ví dụ: LoginPopup.phoneInput → fillPhone() · Đóng gói trong 19 POMs</span><span>04</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Test data &amp; Fixtures</p><span class="chapter">05 / Worker Isolation</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Mỗi worker sở hữu <span class="accent">một user runtime riêng</span>.</h2>
+          <div class="stack" style="margin-top:24px">
+            <div class="stack-item"><strong>Data tĩnh tối thiểu</strong><span>users.json chỉ giữ OTP, password test và fullName dùng chung.</span></div>
+            <div class="stack-item"><strong>Danh tính tạo động</strong><span>Email và phone ngẫu nhiên được đăng ký qua API cho từng parallelIndex.</span></div>
+            <div class="stack-item"><strong>Token runtime-only</strong><span>Token mới dùng ngay cho consent; không ghi vào users.json hoặc report.</span></div>
+            <div class="stack-item"><strong>File tạm tự dọn</strong><span>Timestamp + worker + PID ngăn trùng tên; fixture xóa file trong finally.</span></div>
+          </div>
+        </div>
+        <div class="code" aria-label="Ví dụ lấy test data và inject fixture">
+          <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <pre><span class="cm">// core/fixtures/baseTest.js · worker scope</span>
+workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
+  <span class="kw">const</span> runtime = <span class="kw">await</span> <span class="fn">createRuntimeUserData</span>(
+    info.parallelIndex
+  );
+  <span class="kw">try</span> {
+    <span class="kw">await</span> <span class="fn">use</span>(runtime);
+  } <span class="kw">finally</span> {
+    <span class="kw">await</span> <span class="fn">removeRuntimeUserData</span>(runtime.filePath);
+  }
+}, { scope: <span class="str">'worker'</span> }]</pre>
+        </div>
+      </div>
+      <footer class="footer"><span>workerUserData có scope worker · Page Object có scope test · core/fixtures/baseTest.js</span><span>05</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Thiết kế spec</p><span class="chapter">06 / Anatomy</span></header>
+      <div class="content two-col">
+        <div>
+          <h2>Spec kể câu chuyện. <span class="accent">Năm phần rõ ràng</span>.</h2>
+          <div class="stack" style="margin-top:20px">
+            <div class="stack-item"><strong>01 · Import</strong><span>test/expect từ baseTest, JSON data và helper</span></div>
+            <div class="stack-item"><strong>02 · Feature + tags</strong><span>test.describe chứa tên feature và tag @smoke / @e2e</span></div>
+            <div class="stack-item"><strong>03 · Scenario</strong><span>Mỗi hành vi độc lập là một test()</span></div>
+            <div class="stack-item"><strong>04 · Given / When / Then</strong><span>test.step chia luồng theo ngôn ngữ nghiệp vụ BDD</span></div>
+            <div class="stack-item"><strong>05 · Assertion &amp; Evidence</strong><span>Kiểm tra kết quả và capture trạng thái quan trọng</span></div>
+          </div>
+        </div>
+        <div class="code" aria-label="Ví dụ Playwright BDD spec">
+          <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <pre><span class="kw">import</span> { test, expect } <span class="kw">from</span> <span class="str">'../../../core/fixtures/baseTest.js'</span>;
+
+test.<span class="fn">describe</span>(<span class="str">'Apply Job Flow @e2e @desktop'</span>, () =&gt; {
+  <span class="kw">test</span>(<span class="str">'Ứng tuyển thành công bằng Profile'</span>, <span class="kw">async</span> ({
+    authenticatedUser, homePage, jobSearchPage
+  }) =&gt; {
+    <span class="kw">await</span> test.<span class="fn">step</span>(<span class="str">'Given đã đăng nhập hệ thống'</span>, <span class="kw">async</span> () =&gt; {
+      <span class="kw">await</span> homePage.<span class="fn">verifyUserLoggedIn</span>(authenticatedUser);
+    });
+    <span class="kw">await</span> test.<span class="fn">step</span>(<span class="str">'When tìm việc và nộp hồ sơ'</span>, <span class="kw">async</span> () =&gt; {
+      <span class="kw">await</span> jobSearchPage.<span class="fn">searchAndApply</span>();
+    });
+    <span class="kw">await</span> test.<span class="fn">step</span>(<span class="str">'Then hiển thị trong danh sách đã nộp'</span>, <span class="kw">async</span> () =&gt; {
+      <span class="kw">await</span> expect(jobSearchPage.appliedBadge).<span class="fn">toBeVisible</span>();
+    });
+  });
+});</pre>
+        </div>
+      </div>
+      <footer class="footer"><span>Spec chỉ mô tả scenario — không chứa locator hay thao tác UI trực tiếp</span><span>06</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Luồng thực thi</p><span class="chapter">07 / Runtime</span></header>
       <div class="content">
         <h2>Một scenario đi từ <span class="accent">ý định</span> đến <span class="cyan">bằng chứng</span>.</h2>
         <div class="pipeline">
@@ -379,69 +467,10 @@
           <div class="metric"><strong>60s</strong><span>timeout mặc định</span></div>
           <div class="metric"><strong>N</strong><span>workers (PW_WORKERS, mặc định 2)</span></div>
           <div class="metric"><strong>2×</strong><span>retry khi chạy trên CI</span></div>
-          <div class="metric"><strong>7</strong><span>projects (Desktop, Mobile, API)</span></div>
+          <div class="metric"><strong>7</strong><span>projects (Smoke &amp; Regression đa nền tảng)</span></div>
         </div>
       </div>
-      <footer class="footer"><span>Môi trường: QC (qc.sieuviet-team.com) · Staging · Production</span><span>04</span></footer>
-    </section>
-
-    <section class="slide">
-      <header class="topline"><p class="eyebrow">Thiết kế spec</p><span class="chapter">05 / Mã nguồn</span></header>
-      <div class="content two-col">
-        <div>
-          <h2>Spec kể câu chuyện. Page Object xử lý <span class="accent">chi tiết</span>.</h2>
-          <p class="lead" style="margin-top:24px">Fixture mở rộng cung cấp sẵn <code class="cyan">authenticatedUser</code>, <code class="cyan">homePage</code>, <code class="cyan">jobSearchPage</code> và factory cho tab mới.</p>
-        </div>
-        <div class="code" aria-label="Ví dụ Playwright test">
-          <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
-          <pre><span class="kw">test</span>(<span class="str">'Ứng tuyển thành công'</span>, <span class="kw">async</span> ({
-  authenticatedUser,
-  homePage,
-  jobSearchPage
-}) =&gt; {
-  <span class="kw">await</span> test.<span class="fn">step</span>(<span class="str">'Given đã đăng nhập'</span>, ...);
-  <span class="kw">await</span> test.<span class="fn">step</span>(<span class="str">'When ứng tuyển'</span>, ...);
-  <span class="kw">await</span> test.<span class="fn">step</span>(<span class="str">'Then thấy việc đã ứng tuyển'</span>, ...);
-});
-
-<span class="cm">// Không locator trực tiếp trong spec</span></pre>
-        </div>
-      </div>
-      <footer class="footer"><span>Ví dụ: tests/e2e/desktop/apply_job_with_CV_flow-bdd.spec.js</span><span>05</span></footer>
-    </section>
-
-    <section class="slide">
-      <header class="topline"><p class="eyebrow">Cấu trúc script</p><span class="chapter">06 / Anatomy</span></header>
-      <div class="content anatomy">
-        <div>
-          <h2>Một script run có <span class="accent">năm phần rõ ràng</span>.</h2>
-          <p class="lead" style="margin-top:22px;font-size:clamp(17px,1.45vw,22px)">Spec chỉ mô tả scenario và điều phối các object đã được fixture cung cấp.</p>
-        </div>
-        <div>
-          <div class="anatomy-row"><b>01</b><div><strong>Import</strong><span>test/expect từ baseTest, JSON data và helper cần dùng</span></div></div>
-          <div class="anatomy-row"><b>02</b><div><strong>Feature + tags</strong><span>test.describe chứa tên feature và các tag @smoke / @e2e / @api</span></div></div>
-          <div class="anatomy-row"><b>03</b><div><strong>Scenario</strong><span>Mỗi hành vi độc lập là một test()</span></div></div>
-          <div class="anatomy-row"><b>04</b><div><strong>Given / When / Then</strong><span>test.step chia luồng theo ngôn ngữ nghiệp vụ</span></div></div>
-          <div class="anatomy-row"><b>05</b><div><strong>Assertion + evidence</strong><span>Kiểm tra kết quả cuối và capture trạng thái quan trọng</span></div></div>
-        </div>
-      </div>
-      <footer class="footer"><span>Spec không chứa locator hay thao tác UI trực tiếp</span><span>06</span></footer>
-    </section>
-
-    <section class="slide">
-      <header class="topline"><p class="eyebrow">Fixture injection</p><span class="chapter">07 / Dependency</span></header>
-      <div class="content top">
-        <h2>Fixture biến Page Object thành <span class="cyan">tham số sẵn dùng</span>.</h2>
-        <div class="flow">
-          <div class="flow-step"><b>Worker bắt đầu</b><span>Tạo account riêng qua API</span></div>
-          <div class="flow-step"><b>Runtime JSON</b><span>timestamp + worker + pid</span></div>
-          <div class="flow-step"><b>Inject vào test</b><span>authenticatedUser đọc đúng file worker</span></div>
-          <div class="flow-step"><b>Chạy nghiệp vụ</b><span>Page Object và data không dùng chéo</span></div>
-          <div class="flow-step"><b>Cleanup tự động</b><span>Xóa runtime JSON trong finally</span></div>
-        </div>
-        <p class="lead" style="margin-top:34px"><code class="cyan">workerUserData</code> có scope worker; Page Object vẫn có scope test. Account không dùng chéo giữa các worker; token mới chỉ tồn tại trong runtime và được dùng ngay cho API consent.</p>
-      </div>
-      <footer class="footer"><span>Điểm vào chung: core/fixtures/baseTest.js</span><span>07</span></footer>
+      <footer class="footer"><span>Môi trường: QC (qc.sieuviet-team.com) · Staging · Production</span><span>07</span></footer>
     </section>
 
     <section class="slide">
@@ -471,12 +500,20 @@
       <div class="content two-col">
         <div>
           <h2><code class="cyan">fillExperience()</code> được thực thi như thế nào?</h2>
-          <div class="code" style="margin-top:26px">
+          <div class="code" style="margin-top:16px">
             <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
-            <pre><span class="cm">// spec</span>
+            <pre><span class="cm">// 1. [Spec] Ra lệnh "Làm gì" (01, 02)</span>
 <span class="kw">await</span> jobApplyPage.<span class="fn">fillExperience</span>(
   applyData.experience
-);</pre>
+);
+
+<span class="cm">// 2. [Page Object] Xử lý "Làm thế nào" (03 → 06)</span>
+<span class="kw">async</span> <span class="fn">fillExperience</span>(exp) {
+  <span class="kw">await</span> <span class="kw">this</span>.<span class="fn">fillInput</span>(<span class="kw">this</span>.companyInput, exp.company); <span class="cm">// 03, 04 BasePage</span>
+  <span class="kw">await</span> <span class="kw">this</span>.<span class="fn">fillInput</span>(<span class="kw">this</span>.jobTitleInput, exp.title);  <span class="cm">// 05 UiActions</span>
+  <span class="kw">await</span> <span class="kw">this</span>.saveBtn.<span class="fn">click</span>();
+  <span class="kw">await</span> <span class="kw">this</span>.screenshot.<span class="fn">capture</span>(<span class="str">'after_save_exp'</span>);      <span class="cm">// 06 Evidence</span>
+}</pre>
           </div>
         </div>
         <div>
@@ -492,94 +529,35 @@
     </section>
 
     <section class="slide">
-      <header class="topline"><p class="eyebrow">Test data</p><span class="chapter">10 / Worker isolation</span></header>
+      <header class="topline"><p class="eyebrow">Tổ chức Test Suites</p><span class="chapter">10 / Suites &amp; CLI</span></header>
       <div class="content two-col">
         <div>
-          <h2>Mỗi worker sở hữu <span class="accent">một user runtime riêng</span>.</h2>
-          <div class="stack" style="margin-top:30px">
-            <div class="stack-item"><strong>Data tĩnh tối thiểu</strong><span>users.json chỉ giữ OTP, password test và fullName dùng chung.</span></div>
-            <div class="stack-item"><strong>Danh tính tạo động</strong><span>Email và phone ngẫu nhiên được đăng ký qua API cho từng parallelIndex.</span></div>
-            <div class="stack-item"><strong>Token runtime-only</strong><span>Token mới dùng ngay cho consent; không ghi vào users.json hoặc report.</span></div>
-            <div class="stack-item"><strong>File tạm tự dọn</strong><span>Timestamp + worker + PID ngăn trùng tên; fixture xóa đúng file trong finally.</span></div>
+          <h2>Hệ thống Suite <span class="accent">Phân Cấp Cha - Con</span></h2>
+          <div class="stack" style="margin-top:20px">
+            <div class="stack-item"><strong>👑 Master Suite · 24 specs</strong><span>Bao phủ toàn bộ: 11 Desktop + 11 Mobile Web + 2 API.</span></div>
+            <div class="stack-item"><strong>⚡ Suite Cha Smoke · 4 tests</strong><span>Tích hợp smoke desktop + mobile: kiểm tra khói siêu tốc.</span></div>
+            <div class="stack-item"><strong>🚀 Suite Cha Regression · 20 tests</strong><span>Bảo vệ toàn diện luồng nghiệp vụ trên mọi platform.</span></div>
+            <div class="stack-item"><strong>💼 Suite Phân Hệ · feature-*</strong><span>Chuyên sâu từng phân hệ: ApplyJob, Profile, Onboarding.</span></div>
           </div>
         </div>
-        <div class="code" aria-label="Ví dụ lấy test data">
-          <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
-          <pre><span class="cm">// baseTest.js · worker scope</span>
-workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
-  <span class="kw">const</span> runtime = <span class="kw">await</span> <span class="fn">createRuntimeUserData</span>(
-    info.parallelIndex
-  );
-  <span class="kw">try</span> {
-    <span class="kw">await</span> <span class="fn">use</span>(runtime);
-  } <span class="kw">finally</span> {
-    <span class="kw">await</span> <span class="fn">removeRuntimeUserData</span>(runtime.filePath);
-  }
-}, { scope: <span class="str">'worker'</span> }]</pre>
-        </div>
-      </div>
-      <footer class="footer"><span>test-results/runtime-users/[timestamp]-worker-[index]-pid-[pid].json</span><span>10</span></footer>
-    </section>
-
-    <section class="slide">
-      <header class="topline"><p class="eyebrow">Element & locator</p><span class="chapter">11 / Inspect</span></header>
-      <div class="content two-col">
         <div>
-          <h2>Nhìn element theo <span class="cyan">ý nghĩa người dùng</span>, không theo CSS trang trí.</h2>
-          <p class="lead" style="margin-top:22px;font-size:clamp(17px,1.45vw,22px)">Mở DevTools bằng F12 hoặc dùng Pick Locator trong Playwright UI Mode; kiểm tra role, accessible name, label, placeholder và test id.</p>
-          <div class="rule"></div>
-          <p style="color:var(--muted);font-size:16px">Sau khi xác nhận locator ổn định, đặt nó trong constructor của Page Object và bọc thao tác thành method nghiệp vụ.</p>
-        </div>
-        <div class="locator-ladder">
-          <div><code>getByRole('button', { name: ... })</code></div>
-          <div><code>getByLabel() / getByPlaceholder()</code></div>
-          <div><code>getByTestId()</code></div>
-          <div><code>getByText()</code></div>
-          <div><code>CSS ngắn, có scope rõ ràng</code></div>
-          <div><code>XPath — chỉ khi không có lựa chọn tốt hơn</code></div>
+          <div class="commands" style="margin-top:0">
+            <div class="command"><i class="command-icon" aria-hidden="true">👑</i><div><code>npm run suite:all</code><span>Chạy Master Suite toàn bộ 24 kịch bản E2E &amp; API</span></div></div>
+            <div class="command"><i class="command-icon" aria-hidden="true">⚡</i><div><code>npm run suite:smoke</code><span>Chạy Smoke Suite toàn hệ thống (Desktop + Mobile)</span></div></div>
+            <div class="command"><i class="command-icon" aria-hidden="true">🚀</i><div><code>npm run suite:regression</code><span>Chạy Regression Suite (Desktop + Mobile + API)</span></div></div>
+            <div class="command"><i class="command-icon" aria-hidden="true">💼</i><div><code>npm run suite:applyjob</code><span>Chạy Suite tính năng Apply Job trên cả hai nền tảng</span></div></div>
+            <div class="command"><i class="command-icon" aria-hidden="true">🧱</i><div><code>npm run check:framework</code><span>Kiểm tra rào chắn kiến trúc: 24 specs, 19 POMs</span></div></div>
+            <div class="command"><i class="command-icon" aria-hidden="true">🧭</i><div><code>npm run test:ui</code><span>Mở Playwright Interactive UI Mode để debug</span></div></div>
+          </div>
         </div>
       </div>
-      <footer class="footer"><span>Ví dụ: LoginPopup.phoneInput → fillPhone()</span><span>11</span></footer>
+      <footer class="footer"><span>Hỗ trợ cả CLI npm run suite:* và Web Dashboard Studio trực quan</span><span>10</span></footer>
     </section>
 
     <section class="slide">
-      <header class="topline"><p class="eyebrow">AI-assisted QA</p><span class="chapter">12 / Prompt governance</span></header>
-      <div class="content top">
-        <h2>AI viết nhanh, nhưng phải đi trong <span class="cyan">đường ray chất lượng</span>.</h2>
-        <div class="three-col" style="margin-top:38px">
-          <article class="principle"><span class="index">01</span><h3>AGENTS.md</h3><p>Hiến pháp dự án & Master Process reference: 4 Quality Gates và luật bất biến.</p></article>
-          <article class="principle"><span class="index">02</span><h3>.ai/knowledge/</h3><p>Kho tri thức chuyên sâu: project profile, conventions viết code và test conventions.</p></article>
-          <article class="principle"><span class="index">03</span><h3>.ai/learning/</h3><p>Vòng lặp tự học (Self-learning loop): candidates trích xuất bài học sau mỗi bugfix/review.</p></article>
-          <article class="principle"><span class="index">04</span><h3>AI_PROMPTS.md</h3><p>Tiêu chuẩn chuẩn hóa POM, BDD, locator, wait, evidence và Definition of Done.</p></article>
-          <article class="principle"><span class="index">05</span><h3>check:framework</h3><p>Rào chắn tự động: kiểm tra 24 specs, 19 POMs, cấm import bừa bãi và hard sleep.</p></article>
-          <article class="principle"><span class="index">06</span><h3>Senior QA Gate 4</h3><p>Verify thực tế đa thiết bị (1920x1080, mobile 390x844), console logs và báo cáo rủi ro.</p></article>
-        </div>
-      </div>
-      <footer class="footer"><span>AGENTS.md → .ai/knowledge → AI_PROMPTS.md → check:framework → Senior QA Gate 4</span><span>12</span></footer>
-    </section>
-
-    <section class="slide">
-      <header class="topline"><p class="eyebrow">Phạm vi</p><span class="chapter">13 / Test suites</span></header>
-      <div class="content two-col">
-        <div>
-          <h2>Hệ thống Test Suite <span class="accent">Phân Cấp Cha - Con</span></h2>
-          <p class="lead" style="margin-top:24px">Tổ chức đa tầng: Master Suite kích hoạt Suite Cha (Smoke/Regression), Suite Cha phân giải đệ quy xuống Suite Con từng nền tảng.</p>
-        </div>
-        <div class="stack">
-          <div class="stack-item"><strong>👑 Master Suite · full-test-suite · 24 specs</strong><span>Bao phủ toàn bộ hệ thống: 11 Desktop + 11 Mobile Web + 2 API (npm run suite:all).</span></div>
-          <div class="stack-item"><strong>⚡ Suite Cha Smoke · smoke-all · 4 tests</strong><span>Tích hợp smoke-desktop + smoke-mobile: kiểm tra khói đăng ký SĐT/Email siêu tốc (npm run suite:smoke).</span></div>
-          <div class="stack-item"><strong>🚀 Suite Cha Regression · regression-all · 20 tests</strong><span>Tích hợp regression-desktop + regression-mobile + regression-api: bảo vệ toàn diện luồng nghiệp vụ (npm run suite:regression).</span></div>
-          <div class="stack-item"><strong>💼 Suite Phân Hệ · feature-* (ApplyJob · Profile · Onboarding)</strong><span>Chạy chuyên sâu từng phân hệ trên cả hai nền tảng Desktop và Mobile Web song song.</span></div>
-          <div class="stack-item"><strong>🎯 Suite Con Đơn Lập (Platform & Viewport)</strong><span>Desktop Chrome (1920x1080), Mobile Web (Pixel 7 390x844, iPhone 13) và API Tests.</span></div>
-        </div>
-      </div>
-      <footer class="footer"><span>npm run suite:all · npm run suite:smoke · npm run suite:regression · npm run suite:applyjob</span><span>13</span></footer>
-    </section>
-
-    <section class="slide">
-      <header class="topline"><p class="eyebrow">CI & Báo cáo</p><span class="chapter">14 / Feedback loop</span></header>
+      <header class="topline"><p class="eyebrow">CI &amp; Báo cáo</p><span class="chapter">11 / Feedback loop</span></header>
       <div class="content">
-        <h2>Pipeline biến mỗi lần chạy thành một <span class="cyan">kết quả có thể kiểm chứng</span>.</h2>
+        <h2>Pipeline biến mỗi lần chạy thành <span class="cyan">kết quả có thể kiểm chứng</span>.</h2>
         <div class="pipeline">
           <div class="pipe-node"><small>Validate</small><p>npm ci → check cấu trúc → Node unit tests</p></div>
           <span class="arrow">→</span>
@@ -587,112 +565,50 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
           <span class="arrow">→</span>
           <div class="pipe-node"><small>Publish</small><p>Upload report, test-results và evidence trong 14 ngày</p></div>
         </div>
-        <p class="lead" style="margin-top:34px">Report tổng vẫn cho góc nhìn toàn run; <code class="cyan">workerHtmlReporter</code> đồng thời tạo một HTML report riêng cho mỗi parallelIndex.</p>
+        <p class="lead" style="margin-top:34px">Report tổng vẫn cho góc nhìn toàn run; workerHtmlReporter đồng thời tạo một HTML report riêng cho mỗi parallelIndex.</p>
       </div>
-      <footer class="footer"><span>GitHub Actions · Chromium · artifacts luôn được upload</span><span>14</span></footer>
+      <footer class="footer"><span>GitHub Actions · Chromium · artifacts luôn được upload</span><span>11</span></footer>
     </section>
 
     <section class="slide">
-      <header class="topline"><p class="eyebrow">Output</p><span class="chapter">15 / Artifacts</span></header>
+      <header class="topline"><p class="eyebrow">Output</p><span class="chapter">12 / Artifacts &amp; Evidence</span></header>
       <div class="content two-col">
         <div>
-          <h2>Mỗi loại output trả lời <span class="accent">một câu hỏi khác nhau</span>.</h2>
-          <div class="stack" style="margin-top:28px">
+          <h2>Mỗi loại output trả lời <span class="cyan">một câu hỏi khác nhau</span>.</h2>
+          <div class="stack" style="margin-top:24px">
             <div class="stack-item"><strong>RunId không trùng</strong><span>Timestamp đến mili-giây kết hợp 6 ký tự ngẫu nhiên.</span></div>
             <div class="stack-item"><strong>Report theo worker</strong><span>Mỗi parallelIndex có index.html riêng, ngoài report tổng.</span></div>
             <div class="stack-item"><strong>Evidence theo worker</strong><span>Ảnh nằm trong worker-[parallelIndex] nên không còn ghi đè.</span></div>
             <div class="stack-item"><strong>Trace / video / failure artifacts</strong><span>Điều gì xảy ra trước khi lỗi xuất hiện?</span></div>
           </div>
-          <div class="demo-actions">
+          <div class="demo-actions" style="margin-top:20px">
             <a class="tool-link" href="demo/reports/register-by-phone/index.html" target="_blank" rel="noopener">Report Register ↗</a>
             <a class="tool-link" href="demo/reports/apply-job-with-profile/index.html" target="_blank" rel="noopener">Report Apply Profile ↗</a>
           </div>
         </div>
-        <div class="output-tree">
-          <strong>playwright-report/</strong><br>
-          └─ YY-MM-DD/[desktop | mobile-web | api]/[scriptFolder]/<br>
-          &nbsp;&nbsp;└─ [runId] report/<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;├─ index.html <span style="color:var(--muted)">· report tổng</span><br>
-          &nbsp;&nbsp;&nbsp;&nbsp;└─ workers/<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ [runId]-worker-0/index.html<br>
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ [runId]-worker-(N-1)/index.html<br><br>
-          <strong>evidence/</strong><br>
-          └─ YY-MM-DD/[runId] spec-name/<br>
-          &nbsp;&nbsp;├─ worker-0/step001_*.png<br>
-          &nbsp;&nbsp;└─ worker-(N-1)/step001_*.png<br><br>
-          <strong>test-results/</strong><br>
-          ├─ runtime-users/ <span style="color:var(--orange)">· tự động dọn dẹp</span><br>
-          └─ trace · screenshot · video khi test fail
+        <div class="code" aria-label="Cấu trúc thư mục output">
+          <div class="code-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <pre><span class="str">playwright-report/</span>
+└─ YY-MM-DD/[desktop | mobile-web | api]/[scriptFolder]/
+&nbsp;&nbsp;└─ [runId] report/
+&nbsp;&nbsp;&nbsp;&nbsp;├─ index.html · <span class="cm">report tổng</span>
+&nbsp;&nbsp;&nbsp;&nbsp;└─ workers/
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ [runId]-worker-0/index.html
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ [runId]-worker-(N-1)/index.html
+<span class="str">evidence/</span>
+└─ YY-MM-DD/[runId] spec-name/
+&nbsp;&nbsp;├─ worker-0/step001_*.png
+&nbsp;&nbsp;└─ worker-(N-1)/step001_*.png
+<span class="str">test-results/</span>
+├─ runtime-users/ · <span class="cm">tự động dọn dẹp</span>
+└─ trace · screenshot · video khi test fail</pre>
         </div>
       </div>
-      <footer class="footer"><span>CI upload playwright-report, test-results và evidence trong 14 ngày</span><span>15</span></footer>
+      <footer class="footer"><span>CI upload playwright-report, test-results và evidence trong 14 ngày</span><span>12</span></footer>
     </section>
 
     <section class="slide">
-      <header class="topline"><p class="eyebrow">Demo</p><span class="chapter">16 / Chạy thực tế</span></header>
-      <div class="content video-layout">
-        <div class="video-frame">
-          <video controls preload="metadata" playsinline>
-            <source src="demo/assets/register-by-phone-demo.webm" type="video/webm">
-            Trình duyệt của bạn không hỗ trợ video WebM.
-          </video>
-        </div>
-        <div>
-          <p class="eyebrow">Recorded execution</p>
-          <h2 style="font-size:clamp(34px,4vw,58px)">Đăng ký bằng <span class="accent">số điện thoại</span></h2>
-          <div class="run-result"><strong>PASS</strong><span>Video: 1 scenario · Framework hỗ trợ N workers / N accounts</span></div>
-          <p class="lead" style="font-size:clamp(16px,1.35vw,21px)">Video vẫn minh họa đúng luồng của <code class="cyan">register_by_phone-bdd.spec.js</code>. Số instance song song được điều khiển bằng PW_WORKERS và mỗi worker tách riêng evidence.</p>
-          <div class="demo-actions">
-            <button class="evidence-button" type="button" data-evidence="register">Xem 9 ảnh evidence ↗</button>
-            <a class="tool-link" href="demo/reports/register-by-phone/index.html" target="_blank" rel="noopener">Mở report Register ↗</a>
-          </div>
-        </div>
-      </div>
-      <footer class="footer"><span>Nhấn Play để xem luồng đăng ký hoàn chỉnh</span><span>16</span></footer>
-    </section>
-
-    <section class="slide">
-      <header class="topline"><p class="eyebrow">Demo</p><span class="chapter">17 / Apply Profile</span></header>
-      <div class="content video-layout">
-        <div class="video-frame">
-          <video controls preload="metadata" playsinline>
-            <source src="demo/assets/apply-job-with-profile-demo.webm" type="video/webm">
-            Trình duyệt của bạn không hỗ trợ video WebM.
-          </video>
-        </div>
-        <div>
-          <p class="eyebrow">Recorded execution</p>
-          <h2 style="font-size:clamp(32px,3.8vw,56px)">Ứng tuyển bằng <span class="accent">profile hoàn chỉnh</span></h2>
-          <div class="run-result"><strong>PASS</strong><span>authenticatedUser · runtime account riêng theo worker</span></div>
-          <p class="lead" style="font-size:clamp(16px,1.3vw,20px)">Video ghi tab chi tiết việc làm: chọn Apply by Profile, điền 7 section, submit và kiểm tra danh sách đã ứng tuyển.</p>
-          <p style="color:var(--muted);font-size:14px">Script: <code class="cyan">apply_job_with_profile_flow-bdd.spec.js</code> · 5,2 phút</p>
-          <div class="demo-actions">
-            <button class="evidence-button" type="button" data-evidence="profile">Xem 34 ảnh evidence ↗</button>
-            <a class="tool-link" href="demo/reports/apply-job-with-profile/index.html" target="_blank" rel="noopener">Mở report Apply Profile ↗</a>
-          </div>
-        </div>
-      </div>
-      <footer class="footer"><span>Demo luồng dài sử dụng applyData, JobApplyPage và ScreenshotHelper</span><span>17</span></footer>
-    </section>
-
-    <section class="slide">
-      <header class="topline"><p class="eyebrow">Demo</p><span class="chapter">18 / Lệnh chạy CLI &amp; Suites</span></header>
-      <div class="content top">
-        <h2>Chạy linh hoạt từ <span class="accent">Terminal CLI</span> đến các bộ suite phân cấp.</h2>
-        <div class="commands" style="margin-top:34px">
-          <div class="command"><i class="command-icon" aria-hidden="true">🧱</i><div><code>npm run check:framework</code><span>Kiểm tra rào chắn kiến trúc: 24 specs, 19 POMs và conventions</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">⚡</i><div><code>npm run suite:smoke</code><span>Chạy Suite Cha Smoke toàn hệ thống (Desktop + Mobile Chrome)</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">🚀</i><div><code>npm run suite:regression</code><span>Chạy Suite Cha Regression toàn hệ thống (Desktop + Mobile + API)</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">👑</i><div><code>npm run suite:all</code><span>Chạy Master Suite toàn bộ 24 kịch bản E2E và API backend</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">🧭</i><div><code>npm run test:ui</code><span>Mở Playwright Interactive UI Mode để debug trực quan</span></div></div>
-          <div class="command"><i class="command-icon" aria-hidden="true">📊</i><div><code>npm run dashboard</code><span>Khởi chạy Automation Web Dashboard Studio (Port 4180)</span></div></div>
-        </div>
-      </div>
-      <footer class="footer"><span>Hỗ trợ cả CLI npm run suite:* và Web Dashboard Studio trực quan</span><span>18</span></footer>
-    </section>
-
-    <section class="slide">
-      <header class="topline"><p class="eyebrow">Control Hub</p><span class="chapter">19 / Automation Dashboard</span></header>
+      <header class="topline"><p class="eyebrow">Control Hub</p><span class="chapter">13 / Automation Dashboard</span></header>
       <div class="content two-col">
         <div>
           <h2>Trung tâm điều khiển <span class="cyan">Web Dashboard Studio</span> &amp; Báo cáo thời gian thực.</h2>
@@ -714,11 +630,11 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
           <p style="color:var(--cyan);font-size:14px">Đóng mở an toàn qua <code>Start_Dashboard.bat</code> và <code>Stop_Dashboard.bat</code>.</p>
         </div>
       </div>
-      <footer class="footer"><span>http://127.0.0.1:4180 · Biến terminal thành Control Hub trực quan cho cả team QA</span><span>19</span></footer>
+      <footer class="footer"><span>http://127.0.0.1:4180 · Biến terminal thành Control Hub trực quan cho cả team QA</span><span>13</span></footer>
     </section>
 
     <section class="slide">
-      <header class="topline"><p class="eyebrow">Tool Compare</p><span class="chapter">20 / Evidence review</span></header>
+      <header class="topline"><p class="eyebrow">Tool Compare</p><span class="chapter">14 / Visual Compare</span></header>
       <div class="content two-col">
         <div>
           <h2><code class="cyan">visual_compare.html</code> biến output demo thành <span class="accent">phiên review trực quan</span>.</h2>
@@ -739,11 +655,74 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
           <p style="color:var(--orange);font-size:14px">Approve Baseline sẽ ghi Actual đè lên Expected sau khi người dùng xác nhận.</p>
         </div>
       </div>
-      <footer class="footer"><span>Tool chạy cục bộ bằng File System Access API · phù hợp Chrome/Edge</span><span>20</span></footer>
+      <footer class="footer"><span>Tool chạy cục bộ bằng File System Access API · phù hợp Chrome/Edge</span><span>14</span></footer>
     </section>
 
     <section class="slide">
-      <header class="topline"><p class="eyebrow">Kết luận</p><span class="chapter">21 / Takeaway</span></header>
+      <header class="topline"><p class="eyebrow">Demo thực tế</p><span class="chapter">15 / Đăng ký SĐT</span></header>
+      <div class="content video-layout">
+        <div class="video-frame">
+          <video controls preload="metadata" playsinline>
+            <source src="demo/assets/register-by-phone-demo.webm" type="video/webm">
+            Trình duyệt của bạn không hỗ trợ video WebM.
+          </video>
+        </div>
+        <div>
+          <p class="eyebrow">Recorded execution</p>
+          <h2 style="font-size:clamp(34px,4vw,60px)">Đăng ký bằng <span class="cyan">số điện thoại</span></h2>
+          <div class="run-result"><strong>PASS</strong><span>Video: 1 scenario · Framework hỗ trợ N workers / N accounts</span></div>
+          <p class="lead" style="font-size:clamp(16px,1.3vw,20px)">Video minh họa luồng của <code class="cyan">register_by_phone-bdd.spec.js</code>. Số instance song song được điều khiển bằng PW_WORKERS và mỗi worker tách riêng evidence.</p>
+          <div class="demo-actions">
+            <button class="evidence-button" type="button" data-evidence="register">Xem 9 ảnh evidence ↗</button>
+            <a class="tool-link" href="demo/reports/register-by-phone/index.html" target="_blank" rel="noopener">Mở report Register ↗</a>
+          </div>
+        </div>
+      </div>
+      <footer class="footer"><span>Nhấn Play để xem luồng đăng ký hoàn chỉnh · Multi-worker isolation</span><span>15</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Demo thực tế</p><span class="chapter">16 / Apply Profile</span></header>
+      <div class="content video-layout">
+        <div class="video-frame">
+          <video controls preload="metadata" playsinline>
+            <source src="demo/assets/apply-job-with-profile-demo.webm" type="video/webm">
+            Trình duyệt của bạn không hỗ trợ video WebM.
+          </video>
+        </div>
+        <div>
+          <p class="eyebrow">Recorded execution</p>
+          <h2 style="font-size:clamp(32px,3.8vw,56px)">Ứng tuyển bằng <span class="accent">profile hoàn chỉnh</span></h2>
+          <div class="run-result"><strong>PASS</strong><span>authenticatedUser · runtime account riêng theo worker</span></div>
+          <p class="lead" style="font-size:clamp(16px,1.3vw,20px)">Video ghi tab chi tiết việc làm: chọn Apply by Profile, điền 7 section, submit và kiểm tra danh sách đã ứng tuyển.</p>
+          <p style="color:var(--muted);font-size:14px">Script: <code class="cyan">apply_job_with_profile_flow-bdd.spec.js</code> · 5,2 phút</p>
+          <div class="demo-actions">
+            <button class="evidence-button" type="button" data-evidence="profile">Xem 34 ảnh evidence ↗</button>
+            <a class="tool-link" href="demo/reports/apply-job-with-profile/index.html" target="_blank" rel="noopener">Mở report Apply Profile ↗</a>
+          </div>
+        </div>
+      </div>
+      <footer class="footer"><span>Demo luồng dài sử dụng applyData, JobApplyPage và ScreenshotHelper</span><span>16</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Quản trị chất lượng</p><span class="chapter">17 / AI Governance &amp; Gates</span></header>
+      <div class="content top">
+        <h2>AI viết nhanh, nhưng phải đi trong <span class="cyan">đường ray chất lượng</span>.</h2>
+        <div class="three-col" style="margin-top:38px">
+          <article class="principle"><span class="index">01</span><h3>AGENTS.md</h3><p>Hiến pháp dự án &amp; Master Process reference: 4 Quality Gates và luật bất biến.</p></article>
+          <article class="principle"><span class="index">02</span><h3>.ai/knowledge/</h3><p>Kho tri thức chuyên sâu: project profile, conventions viết code và test conventions.</p></article>
+          <article class="principle"><span class="index">03</span><h3>.ai/learning/</h3><p>Vòng lặp tự học (Self-learning loop): candidates trích xuất bài học sau mỗi bugfix/review.</p></article>
+          <article class="principle"><span class="index">04</span><h3>AI_PROMPTS.md</h3><p>Tiêu chuẩn chuẩn hóa POM, BDD, locator, wait, evidence và Definition of Done.</p></article>
+          <article class="principle"><span class="index">05</span><h3>check:framework</h3><p>Rào chắn tự động: kiểm tra 24 specs, 19 POMs, cấm import bừa bãi và hard sleep.</p></article>
+          <article class="principle"><span class="index">06</span><h3>Senior QA Gate 4</h3><p>Verify thực tế đa thiết bị (1920x1080, mobile 390x844), console logs và báo cáo rủi ro.</p></article>
+        </div>
+      </div>
+      <footer class="footer"><span>AGENTS.md → .ai/knowledge → AI_PROMPTS.md → check:framework → Senior QA Gate 4</span><span>17</span></footer>
+    </section>
+
+    <section class="slide">
+      <header class="topline"><p class="eyebrow">Kết luận</p><span class="chapter">18 / Takeaway &amp; Q&amp;A</span></header>
       <div class="content two-col">
         <div>
           <h2>Framework tốt làm cho <span class="accent">thay đổi trở nên rẻ hơn</span>.</h2>
@@ -758,8 +737,9 @@ workerUserData: [<span class="kw">async</span> ({}, use, info) =&gt; {
           <p style="margin:30px 0 0;color:var(--cyan);font-weight:700">Câu hỏi &amp; thảo luận</p>
         </div>
       </div>
-      <footer class="footer"><span class="brand"><i class="brand-mark"></i><strong>Playwright Automation Framework</strong></span><span>21</span></footer>
+      <footer class="footer"><span class="brand"><i class="brand-mark"></i><strong>Playwright Automation Framework</strong></span><span>18</span></footer>
     </section>
+  
   </main>
 
   <dialog class="evidence-dialog" id="evidence-dialog">

@@ -1,10 +1,15 @@
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const userData = require('../../../data/users.json');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../../core/utils/commonUtils');
+const { LoginPopup } = require('../../../pages/desktop/LoginPopup');
+const { PopupConsent } = require('../../../pages/desktop/PopupConsent');
 
 test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại @register @smoke @smoke-desktop @desktop @e2e', () => {
-  test('Kiểm tra luồng đăng ký bằng Số điện thoại', async ({ loginPopup, homePage, popupConsent }, testInfo) => {
-    test.setTimeout(120000);
+  test('Kiểm tra luồng đăng ký bằng Số điện thoại', async ({ page, pages }, testInfo) => {
+    const homePage = pages.homePage;
+    const loginPopup = new LoginPopup(page);
+    const popupConsent = new PopupConsent(page);
+    test.setTimeout(180000);
 
     testInfo.annotations.push({
       type: 'Precondition',
@@ -23,6 +28,7 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số
     await test.step('And Tôi tắt tất cả các popup quảng cáo nếu có', async () => {
       try {
         await homePage.closeAdsIfVisible();
+        await homePage.closeBlockingModalIfVisible();
         await homePage.capture('after_close_popup');
       } catch (e) {
         await homePage.capture('no_popup_found');
@@ -30,6 +36,7 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số
     });
 
     await test.step('When Tôi bấm vào nút "Đăng ký/Đăng nhập" trên Header', async () => {
+      await homePage.closeBlockingModalIfVisible();
       await loginPopup.clickLoginHeader();
       await loginPopup.waitForModalVisible();
       await loginPopup.capture('after_login_modal_opened');

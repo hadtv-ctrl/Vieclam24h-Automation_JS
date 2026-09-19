@@ -1,14 +1,17 @@
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const applyData = require('../../../data/userProfileData.json');
+const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
 test.describe('Feature: Hoàn thành profile và ứng tuyển job @profile @desktop @e2e', () => {
 
   test('Người dùng hoàn thành tạo profile và ứng tuyển', async ({
+    page,
     authenticatedUser,
-    homePage,
-    onboardingPopup,
-    userProfilePage,
+    pages,
   }) => {
+    const homePage = pages.homePage;
+    const onboardingPopup = new OnboardingPopup(page);
+    const userProfilePage = pages.userProfilePage;
     test.slow();
     test.setTimeout(600000);
 

@@ -1,16 +1,19 @@
 const { test } = require('../../../core/fixtures/baseTest');
 const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
+const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
+const { JobApplyNoCVPage } = require('../../../pages/desktop/JobApplyNoCVPage');
 
 test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @applyjob @desktop @e2e', () => {
 
   test('Người dùng hoàn thành tạo profile và ứng tuyển job không cần CV', async ({
+    page,
     authenticatedUser,
-    onboardingPopup,
-    homePage,
-    jobSearchPage,
-    createJobApplyNoCVPage,
+    pages,
   }) => {
+    const homePage = pages.homePage;
+    const jobSearchPage = pages.jobSearchPage;
+    const onboardingPopup = new OnboardingPopup(page);
     test.slow();
     test.setTimeout(600000);
 
@@ -22,6 +25,7 @@ test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không c
         modalHiddenTimeout: 10000,
         modalDetachedTimeout: 10000,
       });
+      await homePage.closeBlockingModalIfVisible();
       await homePage.expectHomepageVisible();
       await homePage.capture('precondition_logged_in_state');
     });
@@ -38,7 +42,7 @@ test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không c
 
       const newPage = await jobSearchPage.clickFirstJob();
 
-      jobApplyNoCVPage = createJobApplyNoCVPage(newPage);
+      jobApplyNoCVPage = new JobApplyNoCVPage(newPage);
       await jobApplyNoCVPage.capture('job_detail_opened', true);
       await jobApplyNoCVPage.startApplyNoCV({ otpCode: usersData[0]?.otp });
     });

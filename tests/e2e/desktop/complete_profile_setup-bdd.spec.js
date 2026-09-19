@@ -1,14 +1,17 @@
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const profileData = require('../../../data/userProfileData.json');
+const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
 test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu chí tìm việc và CV @profile @desktop @e2e', () => {
 
   test('Người dùng cập nhật thông tin cá nhân, tiêu chí tìm việc và tải lên CV', async ({
+    page,
     authenticatedUser,
-    homePage,
-    onboardingPopup,
-    userProfilePage,
+    pages,
   }) => {
+    const homePage = pages.homePage;
+    const onboardingPopup = new OnboardingPopup(page);
+    const userProfilePage = pages.userProfilePage;
     test.slow();
     test.setTimeout(600000);
 
@@ -17,14 +20,10 @@ test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu 
         modalTimeout: 15000,
         closeBtnTimeout: 5000,
         modalHiddenTimeout: 10000,
-        modalDetachedTimeout: 10000,
       });
+      await homePage.closeBlockingModalIfVisible();
       await homePage.expectHomepageVisible();
       await homePage.capture('precondition_logged_in_state');
-    });
-
-    await test.step('And Người dùng đảm bảo các modal chặn màn hình đã được đóng', async () => {
-      await homePage.closeBlockingModalIfVisible();
     });
 
     await test.step('When Người dùng vào trang Hồ sơ của tôi', async () => {

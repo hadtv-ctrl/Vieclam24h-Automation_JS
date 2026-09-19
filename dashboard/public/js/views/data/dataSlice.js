@@ -68,6 +68,48 @@ export class DataSlice {
       searchInput.addEventListener('input', h);
       this._disposers.push(() => searchInput.removeEventListener('input', h));
     }
+
+    // Sidebar collapse / expand: delegate cleanly to universal controller with fallback
+    on('#btn-collapse-data-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('data', true, true);
+      } else {
+        root.querySelector('#data-workspace-panel')?.classList.add('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-data-sidebar-head', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('data');
+      } else {
+        root.querySelector('#data-workspace-panel')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-data-sidebar-head-create', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('data');
+      } else {
+        root.querySelector('#data-workspace-panel')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-expand-data-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('data', false);
+      } else {
+        root.querySelector('#data-workspace-panel')?.classList.remove('sidebar-collapsed');
+      }
+    });
+    on('#data-sidebar-collapsed-strip', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('data', false);
+      } else {
+        root.querySelector('#data-workspace-panel')?.classList.remove('sidebar-collapsed');
+      }
+    });
   }
 
   _registerBridgeActions() {

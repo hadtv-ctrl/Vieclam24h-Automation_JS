@@ -78,5 +78,19 @@
   2. Luôn đặt `await ensureViewTemplate(viewId)` tại cả sự kiện click tab chuyển view và dòng đầu tiên của từng view controller.
   3. Chỉ cho phép các cờ khởi tạo (`isInitialized = true`) được bật khi phần tử DOM cốt lõi (`search-input`, `list-container`) thực sự tồn tại trong DOM.
 
-
-
+### [LEARN-005] Chuẩn Hóa Destructuring Fixtures Playwright & Xử Lý Dynamic Marketing Popups Trên QC
+- **Nguồn trích xuất:** TASK-DESKTOP-SUITE-VERIFICATION
+- **Role quan sát:** Senior Automation QA Engineer (Gate 4)
+- **Quan sát (Observation):**
+  1. Playwright runner kiểm tra tính hợp lệ của fixture parameters theo danh sách đăng ký trong `test.extend()`. Các spec desktop cũ truyền trực tiếp `homePage`, `userProfilePage`, `onboardingPopup`, `jobSearchPage`, `createJobApplyPage` vào hàm test callback khiến Playwright báo lỗi `unknown parameter` trước khi chạy.
+  2. Page Proxy Container (`pagesFactory`) tự động ánh xạ thuộc tính theo quy ước `<Name>Page.js`. Do đó các file không có suffix `Page` như `OnboardingPopup.js`, `LoginPopup.js`, `PopupConsent.js` không tự resolve được qua proxy mà phải import trực tiếp.
+  3. Môi trường QC kích hoạt popup marketing ngẫu nhiên cho luồng khách vãng lai (Guest) như `.mbep-popup` và popup "Khoan đã, Hình như bạn chưa đăng nhập?" (`.ReactModalPortal`), che khuất và chặn tương tác (pointer interception) đối với các nút hành động cốt lõi.
+- **Bằng chứng (Evidence):** `tests/e2e/desktop/*.spec.js`, `pages/desktop/HomePage.js`, `pages/desktop/JobApplyNoCVPage.js`, `core/fixtures/baseTest.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Toàn bộ kịch bản test BDD bắt buộc sử dụng chữ ký fixture chuẩn: `{ page, authenticatedUser, pages }` đối với user đã đăng nhập, hoặc `{ page, pages }` đối với guest test.
+  2. Các Page Object có đuôi `Page.js` được gọi qua `pages.<name>Page`, các popup tiện ích độc lập (`OnboardingPopup`, `LoginPopup`, `PopupConsent`) phải import trực tiếp `require(...)` và khởi tạo với `new <PopupClass>(page)`.
+  3. Xử lý popup chặn màn hình bằng cơ chế nhiều tầng: thử đóng qua nút close icon, gửi phím Escape, và kiểm tra bọc trong khối `try/catch` an toàn để không làm gãy luồng kiểm thử chính.
