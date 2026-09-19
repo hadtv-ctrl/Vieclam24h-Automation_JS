@@ -110,7 +110,11 @@ const server = http.createServer(async (request, response) => {
 
 const maxPortAttempts = 20;
 let portAttempts = 0;
-const STATE_PATH = path.join(ROOT, '.dashboard-server.json');
+const {
+  stateFilePath, ensureStateFileIgnored, isStateFileTracked, untrackCommand,
+} = require('./services/serverStateService');
+
+const STATE_PATH = stateFilePath(ROOT);
 
 function tryListen(port) {
   server.listen(port, '127.0.0.1');
@@ -119,6 +123,15 @@ function tryListen(port) {
 server.on('listening', () => {
   const actualPort = server.address().port;
   currentPort = actualPort;
+  // Bỏ qua artifact TRƯỚC khi tạo nó, để nó không kịp hiện ra như file lạ chưa theo dõi.
+  const ignoredIn = ensureStateFileIgnored(ROOT);
+  if (ignoredIn) {
+    console.log(`Đã thêm ${path.basename(STATE_PATH)} vào ${path.relative(ROOT, ignoredIn)} (trạng thái runtime, không nên commit).`);
+  }
+  if (isStateFileTracked(ROOT)) {
+    console.warn(`⚠️  ${path.basename(STATE_PATH)} đang được git theo dõi ở repo này, nên .gitignore không có tác dụng.`);
+    console.warn(`   Chạy một lần để gỡ: ${untrackCommand()}`);
+  }
   try {
     fs.writeFileSync(
       STATE_PATH,

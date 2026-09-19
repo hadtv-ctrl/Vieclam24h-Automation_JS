@@ -231,6 +231,68 @@ test('mục QA không ghi gì vào requirements/ và test-cases/', () => {
   });
 });
 
+test('core/ cũ nuốt mất mục qa thì phải bật cờ, không âm thầm dùng mặc định', () => {
+  // Sync theo module có thể giao dashboard/ mới mà giữ lại core/ cũ. Bản normalize cũ trả về
+  // object cố định không có khóa `qa`, nên cấu hình của dự án bị bỏ qua mà không ai hay.
+  const realModule = require.resolve('../../core/config/dashboardConfig');
+  const original = require.cache[realModule];
+  const fresh = require('../../core/config/dashboardConfig');
+  require.cache[realModule] = {
+    id: realModule,
+    filename: realModule,
+    loaded: true,
+    exports: {
+      DEFAULT_CONFIG: fresh.DEFAULT_CONFIG,
+      // Giả lập bản cũ: mọi khóa lạ đều bị bỏ, kể cả `qa`.
+      normalizeDashboardConfig: (raw) => {
+        const out = fresh.normalizeDashboardConfig(raw);
+        delete out.qa;
+        return out;
+      },
+    },
+  };
+  delete require.cache[require.resolve('./qaService')];
+
+  try {
+    // eslint-disable-next-line global-require
+    const staleSvc = require('./qaService');
+    withRepo({
+      ...FULL,
+      'core/config/dashboardConfig.json': JSON.stringify({
+        environments: { qc: { label: 'QC', baseURL: 'https://qc.example.com' } },
+        runtime: { defaultEnvironment: 'qc' },
+        qa: { specs: 'tests/e2e' },
+      }),
+    }, (root) => {
+      const cfg = staleSvc.readQaConfig(root);
+      assert.equal(cfg.staleCore, true, 'phải báo rằng cấu hình đang bị bỏ qua');
+      assert.equal(cfg.dirs.specs, 'tests', 'rơi về mặc định là đúng, nhưng phải kèm cờ');
+      assert.equal(staleSvc.getTrace(root).staleCore, true, 'cờ phải đi được tới UI');
+    });
+  } finally {
+    if (original) require.cache[realModule] = original;
+    else delete require.cache[realModule];
+    delete require.cache[require.resolve('./qaService')];
+  }
+});
+
+test('core/ mới thì không bật cờ, dù file không khai mục qa', () => {
+  withRepo(FULL, (root) => {
+    assert.equal(readQaConfig(root).staleCore, false);
+  });
+  withRepo({
+    ...FULL,
+    'core/config/dashboardConfig.json': JSON.stringify({
+      environments: { qc: { label: 'QC', baseURL: 'https://qc.example.com' } },
+      runtime: { defaultEnvironment: 'qc' },
+      qa: { specs: 'tests/e2e' },
+    }),
+  }, (root) => {
+    assert.equal(readQaConfig(root).staleCore, false, 'core mới hiểu được thì không phải cảnh báo');
+    assert.equal(readQaConfig(root).dirs.specs, 'tests/e2e');
+  });
+});
+
 test('cấu hình riêng trong core/config/dashboardConfig.json sống sót qua một lượt sync mô phỏng', {
   skip: syncManifest ? false : 'scripts/lib/sync-manifest.js chỉ tồn tại ở Hub (nằm trong excludes)',
 }, () => {

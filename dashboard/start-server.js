@@ -43,7 +43,9 @@ function getProjectTitle() {
 
 const APP_NAME = getAppName();
 const PROJECT_TITLE = getProjectTitle();
-const STATE_PATH = path.join(ROOT, '.dashboard-server.json');
+const { stateFilePath } = require('./services/serverStateService');
+
+const STATE_PATH = stateFilePath(ROOT);
 const MAX_PORT_ATTEMPTS = 20;
 
 function isPortAvailable(port) {

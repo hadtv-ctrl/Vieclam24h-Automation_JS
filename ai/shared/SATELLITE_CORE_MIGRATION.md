@@ -136,9 +136,15 @@ cd D:/_Automation-Project && node scripts/pre-sync-drift.js --satellite=CarThing
 
 > Trạng thái đo được trên `origin/main` của CarThings (2026-09-20): đúng 3 file này còn
 > chặn, tổng **140 dòng** — `commonUtils.js` 129, `commonUtils.test.js` 8,
-> `dashboardConfig.js` 3. Chừng nào chưa làm xong A1–A4, sync sẽ **bỏ qua CarThings**
-> (không ghi gì, không commit) và job CI kết thúc bằng lỗi, trong khi các vệ tinh sạch
-> vẫn nhận được bản mới bình thường.
+> `dashboardConfig.js` 3. Cả ba đều nằm trong `core/`, nên sync **chỉ giữ lại `core/`**:
+> `dashboard/`, `scripts/`, `bin/`, `ai/`, `tools/` và các file gốc vẫn được giao bình
+> thường, nên tính năng dashboard mới vẫn tới nơi. Job CI kết thúc với mã 2 (đã giao
+> một phần) thay vì báo hỏng.
+>
+> Hệ quả của việc giữ lại `core/`: bản `core/config/dashboardConfig.js` cũ không hiểu khóa
+> `qa`, nên mục QA đọc theo thư mục mặc định (`requirements/`, `test-cases/`, `tests/`).
+> Đúng với bố cục hiện tại của CarThings. Nếu dự án muốn đổi thư mục, dashboard sẽ hiện
+> cảnh báo đỏ rằng cấu hình đang bị bỏ qua — không âm thầm đọc sai chỗ.
 
 Còn lại `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `QA_AI_RULES.md`: đây là file gốc do Hub
 sở hữu (mới được thêm vào `ROOT_FILES_TO_SYNC`). Bài học/ghi chú riêng của dự án phải
@@ -258,9 +264,10 @@ git config --local --get user.name     # phải rỗng, để git dùng identity
   - Có → PR ngược lên Hub.
   - Không → `core/local/`.
 - Trước mỗi lần sync thủ công: `node scripts/pre-sync-drift.js --strict`.
-- Cổng chặn nằm ngay trong `scripts/sync-satellites.js` và chạy **theo từng vệ tinh**
-  trước khi ghi: vệ tinh có nội dung riêng bị bỏ qua nguyên vẹn, vệ tinh sạch vẫn nhận
-  bản mới. Job CI kết thúc bằng lỗi nếu có vệ tinh bị bỏ qua.
+- Cổng chặn nằm ngay trong `scripts/sync-satellites.js` và chạy **theo từng module của
+  từng vệ tinh** trước khi ghi: chỉ module chứa nội dung riêng bị giữ lại, phần còn lại
+  vẫn được giao. Nhờ vậy một helper riêng trong `core/` không còn chặn được tính năng
+  dashboard mới. Exit code 2 = đã giao một phần.
 - Cổng phân biệt "vệ tinh giữ bản cũ của Hub" với "vệ tinh tự viết thêm" bằng lịch sử
   git của Hub (`scripts/lib/hubHistory.js`). Chỉ trường hợp thứ hai mới bị chặn.
 - Sau khi ghi, `scripts/verify-dashboard-features.js` kiểm tại đích rằng mọi view đều đủ

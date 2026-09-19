@@ -215,6 +215,13 @@ export class QaSlice {
         (this.trace.analyzer && this.trace.analyzer.error) || 'Analyzer chưa sẵn sàng.',
         'danger',
       );
+    } else if (this.trace.staleCore) {
+      this._showAlert(
+        'core/config/dashboardConfig.json có khai mục "qa" nhưng bản core/ của repo này chưa hiểu khóa đó, '
+        + 'nên cấu hình đang bị bỏ qua và mục QA đọc theo thư mục mặc định. '
+        + 'Hoàn tất migration core/ (ai/shared/SATELLITE_CORE_MIGRATION.md) để sync giao nốt core/.',
+        'danger',
+      );
     } else if (this.trace.specsDirEmpty) {
       this._showAlert(
         `Không đọc được spec nào trong "${dirs.specs}/". Nếu repo này để spec ở chỗ khác, `

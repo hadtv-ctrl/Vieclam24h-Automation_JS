@@ -29,6 +29,9 @@
 .qa-source-config { color: var(--muted); font-style: italic; }
 
 .qa-view .hero-stats-group[hidden] { display: none; }
+/* hero-actions mặc định là grid canh phải; cụm số liệu và nút xếp dọc, giữa hai hàng
+   có khoảng thở riêng. */
+.qa-hero-right { gap: 10px; }
 .qa-stat-danger strong { color: var(--danger); }
 
 .qa-alert {

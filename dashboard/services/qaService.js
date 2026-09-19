@@ -52,6 +52,7 @@ function readQaConfig(root) {
   } catch (_) {
     raw = {};
   }
+  const declaresQa = Boolean(raw && typeof raw.qa === 'object' && raw.qa && Object.keys(raw.qa).length);
   try {
     const qa = normalizeDashboardConfig(raw).qa || {};
     return {
@@ -62,6 +63,11 @@ function readQaConfig(root) {
       },
       decisionsFile: qa.decisionsFile || FALLBACK_DECISIONS_FILE,
       configPath: fs.existsSync(configPath) ? 'core/config/dashboardConfig.json' : null,
+      // Sync có thể giao dashboard/ mà giữ lại core/ (khi repo này còn code riêng trong core/).
+      // Khi đó normalizeDashboardConfig bản cũ không biết khóa `qa` và âm thầm bỏ nó đi: cấu hình
+      // nằm sờng sờng trong file nhưng không có tác dụng. Đọc sai thư mục cho ra "0 vấn đề"
+      // trông y hệt "đã sạch", nên phải nói ra thay vì lặng lẽ dùng mặc định.
+      staleCore: declaresQa && !Object.keys(qa).length,
     };
   } catch (_) {
     // Config hỏng không được làm chết mục QA — dùng mặc định và vẫn chạy.
@@ -70,6 +76,7 @@ function readQaConfig(root) {
       dirs: { ...FALLBACK_DIRS },
       decisionsFile: base.decisionsFile || FALLBACK_DECISIONS_FILE,
       configPath: null,
+      staleCore: false,
     };
   }
 }
@@ -85,9 +92,9 @@ function labelFor(kind) {
  */
 function getTrace(root) {
   const status = analyzerStatus();
-  const { dirs, decisionsFile, configPath } = readQaConfig(root);
+  const { dirs, decisionsFile, configPath, staleCore } = readQaConfig(root);
   if (!status.available) {
-    return { analyzer: status, dirs, configPath, decisionsFile, available: false };
+    return { analyzer: status, dirs, configPath, decisionsFile, staleCore, available: false };
   }
 
   const report = analyzer.buildTraceReport({ root, dirs });
@@ -119,6 +126,7 @@ function getTrace(root) {
     automatedCount: tcInSpecs.size,
     // Cảnh báo im lặng nguy hiểm nhất: trỏ sai thư mục spec thì mọi thứ trông như sạch.
     specsDirEmpty: report.counts.specs === 0,
+    staleCore,
     requirements: report.requirements.map((r) => ({
       id: r.id,
       acCount: r.acs.length,

@@ -9,19 +9,21 @@
           <h1>QA Docs &amp; Automation</h1>
           <p class="subtitle">Requirement, test case, và những test case automation được nhưng chưa ai viết script.</p>
         </div>
-        <div class="hero-actions">
+        <!-- .hero là flex space-between nên phải đúng HAI con như mọi template khác;
+             để ba con thì khối giữa bị đẩy ra chính giữa tiêu đề và cụm số liệu. -->
+        <div class="hero-actions qa-hero-right">
+          <div class="hero-stats-group" id="qa-stats" hidden>
+            <div class="hero-stat-card"><strong id="qa-stat-req">0</strong><small>Requirement</small></div>
+            <div class="hero-stat-card"><strong id="qa-stat-ac">0</strong><small>Acceptance criteria</small></div>
+            <div class="hero-stat-card"><strong id="qa-stat-tc">0</strong><small>Test case</small></div>
+            <div class="hero-stat-card"><strong id="qa-stat-auto">0</strong><small>Đã có script</small></div>
+            <div class="hero-stat-card qa-stat-danger"><strong id="qa-stat-major">0</strong><small>Vấn đề nghiêm trọng</small></div>
+          </div>
           <!-- Nút làm mới phải LUÔN hiện: nếu nó nằm trong thanh nguồn (vốn bị ẩn cho tới khi
                tải xong) thì đúng lúc tải lỗi người dùng sẽ không còn cách nào thử lại. -->
           <button type="button" class="btn-secondary-sm" id="qa-btn-refresh">
             <i class="ph-bold ph-arrows-clockwise"></i> Làm mới
           </button>
-        </div>
-        <div class="hero-stats-group" id="qa-stats" hidden>
-          <div class="hero-stat-card"><strong id="qa-stat-req">0</strong><small>Requirement</small></div>
-          <div class="hero-stat-card"><strong id="qa-stat-ac">0</strong><small>Acceptance criteria</small></div>
-          <div class="hero-stat-card"><strong id="qa-stat-tc">0</strong><small>Test case</small></div>
-          <div class="hero-stat-card"><strong id="qa-stat-auto">0</strong><small>Đã có script</small></div>
-          <div class="hero-stat-card qa-stat-danger"><strong id="qa-stat-major">0</strong><small>Vấn đề nghiêm trọng</small></div>
         </div>
       </header>
 
