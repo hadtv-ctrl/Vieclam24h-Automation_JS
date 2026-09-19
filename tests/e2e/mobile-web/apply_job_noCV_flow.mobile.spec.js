@@ -2,8 +2,8 @@ const { test } = require('../../../core/fixtures/mobileWebTest');
 const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
 
-test.describe('Mobile Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @applyjob @mobile @e2e', () => {
-  test('Người dùng mobile hoàn thành tạo profile và ứng tuyển job không cần CV', async ({
+test.describe('Mobile Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @applyjob @mobile @e2e @REQ-004', () => {
+  test('TC-014 - AC-012 Thành viên ứng tuyển việc không cần CV bằng hồ sơ rút gọn trên mobile web', async ({
     authenticatedUser,
     onboardingPopup,
     homePage,

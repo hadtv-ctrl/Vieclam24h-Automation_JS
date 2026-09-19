@@ -2,8 +2,8 @@ const path = require('path');
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
-test.describe('Feature: Tải lên và chuyển đổi CV tại Hồ sơ của tôi @profile @desktop @e2e', () => {
-  test('Người dùng tải lên và chuyển đổi CV thành công', async ({ page, authenticatedUser, pages }) => {
+test.describe('Feature: Tải lên và chuyển đổi CV tại Hồ sơ của tôi @profile @desktop @e2e @REQ-005', () => {
+  test('TC-021 - AC-019 Tải lên và chuyển đổi CV tại trang Hồ sơ của tôi', async ({ page, authenticatedUser, pages }) => {
     const userProfilePage = pages.userProfilePage;
     const homePage = pages.homePage;
     const onboardingPopup = new OnboardingPopup(page);

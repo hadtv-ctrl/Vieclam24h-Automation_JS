@@ -5,7 +5,7 @@ const usersData = require('../../../data/users.json');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 const { JobApplyPage } = require('../../../pages/desktop/JobApplyPage');
 
-test.describe('Feature: Ứng tuyển việc làm @applyjob @desktop @e2e', () => {
+test.describe('Feature: Ứng tuyển việc làm @applyjob @desktop @e2e @REQ-003', () => {
   let jobApplyPage;
   let newPage; // Page của tab chi tiết việc làm
 
@@ -13,7 +13,7 @@ test.describe('Feature: Ứng tuyển việc làm @applyjob @desktop @e2e', () =
     if (newPage) await newPage.close();
   });
 
-  test('Người dùng hoàn thành tạo profile và ứng tuyển thành công', async ({
+  test('TC-009 - AC-008 Ứng tuyển việc làm bằng file CV tải lên', async ({
     page,
     authenticatedUser,
     pages,

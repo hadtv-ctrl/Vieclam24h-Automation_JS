@@ -2,8 +2,8 @@ const { test, expect } = require('@playwright/test');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../core/utils/commonUtils');
 const { RegistrationApiHelper } = require('../../core/utils/registrationApiHelper');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc qua API @api @register', () => {
-  test('POST /seeker/fe/register trả về status 200 với payload động', async ({ request }, testInfo) => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc qua API @api @register @REQ-001', () => {
+  test('TC-005 - AC-003 API đăng ký trả về status 200 và cấp token với payload động', async ({ request }, testInfo) => {
     const apiHelper = new RegistrationApiHelper(request);
     const email = generateRandomEmail();
     const phone = generateRandomVNPhone(); // lấy phone random
@@ -42,7 +42,7 @@ test.describe('Feature: Đăng ký tài khoản người tìm việc qua API @ap
     });
   });
 
-  test('POST /seeker/fe/me/personal-data-consent/accept trả về status 200 bằng token đã lưu', async ({ request }, testInfo) => {
+  test('TC-006 - AC-004 API chấp thuận dữ liệu cá nhân trả về status 200 bằng token đã lưu', async ({ request }, testInfo) => {
     const apiHelper = new RegistrationApiHelper(request);
     const currentUser = global.__automationState?.registeredUser || null;
 

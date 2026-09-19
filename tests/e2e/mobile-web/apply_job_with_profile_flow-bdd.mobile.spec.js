@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
 
-test.describe('Mobile Feature: Ứng tuyển việc làm bằng Profile trực tuyến trên Mobile Web @applyjob @mobile @e2e', () => {
+test.describe('Mobile Feature: Ứng tuyển việc làm bằng Profile trực tuyến trên Mobile Web @applyjob @mobile @e2e @REQ-003', () => {
   let jobApplyPage;
   let newPage;
 
@@ -10,7 +10,7 @@ test.describe('Mobile Feature: Ứng tuyển việc làm bằng Profile trực t
     if (newPage) await newPage.close();
   });
 
-  test('Người dùng mobile hoàn thành tạo profile và ứng tuyển thành công', async ({
+  test('TC-012 - AC-009 Ứng tuyển việc làm bằng hồ sơ trực tuyến trên mobile web', async ({
     authenticatedUser,
     onboardingPopup,
     homePage,
