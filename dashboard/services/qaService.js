@@ -26,6 +26,14 @@ try {
   analyzerError = error.message;
 }
 
+let draftBuilder = null;
+try {
+  // eslint-disable-next-line global-require
+  draftBuilder = require('../../scripts/lib/bddDraft');
+} catch (_) { /* vệ tinh chưa sync kịp thì mục QA vẫn mở được */ }
+
+const MAX_DRAFT_TEST_CASES = 20;
+
 const FALLBACK_DIRS = { requirements: 'requirements', testCases: 'test-cases', specs: 'tests' };
 const FALLBACK_DECISIONS_FILE = 'decisions.json';
 const MAX_DECISIONS_BYTES = 1_048_576;
@@ -307,6 +315,94 @@ function saveDocument(root, payload = {}) {
   };
 }
 
+/**
+ * Bản thảo BDD cho một hoặc nhiều test case.
+ *
+ * CHỈ ĐỌC và KHÔNG LƯU. Bản thảo được dựng lại mỗi lần gọi từ tài liệu hiện tại, vì hệ
+ * thống còn đang phát triển: test case sẽ đổi, và một bản sao lưu ở đâu đó sẽ lặng lẽ lệch
+ * khỏi nguồn. Muốn giữ thì người dùng tự chép ra, có ý thức về thời điểm.
+ */
+function getBddDraft(root, ids = []) {
+  const status = analyzerStatus();
+  const { dirs } = readQaConfig(root);
+  if (!status.available) {
+    throw Object.assign(new Error(status.error), { status: 503 });
+  }
+  if (!draftBuilder || typeof analyzer.extractTestCaseDetails !== 'function') {
+    throw Object.assign(
+      new Error('Chưa có bộ sinh bản thảo BDD trong repo này (scripts/lib/bddDraft.js). '
+        + 'Chạy một lượt sync từ Hub.'),
+      { status: 503 },
+    );
+  }
+
+  const wanted = [...new Set(
+    (Array.isArray(ids) ? ids : String(ids || '').split(','))
+      .map((s) => String(s || '').trim().toUpperCase())
+      .filter((s) => /^TC-\d{3}$/.test(s)),
+  )];
+  if (!wanted.length) {
+    throw Object.assign(
+      new Error('Chưa chọn test case nào (cần mã dạng TC-001).'),
+      { status: 400 },
+    );
+  }
+  if (wanted.length > MAX_DRAFT_TEST_CASES) {
+    throw Object.assign(
+      new Error(`Chọn tối đa ${MAX_DRAFT_TEST_CASES} test case một lần.`),
+      { status: 400 },
+    );
+  }
+
+  const report = analyzer.buildTraceReport({ root, dirs });
+  const byId = new Map(report.testCases.map((tc) => [tc.id, tc]));
+
+  // Gom chi tiết từ mọi file test-case: một TC có thể nằm ở file bất kỳ.
+  const details = new Map();
+  let tcParse = { files: [] };
+  try { tcParse = analyzer.parseTestCases(root, dirs.testCases); } catch (_) { /* chưa có thư mục */ }
+  for (const file of tcParse.files || []) {
+    try {
+      const raw = fs.readFileSync(path.join(root, file), 'utf8');
+      for (const [id, detail] of analyzer.extractTestCaseDetails(raw)) {
+        // File nào có bảng bước thì thắng — bản chỉ có tiêu đề không mang thêm thông tin.
+        const existing = details.get(id);
+        if (!existing || (!existing.steps.length && detail.steps.length)) details.set(id, detail);
+      }
+    } catch (_) { /* file không đọc được thì bỏ qua, đã có cảnh báo ở nơi khác */ }
+  }
+
+  const drafts = [];
+  const missing = [];
+  for (const id of wanted) {
+    const candidate = byId.get(id);
+    const detail = details.get(id);
+    if (!candidate && !detail) { missing.push(id); continue; }
+    drafts.push(draftBuilder.buildBddDraft({ candidate: candidate || { id }, detail: detail || null, dirs }));
+  }
+
+  if (!drafts.length) {
+    throw Object.assign(
+      new Error(`Không tìm thấy test case nào trong tài liệu: ${missing.join(', ')}.`),
+      { status: 404 },
+    );
+  }
+
+  const text = draftBuilder.buildBddDraftDocument(drafts, {
+    source: `${dirs.testCases}/ của repo này`,
+  });
+
+  return {
+    available: true,
+    dirs,
+    ids: drafts.map((d) => d.id),
+    missing,
+    warnings: drafts.flatMap((d) => d.warnings),
+    stepCounts: Object.fromEntries(drafts.map((d) => [d.id, d.stepCount])),
+    text,
+  };
+}
+
 function getCandidates(root, limit = 7) {
   const status = analyzerStatus();
   const { dirs } = readQaConfig(root);
@@ -447,6 +543,8 @@ module.exports = {
   listDocuments,
   readDocument,
   saveDocument,
+  getBddDraft,
+  MAX_DRAFT_TEST_CASES,
   MAX_DOCUMENT_BYTES,
   getDecisions,
   saveDecisionAnswer,

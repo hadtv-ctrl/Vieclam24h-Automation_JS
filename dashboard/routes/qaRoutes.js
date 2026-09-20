@@ -12,6 +12,7 @@ const {
   listDocuments,
   readDocument,
   saveDocument,
+  getBddDraft,
 } = require('../services/qaService');
 const { sendJson, parseBody } = require('./routeUtils');
 
@@ -73,6 +74,18 @@ async function handleQaRoutes(request, response, url, context = {}) {
       sendJson(response, status, {
         error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
       });
+    }
+    return true;
+  }
+
+  // Bản thảo BDD: chỉ đọc, không lưu đâu cả. Dựng lại mỗi lần gọi từ tài liệu hiện tại.
+  if (request.method === 'GET' && url.pathname === '/api/qa/bdd-draft') {
+    try {
+      const ids = (url.searchParams.get('ids') || '').split(',');
+      sendJson(response, 200, getBddDraft(root, ids));
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 500;
+      sendJson(response, status, { error: error.message });
     }
     return true;
   }
