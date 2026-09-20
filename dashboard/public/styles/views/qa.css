@@ -64,7 +64,7 @@
 /* .panel đã lo viền, bo góc, nền và đổ bóng. Ở đây chỉ thêm khoảng đệm trong. */
 .qa-panel { padding: 16px 18px 18px; }
 .qa-panel[hidden] { display: none; }
-.qa-panel-hint { margin: 0 0 12px; max-width: 88ch; }
+.qa-panel-hint { margin: 0 0 12px; max-width: none; line-height: 1.5; }
 .qa-filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .qa-candidate-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .qa-pick-col { width: 36px; text-align: center; }
@@ -89,6 +89,15 @@
   border-bottom: 1px solid var(--line);
 }
 .qa-draft-meta { margin: 2px 0 0; font-size: var(--font-caption); color: var(--muted); }
+.qa-draft-disclaimer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: var(--font-caption);
+  color: var(--muted);
+}
+.qa-draft-disclaimer i { font-size: 14px; color: var(--accent); flex-shrink: 0; }
 .qa-draft-warnings:empty { display: none; }
 .qa-draft-warnings { padding: 10px 14px 0; }
 .qa-draft-warn { margin: 0 0 4px; font-size: var(--font-caption); color: var(--warning); }
