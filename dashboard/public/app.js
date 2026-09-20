@@ -15790,6 +15790,55 @@ async function handleGitPull() {
   }
 }
 
+async function handleFrameworkUpdate() {
+  const btn = document.getElementById('btn-git-update-framework');
+  const statusEl = document.getElementById('framework-update-status');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Đang tải Framework…';
+  }
+
+  appendGitTerminalLog('Đang bắt đầu quá trình tải Dashboard Framework & Core Engine mới nhất...');
+
+  try {
+    const res = await request('/api/framework/update', { method: 'POST' });
+
+    if (Array.isArray(res.logs)) {
+      res.logs.forEach((l) => appendGitTerminalLog(l));
+    }
+
+    if (res.ok) {
+      const msg = res.message || 'Cập nhật Dashboard Framework thành công!';
+      showToast(msg, 'success');
+      appendGitTerminalLog('🎉 ' + msg);
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--text-success, #10b981)';
+        statusEl.innerHTML = `<i class="ph-bold ph-check-circle"></i> ${msg} <br><small>Vui lòng <strong>nhấn F5</strong> để tải lại trang.</small>`;
+      }
+      await loadGitStatus(true);
+    } else {
+      const err = res.error || res.message || 'Cập nhật thất bại';
+      showToast(err, 'error');
+      appendGitTerminalLog('❌ ' + err);
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--text-danger, #ef4444)';
+        statusEl.innerHTML = `<i class="ph-bold ph-x-circle"></i> ${err}`;
+      }
+    }
+  } catch (err) {
+    showToast('Lỗi cập nhật Framework: ' + err.message, 'error');
+    appendGitTerminalLog('❌ Lỗi ngoại lệ: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ph-bold ph-arrow-circle-down"></i> Tải cập nhật Framework';
+    }
+  }
+}
+
 async function handleGitCommitPush(e) {
   if (e) e.preventDefault();
 
@@ -15924,6 +15973,11 @@ function initGitStudio() {
   // Lắng nghe nút Pull
   document.getElementById('btn-git-pull')?.addEventListener('click', () => {
     handleGitPull();
+  });
+
+  // Lắng nghe nút Tải cập nhật Dashboard Framework
+  document.getElementById('btn-git-update-framework')?.addEventListener('click', () => {
+    handleFrameworkUpdate();
   });
 
   // Lắng nghe Chọn tất cả / Bỏ chọn

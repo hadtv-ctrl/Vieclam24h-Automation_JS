@@ -14,6 +14,7 @@ const { listSpecs, listSpecDetails, specProjects, getPlaywrightProjects } = requ
 const { createBackup } = require('../services/resourceService');
 const { parseEnvFile, writeEnvFile } = require('./aiRoutes');
 const { sendJson, parseBody } = require('./routeUtils');
+const { updateFramework } = require('../../scripts/update-framework');
 
 const remoteRunConfig = { environments: {}, suites: {}, github: {} };
 const remoteRunService = createRemoteRunService({ config: remoteRunConfig, allowProd: process.env.DASHBOARD_ALLOW_PROD_REMOTE === '1' });
@@ -77,6 +78,15 @@ async function handleSystemRoutes(request, response, url, context = {}) {
   }
   if (request.method === 'POST' && url.pathname === '/api/system/apply-update') {
     try { const r = applyUpdate(); sendJson(response, r.ok ? 200 : 400, r); } catch (e) { sendJson(response, 500, { ok: false, error: e.message }); }
+    return true;
+  }
+  if (request.method === 'POST' && (url.pathname === '/api/framework/update' || url.pathname === '/api/system/update-framework')) {
+    try {
+      const r = updateFramework({ targetDir: root });
+      sendJson(response, r.ok ? 200 : 400, r);
+    } catch (e) {
+      sendJson(response, 500, { ok: false, error: e.message });
+    }
     return true;
   }
   if (request.method === 'GET' && url.pathname === '/api/settings') {
