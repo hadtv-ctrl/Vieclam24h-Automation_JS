@@ -42,19 +42,21 @@
         <span id="qa-alert-text"></span>
       </div>
 
-      <nav class="view-subnav qa-subnav" id="qa-subnav" role="tablist" aria-label="Phân hệ QA Docs">
-        <button type="button" class="view-subtab active" data-qa-tab="docs" role="tab" aria-selected="true">
-          <i class="ph-bold ph-files"></i> Tài liệu
-        </button>
-        <button type="button" class="view-subtab" data-qa-tab="candidates" role="tab" aria-selected="false">
-          <i class="ph-bold ph-robot"></i> Ứng viên automation
-        </button>
-        <button type="button" class="view-subtab" data-qa-tab="findings" role="tab" aria-selected="false">
-          <i class="ph-bold ph-warning-octagon"></i> Vấn đề
-        </button>
-        <button type="button" class="view-subtab" data-qa-tab="decisions" role="tab" aria-selected="false">
-          <i class="ph-bold ph-gavel"></i> Quyết định
-        </button>
+      <nav class="view-subnav script-subnav qa-subnav" id="qa-subnav" role="tablist" aria-label="Phân hệ QA Docs">
+        <div class="script-subnav-tabs">
+          <button type="button" class="view-subtab script-subtab active" data-qa-tab="docs" role="tab" aria-selected="true">
+            <i class="ph-bold ph-files"></i> Tài liệu
+          </button>
+          <button type="button" class="view-subtab script-subtab" data-qa-tab="candidates" role="tab" aria-selected="false">
+            <i class="ph-bold ph-robot"></i> Ứng viên automation
+          </button>
+          <button type="button" class="view-subtab script-subtab" data-qa-tab="findings" role="tab" aria-selected="false">
+            <i class="ph-bold ph-warning-octagon"></i> Vấn đề
+          </button>
+          <button type="button" class="view-subtab script-subtab" data-qa-tab="decisions" role="tab" aria-selected="false">
+            <i class="ph-bold ph-gavel"></i> Quyết định
+          </button>
+        </div>
       </nav>
 
       <!-- TÀI LIỆU — master/detail: chọn file bên trái, đọc bên phải.
@@ -64,10 +66,23 @@
 
         <div class="qa-docs-workspace" id="qa-docs-workspace" hidden>
           <aside class="panel qa-docs-sidebar">
-            <div class="qa-docs-search">
-              <i class="ph-bold ph-magnifying-glass"></i>
-              <input type="search" id="qa-docs-filter" class="qa-docs-filter"
-                     placeholder="Lọc theo mã hoặc tên file…" autocomplete="off">
+            <div class="pm-sidebar-head">
+              <div>
+                <span class="pm-section-tag">01 · DANH SÁCH TÀI LIỆU</span>
+                <h2 class="pm-sidebar-title"><i class="ph-bold ph-folders"></i> Tài liệu (<span id="qa-docs-count">0</span>)</h2>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="qa-docs-sidebar-refresh" type="button" class="btn-icon-subtle" title="Làm mới danh sách">
+                  <i class="ph-bold ph-arrows-clockwise"></i>
+                </button>
+              </div>
+            </div>
+            <div class="pm-sidebar-filter-box">
+              <div class="pm-sidebar-search qa-docs-search">
+                <i class="ph-bold ph-magnifying-glass"></i>
+                <input type="search" id="qa-docs-filter" class="qa-docs-filter"
+                       placeholder="Lọc theo mã hoặc tên file…" autocomplete="off">
+              </div>
             </div>
             <div class="qa-docs-list" id="qa-docs-list"></div>
             <p class="qa-docs-list-empty" id="qa-docs-list-empty" hidden>Không có tài liệu nào khớp.</p>

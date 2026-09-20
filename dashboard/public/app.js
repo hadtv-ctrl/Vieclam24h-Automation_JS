@@ -15197,9 +15197,19 @@ async function applySystemUpdate() {
     else if (terminal) terminal.textContent = logOutput;
 
     if (res.ok) {
-      if (statusMsg) statusMsg.textContent = res.message || 'Cập nhật hoàn tất!';
+      const statusBanner = document.getElementById('update-status-banner');
+      const latestTag = document.getElementById('update-latest-tag');
+      if (statusBanner) statusBanner.className = 'update-status-banner is-latest';
+      if (latestTag) {
+        latestTag.textContent = 'Mới nhất';
+        latestTag.className = 'update-ver-pill latest';
+      }
+      if (statusMsg) statusMsg.textContent = res.message || 'Cập nhật hoàn tất! Hệ thống đã ở phiên bản mới nhất.';
       if (statusIcon) statusIcon.className = 'ph-bold ph-check-circle';
-      showToast('Cập nhật hoàn tất! Vui lòng khởi động lại Dashboard.', 'success');
+      showToast('Cập nhật hoàn tất! Dashboard Framework đã được đồng bộ.', 'success');
+      setTimeout(() => {
+        checkSystemUpdate(false);
+      }, 1500);
     } else {
       if (statusMsg) statusMsg.textContent = 'Cập nhật thất bại: ' + (res.message || 'Lỗi không xác định');
       if (statusIcon) statusIcon.className = 'ph-bold ph-warning-circle';

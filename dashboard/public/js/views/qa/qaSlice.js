@@ -86,6 +86,7 @@ export class QaSlice {
     };
 
     on(root.querySelector('#qa-btn-refresh'), 'click', () => this.reload(true));
+    on(root.querySelector('#qa-docs-sidebar-refresh'), 'click', () => this.reload(true));
     on(root.querySelector('#qa-reader-back'), 'click', () => this.showOverview());
     on(root.querySelector('#qa-reader-answer'), 'click', () => this.openAnswerForm());
     on(root.querySelector('#qa-reader-edit'), 'click', () => this.openEditForm());
@@ -418,6 +419,8 @@ export class QaSlice {
       || (d.ids || []).some((id) => id.toLowerCase().includes(needle)));
 
     empty.hidden = matches.length > 0;
+    const countEl = root && root.querySelector('#qa-docs-count');
+    if (countEl) countEl.textContent = matches.length;
 
     const GROUPS = [
       { kind: 'requirement', label: 'Requirement' },
@@ -433,20 +436,35 @@ export class QaSlice {
 
   _docListItem(doc) {
     const active = this.activeDocPath === doc.path;
-    const btn = this._el('button', null, `qa-doc-item${active ? ' is-active' : ''}`);
-    btn.type = 'button';
+    const btn = this._el('div', null, `qa-doc-item dashboard-list-card${active ? ' is-active active' : ''}`);
+    btn.setAttribute('role', 'button');
+    btn.setAttribute('tabindex', '0');
     btn.setAttribute('aria-current', active ? 'true' : 'false');
-    btn.appendChild(this._el('span', doc.name, 'qa-doc-item-name'));
+
+    const isReq = doc.kind === 'requirement' || (doc.path && doc.path.startsWith('requirements'));
+    const iconClass = isReq ? 'ph-file-text' : 'ph-check-square-offset';
+    const iconWrap = this._el('div', null, 'qa-doc-icon dashboard-list-card__icon');
+    const icon = this._el('i', null, `ph-bold ${iconClass}`);
+    iconWrap.appendChild(icon);
+    btn.appendChild(iconWrap);
+
+    const body = this._el('div', null, 'qa-doc-item-body dashboard-list-card__body');
+    body.appendChild(this._el('span', doc.name, 'qa-doc-item-name'));
 
     const ids = doc.ids || [];
     if (ids.length) {
-      const shown = ids.slice(0, 4).join(' · ');
-      btn.appendChild(this._el(
-        'span',
-        ids.length > 4 ? `${shown} · +${ids.length - 4}` : shown,
-        'qa-doc-item-ids',
-      ));
+      const idsWrap = this._el('div', null, 'qa-doc-item-ids');
+      const maxShown = 3;
+      const shown = ids.slice(0, maxShown);
+      for (const id of shown) {
+        idsWrap.appendChild(this._el('span', id, 'qa-doc-id-chip'));
+      }
+      if (ids.length > maxShown) {
+        idsWrap.appendChild(this._el('span', `+${ids.length - maxShown}`, 'qa-doc-id-chip qa-doc-id-chip--more'));
+      }
+      body.appendChild(idsWrap);
     }
+    btn.appendChild(body);
 
     const handler = () => this.openDocument(doc.path);
     btn.addEventListener('click', handler);
