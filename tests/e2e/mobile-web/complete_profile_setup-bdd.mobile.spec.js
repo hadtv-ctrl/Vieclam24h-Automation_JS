@@ -1,8 +1,8 @@
 const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const profileData = require('../../../data/userProfileData.json');
 
-test.describe('Mobile Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu chí tìm việc và CV trên Mobile Web @profile @mobile @e2e', () => {
-  test('Người dùng mobile cập nhật thông tin cá nhân, tiêu chí tìm việc và tải lên CV', async ({
+test.describe('Mobile Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu chí tìm việc và CV trên Mobile Web @profile @mobile @e2e @REQ-005', () => {
+  test('TC-018 - AC-015 Hoàn thiện hồ sơ với thông tin cá nhân, tiêu chí tìm việc và CV trên mobile web', async ({
     authenticatedUser,
     homePage,
     onboardingPopup,

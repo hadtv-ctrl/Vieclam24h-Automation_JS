@@ -3,7 +3,7 @@ const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
 const { generateRandomVNPhone } = require('../../../core/utils/commonUtils');
 
-test.describe('Mobile Feature: Guest ứng tuyển việc không cần CV bằng OTP trên Mobile Web @applyjob @mobile @e2e', () => {
+test.describe('Mobile Feature: Guest ứng tuyển việc không cần CV bằng OTP trên Mobile Web @applyjob @mobile @e2e @REQ-004', () => {
   let newJobPage;
 
   test.afterEach(async () => {
@@ -16,7 +16,7 @@ test.describe('Mobile Feature: Guest ứng tuyển việc không cần CV bằng
     }
   });
 
-  test('Guest mobile đăng nhập bằng OTP khi ứng tuyển việc không cần CV thành công', async ({
+  test('TC-016 - AC-013 Khách vãng lai ứng tuyển việc không cần CV và tạo tài khoản bằng OTP trên mobile web', async ({
     onboardingPopup,
     homePage,
     jobSearchPage,

@@ -3,8 +3,8 @@ const userData = require('../../../data/users.json');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../../core/utils/commonUtils');
 const { LoginPopup } = require('../../../pages/desktop/LoginPopup');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Email @register @smoke @smoke-desktop @desktop @e2e', () => {
-  test('Kiểm tra luồng đăng ký bằng Email', async ({ page, pages }, testInfo) => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Email @register @smoke @smoke-desktop @desktop @e2e @REQ-001', () => {
+  test('TC-001 - AC-001 Đăng ký tài khoản bằng email chưa tồn tại', async ({ page, pages }, testInfo) => {
     const homePage = pages.homePage;
     const loginPopup = new LoginPopup(page);
     test.setTimeout(180000);

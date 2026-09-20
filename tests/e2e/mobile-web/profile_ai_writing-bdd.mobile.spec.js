@@ -1,8 +1,8 @@
 const { test } = require('../../../core/fixtures/mobileWebTest');
 const aiProfileData = require('../../../data/aiProfileData.json');
 
-test.describe('Mobile Feature: Dùng trợ lý AI để hoàn thiện hồ sơ trên Mobile Web @profile @ai @mobile @e2e', () => {
-  test('Người dùng mobile viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI', async ({
+test.describe('Mobile Feature: Dùng trợ lý AI để hoàn thiện hồ sơ trên Mobile Web @profile @ai @mobile @e2e @REQ-006', () => {
+  test('TC-024 - AC-020 Viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI trên mobile web', async ({
     authenticatedUser,
     onboardingPopup,
     userProfilePage,

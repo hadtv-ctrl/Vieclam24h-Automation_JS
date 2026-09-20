@@ -2,8 +2,8 @@ const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const userData = require('../../../data/users.json');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../../core/utils/commonUtils');
 
-test.describe('Mobile Feature: Đăng ký tài khoản người tìm việc bằng Email trên Mobile Web @register @smoke @smoke-mobile @mobile @e2e', () => {
-  test('Kiểm tra luồng đăng ký bằng Email trên mobile', async ({ loginPopup, homePage }, testInfo) => {
+test.describe('Mobile Feature: Đăng ký tài khoản người tìm việc bằng Email trên Mobile Web @register @smoke @smoke-mobile @mobile @e2e @REQ-001', () => {
+  test('TC-002 - AC-001 Đăng ký tài khoản bằng email chưa tồn tại trên mobile web', async ({ loginPopup, homePage }, testInfo) => {
     test.setTimeout(120000);
 
     testInfo.annotations.push({
