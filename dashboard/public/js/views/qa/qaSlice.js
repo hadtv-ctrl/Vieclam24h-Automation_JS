@@ -436,8 +436,9 @@ export class QaSlice {
 
   _docListItem(doc) {
     const active = this.activeDocPath === doc.path;
-    const btn = this._el('button', null, `qa-doc-item dashboard-list-card${active ? ' is-active active' : ''}`);
-    btn.type = 'button';
+    const btn = this._el('div', null, `qa-doc-item dashboard-list-card${active ? ' is-active active' : ''}`);
+    btn.setAttribute('role', 'button');
+    btn.setAttribute('tabindex', '0');
     btn.setAttribute('aria-current', active ? 'true' : 'false');
 
     const isReq = doc.kind === 'requirement' || (doc.path && doc.path.startsWith('requirements'));
