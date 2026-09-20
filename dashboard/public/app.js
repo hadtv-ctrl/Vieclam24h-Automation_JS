@@ -6184,6 +6184,10 @@ async function loadAiSettings() {
    DOCS & KNOWLEDGE HUB CONTROLLER (TRUNG TÂM HƯỚNG DẪN STANDALONE)
 ============================================================================== */
 let docsCatalog = [];
+// Siêu dữ liệu do server rút ra từ chính tài liệu (tiêu đề, có phải tài liệu dự án không).
+// Nhờ nó, thêm một tài liệu không còn phải sửa DOCS_METADATA ở file này — vốn nằm trong
+// dashboard/ và bị sync ghi đè toàn bộ.
+let docsMeta = {};
 let currentDocFile = null;
 let currentDocFilter = 'all';
 let isDeveloperSession = false;
@@ -6241,30 +6245,52 @@ const DOCS_METADATA = {
 };
 
 const DOC_GROUP_CONFIG = [
+  // 'project' đứng đầu: tài liệu nghiệp vụ của chính dự án quan trọng hơn tài liệu khung.
+  { id: 'project', title: 'Tài liệu dự án', icon: 'ph-bold ph-folder-open' },
   { id: 'guides', title: 'Hướng dẫn & Khởi đầu', icon: 'ph-bold ph-book-open' },
   { id: 'prompts', title: 'Quy tắc & Prompts AI', icon: 'ph-bold ph-sparkle' },
-  { id: 'skills', title: 'Bộ Kỹ năng (Skills)', icon: 'ph-bold ph-brain' }
+  { id: 'skills', title: 'Bộ Kỹ năng (Skills)', icon: 'ph-bold ph-brain' },
+  // Thiếu nhóm này thì AGENTS.md / CLAUDE.md / GEMINI.md bị getDocMetadata xếp vào
+  // category 'context' rồi BIẾN MẤT khỏi cây tài liệu, vì không nhóm nào nhận chúng.
+  { id: 'context', title: 'Ngữ cảnh cho AI', icon: 'ph-bold ph-robot' }
 ];
 
 function getDocMetadata(filePath) {
+  const fromServer = docsMeta[filePath] || {};
+  // Tài liệu của dự án luôn ưu tiên dữ liệu đọc từ file, kể cả khi Hub có sẵn một mục
+  // trong DOCS_METADATA: bảng ở đây là của Hub, còn nội dung là của dự án.
+  if (fromServer.isProject) {
+    return {
+      title: fromServer.title || filePath.split('/').pop(),
+      badge: 'PROJECT',
+      icon: 'ph-bold ph-file-text',
+      iconClass: 'type-guide',
+      category: 'project'
+    };
+  }
   if (DOCS_METADATA[filePath]) return DOCS_METADATA[filePath];
-  const filename = filePath.split('/').pop();
+  const filename = fromServer.title || filePath.split('/').pop();
   let category = 'guides';
   let iconClass = 'type-guide';
   let icon = 'ph-bold ph-file-text';
   let badge = 'DOC';
 
-  if (filePath.includes('skill')) {
+  // So khớp KHÔNG phân biệt hoa thường. Trước đây dùng filePath.includes('agent') nên
+  // AGENTS.md / CLAUDE.md / GEMINI.md — viết hoa — không bao giờ khớp, và bị xếp nhầm vào
+  // nhóm "Hướng dẫn & Khởi đầu" thay vì nhóm ngữ cảnh cho AI.
+  const probe = filePath.toLowerCase();
+
+  if (probe.includes('skill')) {
     category = 'skills';
     iconClass = 'type-skill';
     icon = 'ph-bold ph-brain';
     badge = 'SKILL';
-  } else if (filePath.includes('prompt') || filePath.includes('rules')) {
+  } else if (probe.includes('prompt') || probe.includes('rules')) {
     category = 'prompts';
     iconClass = 'type-prompt';
     icon = 'ph-bold ph-sparkle';
     badge = 'PROMPT';
-  } else if (filePath.includes('agent') || filePath.includes('gemini') || filePath.includes('claude')) {
+  } else if (probe.includes('agent') || probe.includes('gemini') || probe.includes('claude')) {
     category = 'context';
     iconClass = 'type-context';
     icon = 'ph-bold ph-robot';
@@ -6280,6 +6306,7 @@ async function openDocsView(targetDoc = null) {
   try {
     const res = await request('/api/resources');
     docsCatalog = res.documents || [];
+    docsMeta = res.documentMeta || {};
     isDeveloperSession = Boolean(res.isDeveloper);
     updateDocsRoleIndicator();
     initDocsSubnav();
@@ -6872,6 +6899,7 @@ function initDocsViewListeners() {
     try {
       const res = await request('/api/resources');
       docsCatalog = res.documents || [];
+      docsMeta = res.documentMeta || {};
       isDeveloperSession = Boolean(res.isDeveloper);
       updateDocsRoleIndicator();
       renderDocsTreeList(document.getElementById('docs-search-input')?.value || '', currentDocFilter);

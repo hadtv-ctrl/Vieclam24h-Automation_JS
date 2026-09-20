@@ -11,6 +11,7 @@ const {
   saveDecisionAnswer,
   listDocuments,
   readDocument,
+  saveDocument,
 } = require('../services/qaService');
 const { sendJson, parseBody } = require('./routeUtils');
 
@@ -56,6 +57,22 @@ async function handleQaRoutes(request, response, url, context = {}) {
     } catch (error) {
       const status = Number.isInteger(error.status) ? error.status : 500;
       sendJson(response, status, { error: error.message });
+    }
+    return true;
+  }
+
+  if (request.method === 'PUT' && url.pathname === '/api/qa/document') {
+    try {
+      const body = await parseBody(request);
+      if (Buffer.byteLength(JSON.stringify(body || {}), 'utf8') > MAX_BODY_BYTES) {
+        return sendJson(response, 413, { error: 'Nội dung lớn hơn giới hạn 1 MB.' }) || true;
+      }
+      sendJson(response, 200, { message: 'Đã lưu tài liệu.', ...saveDocument(root, body || {}) });
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
     }
     return true;
   }

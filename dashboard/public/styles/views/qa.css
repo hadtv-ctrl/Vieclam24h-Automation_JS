@@ -29,6 +29,10 @@
 .qa-source-config { color: var(--muted); font-style: italic; }
 
 .qa-view .hero-stats-group[hidden] { display: none; }
+/* ui-primitives đặt `button { display: inline-flex }`, đủ để thắng rule mặc định của
+   trình duyệt cho [hidden]. Kết quả: mọi nút đặt hidden trong view này vẫn hiện ra.
+   Khắc phục một lần cho cả view thay vì bắt từng nút một. */
+.qa-view button[hidden] { display: none; }
 /* hero-actions mặc định là grid canh phải; cụm số liệu và nút xếp dọc, giữa hai hàng
    có khoảng thở riêng. */
 .qa-hero-right { gap: 10px; }
@@ -127,6 +131,9 @@
   background: var(--surface-2);
 }
 .qa-empty[hidden] { display: none; }
+/* Chặn ở tầng CSS: một khối rỗng không bao giờ được vẽ ra khung. Chỉ dựa vào JS đặt
+   hidden là đủ để một nhánh rẽ quên set cờ sinh ra dải viền trống giữa trang. */
+.qa-empty:empty { display: none; }
 .qa-empty-title { margin: 0 0 8px; font-weight: 600; font-size: var(--font-body); }
 .qa-empty-line {
   margin: 0 0 6px;
@@ -422,7 +429,99 @@
   color: var(--warning);
 }
 
-.qa-reader-body { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 6px; max-width: 92ch; }
+.qa-reader-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Biểu mẫu sửa / trả lời — nằm giữa đầu trang và thân bài để không che mất nội dung
+   người dùng đang đọc khi họ viết câu trả lời. */
+.qa-reader-form {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-2));
+}
+.qa-reader-form[hidden] { display: none; }
+.qa-form-title { margin: 0 0 4px; font-size: var(--font-body); font-weight: 700; }
+.qa-form-hint { margin: 0 0 12px; font-size: var(--font-caption); color: var(--muted); max-width: 88ch; line-height: 1.55; }
+.qa-form-body { display: flex; flex-direction: column; gap: 10px; max-height: 44vh; overflow-y: auto; }
+
+.qa-question {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.qa-question.is-answered { opacity: 0.66; }
+.qa-question-text { margin: 0 0 8px; font-size: var(--font-control); line-height: 1.6; }
+.qa-question-note { margin: 0; font-size: var(--font-caption); color: var(--muted); font-style: italic; }
+
+.qa-edit-area { font-family: var(--font-mono); font-size: var(--font-caption); line-height: 1.6; }
+
+.qa-form-footer { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 12px; }
+.qa-form-by { display: flex; flex-direction: column; gap: 4px; }
+.qa-form-by input {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--input);
+  color: var(--text);
+  font-size: var(--font-control);
+  font-family: inherit;
+}
+.qa-form-status { font-size: var(--font-caption); color: var(--muted); }
+.qa-form-status.is-error { color: var(--danger); }
+
+/* Hai cột: thân tài liệu giữ bề ngang dễ đọc, phần còn lại dành cho mục lục — giống
+   cách mục Hướng dẫn đang làm. Trước đó phần thừa bên phải bỏ trống gần 400px. */
+.qa-reader-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.qa-reader-body { min-width: 0; min-height: 0; overflow-y: auto; padding-right: 6px; max-width: 92ch; }
+
+.qa-reader-outline {
+  min-width: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--line);
+  padding-left: 14px;
+}
+.qa-reader-outline:empty { display: none; }
+.qa-outline-title {
+  margin: 0 0 8px;
+  font-size: var(--font-meta);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.qa-outline-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  height: auto;
+  min-height: 0;
+  padding: 3px 0 3px 0;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--font-caption);
+  line-height: 1.45;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.qa-outline-link:hover { color: var(--accent); }
+.qa-outline-l2 { padding-left: 10px; }
+.qa-outline-l3 { padding-left: 20px; }
+.qa-outline-l4,
+.qa-outline-l5,
+.qa-outline-l6 { padding-left: 28px; }
 .qa-reader-loading { color: var(--muted); font-size: var(--font-control); }
 .qa-reader-error {
   padding: 12px 14px;
@@ -518,6 +617,12 @@
   white-space: nowrap;
 }
 .qa-md-table tbody tr:last-child td { border-bottom: none; }
+
+@media (max-width: 1400px) {
+  /* Hẹp hơn thì mục lục không còn đáng giá bằng bề ngang cho thân bài. */
+  .qa-reader-main { grid-template-columns: minmax(0, 1fr); }
+  .qa-reader-outline { display: none; }
+}
 
 @media (max-width: 1050px) {
   .qa-docs-workspace {

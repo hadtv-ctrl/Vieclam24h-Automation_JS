@@ -13,7 +13,7 @@ const path = require('path');
 
 const {
   getTrace, getCandidates, getDecisions, saveDecisionAnswer, readQaConfig, isAnswered,
-  listDocuments, readDocument, MAX_DOCUMENT_BYTES,
+  listDocuments, readDocument, saveDocument, MAX_DOCUMENT_BYTES,
 } = require('./qaService');
 
 // scripts/lib/sync-manifest.js là công cụ vận hành RIÊNG CỦA HUB nên nằm trong excludes,
@@ -67,6 +67,70 @@ const FULL = {
   'test-cases/REQ-001.md': TC_DOC,
   'tests/e2e/login.spec.js': SPEC,
 };
+
+test('saveDocument ghi được requirement và luôn sao lưu trước', () => {
+  withRepo(FULL, (root) => {
+    const next = `${REQ_DOC}${String.fromCharCode(10)}- AC-003: thêm mới.${String.fromCharCode(10)}`;
+    const res = saveDocument(root, { path: 'requirements/REQ-001.md', content: next });
+    assert.equal(res.changed, true);
+    assert.ok(res.backup, 'phải có bản sao lưu');
+    assert.equal(fs.readFileSync(path.join(root, 'requirements/REQ-001.md'), 'utf8'), next);
+    assert.ok(fs.existsSync(path.join(root, res.backup)), 'file sao lưu phải tồn tại thật');
+  });
+});
+
+test('nội dung y hệt cũ thì không ghi và không sinh rác sao lưu', () => {
+  withRepo(FULL, (root) => {
+    const res = saveDocument(root, { path: 'requirements/REQ-001.md', content: REQ_DOC });
+    assert.equal(res.changed, false);
+    assert.equal(res.backup, null);
+    assert.equal(fs.existsSync(path.join(root, '.dashboard-backups')), false);
+  });
+});
+
+test('test-cases/ vẫn TUYỆT ĐỐI chỉ đọc', () => {
+  withRepo(FULL, (root) => {
+    const before = fs.readFileSync(path.join(root, 'test-cases/REQ-001.md'), 'utf8');
+    assert.throws(
+      () => saveDocument(root, { path: 'test-cases/REQ-001.md', content: '# bị ghi đè' }),
+      (err) => err.status === 403,
+    );
+    assert.equal(fs.readFileSync(path.join(root, 'test-cases/REQ-001.md'), 'utf8'), before);
+  });
+});
+
+test('không ghi được ra ngoài danh sách, và không ghi nội dung rỗng', () => {
+  withRepo({ ...FULL, 'bi-mat.md': 'nhạy cảm' }, (root) => {
+    for (const bad of ['../../x.md', 'bi-mat.md', 'requirements/khong-co.md']) {
+      assert.throws(() => saveDocument(root, { path: bad, content: '# x' }), (e) => e.status === 404, bad);
+    }
+    assert.throws(() => saveDocument(root, { path: 'requirements/REQ-001.md', content: '   ' }), (e) => e.status === 400);
+    assert.throws(() => saveDocument(root, { path: 'requirements/REQ-001.md' }), (e) => e.status === 400);
+    assert.equal(fs.readFileSync(path.join(root, 'bi-mat.md'), 'utf8'), 'nhạy cảm');
+  });
+});
+
+test('khoá lạc quan: file đã đổi trên đĩa thì từ chối ghi đè', () => {
+  withRepo(FULL, (root) => {
+    assert.throws(
+      () => saveDocument(root, { path: 'requirements/REQ-001.md', content: '# mới', expectedBytes: 999999 }),
+      (err) => err.status === 409,
+    );
+    // Đúng số byte thì cho qua.
+    const bytes = Buffer.byteLength(REQ_DOC, 'utf8');
+    assert.equal(saveDocument(root, { path: 'requirements/REQ-001.md', content: '# mới', expectedBytes: bytes }).changed, true);
+  });
+});
+
+test('nội dung vượt giới hạn bị từ chối, file cũ còn nguyên', () => {
+  withRepo(FULL, (root) => {
+    assert.throws(
+      () => saveDocument(root, { path: 'requirements/REQ-001.md', content: 'x'.repeat(MAX_DOCUMENT_BYTES + 5) }),
+      (err) => err.status === 413,
+    );
+    assert.equal(fs.readFileSync(path.join(root, 'requirements/REQ-001.md'), 'utf8'), REQ_DOC);
+  });
+});
 
 test('listDocuments liệt kê cả requirement lẫn test-case, kèm mã trong từng file', () => {
   withRepo(FULL, (root) => {
