@@ -438,7 +438,8 @@
 }
 .qa-docs-group:first-child { margin-top: 0; }
 
-.qa-doc-item {
+.qa-doc-item,
+.qa-doc-item.dashboard-list-card {
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -446,7 +447,7 @@
   width: 100%;
   min-width: 0;
   height: auto !important;
-  min-height: 56px;
+  min-height: 60px !important;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -455,6 +456,7 @@
   box-sizing: border-box;
   text-align: left;
   cursor: pointer;
+  overflow: visible !important;
   transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease, transform .15s ease;
   user-select: none;
 }
