@@ -136,6 +136,15 @@
           Test case đã có tài liệu nhưng chưa spec nào tham chiếu tới. Test case khai rõ
           <em>không automation</em> đã được loại khỏi danh sách này.
         </p>
+        <div class="qa-candidate-actions">
+          <button type="button" class="btn-primary-sm" id="qa-btn-draft" disabled>
+            <i class="ph-bold ph-file-text"></i> <span id="qa-btn-draft-label">Sinh bản thảo BDD</span>
+          </button>
+          <button type="button" class="btn-secondary-sm" id="qa-btn-draft-clear" hidden>
+            <i class="ph-bold ph-x"></i> Bỏ chọn
+          </button>
+        </div>
+
         <div class="qa-filter-row" id="qa-candidate-filters">
           <button type="button" class="pm-filter-pill active" data-qa-priority="all">Tất cả</button>
           <button type="button" class="pm-filter-pill" data-qa-priority="P0">P0</button>
@@ -144,16 +153,38 @@
           <button type="button" class="pm-filter-pill" data-qa-priority="P3">P3</button>
         </div>
         <div class="qa-empty" id="qa-candidates-empty" hidden></div>
+        <section class="qa-draft" id="qa-draft" hidden>
+          <header class="qa-draft-head">
+            <div>
+              <p class="eyebrow"><i class="ph-bold ph-list-checks"></i> BẢN THẢO KỊCH BẢN BDD</p>
+              <p class="qa-draft-meta" id="qa-draft-meta"></p>
+            </div>
+            <div class="qa-reader-actions">
+              <button type="button" class="btn-secondary-sm" id="qa-draft-copy">
+                <i class="ph-bold ph-copy"></i> Sao chép
+              </button>
+              <button type="button" class="btn-secondary-sm" id="qa-draft-close">
+                <i class="ph-bold ph-x"></i> Đóng
+              </button>
+            </div>
+          </header>
+          <div class="qa-draft-warnings" id="qa-draft-warnings"></div>
+          <pre class="qa-draft-body" id="qa-draft-body"></pre>
+        </section>
+
         <div class="qa-table-wrap" id="qa-candidates-wrap" hidden>
           <table class="qa-table">
             <thead>
               <tr>
-                <th style="width: 14%">Test case</th>
+                <th style="width: 4%" class="qa-pick-col">
+                  <input type="checkbox" id="qa-pick-all" aria-label="Chọn tất cả">
+                </th>
+                <th style="width: 12%">Test case</th>
                 <th style="width: 16%">Requirement</th>
                 <th style="width: 12%">AC</th>
                 <th style="width: 10%">Ưu tiên</th>
                 <th style="width: 14%">Khai báo</th>
-                <th style="width: 34%">Nguồn</th>
+                <th style="width: 32%">Nguồn</th>
               </tr>
             </thead>
             <tbody id="qa-candidates-tbody"></tbody>

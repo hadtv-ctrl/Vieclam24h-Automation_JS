@@ -66,6 +66,45 @@
 .qa-panel[hidden] { display: none; }
 .qa-panel-hint { margin: 0 0 12px; max-width: 88ch; }
 .qa-filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.qa-candidate-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.qa-pick-col { width: 36px; text-align: center; }
+.qa-table .qa-pick-col { padding-right: 0; }
+.qa-pick-col input { cursor: pointer; accent-color: var(--accent); }
+
+/* Bản thảo BDD — chỉ hiển thị, không lưu đâu cả. Đặt TRÊN bảng để thấy ngay sau khi bấm. */
+.qa-draft {
+  margin-bottom: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface-2));
+  overflow: hidden;
+}
+.qa-draft[hidden] { display: none; }
+.qa-draft-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.qa-draft-meta { margin: 2px 0 0; font-size: var(--font-caption); color: var(--muted); }
+.qa-draft-warnings:empty { display: none; }
+.qa-draft-warnings { padding: 10px 14px 0; }
+.qa-draft-warn { margin: 0 0 4px; font-size: var(--font-caption); color: var(--warning); }
+.qa-draft-error { margin: 0; font-size: var(--font-control); color: var(--danger); }
+.qa-draft-body {
+  margin: 0;
+  padding: 14px;
+  max-height: 52vh;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-caption);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
 
 .qa-table-wrap {
   border: 1px solid var(--line);

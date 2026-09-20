@@ -47,6 +47,10 @@ export class QaSlice {
     this._activeDoc = null;
     this._openQuestions = [];
     this._degraded = [];
+    // Tập test case đang chọn để sinh bản thảo. Giữ ngoài DOM để sống qua mỗi lượt render
+    // và qua cả bộ lọc ưu tiên.
+    this.pickedIds = new Set();
+    this.draftText = '';
     this._lastAuthor = '';
   }
 
@@ -85,6 +89,11 @@ export class QaSlice {
     on(root.querySelector('#qa-reader-back'), 'click', () => this.showOverview());
     on(root.querySelector('#qa-reader-answer'), 'click', () => this.openAnswerForm());
     on(root.querySelector('#qa-reader-edit'), 'click', () => this.openEditForm());
+    on(root.querySelector('#qa-btn-draft'), 'click', () => this.generateDraft());
+    on(root.querySelector('#qa-btn-draft-clear'), 'click', () => this.clearPicks());
+    on(root.querySelector('#qa-draft-copy'), 'click', () => this.copyDraft());
+    on(root.querySelector('#qa-draft-close'), 'click', () => this._closeDraft());
+    on(root.querySelector('#qa-pick-all'), 'change', (event) => this.toggleAllPicks(event.target.checked));
     on(root.querySelector('#qa-docs-filter'), 'input', (event) => {
       this.docFilter = event.target.value || '';
       this.renderDocList();
@@ -796,6 +805,7 @@ export class QaSlice {
 
     if (!list.length) {
       wrap.hidden = true;
+      this._syncPickState();
       this._setEmpty('qa-candidates-empty', this.candidates.length
         ? ['Không có ứng viên nào ở mức ưu tiên này']
         : [
@@ -811,6 +821,7 @@ export class QaSlice {
       const prioClass = KNOWN_PRIORITY.has(prioKey) ? ` qa-prio-${prioKey}` : '';
       const prio = this._cell(c.priority || '—', `qa-prio${prioClass}`);
       tbody.appendChild(this._row([
+        this._pickCell(c.id),
         this._cell(c.id, 'qa-mono'),
         this._cell(c.req || '—', 'qa-mono'),
         this._cell((c.acs || []).join(', ') || '—', 'qa-mono'),
@@ -820,6 +831,142 @@ export class QaSlice {
       ]));
     });
     wrap.hidden = false;
+    this._syncPickState();
+  }
+
+  /** Ô chọn của một ứng viên. Trạng thái giữ trong Set để không phụ thuộc DOM. */
+  _pickCell(id) {
+    const td = this._el('td', null, 'qa-pick-col');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = this.pickedIds.has(id);
+    box.setAttribute('aria-label', `Chọn ${id}`);
+    const handler = () => {
+      if (box.checked) this.pickedIds.add(id);
+      else this.pickedIds.delete(id);
+      this._syncPickState();
+    };
+    box.addEventListener('change', handler);
+    this._renderDisposers.push(() => box.removeEventListener('change', handler));
+    td.appendChild(box);
+    return td;
+  }
+
+  /** Đồng bộ nút và ô "chọn tất cả" theo tập đang chọn. */
+  _syncPickState() {
+    const root = this._root();
+    if (!root) return;
+    const visible = [...root.querySelectorAll('#qa-candidates-tbody .qa-pick-col input')];
+    const picked = visible.filter((b) => b.checked).length;
+
+    const all = root.querySelector('#qa-pick-all');
+    if (all) {
+      all.checked = visible.length > 0 && picked === visible.length;
+      all.indeterminate = picked > 0 && picked < visible.length;
+    }
+
+    const btn = root.querySelector('#qa-btn-draft');
+    const label = root.querySelector('#qa-btn-draft-label');
+    const clear = root.querySelector('#qa-btn-draft-clear');
+    if (btn) btn.disabled = this.pickedIds.size === 0;
+    if (label) {
+      label.textContent = this.pickedIds.size
+        ? `Sinh bản thảo BDD (${this.pickedIds.size})`
+        : 'Sinh bản thảo BDD';
+    }
+    if (clear) clear.hidden = this.pickedIds.size === 0;
+  }
+
+  toggleAllPicks(checked) {
+    const root = this._root();
+    if (!root) return;
+    for (const box of root.querySelectorAll('#qa-candidates-tbody .qa-pick-col input')) {
+      box.checked = checked;
+      const id = (box.getAttribute('aria-label') || '').replace('Chọn ', '').trim();
+      if (checked) this.pickedIds.add(id);
+      else this.pickedIds.delete(id);
+    }
+    this._syncPickState();
+  }
+
+  clearPicks() {
+    this.pickedIds.clear();
+    const root = this._root();
+    if (root) {
+      for (const box of root.querySelectorAll('#qa-candidates-tbody .qa-pick-col input')) box.checked = false;
+    }
+    this._closeDraft();
+    this._syncPickState();
+  }
+
+  _closeDraft() {
+    const box = this._root() && this._root().querySelector('#qa-draft');
+    if (box) box.hidden = true;
+  }
+
+  /**
+   * Sinh bản thảo. KHÔNG lưu ở đâu cả — mỗi lần bấm là dựng lại từ tài liệu hiện tại, vì
+   * test case còn thay đổi theo hệ thống. Muốn giữ thì người dùng tự sao chép ra.
+   */
+  async generateDraft() {
+    const root = this._root();
+    if (!root || !this.pickedIds.size) return;
+    const box = root.querySelector('#qa-draft');
+    const body = root.querySelector('#qa-draft-body');
+    const meta = root.querySelector('#qa-draft-meta');
+    const warn = root.querySelector('#qa-draft-warnings');
+    if (!box || !body) return;
+
+    box.hidden = false;
+    body.textContent = 'Đang dựng bản thảo…';
+    if (warn) warn.textContent = '';
+    if (meta) meta.textContent = '';
+
+    const ids = [...this.pickedIds].sort();
+    let res;
+    try {
+      res = await apiClient.get('/api/qa/bdd-draft', { ids: ids.join(',') });
+    } catch (error) {
+      body.textContent = '';
+      if (meta) meta.textContent = '';
+      if (warn) {
+        warn.textContent = '';
+        warn.appendChild(this._el('p', `Không dựng được bản thảo: ${error.message}`, 'qa-draft-error'));
+      }
+      return;
+    }
+
+    this.draftText = res.text || '';
+    body.textContent = this.draftText;
+    if (meta) {
+      const missing = (res.missing || []).length ? ` · không có trong tài liệu: ${res.missing.join(', ')}` : '';
+      meta.textContent = `${(res.ids || []).length} test case · dựng từ ${(res.dirs || {}).testCases}/${missing}`;
+    }
+    if (warn) {
+      warn.textContent = '';
+      for (const w of res.warnings || []) warn.appendChild(this._el('p', w, 'qa-draft-warn'));
+    }
+    body.scrollTop = 0;
+  }
+
+  async copyDraft() {
+    const status = this._root() && this._root().querySelector('#qa-draft-meta');
+    if (!this.draftText) return;
+    try {
+      await navigator.clipboard.writeText(this.draftText);
+      this.notify('Đã sao chép bản thảo BDD.');
+    } catch (_) {
+      // Không có quyền clipboard thì vẫn phải có đường thoát: bôi đen sẵn cho người dùng.
+      const body = this._root() && this._root().querySelector('#qa-draft-body');
+      if (body && window.getSelection) {
+        const range = document.createRange();
+        range.selectNodeContents(body);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      if (status) status.textContent = 'Trình duyệt chặn clipboard — nội dung đã được bôi đen, bấm Ctrl+C.';
+    }
   }
 
   // --- panel 3: findings ---
