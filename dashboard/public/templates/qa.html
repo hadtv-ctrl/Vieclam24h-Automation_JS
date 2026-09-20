@@ -106,13 +106,25 @@
                   <h2 class="qa-reader-title" id="qa-reader-title"></h2>
                   <p class="qa-reader-path qa-mono" id="qa-reader-path"></p>
                 </div>
-                <button type="button" class="btn-secondary-sm" id="qa-reader-back">
-                  <i class="ph-bold ph-arrow-left"></i> Tổng quan
-                </button>
+                <div class="qa-reader-actions">
+                  <button type="button" class="btn-secondary-sm" id="qa-reader-answer" hidden>
+                    <i class="ph-bold ph-chat-teardrop-text"></i> <span id="qa-reader-answer-label">Trả lời câu hỏi</span>
+                  </button>
+                  <button type="button" class="btn-secondary-sm" id="qa-reader-edit" hidden>
+                    <i class="ph-bold ph-pencil-simple"></i> Sửa tài liệu
+                  </button>
+                  <button type="button" class="btn-secondary-sm" id="qa-reader-back">
+                    <i class="ph-bold ph-arrow-left"></i> Tổng quan
+                  </button>
+                </div>
               </header>
               <dl class="qa-reader-meta" id="qa-reader-meta"></dl>
               <div class="qa-reader-chips" id="qa-reader-chips"></div>
-              <article class="qa-reader-body" id="qa-reader-body"></article>
+              <section class="qa-reader-form" id="qa-reader-form" hidden></section>
+              <div class="qa-reader-main">
+                <article class="qa-reader-body" id="qa-reader-body"></article>
+                <nav class="qa-reader-outline" id="qa-reader-outline" aria-label="Mục lục tài liệu"></nav>
+              </div>
             </div>
           </section>
         </div>

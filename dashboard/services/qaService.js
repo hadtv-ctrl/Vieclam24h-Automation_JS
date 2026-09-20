@@ -231,6 +231,82 @@ function readDocument(root, relPath) {
   };
 }
 
+/**
+ * Ghi lại một tài liệu REQUIREMENT.
+ *
+ * Đây là ngoại lệ DUY NHẤT của quy tắc "mục QA chỉ đọc requirements/". Ngoại lệ được thu
+ * hẹp hết mức có thể:
+ *  - chỉ file đã nằm trong danh sách trắng của listDocuments();
+ *  - chỉ `kind === 'requirement'`. test-cases/ vẫn tuyệt đối chỉ đọc: nó là đầu ra của
+ *    quy trình viết test, sửa tay ở đây sẽ lệch khỏi nguồn sinh ra nó;
+ *  - luôn sao lưu trước khi ghi;
+ *  - khoá lạc quan theo số byte: nếu file đã đổi trên đĩa kể từ lúc mở, từ chối ghi thay
+ *    vì lặng lẽ đè mất thay đổi của người khác (hoặc của AI agent đang chạy).
+ */
+function saveDocument(root, payload = {}) {
+  const wanted = String(payload.path || '').split('\\').join('/').trim();
+  if (!wanted) throw Object.assign(new Error('Thiếu đường dẫn tài liệu.'), { status: 400 });
+
+  if (typeof payload.content !== 'string') {
+    throw Object.assign(new Error('Thiếu nội dung tài liệu.'), { status: 400 });
+  }
+
+  const { documents, available, analyzer: status } = listDocuments(root);
+  if (!available) throw Object.assign(new Error(status.error), { status: 503 });
+
+  const entry = documents.find((d) => d.path === wanted);
+  if (!entry) {
+    throw Object.assign(
+      new Error(`Không có tài liệu "${wanted}" trong danh sách đọc được của repo này.`),
+      { status: 404 },
+    );
+  }
+  if (entry.kind !== 'requirement') {
+    throw Object.assign(
+      new Error('Chỉ sửa được tài liệu requirement. Thư mục test-cases/ là chỉ đọc.'),
+      { status: 403 },
+    );
+  }
+
+  const content = payload.content;
+  if (Buffer.byteLength(content, 'utf8') > MAX_DOCUMENT_BYTES) {
+    throw Object.assign(
+      new Error(`Nội dung lớn hơn giới hạn ${Math.round(MAX_DOCUMENT_BYTES / 1024)} KB.`),
+      { status: 413 },
+    );
+  }
+  if (!content.trim()) {
+    throw Object.assign(new Error('Không ghi đè tài liệu bằng nội dung rỗng.'), { status: 400 });
+  }
+
+  const absPath = path.join(root, entry.path);
+  const current = fs.readFileSync(absPath, 'utf8');
+
+  if (payload.expectedBytes !== undefined && payload.expectedBytes !== null) {
+    const actual = Buffer.byteLength(current, 'utf8');
+    if (Number(payload.expectedBytes) !== actual) {
+      throw Object.assign(
+        new Error('Tài liệu đã thay đổi trên đĩa kể từ lúc bạn mở. Hãy làm mới rồi sửa lại.'),
+        { status: 409 },
+      );
+    }
+  }
+
+  if (current === content) {
+    return { path: entry.path, changed: false, backup: null, bytes: Buffer.byteLength(content, 'utf8') };
+  }
+
+  const backup = createBackup(entry.path, absPath, root);
+  fs.writeFileSync(absPath, content, 'utf8');
+
+  return {
+    path: entry.path,
+    changed: true,
+    backup,
+    bytes: Buffer.byteLength(content, 'utf8'),
+  };
+}
+
 function getCandidates(root, limit = 7) {
   const status = analyzerStatus();
   const { dirs } = readQaConfig(root);
@@ -370,6 +446,7 @@ module.exports = {
   getCandidates,
   listDocuments,
   readDocument,
+  saveDocument,
   MAX_DOCUMENT_BYTES,
   getDecisions,
   saveDecisionAnswer,

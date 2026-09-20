@@ -11,6 +11,7 @@
 import { apiClient } from '../../core/apiClient.js';
 import { eventBus } from '../../core/eventBus.js';
 import { renderMarkdown, parseFrontMatter } from './markdownView.js';
+import { parseOpenQuestions, applyAnswers } from './openQuestions.js';
 
 const PRIORITY_ORDER = { P0: 0, P1: 1, P2: 2, P3: 3 };
 // Chỉ 4 lớp ưu tiên này có rule trong qa.css. Ghép chuỗi tự do sẽ sinh ra lớp chết
@@ -41,6 +42,12 @@ export class QaSlice {
     this.documents = [];
     this.activeDocPath = null;
     this.docFilter = '';
+    // Nội dung thô của tài liệu đang mở: là cơ sở cho mọi phép sửa, và `bytes` của nó làm
+    // khoá lạc quan để không đè mất thay đổi của người khác.
+    this._activeDoc = null;
+    this._openQuestions = [];
+    this._degraded = [];
+    this._lastAuthor = '';
   }
 
   async mount() {
@@ -76,6 +83,8 @@ export class QaSlice {
 
     on(root.querySelector('#qa-btn-refresh'), 'click', () => this.reload(true));
     on(root.querySelector('#qa-reader-back'), 'click', () => this.showOverview());
+    on(root.querySelector('#qa-reader-answer'), 'click', () => this.openAnswerForm());
+    on(root.querySelector('#qa-reader-edit'), 'click', () => this.openEditForm());
     on(root.querySelector('#qa-docs-filter'), 'input', (event) => {
       this.docFilter = event.target.value || '';
       this.renderDocList();
@@ -111,26 +120,69 @@ export class QaSlice {
     });
   }
 
+  /**
+   * Nạp dữ liệu cho cả mục QA.
+   *
+   * Dùng allSettled chứ không phải all: bốn endpoint này KHÔNG cùng mức thiết yếu. Trước
+   * đây một endpoint hỏng là cả màn hình trắng — và có một cách rất dễ gặp để nó hỏng:
+   * tiến trình dashboard khởi động từ trước khi endpoint mới ra đời vẫn phục vụ file JS
+   * MỚI đọc thẳng từ đĩa, trong khi bảng route của nó là bảng CŨ. Khi đó JS gọi một
+   * endpoint mà chính server đang chạy chưa biết, và người dùng thấy "Không tìm thấy tài
+   * nguyên" ở một tính năng hoàn toàn lành lặn.
+   *
+   * `trace` là thiết yếu — không có nó thì không có gì để hiển thị. Ba phần còn lại thiếu
+   * thì chỉ mất đúng phần đó.
+   */
   async reload(announce = false) {
     const root = this._root();
     if (!root) return;
-    try {
-      const [trace, candidates, decisions, documents] = await Promise.all([
-        apiClient.get('/api/qa/trace'),
-        apiClient.get('/api/qa/candidates', { limit: 50 }),
-        apiClient.get('/api/qa/decisions'),
-        apiClient.get('/api/qa/documents'),
-      ]);
-      this.trace = trace;
-      this.candidates = Array.isArray(candidates.candidates) ? candidates.candidates : [];
-      this.decisions = decisions;
-      this.documents = Array.isArray(documents.documents) ? documents.documents : [];
-    } catch (error) {
-      this._showAlert(`Không tải được dữ liệu QA: ${error.message}`, 'danger');
+
+    const [trace, candidates, decisions, documents] = await Promise.allSettled([
+      apiClient.get('/api/qa/trace'),
+      apiClient.get('/api/qa/candidates', { limit: 50 }),
+      apiClient.get('/api/qa/decisions'),
+      apiClient.get('/api/qa/documents'),
+    ]);
+
+    if (trace.status !== 'fulfilled') {
+      this._showAlert(
+        `Không tải được dữ liệu QA: ${trace.reason && trace.reason.message}`,
+        'danger',
+      );
       return;
     }
+
+    this.trace = trace.value;
+    this.candidates = candidates.status === 'fulfilled' && Array.isArray(candidates.value.candidates)
+      ? candidates.value.candidates
+      : [];
+    this.decisions = decisions.status === 'fulfilled' ? decisions.value : null;
+    this.documents = documents.status === 'fulfilled' && Array.isArray(documents.value.documents)
+      ? documents.value.documents
+      : [];
+
+    this._degraded = [
+      candidates.status === 'rejected' ? { part: 'ứng viên automation', reason: candidates.reason } : null,
+      decisions.status === 'rejected' ? { part: 'sổ quyết định', reason: decisions.reason } : null,
+      documents.status === 'rejected' ? { part: 'danh sách tài liệu', reason: documents.reason } : null,
+    ].filter(Boolean);
+
     this.renderAll();
     if (announce) this.notify('Đã làm mới dữ liệu QA.');
+  }
+
+  /**
+   * Endpoint thiếu hẳn (404) gần như luôn có cùng một nguyên nhân: server đang chạy là bản
+   * cũ hơn file JS nó phục vụ. Nói thẳng cách sửa thay vì để người dùng đoán.
+   */
+  _degradedMessage() {
+    if (!this._degraded || !this._degraded.length) return null;
+    const parts = this._degraded.map((d) => d.part).join(', ');
+    const anyMissing = this._degraded.some((d) => d.reason && d.reason.status === 404);
+    return anyMissing
+      ? `Server đang chạy là bản cũ hơn giao diện: thiếu API cho ${parts}.`
+        + ' Dừng rồi khởi động lại dashboard (Stop_Dashboard.bat rồi Start_Dashboard.bat).'
+      : `Chưa tải được ${parts}. Phần còn lại vẫn dùng bình thường.`;
   }
 
   renderAll() {
@@ -221,6 +273,11 @@ export class QaSlice {
     bar.hidden = false;
 
     this._hideAlert();
+    const degraded = this._degradedMessage();
+    if (degraded) {
+      this._showAlert(degraded, 'danger');
+      return;
+    }
     if (this.trace.available === false) {
       this._showAlert(
         (this.trace.analyzer && this.trace.analyzer.error) || 'Analyzer chưa sẵn sàng.',
@@ -392,6 +449,8 @@ export class QaSlice {
     const root = this._root();
     if (!root) return;
     this.activeDocPath = null;
+    this._activeDoc = null;
+    this._closeReaderForm();
     const overview = root.querySelector('#qa-reader-overview');
     const doc = root.querySelector('#qa-reader-doc');
     if (overview) overview.hidden = false;
@@ -409,6 +468,8 @@ export class QaSlice {
     if (!pane || !body) return;
 
     this.activeDocPath = relPath;
+    this._activeDoc = null;
+    this._closeReaderForm();
     if (overview) overview.hidden = true;
     pane.hidden = false;
     this.renderDocList();
@@ -436,14 +497,222 @@ export class QaSlice {
     // Người dùng có thể đã bấm sang tài liệu khác trong lúc chờ mạng.
     if (this.activeDocPath !== relPath) return;
 
+    this._activeDoc = doc;
     const { meta, body: markdown } = parseFrontMatter(doc.content);
     this._setReaderHead(doc.path, doc, meta);
+    this._setReaderActions(doc, doc.content);
     this._renderDocMeta(meta);
     if (chips) this._renderDocChips(chips, doc);
 
     body.textContent = '';
     body.appendChild(renderMarkdown(markdown));
     body.scrollTop = 0;
+    this._renderOutline(body);
+  }
+
+  /**
+   * Bật/tắt hai nút hành động. Chỉ tài liệu requirement mới sửa được — test-cases/ là đầu
+   * ra của quy trình viết test, sửa tay ở đây sẽ lệch khỏi thứ sinh ra nó.
+   */
+  _setReaderActions(doc, markdown) {
+    const root = this._root();
+    if (!root) return;
+    const answerBtn = root.querySelector('#qa-reader-answer');
+    const answerLabel = root.querySelector('#qa-reader-answer-label');
+    const editBtn = root.querySelector('#qa-reader-edit');
+    const editable = Boolean(doc) && doc.kind === 'requirement';
+
+    if (editBtn) editBtn.hidden = !editable;
+    if (!answerBtn) return;
+
+    const parsed = editable ? parseOpenQuestions(markdown) : { found: false, questions: [] };
+    this._openQuestions = parsed.questions;
+    const pending = parsed.questions.filter((q) => !q.answered).length;
+    answerBtn.hidden = !parsed.found || !parsed.questions.length;
+    if (answerLabel) {
+      answerLabel.textContent = pending
+        ? `Trả lời câu hỏi (${pending})`
+        : 'Câu hỏi đã chốt';
+    }
+  }
+
+  _closeReaderForm() {
+    const box = this._root() && this._root().querySelector('#qa-reader-form');
+    if (!box) return;
+    box.textContent = '';
+    box.hidden = true;
+  }
+
+  /** Khung chung cho hai biểu mẫu: tiêu đề, vùng thân, ô người chốt, nút lưu/huỷ. */
+  _formShell(title, hint) {
+    const box = this._root().querySelector('#qa-reader-form');
+    box.textContent = '';
+    box.hidden = false;
+    box.appendChild(this._el('p', title, 'qa-form-title'));
+    if (hint) box.appendChild(this._el('p', hint, 'qa-form-hint'));
+
+    const body = this._el('div', null, 'qa-form-body');
+    box.appendChild(body);
+
+    const footer = this._el('div', null, 'qa-form-footer');
+    const byWrap = this._el('label', null, 'qa-form-by');
+    byWrap.appendChild(this._el('span', 'Người chốt', 'qa-field-label'));
+    const by = document.createElement('input');
+    by.type = 'text';
+    by.placeholder = 'Tên bạn';
+    by.value = this._lastAuthor || '';
+    byWrap.appendChild(by);
+    footer.appendChild(byWrap);
+
+    const save = this._el('button', 'Lưu vào tài liệu', 'btn-primary-sm');
+    save.type = 'button';
+    const cancel = this._el('button', 'Huỷ', 'btn-secondary-sm');
+    cancel.type = 'button';
+    const status = this._el('span', '', 'qa-form-status');
+    footer.appendChild(save);
+    footer.appendChild(cancel);
+    footer.appendChild(status);
+    box.appendChild(footer);
+
+    const onCancel = () => this._closeReaderForm();
+    cancel.addEventListener('click', onCancel);
+    this._renderDisposers.push(() => cancel.removeEventListener('click', onCancel));
+
+    return { box, body, by, save, status };
+  }
+
+  /**
+   * Gửi nội dung mới lên server. Mọi biểu mẫu đều đi qua đúng đường này: một chỗ ghi duy
+   * nhất thì chỉ có một chỗ phải bảo vệ và kiểm thử.
+   */
+  async _saveDocument(content, status, save) {
+    const doc = this._activeDoc;
+    if (!doc) return false;
+    save.disabled = true;
+    status.className = 'qa-form-status';
+    status.textContent = 'Đang lưu…';
+    try {
+      const res = await apiClient.put('/api/qa/document', {
+        path: doc.path,
+        content,
+        expectedBytes: doc.bytes,
+      });
+      status.textContent = res.changed ? `Đã lưu. Bản sao lưu: ${res.backup}` : 'Không có thay đổi nào.';
+      this._closeReaderForm();
+      await this.reload();
+      this.notify(res.changed ? 'Đã cập nhật tài liệu requirement.' : 'Tài liệu không thay đổi.');
+      return true;
+    } catch (error) {
+      status.className = 'qa-form-status is-error';
+      status.textContent = error.status === 409
+        ? 'Tài liệu đã đổi trên đĩa (hoặc AI Agent đang chạy). Bấm Làm mới rồi thử lại.'
+        : `Không lưu được: ${error.message}`;
+      save.disabled = false;
+      return false;
+    }
+  }
+
+  /** Biểu mẫu trả lời từng câu hỏi treo trong mục Open questions. */
+  openAnswerForm() {
+    if (!this._activeDoc || !this._openQuestions || !this._openQuestions.length) return;
+    const { body, by, save, status } = this._formShell(
+      'Trả lời câu hỏi treo',
+      'Câu trả lời được ghi thẳng vào dòng câu hỏi, thay cho đuôi "cần ... xác nhận".'
+        + ' Phần còn lại của tài liệu giữ nguyên từng dòng.',
+    );
+
+    const inputs = [];
+    for (const q of this._openQuestions) {
+      const card = this._el('div', null, `qa-question${q.answered ? ' is-answered' : ''}`);
+      card.appendChild(this._el('p', q.text, 'qa-question-text'));
+      if (q.answered) {
+        card.appendChild(this._el('p', 'Câu này đã có kết luận trong tài liệu.', 'qa-question-note'));
+      } else {
+        const area = document.createElement('textarea');
+        area.className = 'qa-textarea';
+        area.rows = 2;
+        area.placeholder = 'Kết luận của bạn…';
+        card.appendChild(area);
+        inputs.push({ line: q.line, area });
+      }
+      body.appendChild(card);
+    }
+
+    const handler = async () => {
+      const author = by.value.trim();
+      if (!author) {
+        status.className = 'qa-form-status is-error';
+        status.textContent = 'Cần tên người chốt để ghi vào tài liệu.';
+        return;
+      }
+      const answers = inputs
+        .map((i) => ({ line: i.line, answer: i.area.value }))
+        .filter((a) => a.answer.trim());
+      if (!answers.length) {
+        status.className = 'qa-form-status is-error';
+        status.textContent = 'Chưa nhập câu trả lời nào.';
+        return;
+      }
+      this._lastAuthor = author;
+      const stamp = new Date().toISOString().slice(0, 10);
+      const next = applyAnswers(this._activeDoc.content, answers, { author, date: stamp });
+      await this._saveDocument(next.content, status, save);
+    };
+    save.addEventListener('click', handler);
+    this._renderDisposers.push(() => save.removeEventListener('click', handler));
+  }
+
+  /** Sửa trực tiếp Markdown thô. Dành cho việc viết lại đoạn văn, không chỉ trả lời. */
+  openEditForm() {
+    if (!this._activeDoc) return;
+    const { body, by, save, status } = this._formShell(
+      'Sửa tài liệu requirement',
+      'Sửa trực tiếp Markdown. Bản cũ được sao lưu tự động trước khi ghi đè.',
+    );
+
+    const area = document.createElement('textarea');
+    area.className = 'qa-textarea qa-edit-area';
+    area.rows = 22;
+    area.value = this._activeDoc.content;
+    area.spellcheck = false;
+    body.appendChild(area);
+
+    const handler = async () => {
+      const author = by.value.trim();
+      if (author) this._lastAuthor = author;
+      await this._saveDocument(area.value, status, save);
+    };
+    save.addEventListener('click', handler);
+    this._renderDisposers.push(() => save.removeEventListener('click', handler));
+  }
+
+  /**
+   * Mục lục dựng từ CHÍNH các tiêu đề đã render, không phải từ một lượt phân tích thứ hai.
+   * Một nguồn sự thật duy nhất: mục lục không thể lệch khỏi nội dung đang hiển thị.
+   */
+  _renderOutline(body) {
+    const box = this._root() && this._root().querySelector('#qa-reader-outline');
+    if (!box) return;
+    box.textContent = '';
+
+    const headings = [...body.querySelectorAll('.qa-md-h')];
+    // Một hai tiêu đề thì mục lục chỉ tốn chỗ; để trống cho :empty ẩn đi.
+    if (headings.length < 3) return;
+
+    box.appendChild(this._el('p', 'Mục lục', 'qa-outline-title'));
+    headings.forEach((heading, index) => {
+      const level = Number((heading.className.match(/qa-md-h(\d)/) || [, '1'])[1]);
+      const link = this._el('button', heading.textContent, `qa-outline-link qa-outline-l${level}`);
+      link.type = 'button';
+      link.title = heading.textContent;
+      const handler = () => {
+        body.scrollTop = heading.offsetTop - body.offsetTop;
+      };
+      link.addEventListener('click', handler);
+      this._renderDisposers.push(() => link.removeEventListener('click', handler));
+      box.appendChild(link);
+      void index;
+    });
   }
 
   /** Frontmatter thành dải key/value gọn ở đầu — đây là thứ người đọc liếc trước tiên. */

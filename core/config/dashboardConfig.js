@@ -63,6 +63,12 @@ const DEFAULT_CONFIG = Object.freeze({
     specs: 'tests',
     decisionsFile: 'decisions.json',
   },
+  // Thư mục tài liệu RIÊNG của dự án, được mục Hướng dẫn tự quét.
+  // Nhờ vậy thêm một tài liệu không còn phải sửa code trong dashboard/ — vùng mà sync
+  // ghi đè toàn bộ, nên mọi chỉnh sửa ở đó sẽ biến mất ở lần đồng bộ kế tiếp.
+  docs: {
+    dir: 'docs',
+  },
   branding: {
     projectName: "QA Automation Studio",
     projectSubtitle: "Playwright Automation Platform",
@@ -408,13 +414,17 @@ function normalizeDashboardConfig(input = {}, existingConfig = DEFAULT_CONFIG) {
     decisionsFile: asRelPath(qaInput.decisionsFile, qaFallback.decisionsFile),
   };
 
+  const docsInput = source.docs && typeof source.docs === 'object' ? source.docs : {};
+  const docsFallback = existing.docs || DEFAULT_CONFIG.docs;
+  const docs = { dir: asRelPath(docsInput.dir, docsFallback.dir) };
+
   const serverInput = source.server && typeof source.server === 'object' ? source.server : {};
   const serverFallback = existing.server || DEFAULT_CONFIG.server || { port: 4180 };
   const server = {
     port: normalizePort(serverInput.port, serverFallback.port),
   };
 
-  return { environments, runtime, server, api, artifacts, branding, suites, discord, qa };
+  return { environments, runtime, server, api, artifacts, branding, suites, discord, qa, docs };
 }
 
 function normalizePort(value, fallback = 4180) {

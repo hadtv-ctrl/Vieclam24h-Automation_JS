@@ -268,6 +268,13 @@ git config --local --get user.name     # phải rỗng, để git dùng identity
   từng vệ tinh** trước khi ghi: chỉ module chứa nội dung riêng bị giữ lại, phần còn lại
   vẫn được giao. Nhờ vậy một helper riêng trong `core/` không còn chặn được tính năng
   dashboard mới. Exit code 2 = đã giao một phần.
+- **`dashboard/` là ngoại lệ: KHÔNG BAO GIỜ bị giữ lại** (`ALWAYS_DELIVERED_MODULES`).
+  Thư mục này không có exclude nào, tức toàn bộ nội dung được thiết kế để bị ghi đè.
+  Giữ nó lại vì drift sẽ chặn vĩnh viễn mọi tính năng dashboard mới — đúng thứ vệ tinh
+  cần nhất. Cổng vẫn **liệt kê** từng dòng sắp mất trước khi ghi, nhưng không dừng sync.
+  Hệ quả: **không đặt dữ liệu hay cấu hình riêng của dự án vào `dashboard/`**. Cần thêm
+  tài liệu vào mục Hướng dẫn thì thả file `.md` vào `docs/` — Hub tự quét, không cần
+  sửa code.
 - Cổng phân biệt "vệ tinh giữ bản cũ của Hub" với "vệ tinh tự viết thêm" bằng lịch sử
   git của Hub (`scripts/lib/hubHistory.js`). Chỉ trường hợp thứ hai mới bị chặn.
 - Sau khi ghi, `scripts/verify-dashboard-features.js` kiểm tại đích rằng mọi view đều đủ

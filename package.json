@@ -1,60 +1,61 @@
 {
-    "name":  "@hadinhkms/qa-automation-engine",
-    "version":  "1.0.0",
-    "description":  "Playwright Automation Studio Core Engine \u0026 Dashboard",
-    "main":  "index.js",
-    "bin":  {
-                "qa-dashboard":  "./bin/qa-dashboard.js"
-            },
-    "files":  [
-                  "bin",
-                  "core",
-                  "dashboard",
-                  "pages/BasePage.js",
-                  "index.js"
-              ],
-    "scripts":  {
-                    "test":  "playwright test",
-                    "test:e2e":  "playwright test --project=\"Desktop Smoke Tests\" --project=\"Desktop Regression Tests\" --project=\"Mobile Chrome Smoke Tests\" --project=\"Mobile Chrome Regression Tests\" --project=\"Mobile Safari Smoke Tests\" --project=\"Mobile Safari Regression Tests\"",
-                    "test:ui":  "playwright test --ui",
-                    "test:headed":  "playwright test --headed",
-                    "dashboard":  "node dashboard/server.js",
-                    "dashboard:start":  "node dashboard/start-server.js",
-                    "dashboard:stop":  "node dashboard/stop-server.js",
-                    "suite:smoke": "node scripts/run-suite.js smoke-all",
-                    "suite:smoke:desktop": "node scripts/run-suite.js smoke-desktop",
-                    "suite:smoke:mobile": "node scripts/run-suite.js smoke-mobile",
-                    "suite:regression": "node scripts/run-suite.js regression-all",
-                    "suite:regression:desktop": "node scripts/run-suite.js regression-desktop",
-                    "suite:regression:mobile": "node scripts/run-suite.js regression-mobile",
-                    "suite:regression:api": "node scripts/run-suite.js regression-api",
-                    "suite:all": "node scripts/run-suite.js full-test-suite",
-                    "suite:applyjob": "node scripts/run-suite.js feature-applyjob",
-                    "suite:applyjob:desktop": "node scripts/run-suite.js applyjob-desktop",
-                    "suite:applyjob:mobile": "node scripts/run-suite.js applyjob-mobile",
-                    "suite:profile": "node scripts/run-suite.js feature-profile",
-                    "suite:profile:desktop": "node scripts/run-suite.js profile-desktop",
-                    "suite:profile:mobile": "node scripts/run-suite.js profile-mobile",
-                    "suite:onboarding": "node scripts/run-suite.js feature-onboarding",
-                    "suite:onboarding:desktop": "node scripts/run-suite.js onboarding-desktop",
-                    "suite:onboarding:mobile": "node scripts/run-suite.js onboarding-mobile",
-                    "suite:desktop": "node scripts/run-suite.js desktop",
-                    "suite:mobile": "node scripts/run-suite.js mobile",
-                    "suite:api": "node scripts/run-suite.js regression-api",
-                    "report": "playwright show-report",
-                    "check:framework":  "node scripts/check-framework-structure.js",
-                    "git:status":  "node scripts/git-sync.js status",
-                    "git:pull":  "node scripts/git-sync.js pull",
-                    "git:push":  "node scripts/git-sync.js push",
-                    "git:check":  "node scripts/git-sync.js check"
-                },
-    "dependencies":  {
-                         "dotenv":  "^16.3.1"
-                     },
-    "peerDependencies":  {
-                             "@playwright/test":  "\u003e=1.35.0"
-                         },
-    "devDependencies":  {
-                            "@playwright/test":  "^1.40.0"
-                        }
+  "name": "@hadinhkms/qa-automation-engine",
+  "version": "1.0.0",
+  "description": "Playwright Automation Studio Core Engine & Dashboard",
+  "main": "index.js",
+  "bin": {
+    "qa-dashboard": "./bin/qa-dashboard.js"
+  },
+  "files": [
+    "bin",
+    "core",
+    "dashboard",
+    "pages/BasePage.js",
+    "index.js"
+  ],
+  "scripts": {
+    "test": "playwright test",
+    "test:e2e": "playwright test --project=\"Desktop Smoke Tests\" --project=\"Desktop Regression Tests\" --project=\"Mobile Chrome Smoke Tests\" --project=\"Mobile Chrome Regression Tests\" --project=\"Mobile Safari Smoke Tests\" --project=\"Mobile Safari Regression Tests\"",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "dashboard": "node dashboard/server.js",
+    "dashboard:start": "node dashboard/start-server.js",
+    "dashboard:stop": "node dashboard/stop-server.js",
+    "suite:smoke": "node scripts/run-suite.js smoke-all",
+    "suite:smoke:desktop": "node scripts/run-suite.js smoke-desktop",
+    "suite:smoke:mobile": "node scripts/run-suite.js smoke-mobile",
+    "suite:regression": "node scripts/run-suite.js regression-all",
+    "suite:regression:desktop": "node scripts/run-suite.js regression-desktop",
+    "suite:regression:mobile": "node scripts/run-suite.js regression-mobile",
+    "suite:regression:api": "node scripts/run-suite.js regression-api",
+    "suite:all": "node scripts/run-suite.js full-test-suite",
+    "suite:applyjob": "node scripts/run-suite.js feature-applyjob",
+    "suite:applyjob:desktop": "node scripts/run-suite.js applyjob-desktop",
+    "suite:applyjob:mobile": "node scripts/run-suite.js applyjob-mobile",
+    "suite:profile": "node scripts/run-suite.js feature-profile",
+    "suite:profile:desktop": "node scripts/run-suite.js profile-desktop",
+    "suite:profile:mobile": "node scripts/run-suite.js profile-mobile",
+    "suite:onboarding": "node scripts/run-suite.js feature-onboarding",
+    "suite:onboarding:desktop": "node scripts/run-suite.js onboarding-desktop",
+    "suite:onboarding:mobile": "node scripts/run-suite.js onboarding-mobile",
+    "suite:desktop": "node scripts/run-suite.js desktop",
+    "suite:mobile": "node scripts/run-suite.js mobile",
+    "suite:api": "node scripts/run-suite.js regression-api",
+    "report": "playwright show-report",
+    "check:framework": "node scripts/check-framework-structure.js",
+    "git:status": "node scripts/git-sync.js status",
+    "git:pull": "node scripts/git-sync.js pull",
+    "git:push": "node scripts/git-sync.js push",
+    "git:check": "node scripts/git-sync.js check",
+    "update:framework": "node scripts/update-framework.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.35.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
 }
