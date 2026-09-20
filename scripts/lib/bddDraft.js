@@ -152,32 +152,32 @@ function buildBddDraft({ candidate, detail, dirs = {} } = {}) {
 }
 
 /**
- * Gộp nhiều bản thảo thành một văn bản.
- * Phần đầu nói rõ bản thảo sinh từ đâu và KHÔNG được lưu lại, vì tài liệu còn thay đổi.
+ * Gộp nhiều bản thảo thành một văn bản BDD sạch sẽ, sẵn sàng sử dụng.
+ * Lưu ý về việc bản thảo không lưu vào đĩa được hiển thị trực tiếp trên Dashboard UI.
  */
 function buildBddDraftDocument(drafts, context = {}) {
   const out = [];
-  out.push('# Bản thảo kịch bản BDD');
-  out.push('');
-  out.push(`Sinh từ ${context.source || 'tài liệu test case của repo'} tại thời điểm xem.`);
-  out.push('Bản thảo KHÔNG được lưu lại: tài liệu còn thay đổi, nên hãy sinh lại mỗi lần cần');
-  out.push('thay vì giữ một bản sao dễ lệch.');
-  out.push('');
-  out.push(`Số test case: ${drafts.length}`);
 
   const allWarnings = drafts.flatMap((d) => d.warnings);
   if (allWarnings.length) {
-    out.push('');
     out.push('## Cảnh báo');
     for (const w of allWarnings) out.push(`- ${w}`);
+    out.push('');
   }
 
-  for (const draft of drafts) {
+  if (drafts.length > 1) {
+    out.push(`# Danh sách kịch bản BDD (${drafts.length} test cases)`);
     out.push('');
-    out.push('---');
-    out.push('');
-    out.push(draft.text);
   }
+
+  drafts.forEach((draft, idx) => {
+    if (idx > 0) {
+      out.push('');
+      out.push('---');
+      out.push('');
+    }
+    out.push(draft.text);
+  });
 
   return out.join(NL) + NL;
 }

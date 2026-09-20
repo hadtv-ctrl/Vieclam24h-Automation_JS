@@ -172,14 +172,13 @@ test('không có detail vẫn dựng được khung, không ném lỗi', () => {
   assert.equal(warnings.length, 2);
 });
 
-test('văn bản gộp nói rõ bản thảo không được lưu lại', () => {
+test('văn bản gộp chứa kịch bản BDD sạch sẽ, sẵn sàng sử dụng', () => {
   const detail = extractTestCaseDetails(DOC).get('TC-001');
   const drafts = [buildBddDraft({ candidate: CANDIDATE, detail, dirs: { specs: 'tests' } })];
   const doc = buildBddDraftDocument(drafts, { source: 'test-cases/' });
 
-  assert.ok(doc.includes('Số test case: 1'));
-  assert.ok(doc.includes('KHÔNG được lưu lại'), 'phải nhắc bản thảo là nhất thời');
   assert.ok(doc.includes('TC-001'));
+  assert.ok(!doc.includes('Bản thảo KHÔNG được lưu lại'), 'disclaimer phải được đưa ra Dashboard UI chứ không nằm trong script BDD');
 });
 
 test('cảnh báo của mọi test case được gom lên đầu văn bản', () => {
@@ -190,7 +189,7 @@ test('cảnh báo của mọi test case được gom lên đầu văn bản', ()
   ];
   const doc = buildBddDraftDocument(drafts);
   const warnIndex = doc.indexOf('## Cảnh báo');
-  assert.ok(warnIndex > 0);
+  assert.ok(warnIndex >= 0);
   assert.ok(warnIndex < doc.indexOf('# TC-001'), 'cảnh báo phải đứng trước nội dung');
 });
 
