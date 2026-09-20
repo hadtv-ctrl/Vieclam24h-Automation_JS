@@ -32,6 +32,7 @@ Trước khi viết code:
 2. Đọc `playwright.config.js`, Page Object, fixture, helper và test data liên quan.
 3. Tìm method/action đã có trước khi tạo method mới.
 4. Nếu yêu cầu hoặc expected result thiếu thông tin quan trọng, nêu assumption rõ ràng; không tự biến một hành vi chưa xác nhận thành optional.
+5. **Rà soát xung đột (Conflict Check):** Đối chiếu kỹ giữa requirement, test case và UI/code thực tế. Nếu phát hiện điểm mâu thuẫn, lệch bước hoặc conflict giữa các tài liệu, phải xác nhận và điều chỉnh cho đồng nhất trước khi bắt đầu viết script.
 
 Không đọc hoặc gửi cho AI các thư mục sinh tự động như `node_modules/`, `playwright-report/`, `test-results/`, `evidence/` trừ khi đang phân tích một artifact lỗi cụ thể.
 
@@ -94,8 +95,7 @@ nghiệp vụ. Quy trình đầy đủ nằm ở `copilot-instructions.md` của
 
 ### 3.5 Ghi nhận ngược sau khi viết script
 
-Viết xong script chưa phải hết việc. Nghiệp vụ vừa học được phải ở lại repo, nếu không lần sau
-vẫn sót đúng chỗ đó.
+Viết xong script chưa phải hết việc. **Sau khi script chạy thành công**, nếu có bất kỳ thay đổi, phát hiện mới hoặc hành vi thực tế khác biệt so với tài liệu ban đầu, **BẮT BUỘC phải cập nhật ngược lại ngay vào file requirement (`requirements/REQ-xxx.md`) và test case tương ứng** để tài liệu và automation luôn đồng bộ 100%.
 
 **a. Ghi lại business rule mới phát hiện.** Chỉ ghi thứ tài liệu CHƯA có, và ghi vào đúng một nơi:
 
