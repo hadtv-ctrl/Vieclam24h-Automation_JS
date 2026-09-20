@@ -475,19 +475,29 @@
    cách mục Hướng dẫn đang làm. Trước đó phần thừa bên phải bỏ trống gần 400px. */
 .qa-reader-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 20px;
+  /* CỘT phải bằng đúng bề ngang đọc được, KHÔNG phải 1fr rồi chặn chữ bằng max-width
+     bên trong. Cách cũ để lại ~380px trống ngay GIỮA thân bài và mục lục, kèm thanh cuộn
+     trôi lơ lửng giữa khoảng trống đó. */
+  /* Thân bài ưu tiên bề ngang đọc được; mục lục co giãn để hút nốt phần thừa, nên panel
+     không còn viền trống lớn ở bất kỳ bề rộng nào. */
+  grid-template-columns: minmax(0, 110ch) minmax(240px, 340px);
+  justify-content: start;
+  gap: 24px;
   flex: 1;
   min-width: 0;
   min-height: 0;
 }
-.qa-reader-body { min-width: 0; min-height: 0; overflow-y: auto; padding-right: 6px; max-width: 92ch; }
+.qa-reader-body { min-width: 0; min-height: 0; overflow-y: auto; padding-right: 12px; }
 
 .qa-reader-outline {
   min-width: 0;
+  /* Bám đỉnh và tự cuộn: tài liệu dài thì mục lục dài theo, không được kéo dài cả ô
+     rồi bị cắt cụt ở đáy panel. */
+  align-self: stretch;
+  min-height: 0;
   overflow-y: auto;
   border-left: 1px solid var(--line);
-  padding-left: 14px;
+  padding-left: 16px;
 }
 .qa-reader-outline:empty { display: none; }
 .qa-outline-title {

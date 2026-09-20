@@ -46,6 +46,7 @@ export class QaSlice {
     // khoá lạc quan để không đè mất thay đổi của người khác.
     this._activeDoc = null;
     this._openQuestions = [];
+    this._degraded = [];
     this._lastAuthor = '';
   }
 
@@ -119,26 +120,69 @@ export class QaSlice {
     });
   }
 
+  /**
+   * Nạp dữ liệu cho cả mục QA.
+   *
+   * Dùng allSettled chứ không phải all: bốn endpoint này KHÔNG cùng mức thiết yếu. Trước
+   * đây một endpoint hỏng là cả màn hình trắng — và có một cách rất dễ gặp để nó hỏng:
+   * tiến trình dashboard khởi động từ trước khi endpoint mới ra đời vẫn phục vụ file JS
+   * MỚI đọc thẳng từ đĩa, trong khi bảng route của nó là bảng CŨ. Khi đó JS gọi một
+   * endpoint mà chính server đang chạy chưa biết, và người dùng thấy "Không tìm thấy tài
+   * nguyên" ở một tính năng hoàn toàn lành lặn.
+   *
+   * `trace` là thiết yếu — không có nó thì không có gì để hiển thị. Ba phần còn lại thiếu
+   * thì chỉ mất đúng phần đó.
+   */
   async reload(announce = false) {
     const root = this._root();
     if (!root) return;
-    try {
-      const [trace, candidates, decisions, documents] = await Promise.all([
-        apiClient.get('/api/qa/trace'),
-        apiClient.get('/api/qa/candidates', { limit: 50 }),
-        apiClient.get('/api/qa/decisions'),
-        apiClient.get('/api/qa/documents'),
-      ]);
-      this.trace = trace;
-      this.candidates = Array.isArray(candidates.candidates) ? candidates.candidates : [];
-      this.decisions = decisions;
-      this.documents = Array.isArray(documents.documents) ? documents.documents : [];
-    } catch (error) {
-      this._showAlert(`Không tải được dữ liệu QA: ${error.message}`, 'danger');
+
+    const [trace, candidates, decisions, documents] = await Promise.allSettled([
+      apiClient.get('/api/qa/trace'),
+      apiClient.get('/api/qa/candidates', { limit: 50 }),
+      apiClient.get('/api/qa/decisions'),
+      apiClient.get('/api/qa/documents'),
+    ]);
+
+    if (trace.status !== 'fulfilled') {
+      this._showAlert(
+        `Không tải được dữ liệu QA: ${trace.reason && trace.reason.message}`,
+        'danger',
+      );
       return;
     }
+
+    this.trace = trace.value;
+    this.candidates = candidates.status === 'fulfilled' && Array.isArray(candidates.value.candidates)
+      ? candidates.value.candidates
+      : [];
+    this.decisions = decisions.status === 'fulfilled' ? decisions.value : null;
+    this.documents = documents.status === 'fulfilled' && Array.isArray(documents.value.documents)
+      ? documents.value.documents
+      : [];
+
+    this._degraded = [
+      candidates.status === 'rejected' ? { part: 'ứng viên automation', reason: candidates.reason } : null,
+      decisions.status === 'rejected' ? { part: 'sổ quyết định', reason: decisions.reason } : null,
+      documents.status === 'rejected' ? { part: 'danh sách tài liệu', reason: documents.reason } : null,
+    ].filter(Boolean);
+
     this.renderAll();
     if (announce) this.notify('Đã làm mới dữ liệu QA.');
+  }
+
+  /**
+   * Endpoint thiếu hẳn (404) gần như luôn có cùng một nguyên nhân: server đang chạy là bản
+   * cũ hơn file JS nó phục vụ. Nói thẳng cách sửa thay vì để người dùng đoán.
+   */
+  _degradedMessage() {
+    if (!this._degraded || !this._degraded.length) return null;
+    const parts = this._degraded.map((d) => d.part).join(', ');
+    const anyMissing = this._degraded.some((d) => d.reason && d.reason.status === 404);
+    return anyMissing
+      ? `Server đang chạy là bản cũ hơn giao diện: thiếu API cho ${parts}.`
+        + ' Dừng rồi khởi động lại dashboard (Stop_Dashboard.bat rồi Start_Dashboard.bat).'
+      : `Chưa tải được ${parts}. Phần còn lại vẫn dùng bình thường.`;
   }
 
   renderAll() {
@@ -229,6 +273,11 @@ export class QaSlice {
     bar.hidden = false;
 
     this._hideAlert();
+    const degraded = this._degradedMessage();
+    if (degraded) {
+      this._showAlert(degraded, 'danger');
+      return;
+    }
     if (this.trace.available === false) {
       this._showAlert(
         (this.trace.analyzer && this.trace.analyzer.error) || 'Analyzer chưa sẵn sàng.',
