@@ -93,8 +93,24 @@ export class QaSlice {
     on(root.querySelector('#qa-btn-draft'), 'click', () => this.generateDraft());
     on(root.querySelector('#qa-btn-draft-clear'), 'click', () => this.clearPicks());
     on(root.querySelector('#qa-draft-copy'), 'click', () => this.copyDraft());
+    on(root.querySelector('#qa-draft-expand'), 'click', () => this.toggleDraftFullscreen());
     on(root.querySelector('#qa-draft-close'), 'click', () => this._closeDraft());
     on(root.querySelector('#qa-pick-all'), 'change', (event) => this.toggleAllPicks(event.target.checked));
+
+    const handleKeydown = (e) => {
+      if (e.key === 'Escape') {
+        const box = root.querySelector('#qa-draft');
+        if (box && !box.hidden) {
+          if (box.classList.contains('is-fullscreen')) {
+            this.toggleDraftFullscreen(false);
+          } else {
+            this._closeDraft();
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeydown);
+    this._disposers.push(() => window.removeEventListener('keydown', handleKeydown));
     on(root.querySelector('#qa-docs-filter'), 'input', (event) => {
       this.docFilter = event.target.value || '';
       this.renderDocList();
@@ -919,7 +935,29 @@ export class QaSlice {
 
   _closeDraft() {
     const box = this._root() && this._root().querySelector('#qa-draft');
-    if (box) box.hidden = true;
+    if (box) {
+      box.classList.remove('is-fullscreen');
+      const expandIcon = box.querySelector('#qa-draft-expand-icon');
+      const expandLabel = box.querySelector('#qa-draft-expand-label');
+      const expandBtn = box.querySelector('#qa-draft-expand');
+      if (expandIcon) expandIcon.className = 'ph-bold ph-corners-out';
+      if (expandLabel) expandLabel.textContent = 'Phóng to';
+      if (expandBtn) expandBtn.title = 'Phóng to toàn màn hình';
+      box.hidden = true;
+    }
+  }
+
+  toggleDraftFullscreen(forceState) {
+    const box = this._root() && this._root().querySelector('#qa-draft');
+    if (!box) return;
+    const isFull = typeof forceState === 'boolean' ? forceState : !box.classList.contains('is-fullscreen');
+    box.classList.toggle('is-fullscreen', isFull);
+    const expandIcon = box.querySelector('#qa-draft-expand-icon');
+    const expandLabel = box.querySelector('#qa-draft-expand-label');
+    const expandBtn = box.querySelector('#qa-draft-expand');
+    if (expandIcon) expandIcon.className = isFull ? 'ph-bold ph-corners-in' : 'ph-bold ph-corners-out';
+    if (expandLabel) expandLabel.textContent = isFull ? 'Thu nhỏ' : 'Phóng to';
+    if (expandBtn) expandBtn.title = isFull ? 'Thu nhỏ khung xem (Esc)' : 'Phóng to toàn màn hình';
   }
 
   /**
@@ -968,14 +1006,27 @@ export class QaSlice {
   }
 
   async copyDraft() {
-    const status = this._root() && this._root().querySelector('#qa-draft-meta');
+    const root = this._root();
+    const copyBtn = root && root.querySelector('#qa-draft-copy');
+    const status = root && root.querySelector('#qa-draft-meta');
     if (!this.draftText) return;
     try {
       await navigator.clipboard.writeText(this.draftText);
-      this.notify('Đã sao chép bản thảo BDD.');
+      this.notify('Đã sao chép kịch bản BDD vào bộ nhớ tạm.');
+      if (copyBtn) {
+        const origContent = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="ph-bold ph-check"></i> <span>Đã sao chép!</span>';
+        copyBtn.style.borderColor = 'var(--success, #10b981)';
+        copyBtn.style.color = 'var(--success, #10b981)';
+        setTimeout(() => {
+          copyBtn.innerHTML = origContent;
+          copyBtn.style.borderColor = '';
+          copyBtn.style.color = '';
+        }, 1800);
+      }
     } catch (_) {
       // Không có quyền clipboard thì vẫn phải có đường thoát: bôi đen sẵn cho người dùng.
-      const body = this._root() && this._root().querySelector('#qa-draft-body');
+      const body = root && root.querySelector('#qa-draft-body');
       if (body && window.getSelection) {
         const range = document.createRange();
         range.selectNodeContents(body);
