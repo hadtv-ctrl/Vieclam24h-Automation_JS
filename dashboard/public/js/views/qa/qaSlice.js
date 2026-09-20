@@ -453,12 +453,16 @@ export class QaSlice {
 
     const ids = doc.ids || [];
     if (ids.length) {
-      const shown = ids.slice(0, 4).join(' · ');
-      body.appendChild(this._el(
-        'span',
-        ids.length > 4 ? `${shown} · +${ids.length - 4}` : shown,
-        'qa-doc-item-ids',
-      ));
+      const idsWrap = this._el('div', null, 'qa-doc-item-ids');
+      const maxShown = 3;
+      const shown = ids.slice(0, maxShown);
+      for (const id of shown) {
+        idsWrap.appendChild(this._el('span', id, 'qa-doc-id-chip'));
+      }
+      if (ids.length > maxShown) {
+        idsWrap.appendChild(this._el('span', `+${ids.length - maxShown}`, 'qa-doc-id-chip qa-doc-id-chip--more'));
+      }
+      body.appendChild(idsWrap);
     }
     btn.appendChild(body);
 
