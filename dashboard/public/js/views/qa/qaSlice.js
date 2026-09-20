@@ -974,6 +974,8 @@ export class QaSlice {
     if (!box || !body) return;
 
     box.hidden = false;
+    body.style.width = '100%';
+    body.style.maxWidth = 'none';
     body.textContent = 'Đang dựng bản thảo…';
     if (warn) warn.textContent = '';
     if (meta) meta.textContent = '';

@@ -113,9 +113,7 @@ function buildBddDraft({ candidate, detail, dirs = {} } = {}) {
   out.push('## Kịch bản BDD');
   out.push('');
   out.push(`Given Tiền điều kiện: ${precondition || '<xác định trạng thái xuất phát>'}`);
-  // §5 nói rõ: Given không được rỗng, phải có assertion và evidence.
   out.push('      · Khẳng định trạng thái xuất phát đúng trước khi thao tác.');
-  out.push('      · Chụp bằng chứng ban đầu: `precondition_initial_state`.');
   out.push('');
 
   steps.forEach((step, index) => {

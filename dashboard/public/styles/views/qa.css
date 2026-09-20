@@ -115,7 +115,6 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--text);
-  max-width: 1200px;
   box-sizing: border-box;
 }
 
@@ -155,9 +154,7 @@
 
 .qa-draft.is-fullscreen .qa-draft-warnings {
   padding: 12px 28px 0;
-  max-width: 1200px;
   width: 100%;
-  margin: 0 auto;
   box-sizing: border-box;
 }
 
@@ -165,9 +162,7 @@
   flex: 1;
   max-height: none;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 28px 48px;
+  padding: 24px 32px 48px;
   font-size: 14px;
   line-height: 1.75;
   box-sizing: border-box;

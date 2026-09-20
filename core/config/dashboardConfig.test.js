@@ -102,6 +102,42 @@ test('key riêng của dự án không bị xoá khi lưu thiếu field', () => 
   assert.equal(saved.environments.qc.projectPortalURL, 'https://portal.example.com');
 });
 
+test('xoá custom site khi giá trị rỗng và lưu _siteLabels', () => {
+  const existing = normalizeDashboardConfig({
+    ...DEFAULT_CONFIG,
+    environments: {
+      qc: {
+        label: 'QC',
+        baseURL: 'https://qc.example.com',
+        companyURL: 'https://company.example.com',
+        instructorURL: 'https://instructor.example.com',
+        _siteLabels: { companyURL: 'Cổng Doanh nghiệp', instructorURL: 'Cổng Giảng viên' },
+      },
+    },
+  });
+
+  const updated = normalizeDashboardConfig(
+    {
+      environments: {
+        qc: {
+          label: 'QC',
+          baseURL: 'https://qc.example.com',
+          companyURL: 'https://company-new.example.com',
+          instructorURL: '', // người dùng gỡ bỏ instructorURL
+          _siteLabels: { companyURL: 'Cổng Doanh nghiệp Mới' },
+        },
+      },
+      runtime: { defaultEnvironment: 'qc' },
+    },
+    existing,
+  );
+
+  assert.equal(updated.environments.qc.companyURL, 'https://company-new.example.com');
+  assert.equal(updated.environments.qc.instructorURL, undefined);
+  assert.equal(updated.environments.qc._siteLabels.companyURL, 'Cổng Doanh nghiệp Mới');
+  assert.equal(updated.environments.qc._siteLabels.instructorURL, undefined);
+});
+
 test('normalizePort handles static port, random, auto, and fallbacks', () => {
   const { normalizePort, getProjectHashPort } = require('./dashboardConfig');
   assert.equal(normalizePort(4180), 4180);

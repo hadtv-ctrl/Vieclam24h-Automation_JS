@@ -127,9 +127,9 @@ test('bản thảo mang đủ truy vết, script contract và các bước Given
   assert.ok(text.includes('`TC-001 - Landing hiển thị đúng ba Entry Point`'), 'test title theo Script contract');
   assert.ok(text.includes('tests/e2e/'), 'spec path phải theo thư mục spec của repo');
 
-  // §5: Given không được rỗng, phải có assertion và evidence.
+  // Given không được rỗng, phải có assertion kiểm tra trạng thái xuất phát.
   assert.ok(text.includes('Given Tiền điều kiện: Chưa đăng nhập, xoá sạch session/storage'));
-  assert.ok(text.includes('precondition_initial_state'));
+  assert.ok(text.includes('Khẳng định trạng thái xuất phát'));
 
   assert.ok(text.includes('When  [1] Mở landing'));
   assert.ok(text.includes('Then  [1] Trang tải xong'));

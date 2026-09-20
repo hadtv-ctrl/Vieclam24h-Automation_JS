@@ -204,8 +204,29 @@ function normalizeDashboardConfig(input = {}, existingConfig = DEFAULT_CONFIG) {
     for (const source of [fallback, envValue]) {
       for (const [propKey, propVal] of Object.entries(source || {})) {
         if (ENV_RESERVED_KEYS.has(propKey)) continue;
+        if (propKey === '_siteLabels') continue;
         if (typeof propVal !== 'string') continue;
-        envEntry[propKey] = propVal.trim();
+        const trimmed = propVal.trim();
+        if (source === envValue && trimmed === '') {
+          delete envEntry[propKey];
+        } else if (trimmed !== '') {
+          envEntry[propKey] = trimmed;
+        }
+      }
+    }
+
+    const siteLabelsSource = (envValue._siteLabels && typeof envValue._siteLabels === 'object')
+      ? envValue._siteLabels
+      : (fallback._siteLabels && typeof fallback._siteLabels === 'object' ? fallback._siteLabels : null);
+    if (siteLabelsSource) {
+      const siteLabels = {};
+      for (const [sKey, sLabel] of Object.entries(siteLabelsSource)) {
+        if (typeof sLabel === 'string' && sLabel.trim()) {
+          siteLabels[sKey] = sLabel.trim().slice(0, 100);
+        }
+      }
+      if (Object.keys(siteLabels).length > 0) {
+        envEntry._siteLabels = siteLabels;
       }
     }
 

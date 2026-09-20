@@ -146,7 +146,7 @@ Chỉ **đề xuất**. Không tự viết thêm script ngoài phạm vi đượ
 - **Quy tắc Precondition (Tiền điều kiện ban đầu)**:
   - **Mọi kịch bản phải thể hiện rõ Precondition**: Bắt buộc gắn tag metadata qua `testInfo.annotations.push({ type: 'Precondition', description: '...' })` để hiển thị rõ ràng trên header của Playwright HTML Report (ví dụ: `Đã đăng nhập tài khoản ứng viên (authSetup)` hoặc `Khách vãng lai truy cập (Chưa đăng nhập)`).
   - **Bước `Given` biểu diễn trạng thái xuất phát**: Tuyệt đối không để bước `Given` rỗng hoặc chỉ chứa comment. Bước `Given` phải mô tả rõ bối cảnh (ví dụ: `'Given Tiền điều kiện: Người dùng đã đăng nhập và sẵn sàng tại trang chủ'`).
-  - **Bắt buộc có assertion và evidence trong `Given`**: Bên trong bước `Given`, phải kiểm tra trạng thái trang (ví dụ `await homePage.expectHomepageVisible()`) và chụp ảnh bằng chứng ban đầu (ví dụ `await homePage.capture('precondition_initial_state')`) để report có đầy đủ bằng chứng kiểm chứng điều kiện ban đầu.
+  - **Khẳng định trạng thái xuất phát (Assertion) trong `Given`**: Kiểm tra trạng thái trang hoặc phiên đăng nhập sẵn sàng trước khi thao tác (ví dụ `await homePage.expectHomepageVisible()`). **KHÔNG bắt buộc chụp ảnh bằng chứng ban đầu (`precondition_initial_state`)** khi trang chưa render hoặc đang là màn hình trống (blank image), tránh làm rác test report và lãng phí dung lượng lưu trữ. Evidence chỉ cần thu thập khi có nội dung thực tế hoặc khi test case fail.
 
 ## 6. Locator và assertion
 

@@ -5165,26 +5165,453 @@ function initSuitesView() {
   });
 }
 
+const COMMON_SITE_PRESETS = [
+  { key: 'baseURL', label: 'Cổng Quản Trị Admin', icon: 'ph-shield-check', type: 'base' },
+  { key: 'companyURL', label: 'Cổng Doanh Nghiệp', icon: 'ph-buildings', type: 'portal' },
+  { key: 'instructorURL', label: 'Cổng Giảng Viên', icon: 'ph-chalkboard-teacher', type: 'portal' },
+  { key: 'carthingsURL', label: 'Cổng Học Viên / Khách', icon: 'ph-users-three', type: 'portal' },
+  { key: 'adminURL', label: 'Cổng Admin Hệ Thống', icon: 'ph-lock-key', type: 'portal' },
+  { key: 'authURL', label: 'Cổng Xác Thực SSO', icon: 'ph-fingerprint', type: 'portal' },
+  { key: 'apiBaseURL', label: 'Backend REST API', icon: 'ph-plugs-connected', type: 'api' },
+];
+
+function getSiteMeta(siteKey, env = {}) {
+  const customLabel = env._siteLabels?.[siteKey];
+  const preset = COMMON_SITE_PRESETS.find((p) => p.key === siteKey);
+  const label = customLabel || preset?.label || siteKey;
+  let type = preset?.type;
+  if (!type) {
+    if (siteKey === 'baseURL') type = 'base';
+    else if (siteKey.toLowerCase().includes('api')) type = 'api';
+    else type = 'portal';
+  }
+  const typeLabel = type === 'base' ? 'Chính' : (type === 'api' ? 'API Endpoint' : 'Portal');
+  return { siteKey, label, type, typeLabel, icon: preset?.icon || 'ph-globe' };
+}
+
+function renderSiteRow(envKey, siteKey, url, siteMeta) {
+  const isBase = siteKey === 'baseURL';
+  const typeClass = siteMeta.type === 'base' ? 'site-type-base' : (siteMeta.type === 'api' ? 'site-type-api' : 'site-type-portal');
+  return `
+    <div class="site-row" data-env="${escapeHtml(envKey)}" data-site-key="${escapeHtml(siteKey)}">
+      <div class="site-meta-col">
+        <span class="site-type-badge ${typeClass}">${siteMeta.typeLabel}</span>
+        <span class="site-code-chip" title="Bấm để sao chép biến: env.${escapeHtml(siteKey)}" data-copy="env.${escapeHtml(siteKey)}">
+          <code>env.${escapeHtml(siteKey)}</code>
+          <i class="ph ph-copy"></i>
+        </span>
+      </div>
+      <div class="site-label-col">
+        <input class="site-label-input" value="${escapeHtml(siteMeta.label)}" placeholder="Tên hiển thị (vd: Cổng Quản Trị)" title="Tên hiển thị thân thiện trong dashboard">
+      </div>
+      <div class="site-url-col">
+        <span class="site-url-prefix"><i class="ph ph-link"></i></span>
+        <input class="site-url-input" type="url" value="${escapeHtml(url || '')}" placeholder="https://..." data-setting="site-url">
+      </div>
+      <div class="site-actions-col">
+        <a href="${escapeHtml(url || '#')}" target="_blank" rel="noopener noreferrer" class="btn-site-tool btn-open-site" title="Mở trang trong tab mới" ${!url ? 'style="pointer-events:none; opacity:0.35;"' : ''}>
+          <i class="ph-bold ph-arrow-square-out"></i>
+        </a>
+        <button type="button" class="btn-site-tool" data-action="copy-url" title="Sao chép URL">
+          <i class="ph ph-copy"></i>
+        </button>
+        <button type="button" class="btn-site-ping" data-action="ping-site" title="Kiểm tra trạng thái kết nối website/API">
+          <i class="ph-bold ph-plugs"></i>
+          <span>Ping</span>
+        </button>
+        ${!isBase ? `
+        <button type="button" class="btn-site-tool danger" data-action="delete-site" title="Xóa site này">
+          <i class="ph ph-trash"></i>
+        </button>
+        ` : `
+        <span class="btn-site-tool" style="opacity:0.25; cursor:not-allowed;" title="Site chính baseURL không thể xóa">
+          <i class="ph ph-lock"></i>
+        </span>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+function renderEnvironmentCard(envKey, envData, defaultEnvKey) {
+  const isDefault = envKey === defaultEnvKey;
+  const label = envData.label || envKey.toUpperCase();
+  const lowerKey = envKey.toLowerCase();
+  const badgeClass = lowerKey === 'dev' ? 'env-badge-dev' : (lowerKey === 'qc' ? 'env-badge-qc' : (lowerKey === 'stg' || lowerKey === 'staging' ? 'env-badge-stg' : (lowerKey === 'prod' ? 'env-badge-prod' : 'env-badge-custom')));
+
+  const siteKeys = [];
+  if ('baseURL' in envData || !Object.keys(envData).length) siteKeys.push('baseURL');
+  for (const k of Object.keys(envData)) {
+    if (k === 'label' || k === '_siteLabels' || k === 'baseURL') continue;
+    siteKeys.push(k);
+  }
+  if (!siteKeys.includes('baseURL')) siteKeys.unshift('baseURL');
+
+  const siteRowsHtml = siteKeys.map((k) => {
+    const meta = getSiteMeta(k, envData);
+    return renderSiteRow(envKey, k, envData[k] || '', meta);
+  }).join('');
+
+  return `
+    <div class="env-card ${isDefault ? 'is-default' : ''}" data-env="${escapeHtml(envKey)}">
+      <div class="env-card-header">
+        <div class="env-card-left">
+          <span class="env-badge ${badgeClass}"><i class="ph-fill ph-circle"></i> ${escapeHtml(envKey.toUpperCase())}</span>
+          <input class="env-label-input" value="${escapeHtml(label)}" placeholder="Tên môi trường" data-setting="env-label">
+          <span class="env-stats-pill"><i class="ph-bold ph-browsers"></i> <span class="site-count">${siteKeys.length}</span> Sites</span>
+        </div>
+        <div class="env-card-actions">
+          <button type="button" class="btn-env-default-badge ${isDefault ? 'active' : ''}" data-action="set-default-env" title="${isDefault ? 'Môi trường mặc định' : 'Đặt môi trường này làm mặc định'}">
+            <i class="ph-fill ph-star"></i>
+            <span>${isDefault ? '★ Mặc định' : 'Đặt mặc định'}</span>
+          </button>
+          <button type="button" class="btn-env-tool" data-action="clone-env" title="Nhân bản môi trường này">
+            <i class="ph ph-copy-simple"></i>
+          </button>
+          ${!isDefault ? `
+          <button type="button" class="btn-env-tool danger" data-action="delete-env" title="Xóa môi trường này">
+            <i class="ph ph-trash"></i>
+          </button>
+          ` : ''}
+        </div>
+      </div>
+      <div class="env-card-body">
+        <div class="site-registry-header">
+          <span class="site-th-meta">Cổng & Biến Script</span>
+          <span class="site-th-label">Tên hiển thị</span>
+          <span class="site-th-url">Địa chỉ URL / Endpoint</span>
+          <span class="site-th-actions">Thao tác</span>
+        </div>
+        <div class="site-registry-list">
+          ${siteRowsHtml}
+        </div>
+        <div class="env-card-footer">
+          <div class="add-site-wrap">
+            <button type="button" class="btn-add-site-trigger" data-action="toggle-preset-menu">
+              <i class="ph-bold ph-plus"></i>
+              <span>Thêm Site / Cổng kiểm thử</span>
+              <i class="ph ph-caret-down"></i>
+            </button>
+            <div class="site-preset-menu" hidden>
+              <button type="button" class="site-preset-item" data-preset="companyURL">
+                <span>🏢 Cổng Doanh Nghiệp</span>
+                <small>companyURL</small>
+              </button>
+              <button type="button" class="site-preset-item" data-preset="instructorURL">
+                <span>👨‍🏫 Cổng Giảng Viên</span>
+                <small>instructorURL</small>
+              </button>
+              <button type="button" class="site-preset-item" data-preset="carthingsURL">
+                <span>🚗 Cổng Học Viên / Khách</span>
+                <small>carthingsURL</small>
+              </button>
+              <button type="button" class="site-preset-item" data-preset="adminURL">
+                <span>🛡️ Cổng Quản Trị Admin</span>
+                <small>adminURL</small>
+              </button>
+              <button type="button" class="site-preset-item" data-preset="authURL">
+                <span>🔑 Cổng Xác Thực SSO</span>
+                <small>authURL</small>
+              </button>
+              <button type="button" class="site-preset-item" data-preset="apiBaseURL">
+                <span>⚡ Backend REST API</span>
+                <small>apiBaseURL</small>
+              </button>
+              <div style="height: 1px; background: var(--line); margin: 2px 0;"></div>
+              <button type="button" class="site-preset-item" data-preset="custom">
+                <span>➕ Tùy chỉnh (Nhập tên & key riêng)</span>
+              </button>
+            </div>
+          </div>
+          <span class="env-help-text"><i class="ph ph-info"></i> Các biến <code>env.&lt;key&gt;</code> tự động khả dụng trong Playwright test script.</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function pingSiteUrl(button, url) {
+  if (!url) {
+    notify('Vui lòng nhập URL hợp lệ trước khi ping.');
+    return;
+  }
+  const span = button.querySelector('span');
+  button.classList.add('pinging');
+  button.classList.remove('ping-ok', 'ping-fail');
+  if (span) span.textContent = 'Ping...';
+  try {
+    const res = await request(`/api/system/ping-site?url=${encodeURIComponent(url)}`);
+    button.classList.remove('pinging');
+    if (res.ok) {
+      button.classList.add('ping-ok');
+      if (span) span.textContent = `${res.status} OK (${res.timeMs}ms)`;
+    } else {
+      button.classList.add('ping-fail');
+      if (span) span.textContent = `${res.status || 'Lỗi'} (${res.error || 'Fail'})`;
+    }
+  } catch (err) {
+    button.classList.remove('pinging');
+    button.classList.add('ping-fail');
+    if (span) span.textContent = 'Lỗi';
+  }
+  setTimeout(() => {
+    if (span && span.textContent !== 'Ping') {
+      span.textContent = 'Ping';
+      button.classList.remove('pinging');
+    }
+  }, 5000);
+}
+
+let _envManagerEventsBound = false;
+function bindEnvManagerEvents() {
+  if (_envManagerEventsBound) return;
+  _envManagerEventsBound = true;
+
+  const envContainer = $('#environment-settings');
+  if (!envContainer) return;
+
+  const addEnvBtn = $('#btn-add-environment');
+  if (addEnvBtn) {
+    addEnvBtn.addEventListener('click', () => {
+      const keyInput = prompt('Nhập mã định danh cho môi trường mới (chữ thường, ví dụ: stg, uat, local, dev2):');
+      if (!keyInput) return;
+      const envKey = keyInput.trim().toLowerCase();
+      if (!/^[a-z][a-z0-9_-]{1,20}$/.test(envKey)) {
+        alert('Mã môi trường không hợp lệ! Chỉ dùng chữ cái, số, gạch nối (2-20 ký tự), bắt đầu bằng chữ cái.');
+        return;
+      }
+      if (envContainer.querySelector(`.env-card[data-env="${envKey}"]`)) {
+        alert(`Môi trường "${envKey}" đã tồn tại!`);
+        return;
+      }
+      const labelInput = prompt('Nhập tên hiển thị thân thiện:', envKey.toUpperCase());
+      const label = (labelInput || envKey.toUpperCase()).trim();
+      const defaultEnvKey = $('#settings-default-environment')?.value || 'dev';
+      const newCardHtml = renderEnvironmentCard(envKey, { label, baseURL: 'https://', apiBaseURL: 'https://' }, defaultEnvKey);
+      envContainer.insertAdjacentHTML('beforeend', newCardHtml);
+      updateDefaultEnvOptions();
+      notify(`Đã thêm môi trường ${envKey.toUpperCase()}. Hãy điền các URL và bấm "Lưu cấu hình".`);
+    });
+  }
+
+  envContainer.addEventListener('click', (e) => {
+    const copyChip = e.target.closest('[data-copy]');
+    if (copyChip) {
+      const text = copyChip.dataset.copy;
+      navigator.clipboard.writeText(text).then(() => notify(`Đã sao chép: ${text}`)).catch(() => {});
+      return;
+    }
+
+    const copyUrlBtn = e.target.closest('[data-action="copy-url"]');
+    if (copyUrlBtn) {
+      const row = copyUrlBtn.closest('.site-row');
+      const input = row?.querySelector('.site-url-input');
+      const val = input?.value.trim();
+      if (val) {
+        navigator.clipboard.writeText(val).then(() => notify(`Đã sao chép URL: ${val}`)).catch(() => {});
+      } else {
+        notify('Chưa có URL để sao chép.');
+      }
+      return;
+    }
+
+    const pingBtn = e.target.closest('[data-action="ping-site"]');
+    if (pingBtn) {
+      const row = pingBtn.closest('.site-row');
+      const input = row?.querySelector('.site-url-input');
+      pingSiteUrl(pingBtn, input?.value.trim());
+      return;
+    }
+
+    const deleteSiteBtn = e.target.closest('[data-action="delete-site"]');
+    if (deleteSiteBtn) {
+      const row = deleteSiteBtn.closest('.site-row');
+      const card = deleteSiteBtn.closest('.env-card');
+      const siteKey = row?.dataset.siteKey;
+      if (confirm(`Bạn có chắc muốn xóa site "${siteKey}" khỏi môi trường này?`)) {
+        row.remove();
+        if (card) {
+          const countEl = card.querySelector('.site-count');
+          if (countEl) countEl.textContent = card.querySelectorAll('.site-row').length;
+        }
+        notify(`Đã gỡ bỏ site "${siteKey}". Bấm "Lưu cấu hình" để áp dụng.`);
+      }
+      return;
+    }
+
+    const triggerBtn = e.target.closest('[data-action="toggle-preset-menu"]');
+    if (triggerBtn) {
+      const wrap = triggerBtn.closest('.add-site-wrap');
+      const menu = wrap?.querySelector('.site-preset-menu');
+      if (menu) {
+        const isHidden = menu.hidden;
+        document.querySelectorAll('.site-preset-menu').forEach((m) => { m.hidden = true; });
+        menu.hidden = !isHidden;
+      }
+      return;
+    }
+
+    const presetItem = e.target.closest('.site-preset-item');
+    if (presetItem) {
+      const menu = presetItem.closest('.site-preset-menu');
+      if (menu) menu.hidden = true;
+      const card = presetItem.closest('.env-card');
+      const envKey = card?.dataset.env;
+      if (!card || !envKey) return;
+
+      const preset = presetItem.dataset.preset;
+      let siteKey = preset;
+      let siteLabel = '';
+
+      if (preset === 'custom') {
+        const keyInput = prompt('Nhập tên biến định danh trong code (ví dụ: mobileWebURL, trackingURL):');
+        if (!keyInput) return;
+        siteKey = keyInput.trim();
+        if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(siteKey)) {
+          alert('Tên biến không hợp lệ! Phải là identifier JavaScript (ví dụ: portalURL, adminURL).');
+          return;
+        }
+        const labelInput = prompt('Nhập tên hiển thị thân thiện (ví dụ: Cổng Mobile Web):', siteKey);
+        siteLabel = (labelInput || siteKey).trim();
+      }
+
+      if (card.querySelector(`.site-row[data-site-key="${siteKey}"]`)) {
+        alert(`Site "${siteKey}" đã có trong môi trường này!`);
+        return;
+      }
+
+      const meta = getSiteMeta(siteKey, siteLabel ? { _siteLabels: { [siteKey]: siteLabel } } : {});
+      if (siteLabel) meta.label = siteLabel;
+
+      const list = card.querySelector('.site-registry-list');
+      if (list) {
+        const rowHtml = renderSiteRow(envKey, siteKey, 'https://', meta);
+        list.insertAdjacentHTML('beforeend', rowHtml);
+        const countEl = card.querySelector('.site-count');
+        if (countEl) countEl.textContent = card.querySelectorAll('.site-row').length;
+        const newRow = list.querySelector(`.site-row[data-site-key="${siteKey}"]`);
+        const urlInput = newRow?.querySelector('.site-url-input');
+        if (urlInput) {
+          urlInput.focus();
+          urlInput.select();
+        }
+        notify(`Đã thêm site ${siteKey}. Hãy nhập URL và bấm "Lưu cấu hình".`);
+      }
+      return;
+    }
+
+    const setDefaultBtn = e.target.closest('[data-action="set-default-env"]');
+    if (setDefaultBtn) {
+      const card = setDefaultBtn.closest('.env-card');
+      const envKey = card?.dataset.env;
+      if (!envKey) return;
+      const defaultSelect = $('#settings-default-environment');
+      if (defaultSelect) defaultSelect.value = envKey;
+      document.querySelectorAll('.env-card').forEach((c) => {
+        const isDef = c.dataset.env === envKey;
+        c.classList.toggle('is-default', isDef);
+        const badgeBtn = c.querySelector('.btn-env-default-badge');
+        if (badgeBtn) {
+          badgeBtn.classList.toggle('active', isDef);
+          badgeBtn.querySelector('span').textContent = isDef ? '★ Mặc định' : 'Đặt mặc định';
+        }
+      });
+      notify(`Đã đặt ${envKey.toUpperCase()} làm môi trường mặc định.`);
+      return;
+    }
+
+    const cloneBtn = e.target.closest('[data-action="clone-env"]');
+    if (cloneBtn) {
+      const card = cloneBtn.closest('.env-card');
+      const sourceKey = card?.dataset.env;
+      if (!sourceKey) return;
+      const keyInput = prompt(`Nhập mã định danh cho môi trường mới (sao chép từ ${sourceKey.toUpperCase()}):`);
+      if (!keyInput) return;
+      const newKey = keyInput.trim().toLowerCase();
+      if (!/^[a-z][a-z0-9_-]{1,20}$/.test(newKey)) {
+        alert('Mã môi trường không hợp lệ! Chỉ dùng chữ cái, số, gạch nối (2-20 ký tự).');
+        return;
+      }
+      if (envContainer.querySelector(`.env-card[data-env="${newKey}"]`)) {
+        alert(`Môi trường "${newKey}" đã tồn tại!`);
+        return;
+      }
+      const newLabel = prompt('Nhập tên hiển thị:', newKey.toUpperCase()) || newKey.toUpperCase();
+      const clonedData = { label: newLabel, _siteLabels: {} };
+      card.querySelectorAll('.site-row').forEach((row) => {
+        const sKey = row.dataset.siteKey;
+        clonedData[sKey] = row.querySelector('.site-url-input')?.value || '';
+        clonedData._siteLabels[sKey] = row.querySelector('.site-label-input')?.value || '';
+      });
+      const defaultEnvKey = $('#settings-default-environment')?.value || 'dev';
+      const cardHtml = renderEnvironmentCard(newKey, clonedData, defaultEnvKey);
+      envContainer.insertAdjacentHTML('beforeend', cardHtml);
+      updateDefaultEnvOptions();
+      notify(`Đã nhân bản ${sourceKey.toUpperCase()} sang ${newKey.toUpperCase()}. Bấm "Lưu cấu hình" để hoàn tất.`);
+      return;
+    }
+
+    const deleteEnvBtn = e.target.closest('[data-action="delete-env"]');
+    if (deleteEnvBtn) {
+      const card = deleteEnvBtn.closest('.env-card');
+      const envKey = card?.dataset.env;
+      const defaultEnvKey = $('#settings-default-environment')?.value;
+      if (envKey === defaultEnvKey) {
+        alert(`Không thể xóa môi trường mặc định (${envKey.toUpperCase()})! Hãy chuyển mặc định sang môi trường khác trước.`);
+        return;
+      }
+      if (document.querySelectorAll('.env-card').length <= 1) {
+        alert('Hệ thống phải có ít nhất một môi trường!');
+        return;
+      }
+      if (confirm(`Bạn có chắc muốn xóa toàn bộ môi trường "${envKey.toUpperCase()}" và các site bên trong?`)) {
+        card.remove();
+        updateDefaultEnvOptions();
+        notify(`Đã xóa môi trường ${envKey.toUpperCase()}. Bấm "Lưu cấu hình" để áp dụng.`);
+      }
+      return;
+    }
+
+    if (!e.target.closest('.add-site-wrap')) {
+      document.querySelectorAll('.site-preset-menu').forEach((m) => { m.hidden = true; });
+    }
+  });
+
+  envContainer.addEventListener('input', (e) => {
+    if (e.target.classList.contains('site-url-input')) {
+      const row = e.target.closest('.site-row');
+      const openBtn = row?.querySelector('.btn-open-site');
+      const val = e.target.value.trim();
+      if (openBtn) {
+        openBtn.href = val || '#';
+        openBtn.style.pointerEvents = val ? 'auto' : 'none';
+        openBtn.style.opacity = val ? '1' : '0.35';
+      }
+    }
+  });
+}
+
+function updateDefaultEnvOptions() {
+  const defaultSelect = $('#settings-default-environment');
+  if (!defaultSelect) return;
+  const currentVal = defaultSelect.value;
+  const keys = Array.from(document.querySelectorAll('.env-card')).map((c) => c.dataset.env).filter(Boolean);
+  fillSettingSelect('#settings-default-environment', keys, keys.includes(currentVal) ? currentVal : keys[0]);
+}
+
 function renderSettings(settings) {
   settingsCache = settings;
   savedSuitesCache = JSON.parse(JSON.stringify(settings.suites || {}));
   renderSuitesView(settings.suites || {});
   const environmentEntries = Object.entries(settings.environments || {});
+  const defaultEnvKey = settings.runtime?.defaultEnvironment || (environmentEntries[0]?.[0] || 'dev');
   const envContainer = $('#environment-settings');
   if (envContainer) {
-    envContainer.innerHTML = environmentEntries.map(([key, env]) => `
-    <div class="environment-row" data-env="${escapeHtml(key)}">
-      <div class="environment-key"><strong>${escapeHtml(key)}</strong><small>${escapeHtml(env.label || key.toUpperCase())}</small></div>
-      <div class="environment-fields">
-        <label>Tên hiển thị<small>Tên dễ đọc của môi trường trong dashboard.</small><input data-setting="environment-label" value="${escapeHtml(env.label || '')}"></label>
-        <label>URL website<small>Địa chỉ web seeker dùng cho UI test.</small><input data-setting="environment-base-url" value="${escapeHtml(env.baseURL || '')}"></label>
-        <label>URL API<small>Địa chỉ API tương ứng với môi trường này.</small><input data-setting="environment-api-base-url" value="${escapeHtml(env.apiBaseURL || '')}"></label>
-      </div>
-    </div>
-  `).join('');
+    envContainer.innerHTML = environmentEntries.map(([key, env]) => renderEnvironmentCard(key, env, defaultEnvKey)).join('');
+    bindEnvManagerEvents();
   }
 
-  fillSettingSelect('#settings-default-environment', environmentEntries.map(([key]) => key), settings.runtime?.defaultEnvironment);
+  fillSettingSelect('#settings-default-environment', environmentEntries.map(([key]) => key), defaultEnvKey);
   fillSettingSelect('#settings-trace', settings.options?.trace || [], settings.runtime?.trace);
   fillSettingSelect('#settings-screenshot', settings.options?.screenshot || [], settings.runtime?.screenshot);
   fillSettingSelect('#settings-video', settings.options?.video || [], settings.runtime?.video);
@@ -5330,13 +5757,38 @@ function collectSettingsPayload() {
   const suites = Object.assign({}, suitesCache || settingsCache?.suites || {});
 
   const environments = {};
-  document.querySelectorAll('.environment-row').forEach((row) => {
-    environments[row.dataset.env] = {
-      label: row.querySelector('[data-setting="environment-label"]').value,
-      baseURL: row.querySelector('[data-setting="environment-base-url"]').value,
-      apiBaseURL: row.querySelector('[data-setting="environment-api-base-url"]').value,
-    };
+  document.querySelectorAll('.env-card').forEach((card) => {
+    const envKey = card.dataset.env;
+    if (!envKey) return;
+    const label = card.querySelector('[data-setting="env-label"]')?.value.trim() || envKey.toUpperCase();
+    const envObj = { label, _siteLabels: {} };
+
+    card.querySelectorAll('.site-row').forEach((row) => {
+      const siteKey = row.dataset.siteKey;
+      if (!siteKey) return;
+      const url = row.querySelector('.site-url-input')?.value.trim() || '';
+      const siteLabel = row.querySelector('.site-label-input')?.value.trim() || '';
+      envObj[siteKey] = url;
+      if (siteLabel) {
+        envObj._siteLabels[siteKey] = siteLabel;
+      }
+    });
+
+    if (!('baseURL' in envObj)) envObj.baseURL = '';
+    if (!('apiBaseURL' in envObj) && envObj.apiBaseURL !== '') envObj.apiBaseURL = '';
+
+    environments[envKey] = envObj;
   });
+
+  if (Object.keys(environments).length === 0) {
+    document.querySelectorAll('.environment-row').forEach((row) => {
+      environments[row.dataset.env] = {
+        label: row.querySelector('[data-setting="environment-label"]')?.value || '',
+        baseURL: row.querySelector('[data-setting="environment-base-url"]')?.value || '',
+        apiBaseURL: row.querySelector('[data-setting="environment-api-base-url"]')?.value || '',
+      };
+    });
+  }
 
   const api = {
     branch: $('#settings-api-branch').value,

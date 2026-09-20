@@ -183,8 +183,7 @@ test.describe('Feature: ${cleanFeatureName} @record @e2e', () => {
     });
 
     await test.step('Given Tiền điều kiện: Người dùng truy cập và chuẩn bị trang kiểm thử', async () => {
-${url ? `      await ${pageVar}.navigate('${url}');\n` : ''}      await ${pageVar}.capture('precondition_initial_state');
-    });
+${url ? `      await ${pageVar}.navigate('${url}');\n` : '      // Trạng thái xuất phát đã sẵn sàng.\n'}    });
 
     await test.step('When Người dùng thực hiện các thao tác đã ghi', async () => {
       await ${pageVar}.${cleanMethodName}();
