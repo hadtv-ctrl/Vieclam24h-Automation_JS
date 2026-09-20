@@ -98,34 +98,8 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
   const isHub = fs.existsSync(path.join(rootDir, 'scripts', 'sync-satellites.js'))
     && fs.existsSync(path.join(rootDir, 'ai', 'shared', 'SATELLITE_CORE_MIGRATION.md'));
 
-  // 1. Kiểm tra qua remote origin/main (áp dụng mọi nơi có git remote)
-  try {
-    const remotes = execSync('git remote', { cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-    if (remotes.includes('origin')) {
-      try {
-        execSync('git fetch origin main --quiet', { cwd: rootDir, timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] });
-      } catch (_) {}
-
-      const diffCommits = execSync('git log HEAD..origin/main --oneline -n 5 -- dashboard core bin scripts', {
-        cwd: rootDir,
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      }).trim();
-
-      if (diffCommits) {
-        const latestCommit = execSync('git rev-parse --short origin/main', { cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-        return {
-          hasUpdate: true,
-          source: 'origin-main',
-          latestVersion: `Commit ${latestCommit}`,
-          releaseName: 'Bản cập nhật Dashboard Framework mới trên origin/main',
-          releaseNotes: `Các commit mới nhất từ Hub đã được chuyển giao sang origin/main:\n${diffCommits}`,
-        };
-      }
-    }
-  } catch (_) {}
-
-  // 2. Kiểm tra nếu có Hub cục bộ (D:\_Automation-Project)
+  // 1. ƯU TIÊN KIỂM TRA NGUỒN LOCAL HUB (D:\_Automation-Project)
+  // Vì updateFramework ưu tiên lấy từ Local Hub nên nguồn check cũng phải ưu tiên Local Hub để đồng nhất
   try {
     const localHub = 'D:\\_Automation-Project';
     if (!isHub && path.resolve(rootDir) !== path.resolve(localHub) && fs.existsSync(path.join(localHub, 'dashboard', 'server.js'))) {
@@ -136,6 +110,8 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
       const sampleFiles = [
         path.join('dashboard', 'public', 'js', 'views', 'qa', 'qaSlice.js'),
         path.join('dashboard', 'public', 'app.js'),
+        path.join('dashboard', 'public', 'templates', 'qa.html'),
+        path.join('dashboard', 'public', 'styles', 'views', 'qa.css'),
         path.join('dashboard', 'routes', 'qaRoutes.js'),
         path.join('dashboard', 'server.js'),
       ];
@@ -143,7 +119,8 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
       const isDifferent = sampleFiles.some((f) => {
         const pHub = path.join(localHub, f);
         const pSat = path.join(rootDir, f);
-        if (!fs.existsSync(pSat)) return true;
+        if (!fs.existsSync(pSat) && fs.existsSync(pHub)) return true;
+        if (fs.existsSync(pSat) && !fs.existsSync(pHub)) return true;
         return !fs.readFileSync(pHub).equals(fs.readFileSync(pSat));
       });
 
@@ -154,6 +131,54 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
           latestVersion: `Hub commit ${hubHead}`,
           releaseName: 'Bản cập nhật Dashboard Framework mới từ Hub',
           releaseNotes: `Các cập nhật mới nhất từ Hub cục bộ:\n${hubLastLog}`,
+        };
+      }
+
+      // Đã khớp 100% với Local Hub -> Không có bản cập nhật mới
+      return {
+        hasUpdate: false,
+        source: 'local-hub',
+        latestVersion: `Hub commit ${hubHead}`,
+        message: 'Dashboard Framework đã đồng bộ hoàn toàn với Hub cục bộ.',
+      };
+    }
+  } catch (_) {}
+
+  // 2. Nếu không có Local Hub hoặc ở môi trường riêng, kiểm tra qua remote origin/main
+  try {
+    const remotes = execSync('git remote', { cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    if (remotes.includes('origin')) {
+      try {
+        execSync('git fetch origin main --quiet', { cwd: rootDir, timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] });
+      } catch (_) {}
+
+      // Kiểm tra xem origin/main có thực sự có file thay đổi so với HEAD hay không
+      let hasFileDiff = false;
+      try {
+        const diffStat = execSync('git diff --name-only HEAD origin/main -- dashboard core bin scripts', {
+          cwd: rootDir,
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        }).trim();
+        if (diffStat) {
+          hasFileDiff = true;
+        }
+      } catch (_) {}
+
+      const diffCommits = execSync('git log HEAD..origin/main --oneline -n 5 -- dashboard core bin scripts', {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).trim();
+
+      if (hasFileDiff && diffCommits) {
+        const latestCommit = execSync('git rev-parse --short origin/main', { cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+        return {
+          hasUpdate: true,
+          source: 'origin-main',
+          latestVersion: `Commit ${latestCommit}`,
+          releaseName: 'Bản cập nhật Dashboard Framework mới trên origin/main',
+          releaseNotes: `Các commit mới nhất từ Hub đã được chuyển giao sang origin/main:\n${diffCommits}`,
         };
       }
     }
