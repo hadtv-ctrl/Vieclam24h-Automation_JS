@@ -78,6 +78,7 @@
   border-radius: 10px;
   background: color-mix(in srgb, var(--accent) 5%, var(--surface-2));
   overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .qa-draft[hidden] { display: none; }
 .qa-draft-head {
@@ -85,8 +86,9 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--line);
+  background: var(--surface);
 }
 .qa-draft-meta { margin: 2px 0 0; font-size: var(--font-caption); color: var(--muted); }
 .qa-draft-disclaimer {
@@ -99,20 +101,76 @@
 }
 .qa-draft-disclaimer i { font-size: 14px; color: var(--accent); flex-shrink: 0; }
 .qa-draft-warnings:empty { display: none; }
-.qa-draft-warnings { padding: 10px 14px 0; }
+.qa-draft-warnings { padding: 10px 16px 0; }
 .qa-draft-warn { margin: 0 0 4px; font-size: var(--font-caption); color: var(--warning); }
 .qa-draft-error { margin: 0; font-size: var(--font-control); color: var(--danger); }
 .qa-draft-body {
   margin: 0;
-  padding: 14px;
-  max-height: 52vh;
+  padding: 16px 20px;
+  max-height: 58vh;
   overflow: auto;
   font-family: var(--font-mono);
-  font-size: var(--font-caption);
-  line-height: 1.65;
+  font-size: 13.5px;
+  line-height: 1.7;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--text);
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+
+/* Chế độ Phóng to toàn màn hình (Fullscreen Review Mode) */
+.qa-draft.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  background: color-mix(in srgb, var(--surface) 96%, black);
+  backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+  animation: qaDraftZoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes qaDraftZoomIn {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.qa-draft.is-fullscreen .qa-draft-head {
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.qa-draft.is-fullscreen .qa-draft-head .eyebrow {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.qa-draft.is-fullscreen .qa-draft-warnings {
+  padding: 12px 28px 0;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.qa-draft.is-fullscreen .qa-draft-body {
+  flex: 1;
+  max-height: none;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 28px 48px;
+  font-size: 14px;
+  line-height: 1.75;
+  box-sizing: border-box;
 }
 
 .qa-table-wrap {
