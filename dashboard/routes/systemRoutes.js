@@ -73,11 +73,11 @@ async function handleSystemRoutes(request, response, url, context = {}) {
     }) || true;
   }
   if (request.method === 'GET' && url.pathname === '/api/system/check-update') {
-    try { sendJson(response, 200, await checkForUpdates()); } catch (e) { sendJson(response, 500, { ok: false, error: e.message }); }
+    try { sendJson(response, 200, await checkForUpdates({ rootDir: root })); } catch (e) { sendJson(response, 500, { ok: false, error: e.message }); }
     return true;
   }
   if (request.method === 'POST' && url.pathname === '/api/system/apply-update') {
-    try { const r = applyUpdate(); sendJson(response, r.ok ? 200 : 400, r); } catch (e) { sendJson(response, 500, { ok: false, error: e.message }); }
+    try { const r = applyUpdate({ rootDir: root }); sendJson(response, r.ok ? 200 : 400, r); } catch (e) { sendJson(response, 500, { ok: false, error: e.message }); }
     return true;
   }
   if (request.method === 'POST' && (url.pathname === '/api/framework/update' || url.pathname === '/api/system/update-framework')) {
