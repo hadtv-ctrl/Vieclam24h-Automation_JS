@@ -99,6 +99,12 @@ export class QaSlice {
     on(root.querySelector('#qa-draft-close'), 'click', () => this._closeDraft());
     on(root.querySelector('#qa-pick-all'), 'change', (event) => this.toggleAllPicks(event.target.checked));
 
+    // Executive Scorecard Direct Navigation
+    on(root.querySelector('.qa-score-health'), 'click', () => this.switchTab('findings'));
+    on(root.querySelector('.qa-score-coverage'), 'click', () => this.switchTab('docs'));
+    on(root.querySelector('.qa-score-ratio'), 'click', () => this.switchTab('candidates'));
+    on(root.querySelector('.qa-score-boundary'), 'click', () => this.switchTab('findings'));
+
     // Smart Action Bar
     on(root.querySelector('#qa-btn-autofix'), 'click', () => this.openAutoFixModal());
     on(root.querySelector('#qa-btn-scaffold'), 'click', () => this.openScaffoldModal());
