@@ -86,6 +86,16 @@ export class MasterProcessHelper {
       this.slice.notify('Đã gỡ bỏ Feature Freeze Circuit Breaker');
       await this.loadFreezeStatus(root);
     });
+
+    root.querySelectorAll('.mp-pipeline-step-btn').forEach((btn) => {
+      const h = () => {
+        root.querySelectorAll('.mp-pipeline-step-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        const target = root.querySelector(btn.dataset.target);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      btn.addEventListener('click', h);
+      disposers.push(() => btn.removeEventListener('click', h));
+    });
   }
 
   setRunningState(root, running, actionName = '') {
@@ -185,21 +195,16 @@ export class MasterProcessHelper {
         res = await apiClient.post(endpoint, reqBody);
       } catch (postErr) {
         const p = postErr.payload;
-        if (p && typeof p === 'object' && (p.stdout !== undefined || p.scanned !== undefined || p.output !== undefined)) {
-          res = p;
-        } else {
-          throw postErr;
-        }
+        if (p && typeof p === 'object' && (p.stdout !== undefined || p.scanned !== undefined || p.output !== undefined)) res = p;
+        else throw postErr;
       }
 
       const out = (res.stdout || '') + (res.stderr ? '\n[STDERR]\n' + res.stderr : '') || res.output || JSON.stringify(res, null, 2);
       this.setTerminal(root, out);
 
       if (res.scanned !== undefined) {
-        const setTxt = (id, val) => { const el = root.querySelector(id); if (el) el.textContent = String(val); };
-        setTxt('#mp-scanned-count', res.scanned);
-        setTxt('#mp-violations-count', res.violations);
-        setTxt('#mp-exempted-count', res.exempted);
+        [['#mp-scanned-count', res.scanned], ['#mp-violations-count', res.violations], ['#mp-exempted-count', res.exempted]]
+          .forEach(([id, val]) => { const el = root.querySelector(id); if (el) el.textContent = String(val); });
       }
 
       if (res.details) {
@@ -207,12 +212,7 @@ export class MasterProcessHelper {
         const renderList = (id, items) => {
           const ul = root.querySelector(id);
           if (!ul) return;
-          ul.textContent = '';
-          (items || []).forEach((item) => {
-            const li = document.createElement('li');
-            li.textContent = item;
-            ul.appendChild(li);
-          });
+          ul.replaceChildren(...(items || []).map((item) => { const li = document.createElement('li'); li.textContent = item; return li; }));
         };
         renderList('#mp-audit-violations-list', res.details.violations);
         renderList('#mp-audit-exemptions-list', res.details.exemptions);

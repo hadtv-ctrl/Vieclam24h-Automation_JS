@@ -1930,3 +1930,212 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
 }
+
+/* Pipeline Stepper & Workflow Flow */
+.settings-master-process .mp-pipeline-container {
+  margin: 16px 16px 20px;
+  padding: 14px 18px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.settings-master-process .mp-pipeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settings-master-process .mp-pipeline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+.settings-master-process .mp-pipeline-caption {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.settings-master-process .mp-pipeline-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+.settings-master-process .mp-pipeline-step-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+  position: relative;
+}
+.settings-master-process .mp-pipeline-step-btn:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  transform: translateY(-1px);
+}
+.settings-master-process .mp-pipeline-step-btn.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 12px rgba(167, 139, 250, 0.15);
+}
+.settings-master-process .mp-step-badge-num {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: 6px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
+.settings-master-process .mp-step-text-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.settings-master-process .mp-step-main-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settings-master-process .mp-step-sub-title {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settings-master-process .mp-step-chevron {
+  color: var(--muted);
+  font-size: 0.8rem;
+  opacity: 0.5;
+  margin-left: auto;
+}
+
+/* Workflow Flow & Step Blocks */
+.settings-master-process .mp-workflow-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.settings-master-process .mp-step-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-margin-top: 20px;
+}
+.settings-master-process .mp-step-block-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0 4px;
+}
+.settings-master-process .mp-step-tag {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.settings-master-process .mp-tag-danger {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+}
+.settings-master-process .mp-tag-success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+.settings-master-process .mp-tag-terminal {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+.settings-master-process .mp-step-block-header h3 {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 3px;
+}
+.settings-master-process .mp-step-block-header p {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Guide Callout (Mục đích & Khi nào bấm) */
+.settings-master-process .mp-guide-callout {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line));
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+.settings-master-process .mp-guide-callout-danger {
+  background: color-mix(in srgb, var(--danger) 6%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--danger) 20%, var(--line));
+}
+.settings-master-process .mp-guide-callout-success {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+.settings-master-process .mp-guide-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+.settings-master-process .mp-guide-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 0.76rem;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.settings-master-process .mp-guide-callout-danger .mp-guide-tag {
+  color: var(--danger);
+}
+.settings-master-process .mp-guide-callout-success .mp-guide-tag {
+  color: #4ade80;
+}
+.settings-master-process .mp-guide-row strong {
+  color: var(--text);
+}
