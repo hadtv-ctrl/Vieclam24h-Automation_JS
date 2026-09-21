@@ -13,6 +13,10 @@ const {
   readDocument,
   saveDocument,
   getBddDraft,
+  getQaSummary,
+  runQaFix,
+  getScaffoldMeta,
+  generateScaffold,
 } = require('../services/qaService');
 const { sendJson, parseBody } = require('./routeUtils');
 
@@ -20,6 +24,50 @@ const MAX_BODY_BYTES = 1_048_576;
 
 async function handleQaRoutes(request, response, url, context = {}) {
   const root = context.root || process.env.QA_PROJECT_ROOT || process.cwd();
+
+  if (request.method === 'GET' && url.pathname === '/api/qa/summary') {
+    try {
+      sendJson(response, 200, getQaSummary(root));
+    } catch (error) {
+      sendJson(response, 500, { error: `Không lấy được tổng quan QA: ${error.message}` });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/fix') {
+    try {
+      const body = await parseBody(request);
+      sendJson(response, 200, runQaFix(root, body || {}));
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/qa/scaffold/meta') {
+    try {
+      sendJson(response, 200, getScaffoldMeta(root));
+    } catch (error) {
+      sendJson(response, 500, { error: `Không lấy được thông tin scaffold: ${error.message}` });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/scaffold') {
+    try {
+      const body = await parseBody(request);
+      sendJson(response, 200, generateScaffold(root, body || {}));
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
 
   if (request.method === 'GET' && url.pathname === '/api/qa/trace') {
     try {

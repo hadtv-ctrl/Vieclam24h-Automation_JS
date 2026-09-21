@@ -35,6 +35,8 @@ export class QaSlice {
     this._renderDisposers = [];
     this._mounted = false;
     this.trace = null;
+    this.summary = null;
+    this._fixChanges = [];
     this.candidates = [];
     this.decisions = null;
     this.activeTab = 'docs';
@@ -96,6 +98,40 @@ export class QaSlice {
     on(root.querySelector('#qa-draft-expand'), 'click', () => this.toggleDraftFullscreen());
     on(root.querySelector('#qa-draft-close'), 'click', () => this._closeDraft());
     on(root.querySelector('#qa-pick-all'), 'change', (event) => this.toggleAllPicks(event.target.checked));
+
+    // Smart Action Bar
+    on(root.querySelector('#qa-btn-autofix'), 'click', () => this.openAutoFixModal());
+    on(root.querySelector('#qa-btn-scaffold'), 'click', () => this.openScaffoldModal());
+
+    // Auto-Fix Modal Events
+    const fixModal = root.querySelector('#qa-fix-modal');
+    if (fixModal) {
+      on(root.querySelector('#qa-fix-modal-close'), 'click', () => fixModal.close());
+      on(root.querySelector('#qa-fix-cancel-btn'), 'click', () => fixModal.close());
+      on(root.querySelector('#qa-btn-apply-fix'), 'click', () => this.applyAutoFix());
+    }
+
+    // Scaffold Modal Events
+    const scaffoldModal = root.querySelector('#qa-scaffold-modal');
+    if (scaffoldModal) {
+      on(root.querySelector('#qa-scaffold-modal-close'), 'click', () => scaffoldModal.close());
+      on(root.querySelector('#qa-scaffold-cancel-btn'), 'click', () => scaffoldModal.close());
+      on(root.querySelector('#qa-btn-submit-scaffold'), 'click', () => this.submitScaffold());
+
+      root.querySelectorAll('input[name="qa-scaffold-mode"]').forEach((radio) => {
+        on(radio, 'change', () => {
+          const isInfer = radio.value === 'infer' && radio.checked;
+          const newFields = root.querySelector('#qa-scaffold-new-fields');
+          const inferFields = root.querySelector('#qa-scaffold-infer-fields');
+          const cardNew = root.querySelector('#qa-mode-card-new');
+          const cardInfer = root.querySelector('#qa-mode-card-infer');
+          if (newFields) newFields.style.display = isInfer ? 'none' : 'flex';
+          if (inferFields) inferFields.style.display = isInfer ? 'flex' : 'none';
+          if (cardNew) cardNew.classList.toggle('is-selected', !isInfer);
+          if (cardInfer) cardInfer.classList.toggle('is-selected', isInfer);
+        });
+      });
+    }
 
     const handleKeydown = (e) => {
       if (e.key === 'Escape') {
@@ -163,11 +199,12 @@ export class QaSlice {
     const root = this._root();
     if (!root) return;
 
-    const [trace, candidates, decisions, documents] = await Promise.allSettled([
+    const [trace, candidates, decisions, documents, summary] = await Promise.allSettled([
       apiClient.get('/api/qa/trace'),
       apiClient.get('/api/qa/candidates', { limit: 50 }),
       apiClient.get('/api/qa/decisions'),
       apiClient.get('/api/qa/documents'),
+      apiClient.get('/api/qa/summary'),
     ]);
 
     if (trace.status !== 'fulfilled') {
@@ -179,6 +216,7 @@ export class QaSlice {
     }
 
     this.trace = trace.value;
+    this.summary = summary.status === 'fulfilled' ? summary.value : null;
     this.candidates = candidates.status === 'fulfilled' && Array.isArray(candidates.value.candidates)
       ? candidates.value.candidates
       : [];
@@ -191,6 +229,7 @@ export class QaSlice {
       candidates.status === 'rejected' ? { part: 'ứng viên automation', reason: candidates.reason } : null,
       decisions.status === 'rejected' ? { part: 'sổ quyết định', reason: decisions.reason } : null,
       documents.status === 'rejected' ? { part: 'danh sách tài liệu', reason: documents.reason } : null,
+      summary.status === 'rejected' ? { part: 'bộ chỉ số QA Core', reason: summary.reason } : null,
     ].filter(Boolean);
 
     this.renderAll();
@@ -219,6 +258,7 @@ export class QaSlice {
     }
     this._renderSourceBar();
     this._renderStats();
+    this._renderExecutiveScorecard();
     this.renderDocs();
     this.renderCandidates();
     this.renderFindings();
@@ -340,6 +380,255 @@ export class QaSlice {
     set('qa-stat-auto', this.trace.automatedCount);
     set('qa-stat-major', this.trace.majorCount);
     box.hidden = false;
+  }
+
+  _renderExecutiveScorecard() {
+    const root = this._root();
+    if (!root) return;
+    const summary = this.summary;
+    if (!summary) return;
+
+    // 1. Health Badge
+    const healthStatus = summary.systemHealth || summary.health?.status || 'HEALTHY';
+    const badge = root.querySelector('#qa-health-badge');
+    const icon = root.querySelector('#qa-health-icon');
+    const statusText = root.querySelector('#qa-health-status');
+    const findingsText = root.querySelector('#qa-health-findings-text');
+
+    if (badge) {
+      badge.className = 'qa-health-pill';
+      if (healthStatus === 'HEALTHY') badge.classList.add('is-healthy');
+      else if (healthStatus === 'WARNING') badge.classList.add('is-warning');
+      else badge.classList.add('is-critical');
+    }
+    if (icon) {
+      icon.className = healthStatus === 'HEALTHY'
+        ? 'ph-bold ph-shield-check'
+        : (healthStatus === 'WARNING' ? 'ph-bold ph-warning' : 'ph-bold ph-warning-octagon');
+    }
+    if (statusText) statusText.textContent = healthStatus;
+    if (findingsText) {
+      const count = summary.health?.totalFindings ?? (summary.findings || []).length;
+      findingsText.textContent = `${count} phát hiện`;
+    }
+
+    // 2. AC Coverage
+    const m = summary.metrics || {};
+    const covPercent = m.coveragePercent ?? 0;
+    const covPercentEl = root.querySelector('#qa-cov-percent');
+    const covRatioEl = root.querySelector('#qa-cov-ratio');
+    const covProgressEl = root.querySelector('#qa-cov-progress');
+
+    if (covPercentEl) covPercentEl.textContent = `${covPercent}%`;
+    if (covRatioEl) covRatioEl.textContent = `${m.coveredAcCount || 0}/${m.acceptanceCriteria || 0} ACs được phủ`;
+    if (covProgressEl) covProgressEl.style.width = `${Math.min(100, Math.max(0, covPercent))}%`;
+
+    // 3. Automated vs Candidate
+    const autoCountEl = root.querySelector('#qa-auto-count');
+    const candCountEl = root.querySelector('#qa-candidate-count');
+    const tcTotalEl = root.querySelector('#qa-tc-total-sub');
+
+    if (autoCountEl) autoCountEl.textContent = String(m.automatedTests || 0);
+    if (candCountEl) candCountEl.textContent = String(m.candidateTests || 0);
+    if (tcTotalEl) tcTotalEl.textContent = `${m.testCases || 0} tổng số test cases`;
+
+    // 4. Asset Shield
+    const b = summary.boundary || {};
+    const bStatus = b.status || 'ALIGNED';
+    const shieldBadge = root.querySelector('#qa-shield-badge');
+    const shieldIcon = root.querySelector('#qa-shield-icon');
+    const shieldStatus = root.querySelector('#qa-shield-status');
+    const shieldDetails = root.querySelector('#qa-shield-details');
+
+    if (shieldBadge) {
+      shieldBadge.className = 'qa-shield-pill';
+      if (bStatus === 'ALIGNED') shieldBadge.classList.add('is-aligned');
+      else if (bStatus === 'DRIFTED') shieldBadge.classList.add('is-drifted');
+      else shieldBadge.classList.add('is-missing');
+    }
+    if (shieldIcon) {
+      shieldIcon.className = bStatus === 'ALIGNED'
+        ? 'ph-bold ph-check-circle'
+        : (bStatus === 'DRIFTED' ? 'ph-bold ph-warning' : 'ph-bold ph-shield-slash');
+    }
+    if (shieldStatus) shieldStatus.textContent = bStatus;
+    if (shieldDetails) {
+      shieldDetails.textContent = `Ship: ${b.shipCount || 0} · Seed: ${b.seedCount || 0} · Own: ${b.ownCount || 0}`;
+    }
+  }
+
+  async openAutoFixModal() {
+    const root = this._root();
+    if (!root) return;
+    const modal = root.querySelector('#qa-fix-modal');
+    const summaryText = root.querySelector('#qa-fix-summary-text');
+    const listEl = root.querySelector('#qa-fix-changes-list');
+    const applyBtn = root.querySelector('#qa-btn-apply-fix');
+    if (!modal || !summaryText || !listEl || !applyBtn) return;
+
+    summaryText.textContent = 'Đang quét phân tích và chuẩn hóa ma trận (dry-run)...';
+    listEl.textContent = '';
+    const loadingLi = document.createElement('li');
+    loadingLi.textContent = 'Đang tải thông tin...';
+    listEl.appendChild(loadingLi);
+    applyBtn.disabled = true;
+
+    modal.showModal();
+
+    try {
+      const res = await apiClient.post('/api/qa/fix', { dryRun: true });
+      listEl.textContent = '';
+      this._fixChanges = res.changes || [];
+
+      if (!res.ok && res.error) {
+        summaryText.textContent = `Lỗi: ${res.message || res.error}`;
+        applyBtn.disabled = true;
+        return;
+      }
+
+      summaryText.textContent = res.message || 'Hoàn tất quét xem trước.';
+      if (this._fixChanges.length === 0) {
+        const emptyLi = document.createElement('li');
+        emptyLi.style.color = 'var(--success, #10b981)';
+        emptyLi.textContent = 'Tất cả liên kết spec và candidate đã ở trạng thái chuẩn.';
+        listEl.appendChild(emptyLi);
+        applyBtn.disabled = true;
+      } else {
+        applyBtn.disabled = false;
+        for (const change of this._fixChanges) {
+          const li = document.createElement('li');
+          if (change.kind === 'chuan-hoa-duong-dan-spec') {
+            li.textContent = `[Đường dẫn] ${change.file}:${change.line} -> ${change.to}`;
+          } else if (change.kind === 'them-test-case-chua-khai-bao') {
+            li.textContent = `[Candidate mới] ${change.file}:${change.line} -> ${change.tcId} (${change.acId}) [${change.spec}]`;
+          } else {
+            li.textContent = `[Thay đổi] ${change.file}:${change.line || ''} -> ${change.kind}`;
+          }
+          listEl.appendChild(li);
+        }
+      }
+    } catch (err) {
+      summaryText.textContent = `Lỗi kết nối khi quét Auto-Fix: ${err.message}`;
+      listEl.textContent = '';
+      applyBtn.disabled = true;
+    }
+  }
+
+  async applyAutoFix() {
+    const root = this._root();
+    if (!root) return;
+    const modal = root.querySelector('#qa-fix-modal');
+    const applyBtn = root.querySelector('#qa-btn-apply-fix');
+    const summaryText = root.querySelector('#qa-fix-summary-text');
+    if (!applyBtn) return;
+
+    applyBtn.disabled = true;
+    if (summaryText) summaryText.textContent = 'Đang thực thi live fix và đồng bộ ma trận...';
+
+    try {
+      const res = await apiClient.post('/api/qa/fix', { dryRun: false });
+      if (modal) modal.close();
+      this.notify(res.message || 'Đã chuẩn hóa thành công các liên kết.');
+      await this.reload(true);
+    } catch (err) {
+      if (summaryText) summaryText.textContent = `Lỗi khi thực thi: ${err.message}`;
+      applyBtn.disabled = false;
+    }
+  }
+
+  async openScaffoldModal() {
+    const root = this._root();
+    if (!root) return;
+    const modal = root.querySelector('#qa-scaffold-modal');
+    const reqInput = root.querySelector('#qa-scaffold-req-id');
+    const titleInput = root.querySelector('#qa-scaffold-title');
+    const domainInput = root.querySelector('#qa-scaffold-domain');
+    const domainsList = root.querySelector('#qa-scaffold-domains-list');
+    const acCountInput = root.querySelector('#qa-scaffold-ac-count');
+    const specPathInput = root.querySelector('#qa-scaffold-spec-path');
+    const radioNew = root.querySelector('input[name="qa-scaffold-mode"][value="new"]');
+    if (!modal) return;
+
+    if (radioNew) {
+      radioNew.checked = true;
+      radioNew.dispatchEvent(new Event('change'));
+    }
+    if (titleInput) titleInput.value = '';
+    if (specPathInput) specPathInput.value = '';
+    if (acCountInput) acCountInput.value = '2';
+
+    modal.showModal();
+
+    try {
+      const meta = await apiClient.get('/api/qa/scaffold/meta');
+      if (reqInput && meta.nextReqId) reqInput.value = meta.nextReqId;
+      if (domainsList && Array.isArray(meta.existingDomains)) {
+        domainsList.textContent = '';
+        for (const d of meta.existingDomains) {
+          const opt = document.createElement('option');
+          opt.value = d;
+          domainsList.appendChild(opt);
+        }
+      }
+      if (domainInput && meta.existingDomains && meta.existingDomains.length > 0) {
+        domainInput.value = meta.existingDomains[0];
+      }
+    } catch (_) {
+      // fallback
+    }
+  }
+
+  async submitScaffold() {
+    const root = this._root();
+    if (!root) return;
+    const modal = root.querySelector('#qa-scaffold-modal');
+    const submitBtn = root.querySelector('#qa-btn-submit-scaffold');
+    const mode = root.querySelector('input[name="qa-scaffold-mode"]:checked')?.value || 'new';
+
+    if (mode === 'infer') {
+      const specPath = root.querySelector('#qa-scaffold-spec-path')?.value.trim();
+      if (!specPath) {
+        this.notify('Vui lòng nhập đường dẫn spec để suy luận ngược.');
+        return;
+      }
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const res = await apiClient.post('/api/qa/scaffold', { inferFromSpecPath: specPath });
+        if (modal) modal.close();
+        this.notify(res.message || 'Đã suy luận tài liệu từ spec thành công.');
+        await this.reload(true);
+      } catch (err) {
+        this.notify(`Lỗi suy luận: ${err.message}`);
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    } else {
+      const reqId = root.querySelector('#qa-scaffold-req-id')?.value.trim().toUpperCase();
+      const title = root.querySelector('#qa-scaffold-title')?.value.trim();
+      const domain = root.querySelector('#qa-scaffold-domain')?.value.trim() || 'general';
+      const acCount = parseInt(root.querySelector('#qa-scaffold-ac-count')?.value, 10) || 2;
+
+      if (!reqId || !/^REQ-\d{3}$/.test(reqId)) {
+        this.notify('Mã Requirement không hợp lệ (yêu cầu dạng REQ-001).');
+        return;
+      }
+      if (!title) {
+        this.notify('Vui lòng nhập tiêu đề tính năng.');
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const res = await apiClient.post('/api/qa/scaffold', { reqId, title, domain, acCount });
+        if (modal) modal.close();
+        this.notify(res.message || `Đã tạo thành công bộ kịch bản cho ${reqId}.`);
+        await this.reload(true);
+      } catch (err) {
+        this.notify(`Lỗi khởi tạo: ${err.message}`);
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
   }
 
   // --- panel 1: tài liệu ---
@@ -1044,14 +1333,93 @@ export class QaSlice {
 
   renderFindings() {
     const root = this._root();
-    if (!root || !this.trace) return;
+    if (!root) return;
+
+    // 1. Render Static Findings & Gaps Card
+    const staticGapsCard = root.querySelector('#qa-static-gaps-card');
+    const staticGapsBadge = root.querySelector('#qa-static-gaps-badge');
+    const staticGapsList = root.querySelector('#qa-static-gaps-list');
+
+    const allFindings = (this.summary && Array.isArray(this.summary.findings))
+      ? this.summary.findings
+      : [];
+
+    const staticGaps = allFindings.filter((f) =>
+      f.kind === 'assertion-thieu-await' ||
+      f.kind === 'rule-thieu-boundary-test' ||
+      f.kind === 'thieu-kiem-tra-bien' ||
+      f.kind === 'doc-duoc-0-spec' ||
+      f.kind === 'drift' ||
+      f.kind === 'chuan-hoa-duong-dan-spec'
+    );
+
+    if (staticGapsCard && staticGapsList) {
+      staticGapsList.textContent = '';
+      if (staticGaps.length === 0) {
+        staticGapsCard.hidden = true;
+      } else {
+        staticGapsCard.hidden = false;
+        if (staticGapsBadge) staticGapsBadge.textContent = `${staticGaps.length} cảnh báo kỹ thuật`;
+
+        for (const gap of staticGaps) {
+          const row = document.createElement('div');
+          row.className = 'qa-static-gap-row';
+
+          const iconCol = document.createElement('div');
+          iconCol.className = 'qa-gap-icon-col';
+          const icon = document.createElement('i');
+          if (gap.kind === 'assertion-thieu-await') {
+            icon.className = 'ph-bold ph-warning-circle';
+            icon.style.color = 'var(--danger)';
+          } else if (gap.kind === 'rule-thieu-boundary-test' || gap.kind === 'thieu-kiem-tra-bien') {
+            icon.className = 'ph-bold ph-compass';
+            icon.style.color = 'var(--warning)';
+          } else {
+            icon.className = 'ph-bold ph-git-diff';
+            icon.style.color = 'var(--accent)';
+          }
+          iconCol.appendChild(icon);
+          row.appendChild(iconCol);
+
+          const contentCol = document.createElement('div');
+          contentCol.className = 'qa-gap-content-col';
+
+          const title = document.createElement('div');
+          title.className = 'qa-gap-title';
+          const labelSpan = document.createElement('span');
+          labelSpan.textContent = gap.label || gap.kind;
+          title.appendChild(labelSpan);
+
+          if (gap.where || gap.id) {
+            const loc = document.createElement('span');
+            loc.className = 'qa-gap-location';
+            loc.textContent = gap.where || gap.id;
+            title.appendChild(loc);
+          }
+          contentCol.appendChild(title);
+
+          const detail = document.createElement('div');
+          detail.className = 'qa-gap-detail';
+          detail.textContent = gap.detail || gap.message || '';
+          if (gap.action) {
+            detail.textContent += ` ➔ Hướng dẫn: ${gap.action}`;
+          }
+          contentCol.appendChild(detail);
+
+          row.appendChild(contentCol);
+          staticGapsList.appendChild(row);
+        }
+      }
+    }
+
+    // 2. Render nhóm Findings chung từ trace
     const box = root.querySelector('#qa-findings-groups');
-    if (!box) return;
+    if (!box || !this.trace) return;
     box.textContent = '';
 
     const groups = this.trace.findings || {};
     const total = ['major', 'minor', 'info'].reduce((n, k) => n + ((groups[k] || []).length), 0);
-    if (!total) {
+    if (!total && staticGaps.length === 0) {
       this._setEmpty('qa-findings-empty', this.trace.bootstrap
         ? ['Chưa có gì để đối chiếu', 'Repo chưa có tài liệu nên chưa thể tìm khoảng hở nào.']
         : ['Không còn khoảng hở nào trong ma trận truy vết']);

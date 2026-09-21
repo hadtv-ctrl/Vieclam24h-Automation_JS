@@ -20,6 +20,13 @@ test('gitSyncService security shield blocks sensitive and transient paths', () =
   assert.equal(isBlockedPath('.dashboard-backups/backup.bak'), true);
   assert.equal(isBlockedPath('ai/personal/config.json'), true);
   assert.equal(isBlockedPath('scratch/test.js'), true);
+  assert.equal(isBlockedPath('scratch/check_dang_tin.js'), true);
+  assert.equal(isBlockedPath('tests/scratch/my_test.js'), true);
+  assert.equal(isBlockedPath('tests/e2e/draft_login.spec.js'), true);
+  assert.equal(isBlockedPath('tests/e2e/temp_verify.js'), true);
+  assert.equal(isBlockedPath('tests/e2e/ai_quick.spec.js'), true);
+  assert.equal(isBlockedPath('test_rec.js'), true);
+  assert.equal(isBlockedPath('tests/e2e/admin-add-company.spec.js'), false);
 });
 
 test('gitSyncService whitelist permits core engineering and test assets', () => {

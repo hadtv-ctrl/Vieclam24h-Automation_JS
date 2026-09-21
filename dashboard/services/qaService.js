@@ -13,6 +13,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { normalizeDashboardConfig, DEFAULT_CONFIG } = require('../../core/config/dashboardConfig');
 const { createBackup } = require('./resourceService');
 
@@ -535,6 +536,317 @@ function saveDecisionAnswer(root, payload = {}) {
   return { backup, decision: { id: target.id, status: target.status, answer: target.answer, answered: isAnswered(target) } };
 }
 
+/**
+ * Lấy báo cáo tổng quan QA chuẩn JSON 1.0.0 (Coverage, System Health, Boundary, Decisions, Findings).
+ * Hỗ trợ Soft Fallback: nếu vệ tinh chưa có tools/qa, tự động tổng hợp từ getTrace(root),
+ * không để sập route HTTP.
+ */
+function getQaSummary(root) {
+  // 1. Thử gọi trực tiếp in-process
+  try {
+    const commandsPath = path.join(root, 'tools', 'qa', 'lib', 'commands.js');
+    const fallbackCommandsPath = path.join(__dirname, '..', '..', 'tools', 'qa', 'lib', 'commands.js');
+    const targetModule = fs.existsSync(commandsPath)
+      ? commandsPath
+      : (fs.existsSync(fallbackCommandsPath) ? fallbackCommandsPath : null);
+
+    if (targetModule) {
+      // eslint-disable-next-line global-require, import/no-dynamic-require
+      const qaCommands = require(targetModule);
+      if (typeof qaCommands.summary === 'function') {
+        return qaCommands.summary(root, { json: true });
+      }
+    }
+  } catch (_) {
+    // Nếu in-process lỗi, thử chạy qua subprocess
+    try {
+      const qaCliPath = path.join(root, 'tools', 'qa', 'index.js');
+      const fallbackCliPath = path.join(__dirname, '..', '..', 'tools', 'qa', 'index.js');
+      const cliTarget = fs.existsSync(qaCliPath)
+        ? qaCliPath
+        : (fs.existsSync(fallbackCliPath) ? fallbackCliPath : null);
+
+      if (cliTarget) {
+        const out = execFileSync('node', [cliTarget, 'summary', '--json'], {
+          cwd: root,
+          encoding: 'utf8',
+          windowsHide: true,
+          timeout: 15000,
+        });
+        return JSON.parse(out);
+      }
+    } catch (__) {
+      // Tiếp tục fallback bên dưới
+    }
+  }
+
+  // 2. Soft Fallback: vệ tinh chưa có tools/qa -> nạp dữ liệu từ getTrace(root)
+  try {
+    const trace = getTrace(root);
+    const reqCount = trace.counts?.requirements || 0;
+    const acCount = trace.counts?.acceptanceCriteria || 0;
+    const tcCount = trace.counts?.testCases || 0;
+    const autoCount = trace.automatedCount || 0;
+    const majorCount = trace.majorCount || 0;
+    const covPct = acCount > 0 ? Number(((autoCount / acCount) * 100).toFixed(1)) : 0;
+
+    const allFindings = [
+      ...(trace.findings?.major || []),
+      ...(trace.findings?.minor || []),
+      ...(trace.findings?.info || []),
+    ];
+
+    return {
+      schemaVersion: '1.0.0',
+      timestamp: new Date().toISOString(),
+      systemHealth: majorCount > 0 ? 'WARNING' : 'HEALTHY',
+      metrics: {
+        requirements: reqCount,
+        acceptanceCriteria: acCount,
+        coveredAcCount: autoCount,
+        coveragePercent: covPct,
+        testCases: tcCount,
+        automatedTests: autoCount,
+        wipTests: 0,
+        candidateTests: 0,
+      },
+      health: {
+        status: majorCount > 0 ? 'WARNING' : 'HEALTHY',
+        blockers: 0,
+        majors: majorCount,
+        minors: 0,
+        totalFindings: allFindings.length,
+      },
+      boundary: {
+        status: 'ALIGNED',
+        shipCount: 0,
+        seedCount: 0,
+        ownCount: 0,
+        problems: [],
+      },
+      decisions: {
+        total: 0,
+        pending: 0,
+        blocking: 0,
+      },
+      findings: allFindings,
+      fallback: true,
+      fallbackMessage: 'Hiển thị dữ liệu từ parser nội bộ (chưa có tools/qa).',
+    };
+  } catch (err) {
+    return {
+      schemaVersion: '1.0.0',
+      timestamp: new Date().toISOString(),
+      systemHealth: 'WARNING',
+      metrics: {
+        requirements: 0,
+        acceptanceCriteria: 0,
+        coveredAcCount: 0,
+        coveragePercent: 0,
+        testCases: 0,
+        automatedTests: 0,
+        wipTests: 0,
+        candidateTests: 0,
+      },
+      health: {
+        status: 'WARNING',
+        blockers: 0,
+        majors: 0,
+        minors: 0,
+        totalFindings: 0,
+      },
+      boundary: {
+        status: 'MISSING',
+        shipCount: 0,
+        seedCount: 0,
+        ownCount: 0,
+        problems: [],
+      },
+      decisions: {
+        total: 0,
+        pending: 0,
+        blocking: 0,
+      },
+      findings: [],
+      fallback: true,
+      fallbackMessage: `Không thể đọc thông tin QA: ${err.message}`,
+    };
+  }
+}
+
+/**
+ * Chạy tính năng Auto-Fix tự động chuẩn hóa liên kết và đăng ký candidate.
+ * Hỗ trợ { dryRun: true } để xem trước mà không ghi file.
+ */
+function runQaFix(root, options = {}) {
+  const dryRun = Boolean(options.dryRun);
+  const fixerPath = path.join(root, 'tools', 'qa', 'lib', 'fixer.js');
+  const fallbackFixerPath = path.join(__dirname, '..', '..', 'tools', 'qa', 'lib', 'fixer.js');
+  const targetModule = fs.existsSync(fixerPath)
+    ? fixerPath
+    : (fs.existsSync(fallbackFixerPath) ? fallbackFixerPath : null);
+
+  if (!targetModule) {
+    throw Object.assign(
+      new Error('Chưa có bộ công cụ tools/qa/lib/fixer.js trong repo này hoặc Hub.'),
+      { status: 501 },
+    );
+  }
+
+  // eslint-disable-next-line global-require, import/no-dynamic-require
+  const { fixTraceability } = require(targetModule);
+  const { dirs } = readQaConfig(root);
+  const projectDir = dirs.specs ? (dirs.specs.startsWith('playwright/') ? 'playwright' : '.') : 'playwright';
+
+  const res = fixTraceability(root, {
+    dryRun,
+    testCasesDir: dirs.testCases || 'test-cases',
+    projectDir,
+    reqId: options.reqId || null,
+  });
+
+  if (!res.ok && res.error) {
+    return {
+      ok: false,
+      dryRun,
+      message: res.error,
+      reconciledLinks: 0,
+      registeredCandidates: 0,
+      updatedFiles: 0,
+      changes: [],
+    };
+  }
+
+  const changes = res.changes || [];
+  const reconciledLinks = changes.filter((c) => c.kind === 'chuan-hoa-duong-dan-spec').length;
+  const registeredCandidates = changes.filter((c) => c.kind === 'them-test-case-chua-khai-bao').length;
+
+  return {
+    ok: true,
+    dryRun,
+    message: dryRun
+      ? (changes.length > 0
+        ? `Xem trước: phát hiện ${changes.length} mục cần chuẩn hóa (${reconciledLinks} đường dẫn spec, ${registeredCandidates} candidate mới).`
+        : 'Xem trước: Tất cả liên kết đã chuẩn hóa, không có thay đổi nào.')
+      : (changes.length > 0
+        ? `Đã chuẩn hóa thành công ${changes.length} mục trên ${res.modifiedFilesCount || 0} file (${reconciledLinks} đường dẫn spec, ${registeredCandidates} candidate mới).`
+        : 'Tất cả liên kết đã ở trạng thái chuẩn, không có tệp nào cần cập nhật.'),
+    reconciledLinks,
+    registeredCandidates,
+    updatedFiles: res.modifiedFilesCount || 0,
+    changes,
+  };
+}
+
+/**
+ * Lấy metadata phục vụ Scaffold Wizard (Mã REQ tiếp theo và danh mục Domain hiện có).
+ */
+function getScaffoldMeta(root) {
+  const scaffoldPath = path.join(root, 'tools', 'scaffold', 'index.js');
+  const fallbackScaffoldPath = path.join(__dirname, '..', '..', 'tools', 'scaffold', 'index.js');
+  const targetModule = fs.existsSync(scaffoldPath)
+    ? scaffoldPath
+    : (fs.existsSync(fallbackScaffoldPath) ? fallbackScaffoldPath : null);
+
+  const { dirs } = readQaConfig(root);
+  const reqDir = path.resolve(root, dirs.requirements || 'requirements');
+  const projectDir = path.resolve(root, dirs.specs && dirs.specs.startsWith('playwright/') ? 'playwright' : '.');
+
+  if (targetModule) {
+    // eslint-disable-next-line global-require, import/no-dynamic-require
+    const scaffold = require(targetModule);
+    const nextReqId = scaffold.suggestNextReqId(reqDir);
+    const existingDomains = scaffold.listExistingDomains(projectDir);
+    return { nextReqId, existingDomains };
+  }
+
+  // Fallback nếu thiếu tools/scaffold
+  let nextReqId = 'REQ-001';
+  try {
+    if (fs.existsSync(reqDir)) {
+      const files = fs.readdirSync(reqDir).filter((f) => f.endsWith('.md'));
+      const ids = [];
+      for (const file of files) {
+        try {
+          const content = fs.readFileSync(path.join(reqDir, file), 'utf8');
+          const m = content.match(/^id:\s*REQ-(\d+)/im);
+          if (m) ids.push(parseInt(m[1], 10));
+        } catch (_) {}
+      }
+      if (ids.length > 0) nextReqId = `REQ-${String(Math.max(...ids) + 1).padStart(3, '0')}`;
+    }
+  } catch (_) {}
+
+  return { nextReqId, existingDomains: ['auth'] };
+}
+
+/**
+ * Tạo bộ kịch bản và truy vết (REQ, TC, Spec) hoặc suy luận ngược từ file spec (inferFromSpec).
+ */
+function generateScaffold(root, payload = {}) {
+  const scaffoldPath = path.join(root, 'tools', 'scaffold', 'index.js');
+  const fallbackScaffoldPath = path.join(__dirname, '..', '..', 'tools', 'scaffold', 'index.js');
+  const targetModule = fs.existsSync(scaffoldPath)
+    ? scaffoldPath
+    : (fs.existsSync(fallbackScaffoldPath) ? fallbackScaffoldPath : null);
+
+  if (!targetModule) {
+    throw Object.assign(new Error('Chưa có bộ công cụ tools/scaffold trong repo này hoặc Hub.'), { status: 501 });
+  }
+
+  // eslint-disable-next-line global-require, import/no-dynamic-require
+  const scaffold = require(targetModule);
+
+  if (payload.inferFromSpecPath) {
+    const specFile = String(payload.inferFromSpecPath).trim();
+    if (!specFile) throw Object.assign(new Error('Thiếu đường dẫn spec để suy luận ngược.'), { status: 400 });
+    const res = scaffold.inferFromSpec({
+      root,
+      specFile,
+      force: Boolean(payload.force),
+    });
+    return {
+      ok: true,
+      mode: 'infer',
+      message: `Đã suy luận thành công bộ tài liệu từ spec "${path.basename(specFile)}".`,
+      reqId: res.req,
+      title: res.title,
+      created: [
+        res.reqFile ? path.relative(root, res.reqFile).replace(/\\/g, '/') : '',
+        res.tcFile ? path.relative(root, res.tcFile).replace(/\\/g, '/') : '',
+      ].filter(Boolean),
+    };
+  }
+
+  const reqId = String(payload.reqId || '').trim().toUpperCase();
+  if (!reqId || !/^REQ-\d{3}$/.test(reqId)) {
+    throw Object.assign(new Error(`Mã Requirement không hợp lệ: "${reqId}" (yêu cầu định dạng REQ-001).`), { status: 400 });
+  }
+  const title = String(payload.title || '').trim();
+  if (!title) {
+    throw Object.assign(new Error('Tiêu đề tính năng không được để trống.'), { status: 400 });
+  }
+
+  const domain = String(payload.domain || '').trim().toLowerCase() || 'general';
+  const acCount = Math.max(1, parseInt(payload.acCount, 10) || 2);
+
+  const res = scaffold.generateScaffold({
+    root,
+    reqId,
+    title,
+    domain,
+    acCount,
+    force: Boolean(payload.force),
+  });
+
+  return {
+    ok: true,
+    mode: 'scaffold',
+    message: `Đã khởi tạo thành công 3 file cho ${reqId} (${title}).`,
+    created: res.created || [],
+  };
+}
+
 module.exports = {
   analyzerStatus,
   readQaConfig,
@@ -550,4 +862,8 @@ module.exports = {
   saveDecisionAnswer,
   isAnswered,
   FALLBACK_DIRS,
+  getQaSummary,
+  runQaFix,
+  getScaffoldMeta,
+  generateScaffold,
 };
