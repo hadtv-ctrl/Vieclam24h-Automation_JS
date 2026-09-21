@@ -52,7 +52,7 @@ async function handleMasterProcessRoutes(request, response, url, context = {}) {
 
     if (request.method === 'GET' && normPath === '/api/mp/audit') {
       const res = await runAudit(projectRoot, { staged: url.searchParams.get('staged') === 'true' });
-      return sendJson(response, res.code === 409 ? 409 : (res.ok ? 200 : 400), res);
+      return sendJson(response, res.code === 409 ? 409 : 200, res);
     }
 
     if (request.method === 'POST') {
@@ -69,7 +69,7 @@ async function handleMasterProcessRoutes(request, response, url, context = {}) {
       else if (normPath === '/api/mp/probes') res = await runProbes(projectRoot, body);
       else if (normPath === '/api/mp/evidence/export') res = await exportEvidence(projectRoot);
       else if (normPath === '/api/mp/evidence/review') res = await reviewEvidence(projectRoot, body);
-      if (res) return sendJson(response, res.code === 409 ? 409 : (res.ok ? 200 : 400), res);
+      if (res) return sendJson(response, res.code === 409 ? 409 : 200, res);
     }
   } catch (error) {
     const status = error.statusCode || 500;

@@ -184,8 +184,9 @@ export class MasterProcessHelper {
       try {
         res = await apiClient.post(endpoint, reqBody);
       } catch (postErr) {
-        if (postErr.payload && typeof postErr.payload === 'object' && postErr.payload.scanned !== undefined) {
-          res = postErr.payload;
+        const p = postErr.payload;
+        if (p && typeof p === 'object' && (p.stdout !== undefined || p.scanned !== undefined || p.output !== undefined)) {
+          res = p;
         } else {
           throw postErr;
         }
@@ -220,6 +221,8 @@ export class MasterProcessHelper {
 
       if (res.code === 409) {
         this.slice.notify(`Xung đột: ${res.error || 'Tiến trình khác đang chạy'}`);
+      } else if (res.ok === false && (res.code !== 0 || res.violations > 0)) {
+        this.slice.notify(`${actionName}: Hoàn tất (Có phát hiện/cảnh báo)`);
       } else {
         this.slice.notify(`Hoàn tất: ${actionName}`);
       }
