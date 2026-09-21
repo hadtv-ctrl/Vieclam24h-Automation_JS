@@ -42,5 +42,7 @@ Hệ thống cung cấp trợ lý ảo thông minh Chop AI Chatbot cho phép ng�
 
 ## Open questions
 
-1. Có giới hạn số lượng tin hiển thị trong Job Drawer của chatbot không? — cần PO xác nhận
-2. Chatbot có lưu lại phiên hội thoại sau khi đóng cửa sổ hay không? — cần PO xác nhận
+1. Có giới hạn số lượng tin hiển thị trong Job Drawer của chatbot không? — **Đã chốt (Hà Đinh, 2026-09-21):** không, hiển thị hết số lượng như chatbot trả về nhưng có chia page
+2. Chatbot có lưu lại phiên hội thoại sau khi đóng cửa sổ hay không? — **Đã chốt (Hà Đinh, 2026-09-21):** Return (< 24h): User returns within 24 hours -> Resume the previous conversation flow directly (preserve Chat History, Active Target, and Maturity Score).
+
+Return (> 24h): User returns after 24 hours -> The previous session is considered expired and discarded. Show the Onboarding Starting Screen with fresh suggestions. The expired session history is NOT shown or resumable.

@@ -62,6 +62,6 @@ nó trước khi làm việc gì khác. Đó là một tín hiệu nghiệp vụ
 
 ## Open questions
 
-1. Vì sao modal có thể tự đóng trước bước 4 hoặc bước 5? Đây là tính năng (đã đủ dữ liệu thì dừng) hay là lỗi giao diện? — cần PO xác nhận
-2. Onboarding là bắt buộc hay bỏ qua được? — cần PO xác nhận
-3. Tiêu chí khai ở onboarding và tiêu chí tìm việc trong REQ-005 là cùng một tập dữ liệu hay hai tập khác nhau? — cần PO/BA xác nhận
+1. Vì sao modal có thể tự đóng trước bước 4 hoặc bước 5? Đây là tính năng (đã đủ dữ liệu thì dừng) hay là lỗi giao diện? — **Đã chốt (Hà Đinh, 2026-09-21):** modal onboarding là không bắt buộc
+2. Onboarding là bắt buộc hay bỏ qua được? — **Đã chốt (Hà Đinh, 2026-09-21):** đúng
+3. Tiêu chí khai ở onboarding và tiêu chí tìm việc trong REQ-005 là cùng một tập dữ liệu hay hai tập khác nhau? — **Đã chốt (Hà Đinh, 2026-09-21):** là 1, khi khai báo onboarding thì dữ liệu khai báo đó hiển thị ở Tiêu chí tìm việc

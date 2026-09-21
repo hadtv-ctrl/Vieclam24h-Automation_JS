@@ -81,7 +81,7 @@ vụ đã an toàn".
 
 ## Open questions
 
-1. Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec chỉ điền khi ô hiển thị. — cần PO xác nhận
-2. Quy tắc mật khẩu hợp lệ (độ dài, ký tự đặc biệt)? — cần PO xác nhận
-3. Vì sao luồng email không có bước OTP còn luồng số điện thoại thì có? Đây là thiết kế hay là spec đang thiếu bước? — cần PO xác nhận
-4. Mã OTP dùng trong automation là mã cố định của môi trường test. Ở production luồng này kiểm bằng cách nào? — cần QA Lead xác nhận
+1. Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec chỉ điền khi ô hiển thị. — **Đã chốt (Hà Đinh, 2026-09-21):** khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắt buộc
+2. Quy tắc mật khẩu hợp lệ (độ dài, ký tự đặc biệt)? — **Đã chốt (Hà Đinh, 2026-09-21):** Mật khẩu tối thiểu 8 ký tự, trong đó có ít nhất 1 ký tự chữ và 1 ký tự số.
+3. Vì sao luồng email không có bước OTP còn luồng số điện thoại thì có? Đây là thiết kế hay là spec đang thiếu bước? — **Đã chốt (Hà Đinh, 2026-09-21):** spec nó vậy
+4. Mã OTP dùng trong automation là mã cố định của môi trường test. Ở production luồng này kiểm bằng cách nào? — **Đã chốt (Hà Đinh, 2026-09-21):** đúng vậy , mã 1111 là cố định cho xác thực OTP số điện thoại, và email lúc đăng nhập. Mã này dùng ở mt test
