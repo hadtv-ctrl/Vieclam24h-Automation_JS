@@ -8,10 +8,9 @@ import { apiClient } from '../../core/apiClient.js';
 function setBadge(el, label, cls) {
   if (!el) return;
   el.textContent = ' ' + label;
-  const dot = document.createElement('i');
-  dot.className = 'ph-fill ph-circle';
+  const dot = document.createElement('i'); dot.className = 'ph-fill ph-circle';
   el.prepend(dot);
-  el.className = 'settings-badge-status ' + cls;
+  el.className = `settings-badge-status ${cls}`;
 }
 
 export class MasterProcessHelper {
@@ -19,11 +18,30 @@ export class MasterProcessHelper {
     this.slice = slice;
     this._status = null;
     this.isRunning = false;
+    this._projectsLoaded = false;
   }
 
   getTarget(root) {
     const sel = root?.querySelector('#mp-project-select');
     return sel?.value || '';
+  }
+
+  async loadProjects(root) {
+    try {
+      const res = await apiClient.get('/api/mp/projects');
+      const sel = root.querySelector('#mp-project-select');
+      const satWrap = root.querySelector('#mp-satellite-badge-wrap');
+      const satName = root.querySelector('#mp-satellite-name');
+      if (!res?.projects || !sel) return;
+      sel.replaceChildren(...res.projects.map((p) => {
+        const opt = document.createElement('option');
+        opt.value = p.path; opt.textContent = p.name; if (p.isCurrent) opt.selected = true;
+        return opt;
+      }));
+      sel.style.display = res.isHub ? 'block' : 'none';
+      if (satWrap) satWrap.style.display = res.isHub ? 'none' : 'flex';
+      if (satName && !res.isHub) satName.textContent = res.currentRoot;
+    } catch (_) {}
   }
 
   bindEvents(root, disposers) {
@@ -40,8 +58,7 @@ export class MasterProcessHelper {
     }
 
     [
-      ['#mp-refresh-button', () => this.loadStatus(root)],
-      ['#mp-btn-drift', () => this.loadStatus(root)],
+      ['#mp-refresh-button', () => this.loadStatus(root)], ['#mp-btn-drift', () => this.loadStatus(root)],
       ['#mp-btn-init', () => this.runAction('/api/mp/init', {}, root, 'Ghim phiên bản Hub')],
       ['#mp-btn-sync-dryrun', () => this.runAction('/api/mp/sync', { dryRun: true, updateTemplates: false }, root, 'Xem trước Đồng bộ (--dry-run)')],
       ['#mp-btn-hook', () => this.runAction('/api/mp/install-hooks', {}, root, 'Cài đặt Git Hook')],
@@ -62,29 +79,26 @@ export class MasterProcessHelper {
 
     const chkSync = root.querySelector('#mp-sync-confirm-checkbox');
     if (chkSync) {
-      const onChkChange = () => {
+      const onChk = () => {
         const btn = root.querySelector('#mp-btn-sync');
         if (!btn) return;
-        btn.disabled = !chkSync.checked;
-        btn.className = chkSync.checked ? 'warning' : 'ghost';
+        btn.disabled = !chkSync.checked; btn.className = chkSync.checked ? 'warning' : 'ghost';
         btn.textContent = chkSync.checked ? '⚠️ Xác nhận Đồng bộ & Ghi đè' : 'Đồng bộ Hub (Sync)';
       };
-      chkSync.addEventListener('change', onChkChange);
-      disposers.push(() => chkSync.removeEventListener('change', onChkChange));
+      chkSync.addEventListener('change', onChk);
+      disposers.push(() => chkSync.removeEventListener('change', onChk));
     }
 
     bind('#mp-btn-freeze-toggle', async () => {
       const reason = window.prompt('Nhập lý do Feature Freeze (P0 Finding):', 'Phát hiện lỗi P0 nghiêm trọng.');
       if (!reason) return;
       await apiClient.post('/api/mp/freeze', { active: true, scope: 'ALL', reason, blocking_findings: ['AUTO-01'], targetPath: this.getTarget(root) });
-      this.slice.notify('Đã kích hoạt Feature Freeze Circuit Breaker');
-      await this.loadFreezeStatus(root);
+      this.slice.notify('Đã kích hoạt Feature Freeze Circuit Breaker'); await this.loadFreezeStatus(root);
     });
     bind('#mp-btn-freeze-lift', async () => {
       if (!window.confirm('Xác nhận gỡ bỏ trạng thái Feature Freeze?')) return;
       await apiClient.post('/api/mp/freeze', { active: false, reason: '', blocking_findings: [], targetPath: this.getTarget(root) });
-      this.slice.notify('Đã gỡ bỏ Feature Freeze Circuit Breaker');
-      await this.loadFreezeStatus(root);
+      this.slice.notify('Đã gỡ bỏ Feature Freeze Circuit Breaker'); await this.loadFreezeStatus(root);
     });
 
     root.querySelectorAll('.mp-pipeline-step-btn').forEach((btn) => {
@@ -105,12 +119,8 @@ export class MasterProcessHelper {
     const spinnerText = root.querySelector('#mp-spinner-text');
     if (spinnerText && actionName) spinnerText.textContent = `Đang thực thi: ${actionName}... Vui lòng đợi.`;
 
-    const buttons = root.querySelectorAll('#mp-btn-init, #mp-btn-sync-dryrun, #mp-btn-drift, #mp-btn-hook, #mp-btn-audit, #mp-btn-audit-staged, #mp-btn-doctor, #mp-btn-probes, #mp-refresh-button, #mp-btn-freeze-toggle, #mp-btn-freeze-lift, #mp-btn-export-evidence, #mp-btn-review-gate4, #mp-project-select');
-    buttons.forEach((btn) => {
-      btn.disabled = running;
-      btn.style.opacity = running ? '0.6' : '1';
-      btn.style.cursor = running ? 'not-allowed' : 'pointer';
-    });
+    root.querySelectorAll('#mp-btn-init, #mp-btn-sync-dryrun, #mp-btn-drift, #mp-btn-hook, #mp-btn-audit, #mp-btn-audit-staged, #mp-btn-doctor, #mp-btn-probes, #mp-refresh-button, #mp-btn-freeze-toggle, #mp-btn-freeze-lift, #mp-btn-export-evidence, #mp-btn-review-gate4, #mp-project-select')
+      .forEach((b) => { b.disabled = running; b.style.opacity = running ? '0.6' : '1'; b.style.cursor = running ? 'not-allowed' : 'pointer'; });
     const syncBtn = root.querySelector('#mp-btn-sync');
     const chk = root.querySelector('#mp-sync-confirm-checkbox');
     if (syncBtn) {
@@ -120,6 +130,10 @@ export class MasterProcessHelper {
   }
 
   async loadStatus(root) {
+    if (!this._projectsLoaded) {
+      await this.loadProjects(root);
+      this._projectsLoaded = true;
+    }
     const target = this.getTarget(root);
     this.setTerminal(root, `Đang kiểm tra kết nối với Master Process Hub (${target || 'Default'})...`);
     try {
@@ -136,10 +150,7 @@ export class MasterProcessHelper {
     }
   }
 
-  targetQuery(root) {
-    const t = this.getTarget(root);
-    return t ? `?target=${encodeURIComponent(t)}` : '';
-  }
+  targetQuery(root) { const t = this.getTarget(root); return t ? `?target=${encodeURIComponent(t)}` : ''; }
 
   async loadFreezeStatus(root) {
     try {
@@ -153,11 +164,10 @@ export class MasterProcessHelper {
   async loadEvidenceStatus(root) {
     try {
       const res = await apiClient.get('/api/mp/evidence' + this.targetQuery(root));
-      const hashEl = root.querySelector('#mp-evidence-hash');
-      const hasEvidence = res.exists && res.evidence;
+      const hasEv = res.exists && res.evidence;
       const review = res.evidence?.reviews?.gate4;
-      const label = review ? `Đã ký (${review.decision || 'PASS'})` : (hasEvidence ? 'Chờ ký duyệt' : 'Chưa tạo');
-      setBadge(root.querySelector('#mp-evidence-badge'), label, review ? 'is-active' : (hasEvidence ? 'is-warning' : ''));
+      setBadge(root.querySelector('#mp-evidence-badge'), review ? `Đã ký (${review.decision || 'PASS'})` : (hasEv ? 'Chờ ký duyệt' : 'Chưa tạo'), review ? 'is-active' : (hasEv ? 'is-warning' : ''));
+      const hashEl = root.querySelector('#mp-evidence-hash');
       if (hashEl) hashEl.textContent = res.evidence?.receipt?.sha256 || res.evidence?.revision || '—';
     } catch (_) {}
   }
@@ -167,10 +177,8 @@ export class MasterProcessHelper {
       setBadge(root.querySelector('#mp-drift-badge'), 'Chưa phát hiện Hub', 'is-error');
       return;
     }
-    const setTxt = (id, val) => { const el = root.querySelector(id); if (el) el.textContent = val || '—'; };
-    setTxt('#mp-hub-path', data.hub_path);
-    setTxt('#mp-hub-version', data.lock_info?.version || 'Chưa ghim');
-    setTxt('#mp-hub-commit', data.lock_info?.hub_commit ? data.lock_info.hub_commit.slice(0, 10) : 'Chưa ghim');
+    [['#mp-hub-path', data.hub_path], ['#mp-hub-version', data.lock_info?.version || 'Chưa ghim'], ['#mp-hub-commit', data.lock_info?.hub_commit?.slice(0, 10) || 'Chưa ghim']]
+      .forEach(([id, val]) => { const el = root.querySelector(id); if (el) el.textContent = val || '—'; });
 
     const isSync = data.drift_status === 'IN_SYNC';
     const driftLabel = isSync ? 'IN_SYNC (Đồng bộ)' : (data.drift_status === 'DRIFT_DETECTED' ? 'Lệch phiên bản (Drift)' : 'Chưa ghim (Unpinned)');
@@ -211,8 +219,7 @@ export class MasterProcessHelper {
         const detWrap = root.querySelector('#mp-audit-details');
         const renderList = (id, items) => {
           const ul = root.querySelector(id);
-          if (!ul) return;
-          ul.replaceChildren(...(items || []).map((item) => { const li = document.createElement('li'); li.textContent = item; return li; }));
+          if (ul) ul.replaceChildren(...(items || []).map((item) => { const li = document.createElement('li'); li.textContent = item; return li; }));
         };
         renderList('#mp-audit-violations-list', res.details.violations);
         renderList('#mp-audit-exemptions-list', res.details.exemptions);
@@ -237,9 +244,6 @@ export class MasterProcessHelper {
 
   setTerminal(root, text) {
     const term = root.querySelector('#mp-terminal-output');
-    if (term) {
-      term.textContent = text;
-      term.scrollTop = term.scrollHeight;
-    }
+    if (term) { term.textContent = text; term.scrollTop = term.scrollHeight; }
   }
 }

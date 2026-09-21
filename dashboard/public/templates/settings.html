@@ -33,10 +33,12 @@
                 <i class="ph-bold ph-folders"></i> Dự án:
               </label>
               <select id="mp-project-select" style="background: var(--bg-input, rgba(0,0,0,0.25)); border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 6px; color: var(--text-primary); padding: 5px 10px; font-size: 12px; cursor: pointer;">
-                <option value="D:/_Automation-Project">D:/_Automation-Project (Hub - Trung tâm)</option>
-                <option value="D:/_SieuVietGroup">D:/_SieuVietGroup (Vệ tinh Vieclam24h)</option>
-                <option value="D:/_CarThings/Automation_Carthings">D:/_CarThings/Automation_Carthings (Vệ tinh CarThings)</option>
+                <option value="">Đang nạp dự án...</option>
               </select>
+              <div id="mp-satellite-badge-wrap" style="display: none; align-items: center; gap: 6px;">
+                <strong id="mp-satellite-name" class="mp-mono" style="font-size: 12px; color: var(--accent);">—</strong>
+                <span class="settings-badge-status is-active" style="font-size: 10px; padding: 2px 7px;">Vệ tinh</span>
+              </div>
               <button id="mp-refresh-button" class="ghost" type="button"><i class="ph ph-arrow-clockwise"></i> Kiểm tra lại</button>
             </div>
           </div>

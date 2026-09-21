@@ -35,6 +35,32 @@ async function handleMasterProcessRoutes(request, response, url, context = {}) {
     const target = body.targetPath || body.projectRoot || url.searchParams.get('target') || fallbackRoot;
     const projectRoot = validateProjectPath(target, fallbackRoot);
 
+    if (normPath === '/api/mp/projects' && request.method === 'GET') {
+      const currentRoot = path.resolve(fallbackRoot).replace(/\\/g, '/');
+      let syncManifest = null;
+      try {
+        const smPath = path.join(__dirname, '../../scripts/lib/sync-manifest.js');
+        if (fs.existsSync(smPath)) syncManifest = require(smPath);
+      } catch (_) {}
+      const hubRoot = syncManifest?.HUB_ROOT ? path.resolve(syncManifest.HUB_ROOT).replace(/\\/g, '/') : 'D:/_Automation-Project';
+      const isHub = currentRoot.toLowerCase() === hubRoot.toLowerCase();
+
+      let projects = [];
+      if (isHub) {
+        projects.push({ path: hubRoot, name: `${hubRoot} (Hub - Trung tâm)`, isCurrent: true });
+        if (syncManifest?.SATELLITES) {
+          syncManifest.SATELLITES.forEach((sat) => {
+            const satPath = path.resolve(sat.localPath).replace(/\\/g, '/');
+            projects.push({ path: satPath, name: `${satPath} (Vệ tinh ${sat.name})`, isCurrent: false });
+          });
+        }
+      } else {
+        const satName = syncManifest?.SATELLITES?.find((s) => path.resolve(s.localPath).replace(/\\/g, '/').toLowerCase() === currentRoot.toLowerCase())?.name || path.basename(currentRoot);
+        projects.push({ path: currentRoot, name: `${currentRoot} (Vệ tinh ${satName})`, isCurrent: true });
+      }
+      return sendJson(response, 200, { isHub, currentRoot, projects });
+    }
+
     if (normPath === '/api/mp/freeze' || normPath === '/api/mp/freeze/toggle') {
       if (request.method === 'GET') return sendJson(response, 200, getCircuitBreakerStatus(projectRoot));
       if (request.method === 'POST') return sendJson(response, 200, updateFreezeState(projectRoot, body));
