@@ -962,6 +962,8 @@ export class QaSlice {
       } else {
         const area = document.createElement('textarea');
         area.className = 'qa-textarea';
+        area.style.width = '100%';
+        area.style.boxSizing = 'border-box';
         area.rows = 2;
         area.placeholder = 'Kết luận của bạn…';
         card.appendChild(area);
@@ -1004,6 +1006,8 @@ export class QaSlice {
 
     const area = document.createElement('textarea');
     area.className = 'qa-textarea qa-edit-area';
+    area.style.width = '100%';
+    area.style.boxSizing = 'border-box';
     area.rows = 22;
     area.value = this._activeDoc.content;
     area.spellcheck = false;
