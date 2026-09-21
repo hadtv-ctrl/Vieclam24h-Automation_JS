@@ -339,15 +339,25 @@
 .qa-field-label { font-size: var(--font-caption); font-weight: 600; color: var(--muted); }
 /* <textarea> không khớp selector input/select của ui-primitives nên phải tự khai nền. */
 .qa-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   resize: vertical;
-  min-height: 44px;
-  padding: 7px 10px;
+  min-height: 60px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
   font-size: var(--font-control);
   font-family: inherit;
   background: var(--input);
   color: var(--text);
+  line-height: 1.5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.qa-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .qa-decision-actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .qa-decision-stamp { font-size: var(--font-caption); color: var(--muted); }
@@ -688,38 +698,80 @@
    người dùng đang đọc khi họ viết câu trả lời. */
 .qa-reader-form {
   margin-bottom: 14px;
-  padding: 14px;
+  padding: 16px 18px;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
   border-radius: 10px;
   background: color-mix(in srgb, var(--accent) 6%, var(--surface-2));
+  box-sizing: border-box;
+  width: 100%;
 }
 .qa-reader-form[hidden] { display: none; }
 .qa-form-title { margin: 0 0 4px; font-size: var(--font-body); font-weight: 700; }
 .qa-form-hint { margin: 0 0 12px; font-size: var(--font-caption); color: var(--muted); max-width: 88ch; line-height: 1.55; }
-.qa-form-body { display: flex; flex-direction: column; gap: 10px; max-height: 44vh; overflow-y: auto; }
+.qa-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 48vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  width: 100%;
+  padding-right: 4px;
+}
 
 .qa-question {
-  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
+  box-sizing: border-box;
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.qa-question:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 .qa-question.is-answered { opacity: 0.66; }
-.qa-question-text { margin: 0 0 8px; font-size: var(--font-control); line-height: 1.6; }
+.qa-question-text {
+  margin: 0;
+  font-size: var(--font-control);
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--text);
+  word-break: break-word;
+}
 .qa-question-note { margin: 0; font-size: var(--font-caption); color: var(--muted); font-style: italic; }
 
-.qa-edit-area { font-family: var(--font-mono); font-size: var(--font-caption); line-height: 1.6; }
+.qa-edit-area {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: var(--font-caption);
+  line-height: 1.6;
+  min-height: 380px;
+}
 
-.qa-form-footer { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 12px; }
+.qa-form-footer { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 14px; }
 .qa-form-by { display: flex; flex-direction: column; gap: 4px; }
 .qa-form-by input {
-  padding: 7px 10px;
+  padding: 7px 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--input);
   color: var(--text);
   font-size: var(--font-control);
   font-family: inherit;
+  outline: none;
+  min-width: 180px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.qa-form-by input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .qa-form-status { font-size: var(--font-caption); color: var(--muted); }
 .qa-form-status.is-error { color: var(--danger); }
