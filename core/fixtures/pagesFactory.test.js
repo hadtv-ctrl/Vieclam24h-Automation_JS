@@ -56,12 +56,52 @@ function createMockPage(extra = {}) {
   };
 }
 
+/**
+ * Dựng một project root tạm có sẵn pages/desktop/SamplePage.js.
+ *
+ * Các test dưới đây từng đọc thẳng `pages/` của repo hiện tại. Cách đó chỉ chạy được
+ * ở Hub: `pages/` và `tests/` nằm trong FORBIDDEN_SYNC_MODULES nên KHÔNG bao giờ được
+ * sync sang vệ tinh, khiến 4 test này fail vĩnh viễn ở mọi repo vệ tinh.
+ * Tự dựng fixture như F07/F08 bên dưới giúp bộ test độc lập với nội dung dự án.
+ */
+function createSampleRoot(name) {
+  const tempRoot = path.join(process.cwd(), '.tmp', name);
+  const desktopDir = path.join(tempRoot, 'pages', 'desktop');
+  fs.mkdirSync(desktopDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(desktopDir, 'SamplePage.js'),
+    [
+      'class SamplePage {',
+      '  constructor(page, featureName) {',
+      '    this.page = page;',
+      '    this.featureName = featureName;',
+      '  }',
+      '}',
+      'module.exports = { SamplePage };',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  return tempRoot;
+}
+
+function withSampleRoot(name, fn) {
+  const tempRoot = createSampleRoot(name);
+  try {
+    return fn(tempRoot);
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+}
+
 test('T01 & T08: Lazy loading, per-test cache and constructor(page, featureName)', () => {
+  withSampleRoot('test_lazy_cache', (rootDir) => {
   const dummyPage = createMockPage();
   const featureName = 'sample_feature';
   const pages = createPageContainer(dummyPage, {
     platform: 'desktop',
     featureName,
+    rootDir,
   });
 
   // Truy cập bằng 2 alias khác nhau phải trả về CÙNG 1 instance đã cache
@@ -74,14 +114,16 @@ test('T01 & T08: Lazy loading, per-test cache and constructor(page, featureName)
   assert.equal(instance1, instance3);
   assert.equal(instance1.featureName, featureName);
   assert.equal(instance1.page, dummyPage);
+  });
 });
 
 test('T02: Hai container khác nhau không chia sẻ cache instance', () => {
   const pageA = createMockPage({ id: 'pageA' });
   const pageB = createMockPage({ id: 'pageB' });
 
-  const containerA = createPageContainer(pageA, { platform: 'desktop', featureName: 'featA' });
-  const containerB = createPageContainer(pageB, { platform: 'desktop', featureName: 'featB' });
+  const rootDir = createSampleRoot('test_container_isolation');
+  const containerA = createPageContainer(pageA, { platform: 'desktop', featureName: 'featA', rootDir });
+  const containerB = createPageContainer(pageB, { platform: 'desktop', featureName: 'featB', rootDir });
 
   const instA = containerA.sample;
   const instB = containerB.sample;
@@ -91,6 +133,7 @@ test('T02: Hai container khác nhau không chia sẻ cache instance', () => {
   assert.equal(instB.page, pageB);
   assert.equal(instA.featureName, 'featA');
   assert.equal(instB.featureName, 'featB');
+  fs.rmSync(rootDir, { recursive: true, force: true });
 });
 
 test('T03 & T04: Mobile resolution và phát hiện Ambiguity', () => {
@@ -125,9 +168,11 @@ test('T05: Custom rootDir không tồn tại báo lỗi rõ ràng', () => {
 });
 
 test('Overload adapter tương thích ngược (page, isMobile, rootDir)', () => {
-  const dummyPage = createMockPage();
-  const container = createPageContainer(dummyPage, false, process.cwd());
-  assert.ok(container.sample);
+  withSampleRoot('test_overload_adapter', (rootDir) => {
+    const dummyPage = createMockPage();
+    const container = createPageContainer(dummyPage, false, rootDir);
+    assert.ok(container.sample);
+  });
 });
 
 test('F07: Nested directory discovery in pages/desktop/account/NestedPage.js', () => {
@@ -236,8 +281,9 @@ test('F02: Sibling directory prefix breakout bị chặn bằng path.relative', 
 });
 
 test('10/10 Reflection & Enumerable: Object.keys(pages) returns available page aliases', () => {
+  withSampleRoot('test_reflection_keys', (rootDir) => {
   const dummyPage = createMockPage();
-  const pages = createPageContainer(dummyPage, { platform: 'desktop' });
+  const pages = createPageContainer(dummyPage, { platform: 'desktop', rootDir });
 
   const keys = Object.keys(pages);
   assert.ok(Array.isArray(keys));
@@ -250,5 +296,6 @@ test('10/10 Reflection & Enumerable: Object.keys(pages) returns available page a
   assert.equal('samplePage' in pages, true);
   assert.equal('SamplePage' in pages, true);
   assert.equal('nonExistentPage' in pages, false);
+  });
 });
 

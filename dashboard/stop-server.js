@@ -6,7 +6,9 @@ if (path.basename(detectedRoot) === 'dashboard' && fs.existsSync(path.join(detec
   detectedRoot = path.resolve(detectedRoot, '..');
 }
 const ROOT = detectedRoot;
-const STATE_PATH = path.join(ROOT, '.dashboard-server.json');
+const { stateFilePath } = require('./services/serverStateService');
+
+const STATE_PATH = stateFilePath(ROOT);
 let resolveConfiguredPort;
 try {
   ({ resolveConfiguredPort } = require('../core/config/dashboardConfig'));

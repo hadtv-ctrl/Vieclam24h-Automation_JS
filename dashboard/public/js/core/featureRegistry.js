@@ -104,8 +104,13 @@ export class FeatureRegistry {
       tab.setAttribute('aria-selected', match ? 'true' : 'false');
     });
 
-    // Update view panels visibility
-    const panels = document.querySelectorAll('.dashboard-view, [role="tabpanel"]');
+    // Update view panels visibility.
+    // CHỈ chọn .dashboard-view. Trước đây selector còn gồm [role="tabpanel"], nên mọi
+    // tabpanel BÊN TRONG một view cũng bị gán hidden (id của nó không bao giờ khớp id view
+    // đang active). Một view có tab con hợp lệ về a11y sẽ tự làm rỗng chính nó sau mỗi lần
+    // chuyển màn hình. Cả 14 container view trong index.html đều mang class này, nên
+    // [role="tabpanel"] không bao giờ bắt thêm được gì ngoài chính phần ruột của view.
+    const panels = document.querySelectorAll('.dashboard-view');
     panels.forEach((v) => {
       const match = v.id === activeId;
       v.classList.toggle('active', match);

@@ -121,8 +121,20 @@
         </section>
 
         <section class="panel settings-panel settings-environments">
-          <div class="panel-heading settings-panel-heading"><span class="settings-icon"><i class="ph ph-globe-hemisphere-east"></i></span><div><p>MÔI TRƯỜNG</p><h2>Đường dẫn hệ thống</h2></div></div>
-          <div id="environment-settings" class="settings-body"></div>
+          <div class="panel-heading settings-panel-heading">
+            <span class="settings-icon"><i class="ph ph-globe-hemisphere-east"></i></span>
+            <div style="flex: 1;">
+              <p>MÔI TRƯỜNG & TEST SITES</p>
+              <h2>Đường dẫn hệ thống & Đa Portal</h2>
+              <small class="settings-heading-desc" style="color: var(--muted); font-size: 12px; display: block; margin-top: 2px;">Quản lý tập trung các môi trường chạy test và đa cổng portal (Admin, Giảng viên, Doanh nghiệp, API) phục vụ automation script.</small>
+            </div>
+            <div class="settings-env-top-actions">
+              <button id="btn-add-environment" class="ghost" type="button" title="Thêm môi trường mới (vd: STG, UAT, LOCAL)">
+                <i class="ph-bold ph-plus-circle"></i> Thêm môi trường
+              </button>
+            </div>
+          </div>
+          <div id="environment-settings" class="settings-body env-manager-body"></div>
         </section>
         <section class="panel settings-panel settings-runtime">
           <div class="panel-heading settings-panel-heading"><span class="settings-icon"><i class="ph ph-play-circle"></i></span><div><p>PLAYWRIGHT</p><h2>Mặc định khi chạy test</h2></div></div>

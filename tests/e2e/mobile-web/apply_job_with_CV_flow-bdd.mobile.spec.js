@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
 
-test.describe('Mobile Feature: Ứng tuyển việc làm bằng CV trên Mobile Web @applyjob @mobile @e2e', () => {
+test.describe('Mobile Feature: Ứng tuyển việc làm bằng CV trên Mobile Web @applyjob @mobile @e2e @REQ-003', () => {
   let jobApplyPage;
   let newPage;
 
@@ -10,7 +10,7 @@ test.describe('Mobile Feature: Ứng tuyển việc làm bằng CV trên Mobile 
     if (newPage) await newPage.close();
   });
 
-  test('Người dùng mobile hoàn thành tạo profile và ứng tuyển bằng CV thành công', async ({
+  test('TC-010 - AC-008 Ứng tuyển việc làm bằng file CV tải lên trên mobile web', async ({
     authenticatedUser,
     onboardingPopup,
     homePage,

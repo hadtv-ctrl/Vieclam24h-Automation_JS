@@ -95,7 +95,42 @@
   2. Các Page Object có đuôi `Page.js` được gọi qua `pages.<name>Page`, các popup tiện ích độc lập (`OnboardingPopup`, `LoginPopup`, `PopupConsent`) phải import trực tiếp `require(...)` và khởi tạo với `new <PopupClass>(page)`.
   3. Xử lý popup chặn màn hình bằng cơ chế nhiều tầng: thử đóng qua nút close icon, gửi phím Escape, và kiểm tra bọc trong khối `try/catch` an toàn để không làm gãy luồng kiểm thử chính.
 
-### [LEARN-006] Tương Tác Trực Tuyến Với AI Chatbot Popup, Phân Biệt Chat History Với Filter Modals & Tiêu Chuẩn Bằng Chứng Input/Output
+### [LEARN-006] Spec Mobile Web Tái Phạm Lỗi Destructuring Fixtures Đã Được Chuẩn Hóa Ở LEARN-005
+- **Nguồn trích xuất:** TASK-QA-DOCS-REVERSE-ENGINEERING (dựng tài liệu REQ/TC ngược từ 23 spec)
+- **Role quan sát:** Senior Automation QA Engineer (Gate 4)
+- **Quan sát (Observation):**
+  1. LEARN-005 đã chốt chữ ký fixture chuẩn `{ page, authenticatedUser, pages }` sau khi sửa toàn bộ spec desktop. Nhưng 11 spec trong `tests/e2e/mobile-web/` vẫn destructuring trực tiếp `homePage`, `onboardingPopup`, `jobSearchPage`, `userProfilePage`, `loginPopup`, `popupConsent`, `createJobApplyPage`, `createJobApplyNoCVPage` — đúng lỗi mà LEARN-005 đã mô tả.
+  2. `core/fixtures/mobileWebTest.js` chỉ đăng ký `pages`, `authenticatedUser` và vài fixture cấu hình; không khai báo từng page object thành fixture riêng.
+  3. Hệ quả nặng hơn mức "một vài test đỏ": `npx playwright test --list` không chỉ định project trả về `Total: 0 tests in 0 files`. Một lỗi nạp file làm hỏng toàn bộ lượt liệt kê, nên cả 11 test desktop và 2 test API cũng không chạy nếu không chỉ định project.
+  4. Bài học đã được ghi ở LEARN-005 nhưng chỉ áp dụng cho thư mục desktop, không có rào chắn tự động nào chặn thư mục mobile tái phạm. `npm run check:framework` hiện không kiểm chữ ký fixture.
+- **Bằng chứng (Evidence):** `tests/e2e/mobile-web/*.mobile.spec.js`, `core/fixtures/mobileWebTest.js`, output của `npx playwright test --list`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Một bài học chỉ sửa ở nơi phát hiện thì sẽ tái phát ở nơi khác. Khi sửa chữ ký fixture cho một nền tảng, phải quét cả các nền tảng còn lại trong cùng lượt.
+  2. Bổ sung rào chắn vào `scripts/check-framework-structure.js`: chặn mọi tham số fixture không nằm trong danh sách đăng ký của `baseTest` và `mobileWebTest`. Rào chắn tự động rẻ hơn nhiều so với một bài học viết ra rồi quên.
+  3. Trước khi tin vào bất kỳ con số độ phủ nào, chạy `npx playwright test --list` và đối chiếu tổng số test với số spec. Đếm file spec không chứng minh được test chạy được.
+
+### [LEARN-007] Assertion Giấu Trong Page Object Làm Tài Liệu Truy Vết Mất Khả Năng Audit
+- **Nguồn trích xuất:** TASK-QA-DOCS-REVERSE-ENGINEERING
+- **Role quan sát:** Senior Automation QA Engineer / Business Analyst
+- **Quan sát (Observation):**
+  1. Khi dựng ngược requirement từ 23 spec, 12 test không có lời gọi assertion nào ở tầng spec; phần kiểm chứng nằm trong các method của Page Object như `expectAppliedJobsVisible()`, `verifyAndApplyCVData()`.
+  2. Công cụ `scripts/qa-trace.js` báo đúng 12 finding "khai phủ AC nhưng không có assertion". Công cụ không sai — nó chỉ không nhìn được vào Page Object. Nhưng hệ quả là **người đọc tài liệu không xác định được test case đó chứng minh điều gì** nếu không mở thêm hai ba file nữa.
+  3. Nguy hiểm hơn: 6 test thực sự không có kiểm chứng kết quả ở bất kỳ tầng nào (`setting_user_profile`, `complete_profile_setup`, `profile_ai_writing` và bản mobile tương ứng). Chúng chạy hàng chục phút mỗi lượt nhưng chỉ phát hiện được lỗi làm sập luồng, không phát hiện được lỗi nghiệp vụ.
+- **Bằng chứng (Evidence):** `tests/e2e/**/*.spec.js`, `test-cases/traceability.md` mục "Chất lượng bằng chứng của từng test case"
+- **Đề xuất phân loại:** CANDIDATE
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Mỗi test phải có ít nhất một assertion **ở tầng spec** chứng minh kết quả nghiệp vụ, đặt ở bước Then. Page Object lo thao tác và locator; spec lo tuyên bố kết quả mong đợi.
+  2. Assertion ở bước Given chỉ chứng minh tiền điều kiện, không tính là bằng chứng kết quả. Khi đánh giá độ phủ phải tách hai loại này.
+  3. Bước "nếu thành phần không hiển thị thì bỏ qua và đi tiếp" biến một kiểm chứng thành một lời chúc. Nhánh tùy chọn chỉ được phép ở dọn dẹp môi trường, không được phép ở bước Then.
+
+### [LEARN-008] Tương Tác Trực Tuyến Với AI Chatbot Popup, Phân Biệt Chat History Với Filter Modals & Tiêu Chuẩn Bằng Chứng Input/Output
 - **Nguồn trích xuất:** FEATURE-AI-CHATBOT-JOB-SEARCH-BDD
 - **Role quan sát:** Senior Automation QA Engineer (Gate 4)
 - **Quan sát (Observation):**
@@ -113,3 +148,4 @@
   2. Với các nút điều hướng cuộn (Scroll left/right), luôn kiểm tra `isEnabled()` thay vì `isVisible()` trước khi thực hiện click.
   3. Tránh ghép `.or()` giữa container trigger và span con bên trong; chỉ cần định danh container trigger bằng `[data-test-id="..."]`.
   4. Chuẩn hóa bộ ảnh chụp bằng chứng (Evidence) gồm 25 bước rõ ràng đánh số thứ tự tự động qua `ScreenshotHelper`, minh chứng trực quan cho từng hành vi người dùng và phản hồi của hệ thống.
+

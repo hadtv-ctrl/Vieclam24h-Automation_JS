@@ -28,6 +28,105 @@ const DEV_DOCUMENTS = [
   'ai/README.md',
 ];
 
+/**
+ * Tài liệu RIÊNG của dự án, tự phát hiện bằng cách quét thư mục cấu hình (mặc định `docs/`).
+ *
+ * Trước đây muốn thêm một tài liệu thì phải sửa PUBLIC_DOCUMENTS ở đây VÀ DOCS_METADATA
+ * trong dashboard/public/app.js. Cả hai file đều thuộc `dashboard/` — vùng sync ghi đè
+ * toàn bộ, không có exclude nào — nên chỉnh sửa của dự án sẽ biến mất ở lần đồng bộ kế
+ * tiếp. Quét thư mục thì dự án chỉ cần thả file .md vào là xong, không đụng code Hub.
+ */
+const MAX_DOC_SCAN_DEPTH = 4;
+const MAX_PROJECT_DOCS = 200;
+
+function projectDocsDir(root) {
+  try {
+    const config = getDashboardConfig(root);
+    return (config && config.docs && config.docs.dir) || 'docs';
+  } catch (_) {
+    return 'docs';
+  }
+}
+
+/** Quét đệ quy `.md` trong thư mục tài liệu của dự án. Trả đường dẫn tương đối, dấu `/`. */
+function scanProjectDocuments(root, dir) {
+  const base = path.join(root, dir);
+  if (!fs.existsSync(base)) return [];
+
+  const found = [];
+  const walk = (current, depth) => {
+    if (depth > MAX_DOC_SCAN_DEPTH || found.length >= MAX_PROJECT_DOCS) return;
+    let entries = [];
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+    for (const entry of entries) {
+      if (found.length >= MAX_PROJECT_DOCS) return;
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) walk(full, depth + 1);
+      else if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
+        found.push(path.relative(root, full).split(path.sep).join('/'));
+      }
+    }
+  };
+  walk(base, 0);
+  return found.sort();
+}
+
+/**
+ * Tiêu đề lấy từ CHÍNH tài liệu: frontmatter `title:` trước, rồi tới `# ` đầu tiên, cuối
+ * cùng mới tới tên file. Đọc từ tài liệu nghĩa là đổi tiêu đề chỉ cần sửa tài liệu — không
+ * ai phải nhớ cập nhật một bảng ánh xạ ở nơi khác, và bảng đó không thể lệch được nữa.
+ */
+function readDocumentTitle(root, relPath) {
+  try {
+    const full = path.join(root, relPath);
+    const fd = fs.openSync(full, 'r');
+    const buffer = Buffer.alloc(4096);
+    const read = fs.readSync(fd, buffer, 0, 4096, 0);
+    fs.closeSync(fd);
+    const head = buffer.slice(0, read).toString('utf8').replace(/^﻿/, '');
+    const lines = head.split(/\r?\n/);
+
+    if (lines[0] === '---') {
+      const close = lines.indexOf('---', 1);
+      if (close > 0) {
+        for (const line of lines.slice(1, close)) {
+          const m = line.match(/^title\s*:\s*(.+)$/i);
+          if (m) return m[1].trim().replace(/^["']|["']$/g, '').slice(0, 160);
+        }
+      }
+    }
+    for (const line of lines) {
+      const m = line.match(/^#\s+(.+)$/);
+      if (m) return m[1].trim().replace(/[*`]/g, '').slice(0, 160);
+    }
+  } catch (_) { /* file không đọc được thì rơi về tên file */ }
+  return null;
+}
+
+/**
+ * Siêu dữ liệu cho danh sách tài liệu, gửi kèm /api/resources.
+ * Chỉ trả những gì suy được từ repo; phần trình bày (icon, nhóm) do client quyết định.
+ */
+function describeDocuments(paths, root) {
+  const projectDir = `${projectDocsDir(root)}/`;
+  const out = {};
+  for (const relPath of paths) {
+    const title = readDocumentTitle(root, relPath);
+    out[relPath] = {
+      title: title || relPath.split('/').pop(),
+      // Tài liệu nằm trong thư mục của dự án được tách nhóm riêng, để không lẫn vào
+      // tài liệu khung của Hub.
+      isProject: relPath.startsWith(projectDir),
+    };
+  }
+  return out;
+}
+
 function isDeveloperRequest(request) {
   if (process.env.FRAMEWORK_DEV_MODE === 'true' || process.env.FRAMEWORK_DEV_MODE === '1') return true;
   const headerMode = request?.headers ? request.headers['x-developer-mode'] : null;
@@ -37,8 +136,12 @@ function isDeveloperRequest(request) {
 }
 
 function listDocumentResources(isDev = false, root = process.env.QA_PROJECT_ROOT || process.cwd()) {
-  const docs = isDev ? [...PUBLIC_DOCUMENTS, ...DEV_DOCUMENTS] : PUBLIC_DOCUMENTS;
-  return docs.filter((f) => fs.existsSync(path.join(root, f))).sort();
+  const curated = isDev ? [...PUBLIC_DOCUMENTS, ...DEV_DOCUMENTS] : PUBLIC_DOCUMENTS;
+  const discovered = scanProjectDocuments(root, projectDocsDir(root));
+  // Giữ thứ tự ổn định và loại trùng: một tài liệu vừa được Hub liệt kê vừa nằm trong
+  // thư mục dự án (vd. docs/SETUP_GUIDE.md) chỉ được xuất hiện một lần.
+  const all = [...new Set([...curated, ...discovered])];
+  return all.filter((f) => fs.existsSync(path.join(root, f))).sort();
 }
 
 function listResources(isDev = false, root = process.env.QA_PROJECT_ROOT || process.cwd()) {
@@ -84,6 +187,9 @@ function listResources(isDev = false, root = process.env.QA_PROJECT_ROOT || proc
 
   return {
     documents,
+    // Tiêu đề được rút từ chính tài liệu. Giữ `documents` là mảng chuỗi để không phá
+    // hợp đồng sẵn có của /api/resources; phần mô tả đi thành trường riêng.
+    documentMeta: describeDocuments(documents, root),
     data,
     evidence: evidence.map((item) => item.path),
     evidenceDetails: evidence.map((item) => ({ path: item.path, modifiedAt: new Date(item.modifiedAt).toISOString() })),
@@ -175,6 +281,10 @@ module.exports = {
   DEV_DOCUMENTS,
   isDeveloperRequest,
   listDocumentResources,
+  scanProjectDocuments,
+  projectDocsDir,
+  readDocumentTitle,
+  describeDocuments,
   listResources,
   resolveResource,
   createBackup,

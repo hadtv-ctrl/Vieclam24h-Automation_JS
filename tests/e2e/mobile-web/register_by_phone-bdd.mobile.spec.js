@@ -2,8 +2,8 @@ const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const userData = require('../../../data/users.json');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../../core/utils/commonUtils');
 
-test.describe('Mobile Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại trên Mobile Web @register @smoke @smoke-mobile @mobile @e2e', () => {
-  test('Kiểm tra luồng đăng ký bằng Số điện thoại trên mobile', async ({ loginPopup, homePage, popupConsent }, testInfo) => {
+test.describe('Mobile Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại trên Mobile Web @register @smoke @smoke-mobile @mobile @e2e @REQ-001', () => {
+  test('TC-004 - AC-002 Đăng ký tài khoản bằng số điện thoại kèm xác minh OTP trên mobile web', async ({ loginPopup, homePage, popupConsent }, testInfo) => {
     test.setTimeout(120000);
 
     testInfo.annotations.push({

@@ -88,6 +88,106 @@ function fetchJson(targetUrl, timeoutMs = 6000) {
 }
 
 /**
+ * Kiểm tra xem có bản cập nhật Framework qua Git (origin/main hoặc Hub) hay không
+ */
+function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
+  const isGitRepo = fs.existsSync(path.join(rootDir, '.git'));
+  if (!isGitRepo) return null;
+
+  // Nếu đang ở Hub chính thì không tự báo update của chính mình
+  const isHub = fs.existsSync(path.join(rootDir, 'scripts', 'sync-satellites.js'))
+    && fs.existsSync(path.join(rootDir, 'ai', 'shared', 'SATELLITE_CORE_MIGRATION.md'));
+
+  // 1. ƯU TIÊN KIỂM TRA NGUỒN LOCAL HUB (D:\_Automation-Project)
+  // Vì updateFramework ưu tiên lấy từ Local Hub nên nguồn check cũng phải ưu tiên Local Hub để đồng nhất
+  try {
+    const localHub = 'D:\\_Automation-Project';
+    if (!isHub && path.resolve(rootDir) !== path.resolve(localHub) && fs.existsSync(path.join(localHub, 'dashboard', 'server.js'))) {
+      const hubHead = execSync('git rev-parse --short HEAD', { cwd: localHub, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+      const hubLastLog = execSync('git log -n 3 --oneline -- dashboard core bin scripts', { cwd: localHub, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+
+      // Kiểm tra file mẫu trong dashboard xem có khác biệt không
+      const sampleFiles = [
+        path.join('dashboard', 'public', 'js', 'views', 'qa', 'qaSlice.js'),
+        path.join('dashboard', 'public', 'app.js'),
+        path.join('dashboard', 'public', 'templates', 'qa.html'),
+        path.join('dashboard', 'public', 'styles', 'views', 'qa.css'),
+        path.join('dashboard', 'routes', 'qaRoutes.js'),
+        path.join('dashboard', 'server.js'),
+      ];
+
+      const isDifferent = sampleFiles.some((f) => {
+        const pHub = path.join(localHub, f);
+        const pSat = path.join(rootDir, f);
+        if (!fs.existsSync(pSat) && fs.existsSync(pHub)) return true;
+        if (fs.existsSync(pSat) && !fs.existsSync(pHub)) return true;
+        return !fs.readFileSync(pHub).equals(fs.readFileSync(pSat));
+      });
+
+      if (isDifferent) {
+        return {
+          hasUpdate: true,
+          source: 'local-hub',
+          latestVersion: `Hub commit ${hubHead}`,
+          releaseName: 'Bản cập nhật Dashboard Framework mới từ Hub',
+          releaseNotes: `Các cập nhật mới nhất từ Hub cục bộ:\n${hubLastLog}`,
+        };
+      }
+
+      // Đã khớp 100% với Local Hub -> Không có bản cập nhật mới
+      return {
+        hasUpdate: false,
+        source: 'local-hub',
+        latestVersion: `Hub commit ${hubHead}`,
+        message: 'Dashboard Framework đã đồng bộ hoàn toàn với Hub cục bộ.',
+      };
+    }
+  } catch (_) {}
+
+  // 2. Nếu không có Local Hub hoặc ở môi trường riêng, kiểm tra qua remote origin/main
+  try {
+    const remotes = execSync('git remote', { cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    if (remotes.includes('origin')) {
+      try {
+        execSync('git fetch origin main --quiet', { cwd: rootDir, timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] });
+      } catch (_) {}
+
+      // Kiểm tra xem origin/main có thực sự có file thay đổi so với HEAD hay không
+      let hasFileDiff = false;
+      try {
+        const diffStat = execSync('git diff --name-only HEAD origin/main -- dashboard core bin scripts', {
+          cwd: rootDir,
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        }).trim();
+        if (diffStat) {
+          hasFileDiff = true;
+        }
+      } catch (_) {}
+
+      const diffCommits = execSync('git log HEAD..origin/main --oneline -n 5 -- dashboard core bin scripts', {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).trim();
+
+      if (hasFileDiff && diffCommits) {
+        const latestCommit = execSync('git rev-parse --short origin/main', { cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+        return {
+          hasUpdate: true,
+          source: 'origin-main',
+          latestVersion: `Commit ${latestCommit}`,
+          releaseName: 'Bản cập nhật Dashboard Framework mới trên origin/main',
+          releaseNotes: `Các commit mới nhất từ Hub đã được chuyển giao sang origin/main:\n${diffCommits}`,
+        };
+      }
+    }
+  } catch (_) {}
+
+  return null;
+}
+
+/**
  * Kiểm tra xem có bản cập nhật mới hay không
  * @param {Object} options
  * @param {string} [options.updateUrl] URL manifest hoặc GitHub API release
@@ -95,6 +195,26 @@ function fetchJson(targetUrl, timeoutMs = 6000) {
  */
 async function checkForUpdates(options = {}) {
   const currentVersion = getCurrentVersion();
+  const rootDir = options.rootDir || ENGINE_DIR;
+
+  // 1. Ưu tiên kiểm tra bản cập nhật Git Framework (áp dụng cho các vệ tinh & nhánh con)
+  const gitUpdate = checkGitFrameworkUpdates(rootDir);
+  if (gitUpdate && gitUpdate.hasUpdate) {
+    return {
+      ok: true,
+      hasUpdate: true,
+      isGitFrameworkUpdate: true,
+      currentVersion,
+      latestVersion: gitUpdate.latestVersion,
+      releaseName: gitUpdate.releaseName,
+      releaseNotes: gitUpdate.releaseNotes,
+      publishedAt: new Date().toISOString(),
+      downloadUrl: `https://github.com/${options.githubRepo || 'hadinhkms/Automation_playwright_SV'}`,
+      isOffline: false,
+    };
+  }
+
+  // 2. Kiểm tra qua GitHub Releases (dành cho chế độ độc lập/release SemVer)
   const githubRepo = options.githubRepo || 'hadinhkms/Automation_playwright_SV';
   const updateUrl = options.updateUrl || `https://api.github.com/repos/${githubRepo}/releases/latest`;
 
@@ -142,13 +262,30 @@ async function checkForUpdates(options = {}) {
  * Thực hiện lệnh cập nhật (Tùy theo cấu hình dự án là Git repo hay NPM package)
  */
 function applyUpdate(options = {}) {
-  const isGitRepo = fs.existsSync(path.join(ENGINE_DIR, '.git'));
+  const root = options.rootDir || ENGINE_DIR;
+  const isGitRepo = fs.existsSync(path.join(root, '.git'));
   const log = [];
 
   try {
     if (isGitRepo) {
-      log.push('Phát hiện chế độ Git repository. Đang kéo mã nguồn mới nhất (git pull)...');
-      const pullOutput = execSync('git pull --ff-only', { cwd: ENGINE_DIR, encoding: 'utf8', timeout: 30000, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+      log.push('Phát hiện chế độ Git repository. Đang áp dụng cập nhật Dashboard Framework an toàn (Asset Shield)...');
+      try {
+        const { updateFramework } = require('../../scripts/update-framework');
+        const fwResult = updateFramework({ targetDir: root });
+        if (Array.isArray(fwResult.logs)) {
+          fwResult.logs.forEach((l) => log.push(l));
+        }
+        return {
+          ok: fwResult.ok,
+          message: fwResult.message || 'Đã cập nhật Framework thành công!',
+          logs: log,
+          newVersion: getCurrentVersion(),
+        };
+      } catch (fwErr) {
+        log.push('Cảnh báo updateFramework: ' + fwErr.message + '. Thử lại với git pull...');
+      }
+
+      const pullOutput = execSync('git pull --ff-only', { cwd: root, encoding: 'utf8', timeout: 30000, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
       log.push(pullOutput.trim());
       log.push('Đang cập nhật dependencies...');
       try {

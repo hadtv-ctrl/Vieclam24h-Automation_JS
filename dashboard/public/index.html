@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QA Automation Studio</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='20' font-size='20'>⚡</text></svg>" id="favicon">
-  <link rel="stylesheet" href="/styles.css?v=4.8">
+  <link rel="stylesheet" href="/styles.css?v=5.8">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -66,6 +66,10 @@
               <button class="nav-dropdown-item view-tab" type="button" role="menuitem" data-view="compare-view">
                 <i class="ph-bold ph-images"></i>
                 <div class="nav-item-text"><strong>So sánh evidence</strong><small>Diff ảnh chụp màn hình trực quan</small></div>
+              </button>
+              <button class="nav-dropdown-item view-tab" type="button" role="menuitem" data-view="qa-view">
+                <i class="ph-bold ph-file-magnifying-glass"></i>
+                <div class="nav-item-text"><strong>QA Docs &amp; Automation</strong><small>Requirement, test case &amp; ứng viên automation</small></div>
               </button>
               <button class="nav-dropdown-item view-tab" type="button" role="menuitem" data-view="git-view" id="nav-git-sync-btn">
                 <i class="ph-bold ph-git-merge"></i>
@@ -296,6 +300,9 @@
          GIT SYNC & REPOSITORY WORKSPACE (GIT-VIEW)
     ============================================================================== -->
     <section id="git-view" class="dashboard-view git-view" role="tabpanel" hidden></section>
+
+    <!-- QA DOCS & AUTOMATION: requirement, test case, ứng viên automation -->
+    <section id="qa-view" class="dashboard-view qa-view" role="tabpanel" hidden></section>
 
     <!-- Modal Dialog: Xem & Chỉnh Sửa Mã Nguồn Page Object -->
     <dialog id="modal-view-page-code" class="app-modal">
@@ -637,7 +644,7 @@
 
     <div id="toast" role="alert"></div>
   </main>
-  <script src="/app.js?v=5.5"></script>
+  <script src="/app.js?v=5.8"></script>
   <script src="/agent.js?v=1"></script>
   <script type="module" src="/js/main.js"></script>
 </body>
