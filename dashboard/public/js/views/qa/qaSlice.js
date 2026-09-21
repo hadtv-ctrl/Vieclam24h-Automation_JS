@@ -91,6 +91,7 @@ export class QaSlice {
     on(root.querySelector('#qa-docs-sidebar-refresh'), 'click', () => this.reload(true));
     on(root.querySelector('#qa-reader-back'), 'click', () => this.showOverview());
     on(root.querySelector('#qa-reader-answer'), 'click', () => this.openAnswerForm());
+    on(root.querySelector('#qa-reader-infer'), 'click', () => this.openInferModal());
     on(root.querySelector('#qa-reader-edit'), 'click', () => this.openEditForm());
     on(root.querySelector('#qa-btn-draft'), 'click', () => this.generateDraft());
     on(root.querySelector('#qa-btn-draft-clear'), 'click', () => this.clearPicks());
@@ -135,6 +136,23 @@ export class QaSlice {
           if (inferFields) inferFields.style.display = isInfer ? 'flex' : 'none';
           if (cardNew) cardNew.classList.toggle('is-selected', !isInfer);
           if (cardInfer) cardInfer.classList.toggle('is-selected', isInfer);
+        });
+      });
+    }
+
+    // Infer Modal Events
+    const inferModal = root.querySelector('#qa-infer-modal');
+    if (inferModal) {
+      on(root.querySelector('#qa-infer-modal-close'), 'click', () => inferModal.close());
+      on(root.querySelector('#qa-infer-cancel-btn'), 'click', () => inferModal.close());
+      on(root.querySelector('#qa-infer-btn-rerun'), 'click', () => this.runInference());
+      on(root.querySelector('#qa-infer-select-all'), 'click', () => this.toggleAllInferred(true));
+      on(root.querySelector('#qa-infer-deselect-all'), 'click', () => this.toggleAllInferred(false));
+      on(root.querySelector('#qa-infer-submit-btn'), 'click', () => this.submitInferredTestCases());
+
+      root.querySelectorAll('input[name="qa-infer-mode"]').forEach((radio) => {
+        on(radio, 'change', () => {
+          if (radio.checked) this.runInference();
         });
       });
     }
@@ -637,6 +655,302 @@ export class QaSlice {
     }
   }
 
+  // --- Rà soát & Đề xuất Test Case từ Open Questions ---
+
+  async openInferModal() {
+    const root = this._root();
+    if (!root || !this._activeDoc) return;
+    const modal = root.querySelector('#qa-infer-modal');
+    if (!modal) return;
+
+    const subtitle = root.querySelector('#qa-infer-modal-subtitle');
+    if (subtitle) {
+      subtitle.textContent = `Phân tích câu hỏi đã chốt của ${this._activeDoc.path} và đề xuất Test Cases`;
+    }
+
+    const radioHeuristic = root.querySelector('input[name="qa-infer-mode"][value="heuristic"]');
+    if (radioHeuristic) radioHeuristic.checked = true;
+
+    const aiBadge = root.querySelector('#qa-infer-ai-badge');
+    if (aiBadge) {
+      aiBadge.textContent = 'Đang kiểm tra AI...';
+      aiBadge.style.background = 'rgba(156, 163, 175, 0.15)';
+      aiBadge.style.color = 'var(--muted)';
+      try {
+        const aiConfig = await apiClient.get('/api/ai/config');
+        if (aiConfig && aiConfig.hasKey) {
+          aiBadge.textContent = `🟢 Sẵn sàng (${aiConfig.provider})`;
+          aiBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+          aiBadge.style.color = '#10b981';
+        } else {
+          aiBadge.textContent = '⚪ Chưa có Key';
+          aiBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+          aiBadge.style.color = '#ef4444';
+        }
+      } catch (_) {
+        aiBadge.textContent = '⚪ Không khả dụng';
+      }
+    }
+
+    modal.showModal();
+    await this.runInference();
+  }
+
+  async runInference() {
+    const root = this._root();
+    if (!root || !this._activeDoc) return;
+
+    const loading = root.querySelector('#qa-infer-loading');
+    const empty = root.querySelector('#qa-infer-empty');
+    const results = root.querySelector('#qa-infer-results');
+    const submitBtn = root.querySelector('#qa-infer-submit-btn');
+    const mode = root.querySelector('input[name="qa-infer-mode"]:checked')?.value || 'heuristic';
+
+    if (loading) loading.style.display = 'block';
+    if (empty) empty.style.display = 'none';
+    if (results) results.style.display = 'none';
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const res = await apiClient.post('/api/qa/infer-testcases', {
+        reqPath: this._activeDoc.path,
+        mode,
+      });
+
+      if (loading) loading.style.display = 'none';
+
+      if (!res.items || !res.items.length) {
+        if (empty) {
+          empty.style.display = 'block';
+          const emptyTitle = root.querySelector('#qa-infer-empty-title');
+          const emptyDesc = root.querySelector('#qa-infer-empty-desc');
+          if (emptyTitle) emptyTitle.textContent = 'Không tìm thấy test case mới cần bổ sung';
+          if (emptyDesc) emptyDesc.textContent = res.message || 'Các câu hỏi đã chốt đã được bao phủ hoặc không tìm thấy quy tắc biên mới.';
+        }
+        return;
+      }
+
+      if (results) results.style.display = 'flex';
+      this._renderInferredCards(res.items, res.tcPath, res.reqId);
+    } catch (err) {
+      if (loading) loading.style.display = 'none';
+      if (empty) {
+        empty.style.display = 'block';
+        const emptyTitle = root.querySelector('#qa-infer-empty-title');
+        const emptyDesc = root.querySelector('#qa-infer-empty-desc');
+        if (emptyTitle) emptyTitle.textContent = 'Lỗi phân tích';
+        if (emptyDesc) emptyDesc.textContent = err.message || 'Không thể suy luận test case.';
+      }
+    }
+  }
+
+  _renderInferredCards(items, tcPath, reqId) {
+    const root = this._root();
+    if (!root) return;
+    const list = root.querySelector('#qa-infer-cards-list');
+    const summaryText = root.querySelector('#qa-infer-summary-text');
+    if (!list) return;
+
+    list.textContent = '';
+    this._inferredItems = items;
+    this._inferredTcPath = tcPath;
+    this._inferredReqId = reqId;
+
+    if (summaryText) {
+      summaryText.textContent = `Tìm thấy ${items.length} test case tiềm năng từ các câu hỏi đã chốt:`;
+    }
+
+    items.forEach((item, index) => {
+      const card = this._el('div', null, 'qa-inferred-card is-selected');
+      card.dataset.idx = String(index);
+
+      // Top row: Checkbox, ID badge, AC select, Priority select
+      const topRow = this._el('div', null, 'qa-inferred-top');
+      const leftTop = this._el('div', null, 'qa-inferred-meta-col');
+
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = true;
+      chk.className = 'qa-inferred-chk';
+      chk.dataset.idx = String(index);
+      chk.addEventListener('change', () => {
+        card.classList.toggle('is-selected', chk.checked);
+        this._updateInferredSelectedCount();
+      });
+
+      const badge = this._el('span', item.suggestedId, 'qa-inferred-id-badge');
+
+      const acSelect = document.createElement('select');
+      acSelect.className = 'qa-inferred-ac-select';
+      const acOptions = (this._activeDocAcs && this._activeDocAcs.length)
+        ? this._activeDocAcs
+        : [{ id: item.acId || 'AC-001', title: '' }];
+      acOptions.forEach((ac) => {
+        const opt = document.createElement('option');
+        opt.value = ac.id;
+        opt.textContent = ac.title ? `${ac.id}: ${ac.title}`.slice(0, 35) : ac.id;
+        if (ac.id === item.acId) opt.selected = true;
+        acSelect.appendChild(opt);
+      });
+
+      leftTop.appendChild(chk);
+      leftTop.appendChild(badge);
+      leftTop.appendChild(acSelect);
+
+      const prioSelect = document.createElement('select');
+      prioSelect.className = 'qa-inferred-priority-select';
+      ['P0', 'P1', 'P2', 'P3'].forEach((p) => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        if (p === (item.priority || 'P1')) opt.selected = true;
+        prioSelect.appendChild(opt);
+      });
+
+      topRow.appendChild(leftTop);
+      topRow.appendChild(prioSelect);
+      card.appendChild(topRow);
+
+      // Title input (editable)
+      const titleInput = document.createElement('input');
+      titleInput.type = 'text';
+      titleInput.className = 'qa-inferred-title-input';
+      titleInput.value = item.title || '';
+      card.appendChild(titleInput);
+
+      // Rationale
+      if (item.rationale) {
+        const rat = this._el('p', `💡 ${item.rationale}`, 'qa-inferred-rationale');
+        card.appendChild(rat);
+      }
+
+      // Steps table
+      if (item.steps && item.steps.length) {
+        const table = document.createElement('table');
+        table.className = 'qa-inferred-steps-table';
+        const thead = document.createElement('thead');
+        const trHead = document.createElement('tr');
+        const th1 = this._el('th', 'Bước');
+        th1.style.width = '45px';
+        const th2 = this._el('th', 'Thao tác');
+        const th3 = this._el('th', 'Kết quả mong đợi');
+        trHead.appendChild(th1);
+        trHead.appendChild(th2);
+        trHead.appendChild(th3);
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        item.steps.forEach((s, sIdx) => {
+          const tr = document.createElement('tr');
+          const td1 = this._el('td', String(s.step || sIdx + 1));
+          const td2 = this._el('td', s.action || '');
+          const td3 = this._el('td', s.expected || '');
+          tr.appendChild(td1);
+          tr.appendChild(td2);
+          tr.appendChild(td3);
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        card.appendChild(table);
+      }
+
+      list.appendChild(card);
+    });
+
+    this._updateInferredSelectedCount();
+  }
+
+  toggleAllInferred(select) {
+    const root = this._root();
+    if (!root) return;
+    root.querySelectorAll('.qa-inferred-card').forEach((card) => {
+      const chk = card.querySelector('.qa-inferred-chk');
+      if (chk) {
+        chk.checked = select;
+        card.classList.toggle('is-selected', select);
+      }
+    });
+    this._updateInferredSelectedCount();
+  }
+
+  _updateInferredSelectedCount() {
+    const root = this._root();
+    if (!root) return;
+    const selected = root.querySelectorAll('.qa-inferred-chk:checked');
+    const total = root.querySelectorAll('.qa-inferred-chk');
+    const countText = root.querySelector('#qa-infer-selected-count');
+    const submitBtn = root.querySelector('#qa-infer-submit-btn');
+    const submitLabel = root.querySelector('#qa-infer-submit-label');
+
+    if (countText) {
+      countText.textContent = `Đã chọn: ${selected.length} / ${total.length} test case`;
+    }
+    if (submitBtn) {
+      submitBtn.disabled = selected.length === 0;
+    }
+    if (submitLabel) {
+      submitLabel.textContent = `Thêm vào test-cases (${selected.length})`;
+    }
+  }
+
+  async submitInferredTestCases() {
+    const root = this._root();
+    if (!root || !this._inferredItems) return;
+    const modal = root.querySelector('#qa-infer-modal');
+    const submitBtn = root.querySelector('#qa-infer-submit-btn');
+
+    const toSubmit = [];
+    const cards = root.querySelectorAll('.qa-inferred-card');
+    cards.forEach((card) => {
+      const chk = card.querySelector('.qa-inferred-chk');
+      if (chk && chk.checked) {
+        const idx = parseInt(chk.dataset.idx, 10);
+        const original = this._inferredItems[idx];
+        if (original) {
+          const title = card.querySelector('.qa-inferred-title-input')?.value.trim() || original.title;
+          const acId = card.querySelector('.qa-inferred-ac-select')?.value || original.acId;
+          const priority = card.querySelector('.qa-inferred-priority-select')?.value || original.priority;
+          toSubmit.push({
+            ...original,
+            title,
+            acId,
+            priority,
+          });
+        }
+      }
+    });
+
+    if (!toSubmit.length) {
+      this.notify('Vui lòng chọn ít nhất 1 test case để thêm.');
+      return;
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const res = await apiClient.post('/api/qa/append-testcases', {
+        reqId: this._inferredReqId || 'REQ-001',
+        tcPath: this._inferredTcPath,
+        testCases: toSubmit,
+      });
+
+      if (modal) modal.close();
+      this.notify(res.message || `Đã thêm thành công ${toSubmit.length} test case.`);
+
+      // Reload ma trận QA để cập nhật ứng viên automation
+      await this.reload(true);
+      // Reload tài liệu hiện tại
+      if (this.activeDocPath) {
+        await this.readDoc(this.activeDocPath);
+      }
+    } catch (err) {
+      this.notify(`Lỗi thêm test case: ${err.message}`);
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  }
+
   // --- panel 1: tài liệu ---
 
   renderDocs() {
@@ -858,19 +1172,35 @@ export class QaSlice {
     const answerBtn = root.querySelector('#qa-reader-answer');
     const answerLabel = root.querySelector('#qa-reader-answer-label');
     const editBtn = root.querySelector('#qa-reader-edit');
+    const inferBtn = root.querySelector('#qa-reader-infer');
     const editable = Boolean(doc) && doc.kind === 'requirement';
 
     if (editBtn) editBtn.hidden = !editable;
-    if (!answerBtn) return;
 
     const parsed = editable ? parseOpenQuestions(markdown) : { found: false, questions: [] };
     this._openQuestions = parsed.questions;
     const pending = parsed.questions.filter((q) => !q.answered).length;
-    answerBtn.hidden = !parsed.found || !parsed.questions.length;
-    if (answerLabel) {
-      answerLabel.textContent = pending
-        ? `Trả lời câu hỏi (${pending})`
-        : 'Câu hỏi đã chốt';
+    const hasDecided = parsed.questions.some((q) => q.answered);
+
+    if (answerBtn) {
+      answerBtn.hidden = !parsed.found || !parsed.questions.length;
+      if (answerLabel) {
+        answerLabel.textContent = pending
+          ? `Trả lời câu hỏi (${pending})`
+          : 'Câu hỏi đã chốt';
+      }
+    }
+
+    if (inferBtn) {
+      inferBtn.hidden = !editable || !hasDecided;
+    }
+
+    // Lưu danh sách AC của tài liệu hiện tại để gán cho test case
+    const acMatches = [...(markdown || '').matchAll(/^#{2,4}\s*(AC-\d{3})\b[:\s\-—]*(.*)$/gim)];
+    this._activeDocAcs = acMatches.map((m) => ({ id: m[1].toUpperCase(), title: m[2].trim() }));
+    if (!this._activeDocAcs.length) {
+      const allAcMatches = [...(markdown || '').matchAll(/\bAC-\d{3}\b/g)];
+      this._activeDocAcs = [...new Set(allAcMatches.map((m) => m[0].toUpperCase()))].map((id) => ({ id, title: '' }));
     }
   }
 
@@ -997,6 +1327,23 @@ export class QaSlice {
       'Câu trả lời được ghi thẳng vào dòng câu hỏi, thay cho đuôi "cần ... xác nhận".'
         + ' Phần còn lại của tài liệu giữ nguyên từng dòng.',
     );
+
+    const hasDecided = this._openQuestions.some((q) => q.answered);
+    if (hasDecided) {
+      const inferBanner = this._el('div', null, 'qa-infer-prompt-banner');
+      inferBanner.style.cssText = 'background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;';
+      const bannerText = this._el('span', '💡 Đã có quyết định chốt! Rà soát để tự động sinh Test Case biên & rẽ nhánh:', null);
+      bannerText.style.fontSize = '12px';
+      bannerText.style.fontWeight = '600';
+      const inferBtn = document.createElement('button');
+      inferBtn.type = 'button';
+      inferBtn.className = 'btn-secondary-sm';
+      inferBtn.textContent = '🔍 Rà soát Test Case';
+      inferBtn.addEventListener('click', () => this.openInferModal());
+      inferBanner.appendChild(bannerText);
+      inferBanner.appendChild(inferBtn);
+      body.appendChild(inferBanner);
+    }
 
     const inputs = [];
     for (const q of this._openQuestions) {

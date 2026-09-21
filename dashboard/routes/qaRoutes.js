@@ -18,6 +18,10 @@ const {
   getScaffoldMeta,
   generateScaffold,
 } = require('../services/qaService');
+const {
+  inferTestCases,
+  appendTestCasesToDocument,
+} = require('../services/qaInferenceService');
 const { sendJson, parseBody } = require('./routeUtils');
 
 const MAX_BODY_BYTES = 1_048_576;
@@ -155,6 +159,43 @@ async function handleQaRoutes(request, response, url, context = {}) {
       }
       const result = saveDecisionAnswer(root, body || {});
       sendJson(response, 200, { message: 'Đã lưu quyết định.', ...result });
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/infer-testcases') {
+    try {
+      const body = await parseBody(request);
+      const result = await inferTestCases({
+        root,
+        reqPath: body.reqPath,
+        mode: body.mode || 'heuristic',
+        clientConfig: body.clientConfig || null,
+      });
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/append-testcases') {
+    try {
+      const body = await parseBody(request);
+      const result = appendTestCasesToDocument(root, {
+        reqId: body.reqId,
+        tcPath: body.tcPath,
+        testCases: body.testCases || [],
+      });
+      sendJson(response, 200, result);
     } catch (error) {
       const status = Number.isInteger(error.status) ? error.status : 400;
       sendJson(response, status, {
