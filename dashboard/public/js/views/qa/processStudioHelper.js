@@ -91,11 +91,20 @@ export class ProcessStudioHelper {
 
     try {
       const res = await apiClient.post('/api/mp/run', { action });
-      const out = res.stdout || '';
+      const out = res.stdout || res.output || '';
       const err = res.stderr || '';
 
       if (out) this.appendLog(root, out);
       if (err) this.appendLog(root, `[STDERR]\n${err}`, true);
+
+      if (res.scanned !== undefined) {
+        const modEl = root.querySelector('#qa-mp-badge-modularity');
+        if (modEl) {
+          const isPass = (res.violations || 0) === 0;
+          modEl.textContent = `${res.scanned} Scanned / ${res.violations || 0} Violations (${isPass ? 'PASS' : 'FAIL'})`;
+          modEl.style.color = isPass ? 'var(--success, #10b981)' : 'var(--danger, #ef4444)';
+        }
+      }
 
       const isOk = res.ok !== false && (res.code === 0 || res.exitCode === 0 || res.code === undefined);
       this.appendLog(root, `>>> [HOÀN TẤT] Lệnh ${action} kết thúc với exitCode: ${res.code ?? res.exitCode ?? 0} (${isOk ? 'THÀNH CÔNG' : 'CÓ CẢNH BÁO/LỖI'})`);
