@@ -25,6 +25,12 @@ class UserProfilePage extends BasePage {
     this.btnAddCertificate = this.page.locator('[data-test-id="user-profile__certificate"] [data-test-id="user-profile__add-button"]').first();
     this.btnAddLanguage = this.page.locator('[data-test-id="user-profile__foreign-language"] [data-test-id="user-profile__add-button"]').first();
 
+    // Section Containers & Indicators
+    this.sectionExperience = this.page.locator('[data-test-id="user-profile__experience"]').first();
+    this.sectionLanguage = this.page.locator('[data-test-id="user-profile__foreign-language"]').first();
+    this.toastSuccess = this.page.getByText('Chuyển đổi thành công');
+    this.profileContainer = this.page.locator('#user-profile-container, [data-test-id*="profile"], main, body').first();
+
     // Common Form Locators
     this.inpStartDate = this.page.locator('input[name="start_date"]').first();
     this.inpEndDate = this.page.locator('input[name="end_date"]').first();

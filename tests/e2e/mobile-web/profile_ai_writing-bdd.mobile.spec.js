@@ -1,4 +1,4 @@
-const { test } = require('../../../core/fixtures/mobileWebTest');
+const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const aiProfileData = require('../../../data/aiProfileData.json');
 
 test.describe('Mobile Feature: Dùng trợ lý AI để hoàn thiện hồ sơ trên Mobile Web @profile @ai @mobile @e2e @REQ-006', () => {
@@ -44,6 +44,7 @@ test.describe('Mobile Feature: Dùng trợ lý AI để hoàn thiện hồ sơ t
 
     await test.step('Then Người dùng mobile lưu kinh nghiệm đã được AI tạo nội dung', async () => {
       await userProfilePage.saveExperience();
+      await expect(userProfilePage.sectionExperience).toBeVisible();
       await userProfilePage.capture('mobile_experience_saved_with_ai', true);
     });
   });

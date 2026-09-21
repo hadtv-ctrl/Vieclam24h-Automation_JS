@@ -1,4 +1,4 @@
-const { test } = require('../../../core/fixtures/mobileWebTest');
+const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
 
@@ -56,6 +56,7 @@ test.describe('Mobile Feature: Hoàn thành profile mini và ứng tuyển job k
     await test.step('Then Việc làm hiển thị trong danh sách đã ứng tuyển trên mobile', async () => {
       await jobApplyNoCVPage.openAppliedJobs();
       await jobApplyNoCVPage.expectAppliedJobsVisible();
+      await expect(jobApplyNoCVPage.appliedJobsList).toBeVisible({ timeout: 30000 });
       await jobApplyNoCVPage.capture('mobile_applied_jobs_visible', true);
     });
   });

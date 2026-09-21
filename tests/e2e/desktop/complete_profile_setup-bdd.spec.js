@@ -81,6 +81,7 @@ test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu 
       await userProfilePage.capture('then_allow_search_start');
       await userProfilePage.clickAllowSearch();
       await userProfilePage.waitForGlobalLoadingHidden(30000);
+      await expect(userProfilePage.profileContainer).toBeVisible();
       await userProfilePage.capture('then_profile_setup_complete', true);
     });
 

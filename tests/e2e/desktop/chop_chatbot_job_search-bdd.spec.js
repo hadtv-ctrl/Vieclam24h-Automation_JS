@@ -3,10 +3,10 @@ const chatbotData = require('../../../data/chopChatbotData.json');
 const { ChopChatbotPage } = require('../../../pages/desktop/ChopChatbotPage');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
-test.describe('Feature: Người dùng tìm việc qua Chop AI chatbot @chatbot @desktop @e2e', () => {
+test.describe('Feature: Người dùng tìm việc qua Chop AI chatbot @chatbot @desktop @e2e @REQ-007', () => {
   test.setTimeout(240000);
 
-  test('Người dùng tìm kiếm, lọc và xem việc làm qua Chop AI chatbot thành công', async ({
+  test('TC-025 - AC-022 Người dùng tìm kiếm, lọc và xem việc làm qua Chop AI chatbot thành công', async ({
     page,
     workerUserData,
     pages,
@@ -62,6 +62,7 @@ test.describe('Feature: Người dùng tìm việc qua Chop AI chatbot @chatbot 
     // ── Then: Kết quả hiển thị ────────────────────────────────────────
     await test.step('Then Chatbot hiển thị số lượng công việc phù hợp', async () => {
       await chopChatbot.expectJobCountVisible();
+      await expect(chopChatbot.jobCountBtn.last()).toBeVisible({ timeout: 25000 });
       await chopChatbot.capture('chat_job_count_button_visible');
     });
 
@@ -167,6 +168,7 @@ test.describe('Feature: Người dùng tìm việc qua Chop AI chatbot @chatbot 
     await test.step('Then Người dùng quay về trang chủ', async () => {
       await homePage.navigate();
       await homePage.expectHomepageVisible();
+      await expect(homePage.logo).toBeVisible({ timeout: 15000 });
       await homePage.capture('returned_to_homepage');
     });
   });

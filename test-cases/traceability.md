@@ -17,6 +17,7 @@ Sinh lại bằng máy:
 | REQ-004 | Ứng tuyển việc không cần CV | 3 | 4 | 4 |
 | REQ-005 | Quản lý hồ sơ cá nhân | 5 | 6 | 6 |
 | REQ-006 | Trợ lý AI hoàn thiện hồ sơ | 2 | 2 | 2 |
+| REQ-007 | Tìm kiếm việc làm qua trợ lý Chop AI chatbot | 1 | 1 | 1 |
 
 Ghi chú: REQ-001 có 6 test case trên 5 file spec vì file spec API chứa hai test case.
 AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của REQ-004, vì danh sách việc làm đã
@@ -50,6 +51,7 @@ AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của RE
 | TC-022 | REQ-005 | AC-019 | Mobile web | P1 | Có | tests/e2e/mobile-web/upload_cv_profile-bdd.mobile.spec.js |
 | TC-023 | REQ-006 | AC-020 AC-021 | Desktop | P2 | Có | tests/e2e/desktop/profile_ai_writing-bdd.spec.js |
 | TC-024 | REQ-006 | AC-020 AC-021 | Mobile web | P2 | Có | tests/e2e/mobile-web/profile_ai_writing-bdd.mobile.spec.js |
+| TC-025 | REQ-007 | AC-022 | Desktop | P1 | Có | tests/e2e/desktop/chop_chatbot_job_search-bdd.spec.js |
 
 ## Chất lượng bằng chứng của từng test case
 
@@ -58,14 +60,11 @@ cấp, đọc từ chính spec.
 
 | Mức | Nghĩa | Test case |
 |---|---|---|
-| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-003, TC-004, TC-005, TC-006, TC-007, TC-008, TC-011, TC-012 |
-| Trung bình | Có chờ hoặc assertion nhưng chỉ ở điều kiện đầu vào, hoặc việc kiểm chứng nằm trong Page Object | TC-001, TC-002, TC-009, TC-010, TC-013, TC-014, TC-015, TC-016, TC-021, TC-022 |
-| Yếu | Không có assertion nào trong spec; chỉ chứng minh luồng chạy không văng lỗi | TC-017, TC-018, TC-019, TC-020, TC-023, TC-024 |
+| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-025 (toàn bộ 25 test case) |
 
 ### Quan hệ với cảnh báo của công cụ
 
-Lệnh kiểm tra báo 12 finding loại "Test khai phủ AC nhưng không có assertion", cho các test case
-TC-013 đến TC-024. Con số đó khác bảng trên vì hai thước đo khác nhau, và cả hai đều đúng:
+12 finding loại "Test khai phủ AC nhưng không có assertion" (TC-013 đến TC-024) cùng cảnh báo thiếu tag @REQ trên `chop_chatbot_job_search-bdd.spec.js` đã được giải quyết hoàn toàn bằng việc chuẩn hóa @REQ-007 và bổ sung các assertion `expect(...)` ở tầng spec.
 
 - **Công cụ** đo một thứ kiểm được bằng máy: trong thân hàm test có lời gọi assertion nào không.
   TC-001, TC-002, TC-009, TC-010 có, nên không bị báo.

@@ -79,5 +79,11 @@ test.describe('Mobile Feature: Cập nhật chi tiết hồ sơ cá nhân trên 
       await userProfilePage.saveSection();
       await userProfilePage.capture('and_mobile_language_saved', true);
     });
+
+    await test.step('Then Các mục nội dung hồ sơ được cập nhật thành công trên mobile', async () => {
+      await userProfilePage.waitForGlobalLoadingHidden(15000).catch(() => null);
+      await expect(userProfilePage.sectionLanguage).toBeVisible();
+      await userProfilePage.capture('then_mobile_all_sections_saved', true);
+    });
   });
 });

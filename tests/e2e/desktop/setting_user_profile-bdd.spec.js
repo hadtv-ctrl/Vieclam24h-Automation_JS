@@ -96,6 +96,12 @@ test.describe('Feature: Hoàn thành profile và ứng tuyển job @profile @des
       await userProfilePage.saveSection();
       await userProfilePage.capture('and_language_saved', true);
     });
+
+    await test.step('Then Các mục nội dung hồ sơ được cập nhật thành công', async () => {
+      await userProfilePage.waitForGlobalLoadingHidden(15000).catch(() => null);
+      await expect(userProfilePage.sectionLanguage).toBeVisible();
+      await userProfilePage.capture('then_all_sections_saved', true);
+    });
   });
 
 });

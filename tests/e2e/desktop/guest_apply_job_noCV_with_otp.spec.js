@@ -1,4 +1,4 @@
-const { test } = require('../../../core/fixtures/baseTest');
+const { test, expect } = require('../../../core/fixtures/baseTest');
 const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
 const { generateRandomVNPhone } = require('../../../core/utils/commonUtils');
@@ -81,6 +81,7 @@ test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @a
     await test.step('Then Việc làm hiển thị trong danh sách đã ứng tuyển', async () => {
       await jobApplyNoCVPage.openAppliedJobs();
       await jobApplyNoCVPage.expectAppliedJobsVisible();
+      await expect(jobApplyNoCVPage.appliedJobsList).toBeVisible({ timeout: 30000 });
       await jobApplyNoCVPage.capture('applied_jobs_list_visible', true);
     });
   });

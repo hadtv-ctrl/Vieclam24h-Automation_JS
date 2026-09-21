@@ -19,6 +19,7 @@ test.describe('Mobile Feature: Tải lên và chuyển đổi CV tại Hồ sơ 
     });
 
     await test.step('Then Hệ thống báo Chuyển đổi thành công và cập nhật vào Hồ sơ trên mobile', async () => {
+      await expect(userProfilePage.toastSuccess).toBeVisible({ timeout: 60000 });
       await userProfilePage.verifyAndApplyCVData();
       await userProfilePage.capture('after_mobile_cv_data_applied', true);
     });

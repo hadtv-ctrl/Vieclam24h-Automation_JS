@@ -1,4 +1,4 @@
-const { test } = require('../../../core/fixtures/baseTest');
+const { test, expect } = require('../../../core/fixtures/baseTest');
 const aiProfileData = require('../../../data/aiProfileData.json');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
@@ -49,6 +49,7 @@ test.describe('Feature: Dùng trợ lý AI để hoàn thiện hồ sơ @profile
 
     await test.step('Then Người dùng lưu kinh nghiệm đã được AI tạo nội dung', async () => {
       await userProfilePage.saveExperience();
+      await expect(userProfilePage.sectionExperience).toBeVisible();
     });
   });
 });

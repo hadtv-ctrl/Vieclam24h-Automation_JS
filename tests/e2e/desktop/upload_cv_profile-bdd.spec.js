@@ -32,6 +32,7 @@ test.describe('Feature: Tải lên và chuyển đổi CV tại Hồ sơ của t
     });
 
     await test.step('Then Hệ thống báo Chuyển đổi thành công và cập nhật vào Hồ sơ', async () => {
+      await expect(userProfilePage.toastSuccess).toBeVisible({ timeout: 60000 });
       await userProfilePage.verifyAndApplyCVData();
       await userProfilePage.capture('after_cv_data_applied', true);
     });
