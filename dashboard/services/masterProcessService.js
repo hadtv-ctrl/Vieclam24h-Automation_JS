@@ -11,6 +11,24 @@ const { validateProjectPath, detectMasterRoot, runCommand } = require('./masterP
 
 let currentRunningAction = null;
 
+async function withExecutionLock(actionName, fn) {
+  if (currentRunningAction) {
+    return {
+      code: 409,
+      ok: false,
+      error: `Tiến trình '${currentRunningAction}' đang chạy. Vui lòng chờ hoàn tất.`,
+      stdout: '',
+      stderr: `[CONFLICT 409] Tiến trình '${currentRunningAction}' đang thực thi.`,
+    };
+  }
+  currentRunningAction = actionName;
+  try {
+    return await fn();
+  } finally {
+    currentRunningAction = null;
+  }
+}
+
 function runMaster(masterRoot, args, projectRoot) {
   const pyBin = process.platform === 'win32' ? 'python' : 'python3';
   return runCommand(pyBin, [path.join(masterRoot, 'master.py'), ...args], projectRoot);
@@ -36,7 +54,9 @@ async function getProjectStatus(projectRoot) {
       const text = fs.readFileSync(hookFile, 'utf8');
       hookStatus.installed = true;
       hookStatus.managedV2 = text.includes('# MASTER_PROCESS_MANAGED_HOOK_V2');
-      hookStatus.pointsToHub = text.includes(masterRoot.replace(/\\/g, '/')) || text.includes('master.py');
+      const normMaster = masterRoot.replace(/\\/g, '/').toLowerCase();
+      const normText = text.replace(/\\/g, '/').toLowerCase();
+      hookStatus.pointsToHub = normText.includes(normMaster);
     } catch (_) {}
   }
 
@@ -84,47 +104,56 @@ async function initProject(projectRoot) {
   const validRoot = validateProjectPath(projectRoot);
   const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  return runMaster(masterRoot, ['init', validRoot], validRoot);
+  return withExecutionLock('init', () => runMaster(masterRoot, ['init', validRoot], validRoot));
 }
 
 async function syncProject(projectRoot, { updateTemplates = false, dryRun = false } = {}) {
   const validRoot = validateProjectPath(projectRoot);
   const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  const args = ['sync', validRoot];
-  if (dryRun) args.push('--dry-run');
-  if (updateTemplates) args.push('--update-templates');
-  return runMaster(masterRoot, args, validRoot);
+  return withExecutionLock('sync', () => {
+    const args = ['sync', validRoot];
+    if (dryRun) args.push('--dry-run');
+    if (updateTemplates) args.push('--update-templates');
+    return runMaster(masterRoot, args, validRoot);
+  });
 }
 
 async function installHooks(projectRoot) {
   const validRoot = validateProjectPath(projectRoot);
   const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  return runMaster(masterRoot, ['install-hooks', validRoot], validRoot);
+  return withExecutionLock('install-hooks', () => runMaster(masterRoot, ['install-hooks', validRoot], validRoot));
 }
 
 async function runAudit(projectRoot, { staged = false } = {}) {
   const validRoot = validateProjectPath(projectRoot);
   const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  const args = ['audit', validRoot];
-  if (staged) args.push('--staged');
-  const res = await runMaster(masterRoot, args, validRoot);
-  const matchMod = (res.stdout + '\n' + res.stderr).match(/MODULARITY:\s*scanned=(\d+)\s*violations=(\d+)\s*exempted=(\d+)/i);
-  return {
-    ...res,
-    scanned: matchMod ? parseInt(matchMod[1], 10) : 0,
-    violations: matchMod ? parseInt(matchMod[2], 10) : (res.ok ? 0 : 1),
-    exempted: matchMod ? parseInt(matchMod[3], 10) : 0,
-  };
+  return withExecutionLock('audit', async () => {
+    const args = ['audit', validRoot];
+    if (staged) args.push('--staged');
+    const res = await runMaster(masterRoot, args, validRoot);
+    const matchMod = (res.stdout + '\n' + res.stderr).match(/MODULARITY:\s*scanned=(\d+)\s*violations=(\d+)\s*exempted=(\d+)/i);
+    const lines = (res.stdout + '\n' + res.stderr).split('\n').map((l) => l.trim()).filter(Boolean);
+    return {
+      ...res,
+      scanned: matchMod ? parseInt(matchMod[1], 10) : 0,
+      violations: matchMod ? parseInt(matchMod[2], 10) : (res.ok ? 0 : 1),
+      exempted: matchMod ? parseInt(matchMod[3], 10) : 0,
+      details: {
+        violations: lines.filter((l) => l.startsWith('VIOLATION:') || l.startsWith('SECRET VIOLATION:')),
+        exemptions: lines.filter((l) => l.startsWith('SKIP:')),
+      },
+    };
+  });
 }
 
 async function runDoctor(projectRoot) {
   const validRoot = validateProjectPath(projectRoot);
   const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  return runMaster(masterRoot, ['doctor', validRoot], validRoot);
+  return withExecutionLock('doctor', () => runMaster(masterRoot, ['doctor', validRoot], validRoot));
 }
 
 async function runProbes(projectRoot, { probeId = 'ALL' } = {}) {
@@ -133,34 +162,18 @@ async function runProbes(projectRoot, { probeId = 'ALL' } = {}) {
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
   const script = path.join(masterRoot, 'scripts', 'audit-probes.ps1');
   if (!fs.existsSync(script)) throw new Error('Không tìm thấy script audit-probes.ps1');
-  return runCommand('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-ProbeId', probeId, validRoot], validRoot);
+  return withExecutionLock('probes', () => runCommand('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-ProbeId', probeId, validRoot], validRoot));
 }
 
 async function runMasterAction(projectRoot, action, payload = {}) {
   const validRoot = validateProjectPath(projectRoot);
   const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-
-  if (currentRunningAction) {
-    return {
-      code: 409,
-      ok: false,
-      error: `Tiến trình '${currentRunningAction}' đang chạy. Vui lòng chờ hoàn tất.`,
-      stdout: '',
-      stderr: `[CONFLICT 409] Tiến trình '${currentRunningAction}' đang thực thi.`,
-    };
-  }
-
-  currentRunningAction = action;
-  try {
-    if (action === 'doctor') return await runDoctor(validRoot);
-    if (action === 'audit') return await runAudit(validRoot, payload);
-    if (action === 'optimize') return await runMaster(masterRoot, ['optimize', validRoot], validRoot);
-    if (action === 'probes') return await runProbes(validRoot, payload);
-    throw new Error(`Action không hợp lệ: ${action}. Chỉ chấp nhận: doctor, audit, optimize, probes.`);
-  } finally {
-    currentRunningAction = null;
-  }
+  if (action === 'doctor') return runDoctor(validRoot);
+  if (action === 'audit') return runAudit(validRoot, payload);
+  if (action === 'optimize') return withExecutionLock('optimize', () => runMaster(masterRoot, ['optimize', validRoot], validRoot));
+  if (action === 'probes') return runProbes(validRoot, payload);
+  throw new Error(`Action không hợp lệ: ${action}. Chỉ chấp nhận: doctor, audit, optimize, probes.`);
 }
 
 module.exports = {

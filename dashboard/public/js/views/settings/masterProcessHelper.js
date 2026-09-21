@@ -200,6 +200,23 @@ export class MasterProcessHelper {
         setTxt('#mp-exempted-count', res.exempted);
       }
 
+      if (res.details) {
+        const detWrap = root.querySelector('#mp-audit-details');
+        const renderList = (id, items) => {
+          const ul = root.querySelector(id);
+          if (!ul) return;
+          ul.textContent = '';
+          (items || []).forEach((item) => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            ul.appendChild(li);
+          });
+        };
+        renderList('#mp-audit-violations-list', res.details.violations);
+        renderList('#mp-audit-exemptions-list', res.details.exemptions);
+        if (detWrap) detWrap.style.display = ((res.details.violations?.length || 0) + (res.details.exemptions?.length || 0)) > 0 ? 'block' : 'none';
+      }
+
       if (res.code === 409) {
         this.slice.notify(`Xung đột: ${res.error || 'Tiến trình khác đang chạy'}`);
       } else {

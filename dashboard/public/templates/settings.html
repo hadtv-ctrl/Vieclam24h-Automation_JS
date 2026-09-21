@@ -101,6 +101,11 @@
                   <button type="button" id="mp-btn-audit" class="primary" style="flex: 1;"><i class="ph-bold ph-lightning"></i> Quét toàn bộ</button>
                   <button type="button" id="mp-btn-audit-staged" class="ghost" style="flex: 1;"><i class="ph-bold ph-git-commit"></i> Quét Staged</button>
                 </div>
+                <div id="mp-audit-details" style="display:none; margin-top:12px; padding:10px 12px; background:rgba(0,0,0,0.15); border:1px solid rgba(255,255,255,0.06); border-radius:6px; font-size:12px; max-height:160px; overflow-y:auto;">
+                  <div style="font-weight:600; margin-bottom:4px; color:var(--text-primary);">Chi tiết kiểm định:</div>
+                  <ul id="mp-audit-violations-list" style="margin:0; padding-left:18px; color:#f85149;"></ul>
+                  <ul id="mp-audit-exemptions-list" style="margin:4px 0 0; padding-left:18px; color:#d29922;"></ul>
+                </div>
               </div>
             </div>
 

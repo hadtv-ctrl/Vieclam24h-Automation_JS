@@ -56,7 +56,7 @@ async function handleMasterProcessRoutes(request, response, url, context = {}) {
       if (url.pathname === '/api/mp/init') res = await initProject(projectRoot);
       else if (url.pathname === '/api/mp/sync') res = await syncProject(projectRoot, body);
       else if (url.pathname === '/api/mp/install-hooks') res = await installHooks(projectRoot);
-      else if (url.pathname === '/api/mp/audit') return sendJson(response, 200, await runAudit(projectRoot, body));
+      else if (url.pathname === '/api/mp/audit') res = await runAudit(projectRoot, body);
       else if (url.pathname === '/api/mp/doctor') res = await runDoctor(projectRoot);
       else if (url.pathname === '/api/mp/probes') res = await runProbes(projectRoot, body);
       if (res) return sendJson(response, res.code === 409 ? 409 : (res.ok ? 200 : 400), res);
