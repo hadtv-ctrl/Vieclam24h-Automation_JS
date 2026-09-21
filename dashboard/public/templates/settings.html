@@ -28,7 +28,15 @@
               <p>MASTER PROCESS HUB & QUALITY GATES</p>
               <h2>Chuẩn Hóa Quy Trình, Anti-Drift & Kiểm Định Chất Lượng</h2>
             </div>
-            <div class="settings-mp-actions-top">
+            <div class="settings-mp-actions-top" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <label for="mp-project-select" style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                <i class="ph-bold ph-folders"></i> Dự án:
+              </label>
+              <select id="mp-project-select" style="background: var(--bg-input, rgba(0,0,0,0.25)); border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 6px; color: var(--text-primary); padding: 5px 10px; font-size: 12px; cursor: pointer;">
+                <option value="D:/_Automation-Project">D:/_Automation-Project (Hub - Trung tâm)</option>
+                <option value="D:/_SieuVietGroup">D:/_SieuVietGroup (Vệ tinh Vieclam24h)</option>
+                <option value="D:/_CarThings/Automation_Carthings">D:/_CarThings/Automation_Carthings (Vệ tinh CarThings)</option>
+              </select>
               <button id="mp-refresh-button" class="ghost" type="button"><i class="ph ph-arrow-clockwise"></i> Kiểm tra lại</button>
             </div>
           </div>

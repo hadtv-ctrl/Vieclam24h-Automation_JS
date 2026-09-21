@@ -50,9 +50,9 @@ export class ProcessStudioHelper {
     }
 
     const modEl = root.querySelector('#qa-mp-badge-modularity');
-    if (modEl) {
-      modEl.textContent = '201 Scanned / 0 Violations (PASS)';
-      modEl.style.color = 'var(--success, #10b981)';
+    if (modEl && !this._lastAuditRun) {
+      modEl.textContent = 'Chưa kiểm tra (Nhấn Audit)';
+      modEl.style.color = 'var(--text-muted, #8b949e)';
     }
 
     const learnEl = root.querySelector('#qa-mp-badge-learning');
@@ -98,6 +98,7 @@ export class ProcessStudioHelper {
       if (err) this.appendLog(root, `[STDERR]\n${err}`, true);
 
       if (res.scanned !== undefined) {
+        this._lastAuditRun = true;
         const modEl = root.querySelector('#qa-mp-badge-modularity');
         if (modEl) {
           const isPass = (res.violations || 0) === 0;
