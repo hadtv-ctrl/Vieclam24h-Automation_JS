@@ -764,9 +764,8 @@ export class QaSlice {
       const card = this._el('div', null, 'qa-inferred-card is-selected');
       card.dataset.idx = String(index);
 
-      // Top row: Checkbox, ID badge, AC select, Priority select
+      // Top row: Checkbox, ID badge, AC select (chiếm phần lớn chiều ngang để đọc nội dung), Priority select (gọn)
       const topRow = this._el('div', null, 'qa-inferred-top');
-      const leftTop = this._el('div', null, 'qa-inferred-meta-col');
 
       const chk = document.createElement('input');
       chk.type = 'checkbox';
@@ -782,23 +781,21 @@ export class QaSlice {
 
       const acSelect = document.createElement('select');
       acSelect.className = 'qa-inferred-ac-select';
+      acSelect.title = 'Liên kết Acceptance Criterion';
       const acOptions = (this._activeDocAcs && this._activeDocAcs.length)
         ? this._activeDocAcs
         : [{ id: item.acId || 'AC-001', title: '' }];
       acOptions.forEach((ac) => {
         const opt = document.createElement('option');
         opt.value = ac.id;
-        opt.textContent = ac.title ? `${ac.id}: ${ac.title}`.slice(0, 35) : ac.id;
+        opt.textContent = ac.title ? `${ac.id} — ${ac.title}` : ac.id;
         if (ac.id === item.acId) opt.selected = true;
         acSelect.appendChild(opt);
       });
 
-      leftTop.appendChild(chk);
-      leftTop.appendChild(badge);
-      leftTop.appendChild(acSelect);
-
       const prioSelect = document.createElement('select');
       prioSelect.className = 'qa-inferred-priority-select';
+      prioSelect.title = 'Mức độ ưu tiên kiểm thử';
       ['P0', 'P1', 'P2', 'P3'].forEach((p) => {
         const opt = document.createElement('option');
         opt.value = p;
@@ -807,7 +804,9 @@ export class QaSlice {
         prioSelect.appendChild(opt);
       });
 
-      topRow.appendChild(leftTop);
+      topRow.appendChild(chk);
+      topRow.appendChild(badge);
+      topRow.appendChild(acSelect);
       topRow.appendChild(prioSelect);
       card.appendChild(topRow);
 
