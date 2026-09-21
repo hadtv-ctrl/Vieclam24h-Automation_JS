@@ -1393,14 +1393,7 @@ export class QaSlice {
       ? this.summary.findings
       : [];
 
-    const staticGaps = allFindings.filter((f) =>
-      f.kind === 'assertion-thieu-await' ||
-      f.kind === 'rule-thieu-boundary-test' ||
-      f.kind === 'thieu-kiem-tra-bien' ||
-      f.kind === 'doc-duoc-0-spec' ||
-      f.kind === 'drift' ||
-      f.kind === 'chuan-hoa-duong-dan-spec'
-    );
+    const staticGaps = allFindings;
 
     if (staticGapsCard && staticGapsList) {
       staticGapsList.textContent = '';
@@ -1408,7 +1401,15 @@ export class QaSlice {
         staticGapsCard.hidden = true;
       } else {
         staticGapsCard.hidden = false;
-        if (staticGapsBadge) staticGapsBadge.textContent = `${staticGaps.length} cảnh báo kỹ thuật`;
+        const blockers = staticGaps.filter((f) => f.severity === 'blocker').length;
+        if (staticGapsBadge) {
+          staticGapsBadge.textContent = `${staticGaps.length} phát hiện (${blockers > 0 ? `${blockers} blocker` : 'cảnh báo'})`;
+          if (blockers > 0) {
+            staticGapsBadge.className = 'qa-badge qa-badge-danger';
+          } else {
+            staticGapsBadge.className = 'qa-badge qa-badge-warn';
+          }
+        }
 
         for (const gap of staticGaps) {
           const row = document.createElement('div');
@@ -1417,7 +1418,7 @@ export class QaSlice {
           const iconCol = document.createElement('div');
           iconCol.className = 'qa-gap-icon-col';
           const icon = document.createElement('i');
-          if (gap.kind === 'assertion-thieu-await') {
+          if (gap.severity === 'blocker' || gap.kind === 'assertion-thieu-await') {
             icon.className = 'ph-bold ph-warning-circle';
             icon.style.color = 'var(--danger)';
           } else if (gap.kind === 'rule-thieu-boundary-test' || gap.kind === 'thieu-kiem-tra-bien') {
@@ -1438,6 +1439,14 @@ export class QaSlice {
           const labelSpan = document.createElement('span');
           labelSpan.textContent = gap.label || gap.kind;
           title.appendChild(labelSpan);
+
+          if (gap.severity) {
+            const sev = document.createElement('span');
+            sev.className = `qa-badge qa-badge-${gap.severity === 'blocker' ? 'danger' : 'warn'}`;
+            sev.style.marginLeft = '8px';
+            sev.textContent = gap.severity.toUpperCase();
+            title.appendChild(sev);
+          }
 
           if (gap.where || gap.id) {
             const loc = document.createElement('span');
