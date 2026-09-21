@@ -17,6 +17,8 @@ const {
   runAudit,
   runDoctor,
   runProbes,
+  exportEvidence,
+  reviewEvidence,
   runMasterAction,
 } = require('../services/masterProcessService');
 
@@ -33,12 +35,12 @@ async function handleMasterProcessRoutes(request, response, url, context = {}) {
     const target = body.targetPath || body.projectRoot || url.searchParams.get('target') || fallbackRoot;
     const projectRoot = validateProjectPath(target, fallbackRoot);
 
-    if (normPath === '/api/mp/freeze') {
+    if (normPath === '/api/mp/freeze' || normPath === '/api/mp/freeze/toggle') {
       if (request.method === 'GET') return sendJson(response, 200, getCircuitBreakerStatus(projectRoot));
       if (request.method === 'POST') return sendJson(response, 200, updateFreezeState(projectRoot, body));
     }
 
-    if (request.method === 'GET' && normPath === '/api/mp/evidence') {
+    if (request.method === 'GET' && (normPath === '/api/mp/evidence' || normPath === '/api/mp/evidence/latest')) {
       const evPath = path.join(projectRoot, '.gate-artifacts', 'evidence-gate4.json');
       if (!fs.existsSync(evPath)) return sendJson(response, 200, { exists: false });
       return sendJson(response, 200, { exists: true, evidence: JSON.parse(fs.readFileSync(evPath, 'utf8')) });
@@ -65,6 +67,8 @@ async function handleMasterProcessRoutes(request, response, url, context = {}) {
       else if (normPath === '/api/mp/audit') res = await runAudit(projectRoot, body);
       else if (normPath === '/api/mp/doctor') res = await runDoctor(projectRoot);
       else if (normPath === '/api/mp/probes') res = await runProbes(projectRoot, body);
+      else if (normPath === '/api/mp/evidence/export') res = await exportEvidence(projectRoot);
+      else if (normPath === '/api/mp/evidence/review') res = await reviewEvidence(projectRoot, body);
       if (res) return sendJson(response, res.code === 409 ? 409 : (res.ok ? 200 : 400), res);
     }
   } catch (error) {

@@ -29,10 +29,7 @@ export class MasterProcessHelper {
   bindEvents(root, disposers) {
     const bind = (id, handler) => {
       const el = root.querySelector(id);
-      if (el) {
-        el.addEventListener('click', handler);
-        disposers.push(() => el.removeEventListener('click', handler));
-      }
+      if (el) { el.addEventListener('click', handler); disposers.push(() => el.removeEventListener('click', handler)); }
     };
 
     const sel = root.querySelector('#mp-project-select');
@@ -52,8 +49,8 @@ export class MasterProcessHelper {
       ['#mp-btn-audit-staged', () => this.runAction('/api/mp/audit', { staged: true }, root, 'Quét Staged Files')],
       ['#mp-btn-doctor', () => this.runAction('/api/mp/doctor', {}, root, 'Chẩn đoán Doctor')],
       ['#mp-btn-probes', () => this.runAction('/api/mp/probes', { probeId: 'ALL' }, root, 'Chạy Probes P1-P6')],
-      ['#mp-btn-export-evidence', () => { this.slice.notify('Chạy lệnh: npm run test:gate4 để xuất bằng chứng mới'); this.loadEvidenceStatus(root); }],
-      ['#mp-btn-review-gate4', () => { this.slice.notify('Chạy lệnh: npm run review:gate4 để ký duyệt bằng chứng'); this.loadEvidenceStatus(root); }],
+      ['#mp-btn-export-evidence', () => this.runAction('/api/mp/evidence/export', {}, root, 'Xuất Bằng chứng Gate 4')],
+      ['#mp-btn-review-gate4', () => this.runAction('/api/mp/evidence/review', { actor: 'qa-lead' }, root, 'Ký duyệt Gate 4')],
       ['#mp-btn-clear-log', () => { const t = root.querySelector('#mp-terminal-output'); if (t) t.textContent = 'Đã xoá nhật ký thực thi.'; }],
     ].forEach(([id, fn]) => bind(id, fn));
 
@@ -98,7 +95,7 @@ export class MasterProcessHelper {
     const spinnerText = root.querySelector('#mp-spinner-text');
     if (spinnerText && actionName) spinnerText.textContent = `Đang thực thi: ${actionName}... Vui lòng đợi.`;
 
-    const buttons = root.querySelectorAll('#mp-btn-init, #mp-btn-sync-dryrun, #mp-btn-drift, #mp-btn-hook, #mp-btn-audit, #mp-btn-audit-staged, #mp-btn-doctor, #mp-btn-probes, #mp-refresh-button, #mp-btn-freeze-toggle, #mp-btn-freeze-lift, #mp-project-select');
+    const buttons = root.querySelectorAll('#mp-btn-init, #mp-btn-sync-dryrun, #mp-btn-drift, #mp-btn-hook, #mp-btn-audit, #mp-btn-audit-staged, #mp-btn-doctor, #mp-btn-probes, #mp-refresh-button, #mp-btn-freeze-toggle, #mp-btn-freeze-lift, #mp-btn-export-evidence, #mp-btn-review-gate4, #mp-project-select');
     buttons.forEach((btn) => {
       btn.disabled = running;
       btn.style.opacity = running ? '0.6' : '1';
@@ -170,11 +167,9 @@ export class MasterProcessHelper {
     setBadge(root.querySelector('#mp-drift-badge'), driftLabel, isSync ? 'is-active' : (data.drift_status === 'DRIFT_DETECTED' ? 'is-error' : 'is-warning'));
 
     const h = data.hook_status || {};
-    const hookLabel = (h.installed && h.managedV2 && h.pointsToHub) ? 'Đã kích hoạt (Managed V2, trỏ đúng Hub)'
-      : ((h.installed && h.managedV2) ? 'Cảnh báo: Chưa trỏ đúng Hub'
-      : (h.installed ? 'Hook cũ (Chưa Managed V2)' : 'Chưa cài đặt'));
-    const hookCls = (h.installed && h.managedV2 && h.pointsToHub) ? 'is-active' : (h.installed ? 'is-warning' : 'is-error');
-    setBadge(root.querySelector('#mp-hook-badge'), hookLabel, hookCls);
+    const hookOk = h.installed && h.managedV2 && h.pointsToHub;
+    const hookLabel = hookOk ? 'Đã kích hoạt (Managed V2, trỏ đúng Hub)' : (h.installed ? (h.managedV2 ? 'Cảnh báo: Chưa trỏ đúng Hub' : 'Hook cũ') : 'Chưa cài đặt');
+    setBadge(root.querySelector('#mp-hook-badge'), hookLabel, hookOk ? 'is-active' : (h.installed ? 'is-warning' : 'is-error'));
   }
 
   async runAction(endpoint, payload, root, actionName) {

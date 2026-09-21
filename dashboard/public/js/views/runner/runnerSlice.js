@@ -23,6 +23,7 @@ export class RunnerSlice {
     this._registerBridgeActions();
     this._connectEventStream();
     await this.fetchInitialState();
+    await this.checkFreezeStatus();
   }
 
   unmount() {
@@ -40,9 +41,7 @@ export class RunnerSlice {
     if (!root) return;
     const on = (sel, evt, fn) => {
       const el = root.querySelector(sel);
-      if (!el) return;
-      el.addEventListener(evt, fn);
-      this._disposers.push(() => el.removeEventListener(evt, fn));
+      if (el) { el.addEventListener(evt, fn); this._disposers.push(() => el.removeEventListener(evt, fn)); }
     };
 
     on('#run-tests-button', 'click', () => this.startRun());
@@ -147,24 +146,36 @@ export class RunnerSlice {
     }
   }
 
+  async checkFreezeStatus() {
+    try {
+      const res = await apiClient.get('/api/mp/freeze');
+      const banner = document.getElementById('runner-freeze-banner');
+      const reasonEl = document.getElementById('runner-freeze-banner-reason');
+      const runBtn = document.getElementById('run-button');
+      const uiBtn = document.getElementById('ui-button');
+      if (banner) banner.style.display = res.active ? 'flex' : 'none';
+      if (reasonEl) reasonEl.textContent = res.reason || '(Lỗi P0 đang kích hoạt Freeze)';
+      if (res.active) {
+        if (runBtn) { runBtn.disabled = true; runBtn.title = `[CIRCUIT BREAKER] Đã đóng băng: ${res.reason}`; }
+        if (uiBtn) { uiBtn.disabled = true; uiBtn.title = `[CIRCUIT BREAKER] Đã đóng băng: ${res.reason}`; }
+      }
+    } catch (_) {}
+  }
+
   renderLogs() {
-    const terminal = document.getElementById('live-log-output') || document.getElementById('runner-log-viewer');
-    if (!terminal) return;
-    terminal.innerHTML = this.logs.map((l) => `<div class="terminal-line">${escapeHtml(l)}</div>`).join('');
-    terminal.scrollTop = terminal.scrollHeight;
+    const t = document.getElementById('live-log-output') || document.getElementById('runner-log-viewer');
+    if (t) { t.innerHTML = this.logs.map((l) => `<div class="terminal-line">${escapeHtml(l)}</div>`).join(''); t.scrollTop = t.scrollHeight; }
   }
 
   clearLogs() {
     this.logs = [];
-    const terminal = document.getElementById('live-log-output') || document.getElementById('runner-log-viewer');
-    if (terminal) terminal.innerHTML = '';
+    const t = document.getElementById('live-log-output') || document.getElementById('runner-log-viewer');
+    if (t) t.innerHTML = '';
   }
 
   updateRunStatusBadge() {
     const badge = document.getElementById('runner-status-badge') || document.getElementById('stat-runner-status');
-    if (!badge) return;
-    badge.textContent = this.status.toUpperCase();
-    badge.className = `status-pill status-${this.status}`;
+    if (badge) { badge.textContent = this.status.toUpperCase(); badge.className = `status-pill status-${this.status}`; }
   }
 
   notify(msg) {
