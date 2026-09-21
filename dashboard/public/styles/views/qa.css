@@ -241,7 +241,6 @@
   font-size: var(--font-control);
   line-height: 1.55;
   color: var(--muted);
-  max-width: 78ch;
 }
 
 /* .panel lo phần chrome; chỉ cần khoảng cách với bảng ở trên. */
@@ -285,7 +284,6 @@
   font-size: var(--font-control);
   line-height: 1.6;
   color: var(--muted);
-  max-width: 88ch;
 }
 .qa-badge {
   padding: 1px 7px;
@@ -707,7 +705,13 @@
 }
 .qa-reader-form[hidden] { display: none; }
 .qa-form-title { margin: 0 0 4px; font-size: var(--font-body); font-weight: 700; }
-.qa-form-hint { margin: 0 0 12px; font-size: var(--font-caption); color: var(--muted); max-width: 88ch; line-height: 1.55; }
+.qa-form-hint {
+  margin: 0 0 12px;
+  font-size: var(--font-caption);
+  color: var(--muted);
+  max-width: none;
+  line-height: 1.55;
+}
 .qa-form-body {
   display: flex;
   flex-direction: column;

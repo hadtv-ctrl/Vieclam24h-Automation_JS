@@ -881,7 +881,11 @@ export class QaSlice {
     box.textContent = '';
     box.hidden = false;
     box.appendChild(this._el('p', title, 'qa-form-title'));
-    if (hint) box.appendChild(this._el('p', hint, 'qa-form-hint'));
+    if (hint) {
+      const hintEl = this._el('p', hint, 'qa-form-hint');
+      hintEl.style.maxWidth = 'none';
+      box.appendChild(hintEl);
+    }
 
     const body = this._el('div', null, 'qa-form-body');
     box.appendChild(body);
