@@ -37,10 +37,7 @@ export class MasterProcessHelper {
     bind('#mp-btn-sync-dryrun', () => this.runAction('/api/mp/sync', { dryRun: true, updateTemplates: false }, root, 'Xem trước Đồng bộ (--dry-run)'));
     bind('#mp-btn-sync', () => {
       const chk = root.querySelector('#mp-sync-confirm-checkbox');
-      if (!chk?.checked) {
-        this.slice.notify('Vui lòng tích chọn xác nhận ghi đè templates để chạy Đồng bộ');
-        return;
-      }
+      if (!chk?.checked) return this.slice.notify('Vui lòng tích chọn xác nhận ghi đè templates để chạy Đồng bộ');
       this.runAction('/api/mp/sync', { updateTemplates: true, dryRun: false }, root, 'Đồng bộ Hub & Ghi đè Templates');
     });
 
@@ -189,7 +186,17 @@ export class MasterProcessHelper {
     this.setTerminal(root, `Đang thực thi: ${actionName}... Vui lòng đợi.`);
 
     try {
-      const res = await apiClient.post(endpoint, payload);
+      let res;
+      try {
+        res = await apiClient.post(endpoint, payload);
+      } catch (postErr) {
+        if (postErr.payload && typeof postErr.payload === 'object' && postErr.payload.scanned !== undefined) {
+          res = postErr.payload;
+        } else {
+          throw postErr;
+        }
+      }
+
       const out = (res.stdout || '') + (res.stderr ? '\n[STDERR]\n' + res.stderr : '') || res.output || JSON.stringify(res, null, 2);
       this.setTerminal(root, out);
 
