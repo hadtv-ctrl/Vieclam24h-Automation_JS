@@ -1,0 +1,15 @@
+﻿{
+  "searchKeyword": "tìm việc nhân viên kinh doanh",
+  "city": "TP.HCM",
+  "salaryInitial": "Từ 1 triệu trở lên",
+  "industryOption": "Nhân viên kinh doanh xuất nhậ",
+  "locationFilter": {
+    "city": "TP.HCM",
+    "districts": ["Quận 1", "Quận 4", "Quận 3"]
+  },
+  "expectedLocationDisplay": "Quận 1, Quận 3, Quận",
+  "salaryHighOption": "Từ 15 triệu trở lên",
+  "experienceKeyword": "kinh nghiệm 3 năm",
+  "experienceFilterFrom": "3 năm",
+  "experienceFilterTo": "2 năm"
+}

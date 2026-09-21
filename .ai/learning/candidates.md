@@ -94,3 +94,22 @@
   1. Toàn bộ kịch bản test BDD bắt buộc sử dụng chữ ký fixture chuẩn: `{ page, authenticatedUser, pages }` đối với user đã đăng nhập, hoặc `{ page, pages }` đối với guest test.
   2. Các Page Object có đuôi `Page.js` được gọi qua `pages.<name>Page`, các popup tiện ích độc lập (`OnboardingPopup`, `LoginPopup`, `PopupConsent`) phải import trực tiếp `require(...)` và khởi tạo với `new <PopupClass>(page)`.
   3. Xử lý popup chặn màn hình bằng cơ chế nhiều tầng: thử đóng qua nút close icon, gửi phím Escape, và kiểm tra bọc trong khối `try/catch` an toàn để không làm gãy luồng kiểm thử chính.
+
+### [LEARN-006] Tương Tác Trực Tuyến Với AI Chatbot Popup, Phân Biệt Chat History Với Filter Modals & Tiêu Chuẩn Bằng Chứng Input/Output
+- **Nguồn trích xuất:** FEATURE-AI-CHATBOT-JOB-SEARCH-BDD
+- **Role quan sát:** Senior Automation QA Engineer (Gate 4)
+- **Quan sát (Observation):**
+  1. Trong giao diện AI Chatbot, các câu hỏi trắc nghiệm đã trả lời (tỉnh thành, mức lương, kinh nghiệm) vẫn lưu trong lịch sử chat nhưng ở trạng thái `<button disabled>`. Khi mở modal bộ lọc (ví dụ: Mức lương 15 triệu, Kinh nghiệm 2 năm), nếu dùng selector toàn trang (`getByRole('button', ...)` hoặc `getByText(...)`), Playwright sẽ match nhầm vào button disabled trong lịch sử chat và bị timeout click.
+  2. Nút cuộn thanh lọc (`getByLabel('Scroll right')`) khi đã cuộn tới cuối thanh filter bar sẽ chuyển sang trạng thái `disabled` (`cursor-not-allowed`) nhưng vẫn `isVisible() = true`. Nếu kiểm tra bằng `isVisible()` rồi click sẽ khiến kịch bản bị treo vô tận chờ `element to be enabled` đến khi chạm test timeout 240s.
+  3. Sử dụng `.or()` giữa trigger container (`div[data-test-id="...-trigger"]`) và thẻ text con (`span:has-text(...)`) gây vi phạm Playwright Strict Mode Violation vì cả hai phần tử cha và con đều match đồng thời.
+  4. Để đáp ứng yêu cầu QA kiểm tra đầy đủ tính đúng đắn của dữ liệu Input và Output mà không trùng hình, cần phân rã rõ ràng: chụp lúc nhập liệu vào textbox/tick chọn modal (Input), và chụp sau khi bot phản hồi/áp dụng chip/cập nhật danh sách việc làm (Output).
+- **Bằng chứng (Evidence):** `pages/desktop/ChopChatbotPage.js`, `tests/e2e/desktop/chop_chatbot_job_search-bdd.spec.js`, `evidence/26-09-18/desktop/chop_chatbot_job_search-bdd/`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Khi click các option mức lương, kinh nghiệm trong modal, luôn lọc phần tử khả dụng qua `button:not([disabled])` hoặc class màu active (`.text-secondary-100, span`) để không match nhầm vào pill disabled trong chat log.
+  2. Với các nút điều hướng cuộn (Scroll left/right), luôn kiểm tra `isEnabled()` thay vì `isVisible()` trước khi thực hiện click.
+  3. Tránh ghép `.or()` giữa container trigger và span con bên trong; chỉ cần định danh container trigger bằng `[data-test-id="..."]`.
+  4. Chuẩn hóa bộ ảnh chụp bằng chứng (Evidence) gồm 25 bước rõ ràng đánh số thứ tự tự động qua `ScreenshotHelper`, minh chứng trực quan cho từng hành vi người dùng và phản hồi của hệ thống.

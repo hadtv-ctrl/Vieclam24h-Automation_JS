@@ -29,8 +29,7 @@ class LoginPopup extends BasePage {
 
   async clickLoginHeader() {
     await this.actions.click(this.loginHeaderBtn, { force: true });
-    // Đợi một chút để animation/transition modal khởi động
-    await this.page.waitForTimeout(500);
+    await this.phoneInput.waitFor({ state: 'visible', timeout: 5000 }).catch(() => null);
   }
 
   async clickEmailLoginOption() {
