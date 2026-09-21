@@ -32,6 +32,10 @@
               <button id="mp-refresh-button" class="ghost" type="button"><i class="ph ph-arrow-clockwise"></i> Kiểm tra lại</button>
             </div>
           </div>
+          <div id="mp-spinner" style="display:none; align-items:center; gap:8px; padding:10px 16px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); border-radius:8px; margin: 12px 16px 0; color: var(--primary, #3b82f6); font-size:13px; font-weight:500;">
+            <i class="ph-bold ph-spinner ph-spin"></i>
+            <span id="mp-spinner-text">Đang thực thi tác vụ Master Process... Vui lòng đợi.</span>
+          </div>
           <div class="settings-body settings-grid">
             <!-- Thẻ 1: Anti-Drift & Process Lock -->
             <div class="settings-card settings-card-wide">
@@ -55,9 +59,16 @@
                     <div><span id="mp-drift-badge" class="settings-badge-status"><i class="ph-fill ph-circle"></i> Đang kiểm tra...</span></div>
                   </div>
                 </div>
-                <div class="mp-actions-bar">
+                <div style="margin: 12px 0 8px;">
+                  <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer; color:var(--text-muted);">
+                    <input type="checkbox" id="mp-sync-confirm-checkbox" style="cursor:pointer;">
+                    <span>Cho phép ghi đè templates có sao lưu (.bak) (<code>--update-templates</code>)</span>
+                  </label>
+                </div>
+                <div class="mp-actions-bar" style="display:flex; gap:8px; flex-wrap:wrap;">
                   <button type="button" id="mp-btn-init" class="primary"><i class="ph-bold ph-push-pin"></i> Ghim phiên bản (Init)</button>
-                  <button type="button" id="mp-btn-sync" class="ghost"><i class="ph-bold ph-arrows-clockwise"></i> Đồng bộ Hub (Sync)</button>
+                  <button type="button" id="mp-btn-sync-dryrun" class="ghost"><i class="ph-bold ph-magnifying-glass"></i> Xem trước Đồng bộ (--dry-run)</button>
+                  <button type="button" id="mp-btn-sync" class="ghost" disabled><i class="ph-bold ph-arrows-clockwise"></i> Đồng bộ Hub (Sync)</button>
                   <button type="button" id="mp-btn-drift" class="ghost"><i class="ph-bold ph-git-diff"></i> So khớp Drift</button>
                 </div>
               </div>

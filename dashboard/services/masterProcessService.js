@@ -6,72 +6,30 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
 const { getCircuitBreakerStatus } = require('../../core/utils/circuitBreaker');
+const { validateProjectPath, detectMasterRoot, runCommand } = require('./masterProcessUtils');
 
-function detectMasterRoot(projectRoot) {
-  if (process.env.MASTER_PROCESS_ROOT && fs.existsSync(path.join(process.env.MASTER_PROCESS_ROOT, 'master.py'))) {
-    return path.resolve(process.env.MASTER_PROCESS_ROOT);
-  }
-  const lockFile = path.join(projectRoot, '.ai', 'process-lock.json');
-  if (fs.existsSync(lockFile)) {
-    try {
-      const lock = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
-      if (lock.hub_path && fs.existsSync(path.join(lock.hub_path, 'master.py'))) {
-        return path.resolve(lock.hub_path);
-      }
-    } catch (_) {}
-  }
-  const candidates = [
-    'D:/_Master_Process',
-    'D:\\_Master_Process',
-    path.resolve(projectRoot, '../_Master_Process'),
-  ];
-  for (const cand of candidates) {
-    if (fs.existsSync(path.join(cand, 'master.py'))) {
-      return path.resolve(cand);
-    }
-  }
-  return null;
-}
-
-function runCommand(cmd, args, cwd) {
-  return new Promise((resolve) => {
-    const proc = spawn(cmd, args, { cwd, shell: false });
-    let stdout = '';
-    let stderr = '';
-    proc.stdout.on('data', (d) => { stdout += d.toString(); });
-    proc.stderr.on('data', (d) => { stderr += d.toString(); });
-    proc.on('close', (code) => {
-      resolve({ code: code || 0, stdout: stdout.trim(), stderr: stderr.trim(), ok: code === 0 });
-    });
-    proc.on('error', (err) => {
-      resolve({ code: 1, stdout: '', stderr: err.message, ok: false });
-    });
-  });
-}
+let currentRunningAction = null;
 
 function runMaster(masterRoot, args, projectRoot) {
   const pyBin = process.platform === 'win32' ? 'python' : 'python3';
-  const masterPy = path.join(masterRoot, 'master.py');
-  return runCommand(pyBin, [masterPy, ...args], projectRoot);
+  return runCommand(pyBin, [path.join(masterRoot, 'master.py'), ...args], projectRoot);
 }
 
 async function getProjectStatus(projectRoot) {
-  const masterRoot = detectMasterRoot(projectRoot);
+  const validRoot = validateProjectPath(projectRoot);
+  const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) {
     return { available: false, error: 'Không tìm thấy thư mục Master Process Hub (D:/_Master_Process).' };
   }
 
-  const lockFile = path.join(projectRoot, '.ai', 'process-lock.json');
+  const lockFile = path.join(validRoot, '.ai', 'process-lock.json');
   let lockInfo = null;
   if (fs.existsSync(lockFile)) {
-    try {
-      lockInfo = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
-    } catch (_) {}
+    try { lockInfo = JSON.parse(fs.readFileSync(lockFile, 'utf8')); } catch (_) {}
   }
 
-  const hookFile = path.join(projectRoot, '.git', 'hooks', 'pre-commit');
+  const hookFile = path.join(validRoot, '.git', 'hooks', 'pre-commit');
   let hookStatus = { installed: false, managedV2: false, pointsToHub: false };
   if (fs.existsSync(hookFile)) {
     try {
@@ -82,13 +40,12 @@ async function getProjectStatus(projectRoot) {
     } catch (_) {}
   }
 
-  const driftResult = await runMaster(masterRoot, ['check-drift', projectRoot], projectRoot);
+  const driftResult = await runMaster(masterRoot, ['check-drift', validRoot], validRoot);
   let driftStatus = 'UNPINNED';
   if (driftResult.stdout.includes('IN_SYNC')) driftStatus = 'IN_SYNC';
   else if (driftResult.stdout.includes('DRIFT_DETECTED')) driftStatus = 'DRIFT_DETECTED';
 
-  // Quality metrics (Policy, Candidates, Freeze)
-  const policyFile = path.join(projectRoot, '.quality-policy.json');
+  const policyFile = path.join(validRoot, '.quality-policy.json');
   let policyLabel = 'DEFAULT (Code 250 lines / Knowledge 50 lines)';
   if (fs.existsSync(policyFile)) {
     try {
@@ -98,14 +55,13 @@ async function getProjectStatus(projectRoot) {
     } catch (_) {}
   }
 
-  const candFile = path.join(projectRoot, '.ai', 'learning', 'candidates.md');
+  const candFile = path.join(validRoot, '.ai', 'learning', 'candidates.md');
   let candCount = 0;
   if (fs.existsSync(candFile)) {
     try { candCount = fs.readFileSync(candFile, 'utf8').split('\n').filter(Boolean).length; } catch (_) {}
   }
 
-  const freeze = getCircuitBreakerStatus(projectRoot);
-
+  const freeze = getCircuitBreakerStatus(validRoot);
   return {
     available: true,
     hub_path: masterRoot,
@@ -125,32 +81,36 @@ async function getProjectStatus(projectRoot) {
 }
 
 async function initProject(projectRoot) {
-  const masterRoot = detectMasterRoot(projectRoot);
+  const validRoot = validateProjectPath(projectRoot);
+  const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  return runMaster(masterRoot, ['init', projectRoot], projectRoot);
+  return runMaster(masterRoot, ['init', validRoot], validRoot);
 }
 
 async function syncProject(projectRoot, { updateTemplates = false, dryRun = false } = {}) {
-  const masterRoot = detectMasterRoot(projectRoot);
+  const validRoot = validateProjectPath(projectRoot);
+  const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  const args = ['sync', projectRoot];
+  const args = ['sync', validRoot];
   if (dryRun) args.push('--dry-run');
   if (updateTemplates) args.push('--update-templates');
-  return runMaster(masterRoot, args, projectRoot);
+  return runMaster(masterRoot, args, validRoot);
 }
 
 async function installHooks(projectRoot) {
-  const masterRoot = detectMasterRoot(projectRoot);
+  const validRoot = validateProjectPath(projectRoot);
+  const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  return runMaster(masterRoot, ['install-hooks', projectRoot], projectRoot);
+  return runMaster(masterRoot, ['install-hooks', validRoot], validRoot);
 }
 
 async function runAudit(projectRoot, { staged = false } = {}) {
-  const masterRoot = detectMasterRoot(projectRoot);
+  const validRoot = validateProjectPath(projectRoot);
+  const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  const args = ['audit', projectRoot];
+  const args = ['audit', validRoot];
   if (staged) args.push('--staged');
-  const res = await runMaster(masterRoot, args, projectRoot);
+  const res = await runMaster(masterRoot, args, validRoot);
   const matchMod = (res.stdout + '\n' + res.stderr).match(/MODULARITY:\s*scanned=(\d+)\s*violations=(\d+)\s*exempted=(\d+)/i);
   return {
     ...res,
@@ -161,31 +121,51 @@ async function runAudit(projectRoot, { staged = false } = {}) {
 }
 
 async function runDoctor(projectRoot) {
-  const masterRoot = detectMasterRoot(projectRoot);
+  const validRoot = validateProjectPath(projectRoot);
+  const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  return runMaster(masterRoot, ['doctor', projectRoot], projectRoot);
+  return runMaster(masterRoot, ['doctor', validRoot], validRoot);
 }
 
 async function runProbes(projectRoot, { probeId = 'ALL' } = {}) {
-  const masterRoot = detectMasterRoot(projectRoot);
+  const validRoot = validateProjectPath(projectRoot);
+  const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
   const script = path.join(masterRoot, 'scripts', 'audit-probes.ps1');
   if (!fs.existsSync(script)) throw new Error('Không tìm thấy script audit-probes.ps1');
-  return runCommand('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-ProbeId', probeId, projectRoot], projectRoot);
+  return runCommand('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-ProbeId', probeId, validRoot], validRoot);
 }
 
 async function runMasterAction(projectRoot, action, payload = {}) {
-  const masterRoot = detectMasterRoot(projectRoot);
+  const validRoot = validateProjectPath(projectRoot);
+  const masterRoot = detectMasterRoot(validRoot);
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
-  if (action === 'doctor') return runDoctor(projectRoot);
-  if (action === 'audit') return runAudit(projectRoot, payload);
-  if (action === 'optimize') return runMaster(masterRoot, ['optimize', projectRoot], projectRoot);
-  if (action === 'probes') return runProbes(projectRoot, payload);
-  throw new Error(`Action không hợp lệ: ${action}. Chỉ chấp nhận: doctor, audit, optimize, probes.`);
+
+  if (currentRunningAction) {
+    return {
+      code: 409,
+      ok: false,
+      error: `Tiến trình '${currentRunningAction}' đang chạy. Vui lòng chờ hoàn tất.`,
+      stdout: '',
+      stderr: `[CONFLICT 409] Tiến trình '${currentRunningAction}' đang thực thi.`,
+    };
+  }
+
+  currentRunningAction = action;
+  try {
+    if (action === 'doctor') return await runDoctor(validRoot);
+    if (action === 'audit') return await runAudit(validRoot, payload);
+    if (action === 'optimize') return await runMaster(masterRoot, ['optimize', validRoot], validRoot);
+    if (action === 'probes') return await runProbes(validRoot, payload);
+    throw new Error(`Action không hợp lệ: ${action}. Chỉ chấp nhận: doctor, audit, optimize, probes.`);
+  } finally {
+    currentRunningAction = null;
+  }
 }
 
 module.exports = {
   detectMasterRoot,
+  validateProjectPath,
   getProjectStatus,
   initProject,
   syncProject,
