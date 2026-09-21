@@ -869,18 +869,49 @@ export class QaSlice {
   }
 
   _closeReaderForm() {
-    const box = this._root() && this._root().querySelector('#qa-reader-form');
-    if (!box) return;
-    box.textContent = '';
-    box.hidden = true;
+    const root = this._root();
+    if (!root) return;
+    const box = root.querySelector('#qa-reader-form');
+    if (box) {
+      box.textContent = '';
+      box.hidden = true;
+    }
+    const readerMain = root.querySelector('#qa-reader-main');
+    if (readerMain) {
+      readerMain.classList.remove('has-open-form');
+    }
+    const outline = root.querySelector('#qa-reader-outline');
+    if (outline) {
+      outline.hidden = false;
+    }
   }
 
   /** Khung chung cho hai biểu mẫu: tiêu đề, vùng thân, ô người chốt, nút lưu/huỷ. */
   _formShell(title, hint) {
-    const box = this._root().querySelector('#qa-reader-form');
+    const root = this._root();
+    const box = root.querySelector('#qa-reader-form');
     box.textContent = '';
     box.hidden = false;
-    box.appendChild(this._el('p', title, 'qa-form-title'));
+
+    const readerMain = root.querySelector('#qa-reader-main');
+    if (readerMain) {
+      readerMain.classList.add('has-open-form');
+    }
+    const outline = root.querySelector('#qa-reader-outline');
+    if (outline) {
+      outline.hidden = true;
+    }
+
+    const head = this._el('div', null, 'qa-form-head');
+    head.appendChild(this._el('p', title, 'qa-form-title'));
+
+    const closeBtn = this._el('button', null, 'qa-form-close-btn');
+    closeBtn.type = 'button';
+    closeBtn.title = 'Đóng';
+    closeBtn.innerHTML = '<i class="ph-bold ph-x"></i>';
+    head.appendChild(closeBtn);
+    box.appendChild(head);
+
     if (hint) {
       const hintEl = this._el('p', hint, 'qa-form-hint');
       hintEl.style.maxWidth = 'none';
@@ -912,7 +943,11 @@ export class QaSlice {
 
     const onCancel = () => this._closeReaderForm();
     cancel.addEventListener('click', onCancel);
-    this._renderDisposers.push(() => cancel.removeEventListener('click', onCancel));
+    closeBtn.addEventListener('click', onCancel);
+    this._renderDisposers.push(() => {
+      cancel.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+    });
 
     return { box, body, by, save, status };
   }

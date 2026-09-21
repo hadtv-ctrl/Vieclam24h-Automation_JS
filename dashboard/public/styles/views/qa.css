@@ -692,35 +692,76 @@
 
 .qa-reader-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
-/* Biểu mẫu sửa / trả lời — nằm giữa đầu trang và thân bài để không che mất nội dung
-   người dùng đang đọc khi họ viết câu trả lời. */
+/* Biểu mẫu sửa / trả lời — hiển thị ở cột bên phải dạng Split-View song song với thân bài */
 .qa-reader-form {
-  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
   padding: 16px 18px;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
   border-radius: 10px;
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface-2));
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
-  width: 100%;
 }
-.qa-reader-form[hidden] { display: none; }
-.qa-form-title { margin: 0 0 4px; font-size: var(--font-body); font-weight: 700; }
+.qa-reader-form[hidden] { display: none !important; }
+
+.qa-form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.qa-form-title {
+  margin: 0;
+  font-size: var(--font-body);
+  font-weight: 700;
+  color: var(--text);
+}
+.qa-form-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.qa-form-close-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--line);
+}
+
 .qa-form-hint {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   font-size: var(--font-caption);
   color: var(--muted);
   max-width: none;
   line-height: 1.55;
+  flex-shrink: 0;
 }
+
 .qa-form-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 48vh;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   box-sizing: border-box;
   width: 100%;
-  padding-right: 4px;
+  padding-right: 6px;
 }
 
 .qa-question {
@@ -752,14 +793,26 @@
 .qa-edit-area {
   display: block;
   width: 100%;
+  flex: 1;
+  min-height: 380px;
+  height: 100%;
   box-sizing: border-box;
   font-family: var(--font-mono);
   font-size: var(--font-caption);
   line-height: 1.6;
-  min-height: 380px;
+  resize: vertical;
 }
 
-.qa-form-footer { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 14px; }
+.qa-form-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
+}
 .qa-form-by { display: flex; flex-direction: column; gap: 4px; }
 .qa-form-by input {
   padding: 7px 12px;
@@ -770,7 +823,7 @@
   font-size: var(--font-control);
   font-family: inherit;
   outline: none;
-  min-width: 180px;
+  min-width: 160px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .qa-form-by input:focus {
@@ -780,23 +833,37 @@
 .qa-form-status { font-size: var(--font-caption); color: var(--muted); }
 .qa-form-status.is-error { color: var(--danger); }
 
-/* Hai cột: thân tài liệu giữ bề ngang dễ đọc, phần còn lại dành cho mục lục — giống
-   cách mục Hướng dẫn đang làm. Trước đó phần thừa bên phải bỏ trống gần 400px. */
+/* Hai cột: thân tài liệu giữ bề ngang dễ đọc, phần còn lại dành cho mục lục hoặc form */
 .qa-reader-main {
   display: grid;
-  /* CỘT phải bằng đúng bề ngang đọc được, KHÔNG phải 1fr rồi chặn chữ bằng max-width
-     bên trong. Cách cũ để lại ~380px trống ngay GIỮA thân bài và mục lục, kèm thanh cuộn
-     trôi lơ lửng giữa khoảng trống đó. */
-  /* Thân bài ưu tiên bề ngang đọc được; mục lục co giãn để hút nốt phần thừa, nên panel
-     không còn viền trống lớn ở bất kỳ bề rộng nào. */
   grid-template-columns: minmax(0, 110ch) minmax(240px, 340px);
   justify-content: start;
   gap: 24px;
   flex: 1;
   min-width: 0;
   min-height: 0;
+  height: 100%;
 }
-.qa-reader-body { min-width: 0; min-height: 0; overflow-y: auto; padding-right: 12px; }
+
+/* Split-View khi form trả lời / sửa tài liệu mở */
+.qa-reader-main.has-open-form,
+.qa-reader-main:has(.qa-reader-form:not([hidden])) {
+  grid-template-columns: minmax(0, 1.25fr) minmax(420px, 1fr);
+  gap: 20px;
+}
+
+/* Ẩn mục lục khi đang mở form split-view */
+.qa-reader-main.has-open-form .qa-reader-outline,
+.qa-reader-main:has(.qa-reader-form:not([hidden])) .qa-reader-outline {
+  display: none !important;
+}
+
+.qa-reader-body {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 12px;
+}
 
 .qa-reader-outline {
   min-width: 0;
@@ -939,8 +1006,9 @@
 
 @media (max-width: 1400px) {
   /* Hẹp hơn thì mục lục không còn đáng giá bằng bề ngang cho thân bài. */
-  .qa-reader-main { grid-template-columns: minmax(0, 1fr); }
-  .qa-reader-outline { display: none; }
+  .qa-reader-main:not(.has-open-form) { grid-template-columns: minmax(0, 1fr); }
+  .qa-reader-main:not(.has-open-form) .qa-reader-outline { display: none; }
+  .qa-reader-main.has-open-form { grid-template-columns: minmax(0, 1.1fr) minmax(360px, 1fr); }
 }
 
 @media (max-width: 1050px) {
@@ -950,6 +1018,7 @@
   }
   .qa-docs-list { max-height: 260px; }
   .qa-reader-body { max-height: 60vh; }
+  .qa-reader-main.has-open-form { grid-template-columns: 1fr; height: auto; }
 }
 
 @media (max-width: 1050px) {
