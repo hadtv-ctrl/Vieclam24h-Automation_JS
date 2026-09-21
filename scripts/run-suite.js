@@ -1,9 +1,18 @@
 const { spawn } = require('child_process');
+const path = require('path');
 const { getDashboardConfig } = require('../core/config/dashboardConfig');
+const { assertNotFrozen } = require('../core/utils/circuitBreaker');
 
 const suiteName = process.argv[2] ? process.argv[2].trim() : '';
 const env = process.argv[3] ? process.argv[3].trim() : 'dev';
 const explicitSpec = process.argv[4] ? process.argv[4].trim() : '';
+
+// 1. Kiểm tra Circuit Breaker theo Tiêu Chuẩn Thẩm Định 04 (§10.3)
+assertNotFrozen({
+  suiteName,
+  projectRoot: path.resolve(__dirname, '..'),
+  exitOnError: true
+});
 
 if (!suiteName) {
   console.error('Vui lòng cung cấp tên suite. Ví dụ: node scripts/run-suite.js admin-flows dev');

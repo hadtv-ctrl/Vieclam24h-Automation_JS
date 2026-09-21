@@ -29,6 +29,40 @@ export class MasterProcessHelper {
     bind('#mp-btn-audit-staged', () => this.runAction('/api/mp/audit', { staged: true }, root, 'Quét Staged Files'));
     bind('#mp-btn-doctor', () => this.runAction('/api/mp/doctor', {}, root, 'Chẩn đoán Doctor'));
     bind('#mp-btn-probes', () => this.runAction('/api/mp/probes', { probeId: 'ALL' }, root, 'Chạy Probes P1-P6'));
+    bind('#mp-btn-freeze-toggle', async () => {
+      const reason = window.prompt('Nhập lý do kích hoạt Feature Freeze (P0 Finding):', 'Phát hiện lỗi P0 nghiêm trọng.');
+      if (reason) {
+        await apiClient.post('/api/mp/freeze', {
+          active: true,
+          scope: 'ALL',
+          reason,
+          blocking_findings: ['AUTO-01'],
+          activated_at: new Date().toISOString(),
+          activated_by: 'QA-Dashboard'
+        });
+        this.slice.notify('Đã kích hoạt Feature Freeze Circuit Breaker');
+        await this.loadFreezeStatus(root);
+      }
+    });
+    bind('#mp-btn-freeze-lift', async () => {
+      if (window.confirm('Xác nhận gỡ bỏ trạng thái Feature Freeze?')) {
+        await apiClient.post('/api/mp/freeze', {
+          active: false,
+          reason: '',
+          blocking_findings: []
+        });
+        this.slice.notify('Đã gỡ bỏ Feature Freeze Circuit Breaker');
+        await this.loadFreezeStatus(root);
+      }
+    });
+    bind('#mp-btn-export-evidence', () => {
+      this.slice.notify('Chạy lệnh: npm run test:gate4 để xuất bằng chứng mới');
+      this.loadEvidenceStatus(root);
+    });
+    bind('#mp-btn-review-gate4', () => {
+      this.slice.notify('Chạy lệnh: npm run review:gate4 để ký duyệt bằng chứng');
+      this.loadEvidenceStatus(root);
+    });
     bind('#mp-btn-clear-log', () => {
       const term = root.querySelector('#mp-terminal-output');
       if (term) term.textContent = 'Đã xoá nhật ký thực thi.';
@@ -44,10 +78,54 @@ export class MasterProcessHelper {
       if (res.raw_drift_output) {
         this.setTerminal(root, res.raw_drift_output);
       }
+      await this.loadFreezeStatus(root);
+      await this.loadEvidenceStatus(root);
     } catch (err) {
       this.setTerminal(root, `Lỗi nạp trạng thái: ${err.message}`);
       this.slice.notify('Lỗi nạp Master Process: ' + err.message);
     }
+  }
+
+  async loadFreezeStatus(root) {
+    try {
+      const freeze = await apiClient.get('/api/mp/freeze');
+      const badge = root.querySelector('#mp-freeze-badge');
+      const reasonEl = root.querySelector('#mp-freeze-reason');
+      if (badge) {
+        badge.textContent = '';
+        const dot = document.createElement('i');
+        dot.className = 'ph-fill ph-circle';
+        badge.appendChild(dot);
+        const label = freeze.active ? 'FROZEN (Đang ngắt mạch)' : 'Bình thường (Inactive)';
+        badge.appendChild(document.createTextNode(' ' + label));
+        badge.className = 'settings-badge-status ' + (freeze.active ? 'is-error' : 'is-active');
+      }
+      if (reasonEl) {
+        reasonEl.textContent = freeze.reason || (freeze.active ? 'P0 finding đang chặn' : 'Không có');
+      }
+    } catch (_) {}
+  }
+
+  async loadEvidenceStatus(root) {
+    try {
+      const res = await apiClient.get('/api/mp/evidence');
+      const badge = root.querySelector('#mp-evidence-badge');
+      const hashEl = root.querySelector('#mp-evidence-hash');
+      if (badge) {
+        badge.textContent = '';
+        const dot = document.createElement('i');
+        dot.className = 'ph-fill ph-circle';
+        badge.appendChild(dot);
+        const hasEvidence = res.exists && res.evidence;
+        const review = res.evidence?.reviews?.gate4;
+        const label = review ? `Đã ký (${review.decision || 'PASS'})` : (hasEvidence ? 'Chờ ký duyệt' : 'Chưa tạo');
+        badge.appendChild(document.createTextNode(' ' + label));
+        badge.className = 'settings-badge-status ' + (review ? 'is-active' : (hasEvidence ? 'is-warning' : ''));
+      }
+      if (hashEl) {
+        hashEl.textContent = res.evidence?.receipt?.sha256 || res.evidence?.revision || '—';
+      }
+    } catch (_) {}
   }
 
   renderStatus(root, data) {

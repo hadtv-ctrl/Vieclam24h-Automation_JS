@@ -1,9 +1,13 @@
 /**
  * dashboard/routes/masterProcessRoutes.js
- * Handles all /api/mp/* endpoints for Master Process integration.
+ * Handles all /api/mp/* endpoints for Master Process integration,
+ * Feature Freeze Circuit Breaker, and Acceptance Gate Evidence.
  */
 
+const fs = require('fs');
+const path = require('path');
 const { sendJson, parseBody } = require('./routeUtils');
+const { getCircuitBreakerStatus, updateFreezeState } = require('../../core/utils/circuitBreaker');
 const {
   getProjectStatus,
   initProject,
@@ -16,73 +20,42 @@ const {
 
 async function handleMasterProcessRoutes(request, response, url, context = {}) {
   if (!url.pathname.startsWith('/api/mp/')) return false;
-
   const projectRoot = typeof context === 'string' ? context : (context.root || process.cwd());
 
-  if (request.method === 'GET' && url.pathname === '/api/mp/status') {
-    try {
-      const status = await getProjectStatus(projectRoot);
-      return sendJson(response, 200, status);
-    } catch (error) {
-      return sendJson(response, 500, { ok: false, error: error.message });
+  try {
+    if (url.pathname === '/api/mp/freeze') {
+      if (request.method === 'GET') {
+        return sendJson(response, 200, getCircuitBreakerStatus(projectRoot));
+      }
+      if (request.method === 'POST') {
+        const body = await parseBody(request).catch(() => ({}));
+        return sendJson(response, 200, updateFreezeState(projectRoot, body));
+      }
     }
-  }
 
-  if (request.method === 'POST' && url.pathname === '/api/mp/init') {
-    try {
-      const result = await initProject(projectRoot);
-      return sendJson(response, result.ok ? 200 : 400, result);
-    } catch (error) {
-      return sendJson(response, 500, { ok: false, error: error.message });
+    if (request.method === 'GET' && url.pathname === '/api/mp/evidence') {
+      const evPath = path.join(projectRoot, '.gate-artifacts', 'evidence-gate4.json');
+      if (!fs.existsSync(evPath)) return sendJson(response, 200, { exists: false });
+      return sendJson(response, 200, { exists: true, evidence: JSON.parse(fs.readFileSync(evPath, 'utf8')) });
     }
-  }
 
-  if (request.method === 'POST' && url.pathname === '/api/mp/sync') {
-    try {
+    if (request.method === 'GET' && url.pathname === '/api/mp/status') {
+      return sendJson(response, 200, await getProjectStatus(projectRoot));
+    }
+
+    if (request.method === 'POST') {
       const body = await parseBody(request).catch(() => ({}));
-      const result = await syncProject(projectRoot, body);
-      return sendJson(response, result.ok ? 200 : 400, result);
-    } catch (error) {
-      return sendJson(response, 500, { ok: false, error: error.message });
+      let res;
+      if (url.pathname === '/api/mp/init') res = await initProject(projectRoot);
+      else if (url.pathname === '/api/mp/sync') res = await syncProject(projectRoot, body);
+      else if (url.pathname === '/api/mp/install-hooks') res = await installHooks(projectRoot);
+      else if (url.pathname === '/api/mp/audit') return sendJson(response, 200, await runAudit(projectRoot, body));
+      else if (url.pathname === '/api/mp/doctor') res = await runDoctor(projectRoot);
+      else if (url.pathname === '/api/mp/probes') res = await runProbes(projectRoot, body);
+      if (res) return sendJson(response, res.ok ? 200 : 400, res);
     }
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/mp/install-hooks') {
-    try {
-      const result = await installHooks(projectRoot);
-      return sendJson(response, result.ok ? 200 : 400, result);
-    } catch (error) {
-      return sendJson(response, 500, { ok: false, error: error.message });
-    }
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/mp/audit') {
-    try {
-      const body = await parseBody(request).catch(() => ({}));
-      const result = await runAudit(projectRoot, body);
-      return sendJson(response, 200, result);
-    } catch (error) {
-      return sendJson(response, 500, { ok: false, error: error.message });
-    }
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/mp/doctor') {
-    try {
-      const result = await runDoctor(projectRoot);
-      return sendJson(response, result.ok ? 200 : 400, result);
-    } catch (error) {
-      return sendJson(response, 500, { ok: false, error: error.message });
-    }
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/mp/probes') {
-    try {
-      const body = await parseBody(request).catch(() => ({}));
-      const result = await runProbes(projectRoot, body);
-      return sendJson(response, result.ok ? 200 : 400, result);
-    } catch (error) {
-      return sendJson(response, 500, { ok: false, error: error.message });
-    }
+  } catch (error) {
+    return sendJson(response, 500, { ok: false, error: error.message });
   }
 
   return false;

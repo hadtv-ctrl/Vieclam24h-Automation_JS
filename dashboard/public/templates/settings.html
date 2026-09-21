@@ -93,6 +93,46 @@
               </div>
             </div>
 
+            <!-- Thẻ 4: Feature Freeze Circuit Breaker -->
+            <div class="settings-card">
+              <div class="settings-card-title"><i class="ph ph-hand-palm"></i><span>Circuit Breaker (Feature Freeze)</span></div>
+              <div class="mp-card-content">
+                <p class="mp-desc">Cơ chế ngắt mạch cứng (Standard 04 §10.3) tự động dừng kiểm thử và release khi có finding P0.</p>
+                <div class="mp-meta-item" style="margin-bottom: 12px;">
+                  <span class="mp-meta-label">Trạng thái Circuit Breaker</span>
+                  <div><span id="mp-freeze-badge" class="settings-badge-status"><i class="ph-fill ph-circle"></i> Đang tải...</span></div>
+                </div>
+                <div class="mp-meta-item" style="margin-bottom: 12px;">
+                  <span class="mp-meta-label">Lý do đóng băng</span>
+                  <div id="mp-freeze-reason" style="font-size: 12px; color: var(--text-muted); font-style: italic;">Không có</div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" id="mp-btn-freeze-toggle" class="danger" style="flex: 1;"><i class="ph-bold ph-power"></i> Kích hoạt Freeze</button>
+                  <button type="button" id="mp-btn-freeze-lift" class="ghost" style="flex: 1;"><i class="ph-bold ph-lock-key-open"></i> Gỡ bỏ Freeze</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thẻ 5: Bằng Chứng Nghiệm Thu Gate 4 -->
+            <div class="settings-card">
+              <div class="settings-card-title"><i class="ph ph-certificate"></i><span>Acceptance Gate 4 Evidence</span></div>
+              <div class="mp-card-content">
+                <p class="mp-desc">Bằng chứng nghiệm thu bất biến (SHA256 receipt, assertions thật từ JUnit) theo chuẩn Gate 4.</p>
+                <div class="mp-meta-item" style="margin-bottom: 8px;">
+                  <span class="mp-meta-label">Trạng thái Bằng chứng</span>
+                  <div><span id="mp-evidence-badge" class="settings-badge-status"><i class="ph-fill ph-circle"></i> Chưa tạo</span></div>
+                </div>
+                <div class="mp-meta-item" style="margin-bottom: 12px;">
+                  <span class="mp-meta-label">Mã băm SHA256</span>
+                  <div id="mp-evidence-hash" style="font-family: monospace; font-size: 11px; word-break: break-all; color: var(--text-muted);">—</div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" id="mp-btn-export-evidence" class="primary" style="flex: 1;"><i class="ph-bold ph-export"></i> Xuất Bằng Chứng</button>
+                  <button type="button" id="mp-btn-review-gate4" class="ghost" style="flex: 1;"><i class="ph-bold ph-check-fat"></i> Ký Duyệt Gate 4</button>
+                </div>
+              </div>
+            </div>
+
             <!-- Thẻ 4: Console Log Output Terminal -->
             <div class="settings-card settings-card-wide">
               <div class="settings-card-title" style="display: flex; justify-content: space-between; align-items: center;">
