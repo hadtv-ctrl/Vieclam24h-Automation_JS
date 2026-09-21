@@ -935,14 +935,18 @@ export class QaSlice {
       });
 
       if (modal) modal.close();
-      this.notify(res.message || `Đã thêm thành công ${toSubmit.length} test case.`);
 
-      // Reload ma trận QA để cập nhật ứng viên automation
-      await this.reload(true);
-      // Reload tài liệu hiện tại
-      if (this.activeDocPath) {
-        await this.readDoc(this.activeDocPath);
+      // Làm mới dữ liệu QA và tài liệu đang mở
+      try {
+        await this.reload(false);
+        if (this.activeDocPath) {
+          await this.openDocument(this.activeDocPath);
+        }
+      } catch (refreshErr) {
+        console.warn('Lỗi làm mới sau khi thêm test case:', refreshErr);
       }
+
+      this.notify(res.message || `Đã thêm thành công ${toSubmit.length} test case.`);
     } catch (err) {
       this.notify(`Lỗi thêm test case: ${err.message}`);
     } finally {
