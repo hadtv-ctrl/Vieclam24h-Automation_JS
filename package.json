@@ -47,7 +47,17 @@
     "git:pull": "node scripts/git-sync.js pull",
     "git:push": "node scripts/git-sync.js push",
     "git:check": "node scripts/git-sync.js check",
-    "update:framework": "node scripts/update-framework.js"
+    "update:framework": "node scripts/update-framework.js",
+    "mp:doctor": "python D:/_Master_Process/master.py doctor .",
+    "mp:audit": "python D:/_Master_Process/master.py audit .",
+    "mp:optimize": "python D:/_Master_Process/master.py optimize .",
+    "mp:candidates": "python D:/_Master_Process/master.py candidates .",
+    "mp:audit-deps": "python D:/_Master_Process/master.py audit-deps .",
+    "mp:probes": "powershell -NoProfile -ExecutionPolicy Bypass -File D:/_Master_Process/scripts/audit-probes.ps1 -ProbeId ALL .",
+    "mp:drift": "python D:/_Master_Process/master.py check-drift .",
+    "mp:sync": "python D:/_Master_Process/master.py sync .",
+    "mp:gate": "python D:/_Master_Process/master.py gate .",
+    "mp:evidence": "python D:/_Master_Process/master.py generate-evidence"
   },
   "dependencies": {
     "dotenv": "^16.3.1"

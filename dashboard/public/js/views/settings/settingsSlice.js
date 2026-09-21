@@ -5,10 +5,12 @@
 import { apiClient } from '../../core/apiClient.js';
 import { eventBus } from '../../core/eventBus.js';
 import { stateStore } from '../../core/stateStore.js';
+import { MasterProcessHelper } from './masterProcessHelper.js';
 
 export class SettingsSlice {
   constructor() {
     this.config = {};
+    this.mpHelper = new MasterProcessHelper(this);
     this._disposers = [];
     this._mounted = false;
   }
@@ -39,6 +41,8 @@ export class SettingsSlice {
       this._disposers.push(() => tab.removeEventListener('click', h));
     });
 
+    this.mpHelper.bindEvents(root, this._disposers);
+
     const saveBtn = root.querySelector('#save-settings-button') || root.querySelector('#btn-save-settings');
     if (saveBtn) {
       const h = () => (typeof window.saveSettings === 'function' ? window.saveSettings() : this.saveSettings());
@@ -65,6 +69,14 @@ export class SettingsSlice {
       const el = root.querySelector(sel);
       if (el) el.hidden = !isGeneral;
     });
+
+    const mpPanel = root.querySelector('.settings-master-process');
+    if (mpPanel) {
+      mpPanel.hidden = target !== 'master-process';
+      if (target === 'master-process') {
+        this.mpHelper.loadStatus(root);
+      }
+    }
 
     const aiPanel = root.querySelector('.settings-ai');
     if (aiPanel) {

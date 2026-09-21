@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "code": {
+    "excludedFolders": [
+      "_backup_vieclam24h",
+      ".dashboard-backups",
+      ".dashboard-drafts",
+      "test-results",
+      "playwright-report"
+    ],
+    "limits": {
+      "module": 100000,
+      "service": 100000,
+      "utils": 100000,
+      "component": 100000,
+      "hook": 100000
+    }
+  },
+  "knowledge": {
+    "maxLines": 150,
+    "candidateLines": 50,
+    "maxEstimatedTokens": 1200,
+    "manifestEstimatedTokens": 1500,
+    "charactersPerToken": 3.8
+  }
+}

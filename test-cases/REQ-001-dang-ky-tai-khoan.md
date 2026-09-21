@@ -17,6 +17,7 @@
 | TC-011 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | candidate | - |
 | TC-012 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | candidate | - |
 | TC-013 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | candidate | - |
+| TC-014 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -162,6 +163,19 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 
 
 ### TC-013 — Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec
+
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Candidate
+- **Tiền điều kiện:** Môi trường sẵn sàng cho kịch bản
+- **Dữ liệu kiểm thử:** Dữ liệu theo nghiệp vụ đã chốt
+> *Ghi chú nghiệp vụ:* Quyết định chốt từ Q-1: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắt buộc
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Thực hiện thao tác với điều kiện: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắ | Hệ thống phản hồi đúng theo quyết định đã chốt |
+
+
+### TC-014 — Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
