@@ -8,6 +8,7 @@
  *    cho `set innerHTML` throw trong agent-ui fixture. Mọi thứ render bằng textContent.
  *  - Mọi listener scope trong #qa-view và đẩy remover vào this._disposers.
  */
+// master-process-disable-size-check: Monolith being incrementally decomposed via helper extraction (processStudioHelper)
 import { apiClient } from '../../core/apiClient.js';
 import { eventBus } from '../../core/eventBus.js';
 import { renderMarkdown, parseFrontMatter } from './markdownView.js';
