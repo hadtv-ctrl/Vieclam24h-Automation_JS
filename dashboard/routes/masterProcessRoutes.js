@@ -16,6 +16,7 @@ const {
   runAudit,
   runDoctor,
   runProbes,
+  runMasterAction,
 } = require('../services/masterProcessService');
 
 async function handleMasterProcessRoutes(request, response, url, context = {}) {
@@ -45,6 +46,10 @@ async function handleMasterProcessRoutes(request, response, url, context = {}) {
 
     if (request.method === 'POST') {
       const body = await parseBody(request).catch(() => ({}));
+      if (url.pathname === '/api/mp/run') {
+        const result = await runMasterAction(projectRoot, body.action, body);
+        return sendJson(response, 200, result);
+      }
       let res;
       if (url.pathname === '/api/mp/init') res = await initProject(projectRoot);
       else if (url.pathname === '/api/mp/sync') res = await syncProject(projectRoot, body);

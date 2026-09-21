@@ -57,7 +57,12 @@
     "mp:drift": "python D:/_Master_Process/master.py check-drift .",
     "mp:sync": "python D:/_Master_Process/master.py sync .",
     "mp:gate": "python D:/_Master_Process/master.py gate .",
-    "mp:evidence": "python D:/_Master_Process/master.py generate-evidence"
+    "mp:evidence": "python D:/_Master_Process/master.py generate-evidence",
+    "test:gate4": "npx playwright test --project=\"Desktop Smoke Tests\" && node scripts/export-gate-evidence.js",
+    "review:gate4": "node scripts/review-gate-evidence.js --actor qa-lead",
+    "freeze:status": "node scripts/freeze-cli.js status",
+    "freeze:set": "node scripts/freeze-cli.js set",
+    "freeze:lift": "node scripts/freeze-cli.js lift"
   },
   "dependencies": {
     "dotenv": "^16.3.1"

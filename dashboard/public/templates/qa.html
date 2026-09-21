@@ -121,6 +121,9 @@
           <button type="button" class="view-subtab script-subtab" data-qa-tab="decisions" role="tab" aria-selected="false">
             <i class="ph-bold ph-gavel"></i> Quyết định
           </button>
+          <button type="button" class="view-subtab script-subtab" data-qa-tab="process-studio" role="tab" aria-selected="false">
+            <i class="ph-bold ph-shield-check"></i> Master Process Studio
+          </button>
         </div>
       </nav>
 
@@ -306,6 +309,96 @@
       <section class="panel qa-panel" id="qa-panel-decisions" role="tabpanel" hidden>
         <div class="qa-empty" id="qa-decisions-empty" hidden></div>
         <div class="qa-decisions-list" id="qa-decisions-list"></div>
+      </section>
+
+      <!-- MASTER PROCESS STUDIO (PROCESS & AUDIT) -->
+      <section class="panel qa-panel" id="qa-panel-process-studio" role="tabpanel" hidden>
+        <div class="qa-studio-container" style="display: flex; flex-direction: column; gap: 16px; padding: 20px;">
+          <!-- Header Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="ph-bold ph-shield-check" style="color: var(--accent); font-size: 22px;"></i>
+                <h2 style="margin: 0; font-size: 18px; font-weight: 700;">Process &amp; Audit Studio</h2>
+              </div>
+              <p style="margin: 4px 0 0; font-size: 12.5px; color: var(--muted);">
+                Chẩn đoán sức khỏe, kiểm định modularity &amp; secret, tối ưu tri thức và thực thi 6 Audit Probes theo Tiêu Chuẩn Thẩm Định 04.
+              </p>
+            </div>
+            <button type="button" class="btn-secondary-sm" id="qa-mp-btn-refresh" title="Làm mới trạng thái">
+              <i class="ph-bold ph-arrows-clockwise"></i> Làm mới
+            </button>
+          </div>
+
+          <!-- 4 Badges Row -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+            <!-- Badge 1: Policy Status -->
+            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+              <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
+                <i class="ph ph-file-text"></i> Policy Status
+              </span>
+              <strong id="qa-mp-badge-policy" style="font-size: 13px; color: var(--text); word-break: break-word;">Đang tải...</strong>
+            </div>
+
+            <!-- Badge 2: Modularity Health -->
+            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+              <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
+                <i class="ph ph-check-circle"></i> Modularity Health
+              </span>
+              <strong id="qa-mp-badge-modularity" style="font-size: 13px; color: var(--success, #10b981);">Đang tải...</strong>
+            </div>
+
+            <!-- Badge 3: Learning Status -->
+            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+              <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
+                <i class="ph ph-brain"></i> Learning Status
+              </span>
+              <strong id="qa-mp-badge-learning" style="font-size: 13px; color: var(--text);">Đang tải...</strong>
+            </div>
+
+            <!-- Badge 4: Freeze Status -->
+            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+              <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
+                <i class="ph ph-hand-palm"></i> Freeze Circuit Breaker
+              </span>
+              <strong id="qa-mp-badge-freeze" style="font-size: 13px; color: var(--success, #10b981);">Đang tải...</strong>
+            </div>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--surface-2); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line);">
+            <button type="button" id="qa-mp-btn-doctor" class="btn-primary-sm" style="display: flex; align-items: center; gap: 6px;">
+              <i class="ph-bold ph-first-aid"></i> <span>Run Health Check</span>
+            </button>
+            <button type="button" id="qa-mp-btn-audit" class="btn-secondary-sm" style="display: flex; align-items: center; gap: 6px;">
+              <i class="ph-bold ph-shield-check"></i> <span>Run Security &amp; Audit</span>
+            </button>
+            <button type="button" id="qa-mp-btn-optimize" class="btn-secondary-sm" style="display: flex; align-items: center; gap: 6px;">
+              <i class="ph-bold ph-lightning"></i> <span>Optimize &amp; Archive Learning</span>
+            </button>
+            <button type="button" id="qa-mp-btn-probes" class="btn-secondary-sm" style="display: flex; align-items: center; gap: 6px;">
+              <i class="ph-bold ph-rocket-launch"></i> <span>Run 6 Audit Probes</span>
+            </button>
+            <div id="qa-mp-spinner" style="display: none; align-items: center; gap: 6px; font-size: 12px; color: var(--accent); margin-left: auto;">
+              <i class="ph-bold ph-circle-notch" style="animation: spin 1s linear infinite;"></i>
+              <span>Đang thực thi...</span>
+            </div>
+          </div>
+
+          <!-- Console Terminal Box -->
+          <div style="display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #0d1117;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: #161b22; border-bottom: 1px solid #30363d;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="ph-bold ph-terminal-window" style="color: #7d8590; font-size: 16px;"></i>
+                <span style="font-family: var(--font-mono, monospace); font-size: 12px; font-weight: 600; color: #e6edf3;">Console Log Terminal (Thời gian thực)</span>
+              </div>
+              <button type="button" id="qa-mp-btn-clear" class="btn-icon-subtle" style="color: #7d8590; font-size: 12px; padding: 2px 8px; border: 1px solid #30363d; border-radius: 4px; background: transparent; cursor: pointer;" title="Xoá log">
+                <i class="ph-bold ph-trash"></i> Xoá log
+              </button>
+            </div>
+            <pre id="qa-mp-terminal" class="qa-mp-terminal" style="margin: 0; padding: 14px; min-height: 220px; max-height: 480px; overflow-y: auto; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 12px; line-height: 1.6; color: #e6edf3; white-space: pre-wrap; word-break: break-word;"></pre>
+          </div>
+        </div>
       </section>
 
       <!-- Modal 1: Auto-Fix Reconciler Preview & Apply -->

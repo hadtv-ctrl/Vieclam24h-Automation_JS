@@ -7,6 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const { getCircuitBreakerStatus } = require('../../core/utils/circuitBreaker');
 
 function detectMasterRoot(projectRoot) {
   if (process.env.MASTER_PROCESS_ROOT && fs.existsSync(path.join(process.env.MASTER_PROCESS_ROOT, 'master.py'))) {
@@ -83,11 +84,27 @@ async function getProjectStatus(projectRoot) {
 
   const driftResult = await runMaster(masterRoot, ['check-drift', projectRoot], projectRoot);
   let driftStatus = 'UNPINNED';
-  if (driftResult.stdout.includes('IN_SYNC')) {
-    driftStatus = 'IN_SYNC';
-  } else if (driftResult.stdout.includes('DRIFT_DETECTED')) {
-    driftStatus = 'DRIFT_DETECTED';
+  if (driftResult.stdout.includes('IN_SYNC')) driftStatus = 'IN_SYNC';
+  else if (driftResult.stdout.includes('DRIFT_DETECTED')) driftStatus = 'DRIFT_DETECTED';
+
+  // Quality metrics (Policy, Candidates, Freeze)
+  const policyFile = path.join(projectRoot, '.quality-policy.json');
+  let policyLabel = 'DEFAULT (Code 250 lines / Knowledge 50 lines)';
+  if (fs.existsSync(policyFile)) {
+    try {
+      const p = JSON.parse(fs.readFileSync(policyFile, 'utf8'));
+      const codeL = p.code?.limits?.module ? `${Math.round(p.code.limits.module / 1000)}k` : 'custom';
+      policyLabel = `CUSTOM (Code ${codeL} lines / Knowledge ${p.knowledge?.maxLines || 150} lines)`;
+    } catch (_) {}
   }
+
+  const candFile = path.join(projectRoot, '.ai', 'learning', 'candidates.md');
+  let candCount = 0;
+  if (fs.existsSync(candFile)) {
+    try { candCount = fs.readFileSync(candFile, 'utf8').split('\n').filter(Boolean).length; } catch (_) {}
+  }
+
+  const freeze = getCircuitBreakerStatus(projectRoot);
 
   return {
     available: true,
@@ -97,6 +114,13 @@ async function getProjectStatus(projectRoot) {
     hook_status: hookStatus,
     lock_info: lockInfo,
     raw_drift_output: driftResult.stdout,
+    quality: {
+      policy_label: policyLabel,
+      candidates_lines: candCount,
+      candidates_status: candCount > 50 ? 'NEEDS_CURATION' : 'NORMAL',
+      freeze_active: freeze.active,
+      freeze_reason: freeze.reason,
+    },
   };
 }
 
@@ -127,9 +151,7 @@ async function runAudit(projectRoot, { staged = false } = {}) {
   const args = ['audit', projectRoot];
   if (staged) args.push('--staged');
   const res = await runMaster(masterRoot, args, projectRoot);
-
-  const out = res.stdout + '\n' + res.stderr;
-  const matchMod = out.match(/MODULARITY:\s*scanned=(\d+)\s*violations=(\d+)\s*exempted=(\d+)/i);
+  const matchMod = (res.stdout + '\n' + res.stderr).match(/MODULARITY:\s*scanned=(\d+)\s*violations=(\d+)\s*exempted=(\d+)/i);
   return {
     ...res,
     scanned: matchMod ? parseInt(matchMod[1], 10) : 0,
@@ -149,9 +171,17 @@ async function runProbes(projectRoot, { probeId = 'ALL' } = {}) {
   if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
   const script = path.join(masterRoot, 'scripts', 'audit-probes.ps1');
   if (!fs.existsSync(script)) throw new Error('Không tìm thấy script audit-probes.ps1');
+  return runCommand('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-ProbeId', probeId, projectRoot], projectRoot);
+}
 
-  const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-ProbeId', probeId, projectRoot];
-  return runCommand('powershell', args, projectRoot);
+async function runMasterAction(projectRoot, action, payload = {}) {
+  const masterRoot = detectMasterRoot(projectRoot);
+  if (!masterRoot) throw new Error('Không tìm thấy Master Process Hub');
+  if (action === 'doctor') return runDoctor(projectRoot);
+  if (action === 'audit') return runAudit(projectRoot, payload);
+  if (action === 'optimize') return runMaster(masterRoot, ['optimize', projectRoot], projectRoot);
+  if (action === 'probes') return runProbes(projectRoot, payload);
+  throw new Error(`Action không hợp lệ: ${action}. Chỉ chấp nhận: doctor, audit, optimize, probes.`);
 }
 
 module.exports = {
@@ -163,4 +193,5 @@ module.exports = {
   runAudit,
   runDoctor,
   runProbes,
+  runMasterAction,
 };
