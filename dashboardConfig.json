@@ -3,22 +3,34 @@
     "qc": {
       "label": "QC",
       "baseURL": "https://seeker.vl24hv2.qc.sieuviet-team.com",
-      "apiBaseURL": "https://api.vl24hv2.qc.sieuviet-team.com"
+      "apiBaseURL": "https://api.vl24hv2.qc.sieuviet-team.com",
+      "_siteLabels": {
+        "baseURL": "Cổng Quản Trị Admin",
+        "apiBaseURL": "Backend REST API"
+      }
     },
     "stg": {
       "label": "Staging",
       "baseURL": "https://seeker.vl24hv2.staging.sieuviet-team.com",
-      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com"
+      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com",
+      "_siteLabels": {
+        "baseURL": "Cổng Quản Trị Admin",
+        "apiBaseURL": "Backend REST API"
+      }
     },
     "prod": {
       "label": "Production",
       "baseURL": "https://vieclam24h.vn",
-      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com"
+      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com",
+      "_siteLabels": {
+        "baseURL": "Cổng Quản Trị Admin",
+        "apiBaseURL": "Backend REST API"
+      }
     }
   },
   "runtime": {
     "defaultEnvironment": "qc",
-    "workers": 2,
+    "workers": 4,
     "testTimeout": 60000,
     "navigationTimeout": 60000,
     "actionTimeout": 0,
@@ -336,5 +348,14 @@
     "channelName": "#qa-automation",
     "notifyOnFinish": false,
     "notifyOnlyOnFailure": false
+  },
+  "qa": {
+    "requirements": "requirements",
+    "testCases": "test-cases",
+    "specs": "tests",
+    "decisionsFile": "decisions.json"
+  },
+  "docs": {
+    "dir": "docs"
   }
 }
