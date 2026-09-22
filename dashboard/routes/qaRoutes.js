@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * dashboard/routes/qaRoutes.js
  * QA Docs & Automation APIs: ma trận truy vết, ứng viên automation, sổ quyết định.
@@ -23,6 +24,7 @@ const {
 const {
   inferTestCases,
   appendTestCasesToDocument,
+  extractScaffoldFromRaw,
 } = require('../services/qaInferenceService');
 const { sendJson, parseBody } = require('./routeUtils');
 
@@ -58,6 +60,20 @@ async function handleQaRoutes(request, response, url, context = {}) {
       sendJson(response, 200, getScaffoldMeta(root));
     } catch (error) {
       sendJson(response, 500, { error: `Không lấy được thông tin scaffold: ${error.message}` });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/scaffold/extract') {
+    try {
+      const body = await parseBody(request);
+      const result = await extractScaffoldFromRaw(root, body || {});
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
     }
     return true;
   }

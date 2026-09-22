@@ -453,26 +453,103 @@
         </div>
 
         <div class="qa-modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
-          <!-- Mode Tabs -->
-          <div class="qa-scaffold-mode-selector" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px;">
-            <label class="qa-mode-card is-selected" id="qa-mode-card-new" style="border: 1px solid var(--accent); padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-              <input type="radio" name="qa-scaffold-mode" value="new" checked style="accent-color: var(--accent);">
+          <!-- Mode Tabs (3 chế độ) -->
+          <div class="qa-scaffold-mode-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px;">
+            <label class="qa-mode-card is-selected" id="qa-mode-card-raw" style="border: 1px solid var(--accent); padding: 10px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: flex-start; gap: 8px; background: rgba(59, 130, 246, 0.05);">
+              <input type="radio" name="qa-scaffold-mode" value="raw" checked style="accent-color: var(--accent); margin-top: 2px;">
               <div>
-                <strong style="font-size: 12.5px; display: block;">Tạo mới đồng bộ (3 files)</strong>
-                <small style="font-size: 11px; color: var(--muted);">Tạo REQ, Test Case và Automation Spec</small>
+                <strong style="font-size: 12px; display: block; color: var(--accent);">🪄 Dán nội dung thô</strong>
+                <small style="font-size: 10.5px; color: var(--muted); line-height: 1.3; display: block;">AI tự bóc tách từ Spec / Test script thô</small>
               </div>
             </label>
-            <label class="qa-mode-card" id="qa-mode-card-infer" style="border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-              <input type="radio" name="qa-scaffold-mode" value="infer" style="accent-color: var(--accent);">
+            <label class="qa-mode-card" id="qa-mode-card-new" style="border: 1px solid var(--line); padding: 10px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: flex-start; gap: 8px;">
+              <input type="radio" name="qa-scaffold-mode" value="new" style="accent-color: var(--accent); margin-top: 2px;">
               <div>
-                <strong style="font-size: 12.5px; display: block;">Suy luận ngược từ Spec</strong>
-                <small style="font-size: 11px; color: var(--muted);">inferFromSpec tự sinh REQ &amp; TC từ code test</small>
+                <strong style="font-size: 12px; display: block;">📋 Nhập form mẫu</strong>
+                <small style="font-size: 10.5px; color: var(--muted); line-height: 1.3; display: block;">Điền thông tin và sinh 3 file mẫu</small>
+              </div>
+            </label>
+            <label class="qa-mode-card" id="qa-mode-card-infer" style="border: 1px solid var(--line); padding: 10px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: flex-start; gap: 8px;">
+              <input type="radio" name="qa-scaffold-mode" value="infer" style="accent-color: var(--accent); margin-top: 2px;">
+              <div>
+                <strong style="font-size: 12px; display: block;">🔄 Suy luận từ file</strong>
+                <small style="font-size: 10.5px; color: var(--muted); line-height: 1.3; display: block;">inferFromSpec từ file spec trên đĩa</small>
               </div>
             </label>
           </div>
 
-          <!-- Fields for Mode NEW -->
-          <div id="qa-scaffold-new-fields" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Fields for Mode RAW (Dán nội dung thô) -->
+          <div id="qa-scaffold-raw-fields" style="display: flex; flex-direction: column; gap: 10px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label for="qa-scaffold-raw-content" style="font-size: 12px; font-weight: 600; color: var(--muted);">
+                  Nội dung Spec văn bản HOẶC Mã Test Script Playwright thô
+                </label>
+                <span style="font-size: 11px; color: var(--accent);">Hỗ trợ tự động nhận diện tiếng Việt &amp; code</span>
+              </div>
+              <textarea id="qa-scaffold-raw-content" class="qa-mono" placeholder="Dán nội dung Spec / User Story (tính năng, danh sách ACs) HOẶC mã Playwright test script (.spec.js) thô vào đây...
+
+Ví dụ 1 (Spec văn bản):
+# Tính năng: Đổi mật khẩu tài khoản
+Mô tả: Cho phép người dùng đổi mật khẩu mới.
+- AC-001: Đổi thành công khi mật khẩu cũ đúng và mật khẩu mới hợp lệ.
+- AC-002: Báo lỗi khi mật khẩu cũ sai hoặc mật khẩu mới trùng mật khẩu cũ.
+
+Ví dụ 2 (Playwright test code):
+test.describe('Đổi mật khẩu @account', () => {
+  test('Đổi mật khẩu thành công', async ({ page }) => { ... });
+});" style="width: 100%; height: 160px; padding: 10px 12px; font-size: 12px; line-height: 1.5; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); resize: vertical; box-sizing: border-box;"></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 140px 1fr auto; gap: 10px; align-items: flex-end;">
+              <div>
+                <label for="qa-scaffold-raw-req-id" style="display: block; font-size: 11.5px; font-weight: 600; margin-bottom: 4px; color: var(--muted);">Mã REQ ID (tùy chọn)</label>
+                <input type="text" id="qa-scaffold-raw-req-id" class="input-sm qa-mono" placeholder="Tự động gợi ý" style="width: 100%;">
+              </div>
+              <div>
+                <label for="qa-scaffold-raw-domain" style="display: block; font-size: 11.5px; font-weight: 600; margin-bottom: 4px; color: var(--muted);">Phân vùng (Domain)</label>
+                <input type="text" id="qa-scaffold-raw-domain" class="input-sm" list="qa-scaffold-domains-list" placeholder="Tự suy luận hoặc nhập (auth, job...)" style="width: 100%;">
+              </div>
+              <div>
+                <button type="button" class="btn-primary-sm" id="qa-btn-extract-raw" style="white-space: nowrap; height: 32px;">
+                  <i class="ph-bold ph-lightning"></i> Phân tích &amp; Xem trước
+                </button>
+              </div>
+            </div>
+
+            <!-- Khung Xem Trước Preview sau khi trích xuất -->
+            <div id="qa-scaffold-raw-preview" style="display: none; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--surface-2);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--line); padding-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span id="qa-scaffold-preview-engine-badge" class="badge" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(59, 130, 246, 0.15); color: var(--accent); font-weight: 600;">Heuristic</span>
+                  <span id="qa-scaffold-preview-type-badge" class="badge" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 600;">Spec Text</span>
+                </div>
+                <small style="color: var(--muted); font-size: 11px;">Đã sẵn sàng khởi tạo 3 files đồng bộ</small>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                <div style="display: flex; gap: 8px; align-items: baseline;">
+                  <strong style="color: var(--accent);" id="qa-scaffold-preview-req-id">REQ-001</strong>
+                  <span id="qa-scaffold-preview-title" style="font-weight: 600; color: var(--text);">Tên tính năng</span>
+                  <span id="qa-scaffold-preview-domain" style="font-size: 11px; color: var(--muted); background: var(--surface); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line);">auth</span>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 2px; color: var(--muted); font-size: 11.5px;">
+                  <span><i class="ph-bold ph-check-square" style="color: var(--accent);"></i> <strong id="qa-scaffold-preview-ac-count" style="color: var(--text);">0</strong> ACs</span>
+                  <span><i class="ph-bold ph-flask" style="color: var(--accent);"></i> <strong id="qa-scaffold-preview-tc-count" style="color: var(--text);">0</strong> Test Cases</span>
+                </div>
+
+                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line);">
+                  <div style="font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px;">3 file sẽ được khởi tạo:</div>
+                  <ul id="qa-scaffold-preview-files-list" style="margin: 0; padding-left: 18px; font-family: monospace; font-size: 11px; color: var(--muted); display: flex; flex-direction: column; gap: 3px;">
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fields for Mode NEW (Form mẫu) -->
+          <div id="qa-scaffold-new-fields" style="display: none; flex-direction: column; gap: 12px;">
             <div style="display: grid; grid-template-columns: 140px 1fr; gap: 12px;">
               <div>
                 <label for="qa-scaffold-req-id" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--muted);">Mã REQ ID</label>
@@ -501,7 +578,7 @@
             </div>
           </div>
 
-          <!-- Fields for Mode INFER -->
+          <!-- Fields for Mode INFER (Từ file spec trên đĩa) -->
           <div id="qa-scaffold-infer-fields" style="display: none; flex-direction: column; gap: 10px;">
             <div>
               <label for="qa-scaffold-spec-path" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--muted);">Đường dẫn file Spec Playwright</label>

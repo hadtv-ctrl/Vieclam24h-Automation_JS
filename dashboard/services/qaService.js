@@ -838,6 +838,47 @@ function generateScaffold(root, payload = {}) {
     };
   }
 
+  // Chế độ khởi tạo từ nội dung thô (Raw Extraction / AI Synthesis)
+  if (payload.mode === 'raw_create' || payload.customFiles) {
+    const custom = payload.customFiles || payload;
+    const reqRel = custom.reqRelPath || `requirements/${payload.reqId}-${payload.slug}.md`;
+    const tcRel = custom.tcRelPath || `test-cases/${payload.reqId}-${payload.slug}.md`;
+    const specRel = custom.specRelPath || `tests/e2e/desktop/${payload.slug}-bdd.spec.js`;
+
+    const absReq = path.resolve(root, reqRel);
+    const absTc = path.resolve(root, tcRel);
+    const absSpec = path.resolve(root, specRel);
+
+    if (!payload.force) {
+      const existing = [absReq, absTc, absSpec].filter((f) => fs.existsSync(f));
+      if (existing.length > 0) {
+        throw Object.assign(new Error(`File đã tồn tại (dùng force để ghi đè): ${existing.map((f) => path.relative(root, f)).join(', ')}`), { status: 409 });
+      }
+    }
+
+    fs.mkdirSync(path.dirname(absReq), { recursive: true });
+    fs.mkdirSync(path.dirname(absTc), { recursive: true });
+    fs.mkdirSync(path.dirname(absSpec), { recursive: true });
+
+    if (custom.reqContent) fs.writeFileSync(absReq, custom.reqContent, 'utf8');
+    if (custom.tcContent) fs.writeFileSync(absTc, custom.tcContent, 'utf8');
+    if (custom.specContent) fs.writeFileSync(absSpec, custom.specContent, 'utf8');
+
+    return {
+      ok: true,
+      mode: 'raw_create',
+      message: `Đã khởi tạo thành công 3 file cho ${payload.reqId || ''} (${payload.title || ''}).`,
+      reqId: payload.reqId,
+      title: payload.title,
+      created: [
+        reqRel.replace(/\\/g, '/'),
+        tcRel.replace(/\\/g, '/'),
+        specRel.replace(/\\/g, '/'),
+      ],
+      primaryFile: reqRel.replace(/\\/g, '/'),
+    };
+  }
+
   const reqId = String(payload.reqId || '').trim().toUpperCase();
   if (!reqId || !/^REQ-\d{3}$/.test(reqId)) {
     throw Object.assign(new Error(`Mã Requirement không hợp lệ: "${reqId}" (yêu cầu định dạng REQ-001).`), { status: 400 });

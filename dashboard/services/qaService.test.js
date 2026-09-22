@@ -14,6 +14,7 @@ const {
   getRequirementImpact,
   deleteRequirement,
 } = require('./qaService');
+const { extractScaffoldFromRaw } = require('./qaInferenceService');
 
 test('getQaSummary: trả về đúng JSON 1.0.0 với đầy đủ metrics, health, boundary, decisions, findings', () => {
   const summary = getQaSummary(process.cwd());
@@ -137,4 +138,104 @@ test('deleteRequirement: xóa an toàn và tạo backup vào .dashboard-backups'
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('extractScaffoldFromRaw: trích xuất chính xác từ Playwright script thô và tạo 3 files', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'raw-script-test-'));
+  try {
+    fs.mkdirSync(path.join(tempDir, 'requirements'), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, 'test-cases'), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, 'tests', 'e2e', 'desktop'), { recursive: true });
+
+    const rawScript = `
+import { test, expect } from '@playwright/test';
+
+test.describe('Đổi mật khẩu người dùng @account', () => {
+  test('Đổi mật khẩu thành công với mật khẩu mới hợp lệ', async ({ page }) => {
+    await page.goto('/change-password');
+    await page.fill('#old-pass', 'Old123456');
+    await page.fill('#new-pass', 'New123456');
+    await page.click('button#submit');
+    await expect(page.locator('.toast')).toContainText('Thành công');
+  });
+
+  test('Báo lỗi khi mật khẩu cũ không đúng', async ({ page }) => {
+    await page.goto('/change-password');
+    await page.fill('#old-pass', 'WrongOld');
+    await page.fill('#new-pass', 'New123456');
+    await page.click('button#submit');
+    await expect(page.locator('.error')).toContainText('Mật khẩu cũ không đúng');
+  });
+});
+    `;
+
+    const extracted = await extractScaffoldFromRaw(tempDir, {
+      rawContent: rawScript,
+      reqId: 'REQ-050',
+      domain: 'account',
+      useAi: false, // test heuristic
+    });
+
+    assert.equal(extracted.success, true);
+    assert.equal(extracted.inputType, 'test_script');
+    assert.equal(extracted.preview.reqId, 'REQ-050');
+    assert.ok(extracted.preview.title.includes('Đổi mật khẩu'));
+    assert.equal(extracted.preview.tcCount, 2);
+    assert.equal(extracted.preview.acCount, 2);
+    assert.ok(extracted.generated.reqContent.includes('REQ-050'));
+    assert.ok(extracted.generated.tcContent.includes('TC-001'));
+    assert.ok(extracted.generated.specContent.includes('test.describe'));
+
+    // Test ghi 3 files qua generateScaffold mode raw_create
+    const created = generateScaffold(tempDir, {
+      mode: 'raw_create',
+      reqId: extracted.preview.reqId,
+      title: extracted.preview.title,
+      slug: extracted.preview.slug,
+      customFiles: extracted.generated,
+    });
+
+    assert.equal(created.ok, true);
+    assert.equal(created.created.length, 3);
+    assert.ok(fs.existsSync(path.join(tempDir, created.created[0])));
+    assert.ok(fs.existsSync(path.join(tempDir, created.created[1])));
+    assert.ok(fs.existsSync(path.join(tempDir, created.created[2])));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('extractScaffoldFromRaw: trích xuất chính xác từ văn bản Requirement nghiệp vụ thô', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'raw-spec-test-'));
+  try {
+    const rawText = `
+# Tính năng: Quên mật khẩu qua mã OTP Email
+
+Mô tả: Cho phép người dùng lấy lại mật khẩu thông qua mã xác thực gửi về email.
+
+Tiêu chí chấp nhận:
+- AC-001: Nhập email hợp lệ, bấm gửi OTP thì hệ thống gửi mã 6 số về hòm thư.
+- AC-002: Báo lỗi khi email chưa đăng ký trên hệ thống.
+- AC-003: Báo lỗi khi nhập sai mã OTP quá 5 lần.
+    `;
+
+    const extracted = await extractScaffoldFromRaw(tempDir, {
+      rawContent: rawText,
+      reqId: 'REQ-051',
+      domain: 'auth',
+      useAi: false,
+    });
+
+    assert.equal(extracted.success, true);
+    assert.equal(extracted.inputType, 'spec_text');
+    assert.equal(extracted.preview.reqId, 'REQ-051');
+    assert.ok(extracted.preview.title.includes('Quên mật khẩu'));
+    assert.equal(extracted.preview.acCount, 3);
+    assert.ok(extracted.preview.tcCount >= 3);
+    assert.ok(extracted.generated.reqContent.includes('AC-001'));
+    assert.ok(extracted.generated.tcContent.includes('## Traceability'));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 
