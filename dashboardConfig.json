@@ -2,7 +2,7 @@
   "environments": {
     "qc": {
       "label": "QC",
-      "baseURL": "https://seeker.vl24hv2.qc.sieuviet-team.com/test",
+      "baseURL": "https://seeker.vl24hv2.qc.sieuviet-team.com",
       "apiBaseURL": "https://api.vl24hv2.qc.sieuviet-team.com",
       "_siteLabels": {
         "baseURL": "Cổng Quản Trị Admin",
@@ -33,7 +33,7 @@
     "workers": 6,
     "testTimeout": 60000,
     "navigationTimeout": 60000,
-    "actionTimeout": 0,
+    "actionTimeout": 15000,
     "retriesLocal": 0,
     "retriesCI": 2,
     "trace": "on-first-retry",
@@ -71,7 +71,7 @@
     "logoUrl": "https://vieclam24h.vn/img/mobile-entrypoint/logo-mobile-32x3.png",
     "primaryColor": "#451DA0",
     "backgroundColor": "",
-    "fontSize": "14px"
+    "fontSize": "16px"
   },
   "suites": {
     "smoke-all": {

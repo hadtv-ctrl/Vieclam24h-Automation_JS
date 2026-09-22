@@ -2,10 +2,58 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const http = require('http');
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 
 const ENGINE_DIR = path.resolve(__dirname, '..', '..');
 const PACKAGE_JSON_PATH = path.join(ENGINE_DIR, 'package.json');
+
+const GIT_EXECUTABLE = (() => {
+  if (process.platform === 'win32') {
+    const candidates = [
+      'C:\\Program Files\\Git\\mingw64\\bin\\git.exe',
+      'C:\\Program Files\\Git\\cmd\\git.exe',
+      'C:\\Program Files (x86)\\Git\\cmd\\git.exe',
+      'C:\\Program Files (x86)\\Git\\mingw64\\bin\\git.exe',
+      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'cmd', 'git.exe'),
+      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'mingw64', 'bin', 'git.exe'),
+    ];
+    for (const c of candidates) {
+      if (c && fs.existsSync(c)) return c;
+    }
+  }
+  return 'git';
+})();
+
+/**
+ * Chạy lệnh git an toàn: trực tiếp binary git với windowsHide: true,
+ * tuyệt đối không bao giờ chớp tắt cửa sổ dòng lệnh cmd.exe trên Windows.
+ */
+function safeGit(args, options = {}) {
+  const timeout = options.timeout || 15000;
+  const env = { ...process.env, PAGER: 'cat' };
+  const res = spawnSync(GIT_EXECUTABLE, args, {
+    cwd: options.cwd || ENGINE_DIR,
+    encoding: 'utf8',
+    timeout,
+    windowsHide: true,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env,
+    ...options,
+  });
+
+  if (res.error) {
+    throw res.error;
+  }
+  if (res.status !== 0) {
+    const msg = (res.stderr || res.stdout || `Git exited with code ${res.status}`).trim();
+    const err = new Error(msg);
+    err.status = res.status;
+    err.stdout = res.stdout;
+    err.stderr = res.stderr;
+    throw err;
+  }
+  return res.stdout || '';
+}
 
 /**
  * Lấy thông tin phiên bản hiện tại từ package.json của Engine
@@ -103,8 +151,8 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
   try {
     const localHub = 'D:\\_Automation-Project';
     if (!isHub && path.resolve(rootDir) !== path.resolve(localHub) && fs.existsSync(path.join(localHub, 'dashboard', 'server.js'))) {
-      const hubHead = execSync('git rev-parse --short HEAD', { cwd: localHub, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-      const hubLastLog = execSync('git log -n 3 --oneline -- dashboard core bin scripts', { cwd: localHub, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+      const hubHead = safeGit(['rev-parse', '--short', 'HEAD'], { cwd: localHub }).trim();
+      const hubLastLog = safeGit(['log', '-n', '3', '--oneline', '--', 'dashboard', 'core', 'bin', 'scripts'], { cwd: localHub }).trim();
 
       // Kiểm tra file mẫu trong dashboard xem có khác biệt không
       const sampleFiles = [
@@ -146,33 +194,29 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
 
   // 2. Nếu không có Local Hub hoặc ở môi trường riêng, kiểm tra qua remote origin/main
   try {
-    const remotes = execSync('git remote', { cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const remotes = safeGit(['remote'], { cwd: rootDir });
     if (remotes.includes('origin')) {
       try {
-        execSync('git fetch origin main --quiet', { cwd: rootDir, timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] });
+        safeGit(['fetch', 'origin', 'main', '--quiet'], { cwd: rootDir, timeout: 10000 });
       } catch (_) {}
 
       // Kiểm tra xem origin/main có thực sự có file thay đổi so với HEAD hay không
       let hasFileDiff = false;
       try {
-        const diffStat = execSync('git diff --name-only HEAD origin/main -- dashboard core bin scripts', {
+        const diffStat = safeGit(['diff', '--name-only', 'HEAD', 'origin/main', '--', 'dashboard', 'core', 'bin', 'scripts'], {
           cwd: rootDir,
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'],
         }).trim();
         if (diffStat) {
           hasFileDiff = true;
         }
       } catch (_) {}
 
-      const diffCommits = execSync('git log HEAD..origin/main --oneline -n 5 -- dashboard core bin scripts', {
+      const diffCommits = safeGit(['log', 'HEAD..origin/main', '--oneline', '-n', '5', '--', 'dashboard', 'core', 'bin', 'scripts'], {
         cwd: rootDir,
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
 
       if (hasFileDiff && diffCommits) {
-        const latestCommit = execSync('git rev-parse --short origin/main', { cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+        const latestCommit = safeGit(['rev-parse', '--short', 'origin/main'], { cwd: rootDir }).trim();
         return {
           hasUpdate: true,
           source: 'origin-main',
@@ -285,7 +329,7 @@ function applyUpdate(options = {}) {
         log.push('Cảnh báo updateFramework: ' + fwErr.message + '. Thử lại với git pull...');
       }
 
-      const pullOutput = execSync('git pull --ff-only', { cwd: root, encoding: 'utf8', timeout: 30000, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+      const pullOutput = safeGit(['pull', '--ff-only'], { cwd: root, timeout: 30000 });
       log.push(pullOutput.trim());
       log.push('Đang cập nhật dependencies...');
       try {
