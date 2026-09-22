@@ -372,6 +372,7 @@ function loadAutomatedTests(root, options = {}) {
       maxBuffer: 32 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: useShell,
+      windowsHide: true,
     });
   } catch (err) {
     return {
