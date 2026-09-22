@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+// master-process-disable-size-check: Hub-to-Spoke framework update module, queued for modular decomposition
 /**
  * scripts/update-framework.js
  *

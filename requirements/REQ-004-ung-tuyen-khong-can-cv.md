@@ -1,3 +1,13 @@
+---
+id: REQ-004
+title: Ứng tuyển việc làm không cần CV
+status: Inferred
+version: 1.0
+risk: high
+owner: QA
+test_cases: test-cases/REQ-004-ung-tuyen-khong-can-cv.md
+---
+
 # REQ-004 — Ứng tuyển việc làm không cần CV
 
 | Thuộc tính | Giá trị |

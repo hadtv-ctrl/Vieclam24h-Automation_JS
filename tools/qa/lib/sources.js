@@ -182,28 +182,61 @@ function loadTestCases(root, options = {}) {
     const rel = path.relative(root, file).replace(/\\/g, '/');
     const lines = text.split('\n');
 
-    for (const cells of tableRowsUnder(lines, /^##\s+Traceability/i)) {
-      const [reqId, acId, tcId, automation, spec, priority] = cells;
-      if (!/^REQ-\d{3}$/.test(reqId || '')) {
-        // Mã REQ gõ sai (REQ-1, req-001) từng làm CẢ DÒNG biến mất im lặng, nên mọi rule
-        // automation không chạy cho TC đó. Bỏ qua hàng header là đúng; bỏ qua một dòng
-        // trông như dữ liệu thật thì phải báo.
+    const baseReqMatch = base.match(/^(REQ-\d{3})/i);
+    const defaultReqId = baseReqMatch ? baseReqMatch[1].toUpperCase() : null;
+
+    for (const cells of tableRowsUnder(lines, /^##\s+(?:Traceability|Bảng truy vết)/i)) {
+      if (/^REQ-\d{3}$/i.test(cells[0] || '')) {
+        const [reqId, acId, tcId, automation, spec, priority] = cells;
+        const auto = normalizeAutomation(automation);
+        links.push({
+          reqId: reqId.toUpperCase(),
+          acId,
+          tcId,
+          automation: auto.value,
+          automationRaw: auto.raw,
+          spec: (spec || '').replace(/`/g, '').trim(),
+          priority: (priority || '').trim(),
+          file: rel,
+        });
+      } else if (/^TC-\d{3}$/i.test(cells[0] || '')) {
+        // Bảng tiếng Việt: | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
+        const tcId = cells[0];
+        const acsFound = (cells[1] || '').match(/AC-\d{3}/gi) || [];
+        const priority = (cells[3] || '').trim();
+        const auto = normalizeAutomation(cells[4]);
+        const spec = (cells[5] || '').replace(/`/g, '').trim();
+
+        if (acsFound.length === 0 && defaultReqId) {
+          links.push({
+            reqId: defaultReqId,
+            acId: '',
+            tcId,
+            automation: auto.value,
+            automationRaw: auto.raw,
+            spec,
+            priority,
+            file: rel,
+          });
+        } else {
+          for (const rawAc of acsFound) {
+            links.push({
+              reqId: defaultReqId || '',
+              acId: rawAc.toUpperCase(),
+              tcId,
+              automation: auto.value,
+              automationRaw: auto.raw,
+              spec,
+              priority,
+              file: rel,
+            });
+          }
+        }
+      } else {
         const looksLikeData =
-          /^req[-_ ]?\d+/i.test(reqId || '') || /^tc[-_]?\d+/i.test(tcId || '');
-        if (looksLikeData) nearMisses.push({ raw: `${reqId} | ${tcId}`, file: rel });
-        continue;
+          /^req[-_ ]?\d+/i.test(cells[0] || '') || /^tc[-_]?\d+/i.test(cells[0] || '');
+        if (looksLikeData) nearMisses.push({ raw: cells.slice(0, 3).join(' | '), file: rel });
       }
-      const auto = normalizeAutomation(automation);
-      links.push({
-        reqId,
-        acId,
-        tcId,
-        automation: auto.value,
-        automationRaw: auto.raw,
-        spec: (spec || '').replace(/`/g, '').trim(),
-        priority: (priority || '').trim(),
-        file: rel,
-      });
     }
 
     for (const cells of tableRowsUnder(lines, /Case không automation/i)) {

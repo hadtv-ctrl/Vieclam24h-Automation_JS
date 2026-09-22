@@ -1,3 +1,13 @@
+---
+id: REQ-003
+title: Ứng tuyển việc làm bằng CV hoặc hồ sơ trực tuyến
+status: Inferred
+version: 1.0
+risk: high
+owner: QA
+test_cases: test-cases/REQ-003-ung-tuyen-viec-lam.md
+---
+
 # REQ-003 — Ứng tuyển việc làm bằng CV hoặc hồ sơ trực tuyến
 
 | Thuộc tính | Giá trị |

@@ -1,3 +1,13 @@
+---
+id: REQ-006
+title: Trợ lý AI hoàn thiện nội dung hồ sơ
+status: Inferred
+version: 1.0
+risk: medium
+owner: QA
+test_cases: test-cases/REQ-006-tro-ly-ai-hoan-thien-ho-so.md
+---
+
 # REQ-006 — Trợ lý AI hoàn thiện nội dung hồ sơ
 
 | Thuộc tính | Giá trị |
