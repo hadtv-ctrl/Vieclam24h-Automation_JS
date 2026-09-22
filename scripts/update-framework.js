@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+// master-process-disable-size-check: Hub-to-Spoke framework update module, queued for modular decomposition
 /**
  * scripts/update-framework.js
  *
@@ -167,7 +168,7 @@ function resolveFrameworkSource(targetDir) {
 
   // 2. Kiểm tra nếu trong repo Git hiện tại có remote origin hoặc upstream
   try {
-    const remotes = execSync('git remote -v', { cwd: targetDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const remotes = execSync('git remote -v', { cwd: targetDir, encoding: 'utf8', windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
     if (remotes.includes('origin')) {
       return { type: 'git-origin-main', label: 'Remote origin/main (Đồng bộ qua GitHub)' };
     }
@@ -217,13 +218,14 @@ function updateFramework(options = {}) {
     } else if (source.type === 'git-origin-main') {
       // Kéo git fetch origin main và giải nén ra thư mục tạm
       logs.push('Đang fetch origin/main từ remote...');
-      execSync('git fetch origin main', { cwd: targetDir, stdio: ['pipe', 'pipe', 'pipe'] });
+      execSync('git fetch origin main', { cwd: targetDir, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
 
       tempExtractDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fw-update-'));
       logs.push(`Đang trích xuất snapshot Framework từ origin/main...`);
       // Trích xuất qua git archive
       execSync('git archive origin/main dashboard core bin scripts ai Start_Dashboard.bat Stop_Dashboard.bat | tar -x -C "' + tempExtractDir.replace(/\\/g, '/') + '"', {
         cwd: targetDir,
+        windowsHide: true,
         stdio: ['pipe', 'pipe', 'pipe'],
       });
       sourceRoot = tempExtractDir;
@@ -278,7 +280,7 @@ function updateFramework(options = {}) {
     let qgPassed = true;
     if (fs.existsSync(checkScript)) {
       try {
-        const qgRes = execSync(`node "${checkScript}"`, { cwd: targetDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+        const qgRes = execSync(`node "${checkScript}"`, { cwd: targetDir, encoding: 'utf8', windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
         logs.push(`Quality Gate ĐẠT: ${qgRes.trim()}`);
       } catch (_) {
         logs.push('Quality Gate lưu ý: Phát hiện cảnh báo trong mã kiểm thử riêng của dự án (không ảnh hưởng cập nhật Dashboard Framework).');

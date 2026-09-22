@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 'use strict';
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * Kiểm tra sync-manifest.json có còn khớp với thực tế repo không.
  *

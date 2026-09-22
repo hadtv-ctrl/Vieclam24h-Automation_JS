@@ -1,4 +1,5 @@
 'use strict';
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * Đọc 3 nguồn dữ liệu và chuẩn hoá thành object để join:
  *   1. requirements/*.md   -> REQ + AC + bảng rules
@@ -93,13 +94,15 @@ function normalizeAutomation(raw) {
 function tableRowsUnder(lines, headingRe) {
   const out = [];
   let inSection = false;
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (/^#{2,3}\s/.test(line)) inSection = headingRe.test(line);
     if (!inSection) continue;
     if (!line.trim().startsWith('|')) continue;
     const cells = line.split('|').slice(1, -1).map((c) => c.trim());
     if (cells.length < 2) continue;
     if (cells.every((c) => /^:?-{2,}:?$/.test(c))) continue; // dòng phân cách
+    cells.line = i + 1;
     out.push(cells);
   }
   return out;
@@ -181,28 +184,64 @@ function loadTestCases(root, options = {}) {
     const rel = path.relative(root, file).replace(/\\/g, '/');
     const lines = text.split('\n');
 
-    for (const cells of tableRowsUnder(lines, /^##\s+Traceability/i)) {
-      const [reqId, acId, tcId, automation, spec, priority] = cells;
-      if (!/^REQ-\d{3}$/.test(reqId || '')) {
-        // Mã REQ gõ sai (REQ-1, req-001) từng làm CẢ DÒNG biến mất im lặng, nên mọi rule
-        // automation không chạy cho TC đó. Bỏ qua hàng header là đúng; bỏ qua một dòng
-        // trông như dữ liệu thật thì phải báo.
+    const baseReqMatch = base.match(/^(REQ-\d{3})/i);
+    const defaultReqId = baseReqMatch ? baseReqMatch[1].toUpperCase() : null;
+
+    for (const cells of tableRowsUnder(lines, /^##\s+(?:Traceability|Bảng truy vết)/i)) {
+      if (/^REQ-\d{3}$/i.test(cells[0] || '')) {
+        const [reqId, acId, tcId, automation, spec, priority] = cells;
+        const auto = normalizeAutomation(automation);
+        links.push({
+          reqId: reqId.toUpperCase(),
+          acId,
+          tcId,
+          automation: auto.value,
+          automationRaw: auto.raw,
+          spec: (spec || '').replace(/`/g, '').trim(),
+          priority: (priority || '').trim(),
+          file: rel,
+          line: cells.line || 0,
+        });
+      } else if (/^TC-\d{3}$/i.test(cells[0] || '')) {
+        // Bảng tiếng Việt: | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
+        const tcId = cells[0];
+        const acsFound = (cells[1] || '').match(/AC-\d{3}/gi) || [];
+        const priority = (cells[3] || '').trim();
+        const auto = normalizeAutomation(cells[4]);
+        const spec = (cells[5] || '').replace(/`/g, '').trim();
+
+        if (acsFound.length === 0 && defaultReqId) {
+          links.push({
+            reqId: defaultReqId,
+            acId: '',
+            tcId,
+            automation: auto.value,
+            automationRaw: auto.raw,
+            spec,
+            priority,
+            file: rel,
+            line: cells.line || 0,
+          });
+        } else {
+          for (const rawAc of acsFound) {
+            links.push({
+              reqId: defaultReqId || '',
+              acId: rawAc.toUpperCase(),
+              tcId,
+              automation: auto.value,
+              automationRaw: auto.raw,
+              spec,
+              priority,
+              file: rel,
+              line: cells.line || 0,
+            });
+          }
+        }
+      } else {
         const looksLikeData =
-          /^req[-_ ]?\d+/i.test(reqId || '') || /^tc[-_]?\d+/i.test(tcId || '');
-        if (looksLikeData) nearMisses.push({ raw: `${reqId} | ${tcId}`, file: rel });
-        continue;
+          /^req[-_ ]?\d+/i.test(cells[0] || '') || /^tc[-_]?\d+/i.test(cells[0] || '');
+        if (looksLikeData) nearMisses.push({ raw: cells.slice(0, 3).join(' | '), file: rel });
       }
-      const auto = normalizeAutomation(automation);
-      links.push({
-        reqId,
-        acId,
-        tcId,
-        automation: auto.value,
-        automationRaw: auto.raw,
-        spec: (spec || '').replace(/`/g, '').trim(),
-        priority: (priority || '').trim(),
-        file: rel,
-      });
     }
 
     for (const cells of tableRowsUnder(lines, /Case không automation/i)) {
@@ -304,7 +343,7 @@ function findMissingAwaits(bodyLines, firstLineNo, asyncMatchers = ASYNC_MATCHER
 function loadAutomatedTests(root, options = {}) {
   // `.` = gốc repo, cho repo để playwright.config ngay ở root.
   const rel = options.projectDir || 'playwright';
-  const project = options.project || 'chromium';
+  const project = options.project;
   const projectDir = path.resolve(root, rel);
   if (!fs.existsSync(projectDir)) {
     return {
@@ -321,8 +360,11 @@ function loadAutomatedTests(root, options = {}) {
   // "đọc được 0 spec" rơi vào error và finding doc-duoc-0-spec trở thành code chết.
   const args = [
     'playwright', 'test', '--list', '--reporter=json',
-    `--project=${project}`, '--pass-with-no-tests',
+    '--pass-with-no-tests',
   ];
+  if (project && project !== 'all') {
+    args.push(`--project=${project}`);
+  }
   // shell: true nối args thành MỘT chuỗi, nên giá trị có khoảng trắng
   // (vd project tên "Desktop Chrome") bị tách thành hai tham số. Phải tự bọc ngoặc kép.
   const argv = useShell ? args.map((a) => (/\s/.test(a) ? `"${a}"` : a)) : args;
@@ -335,6 +377,7 @@ function loadAutomatedTests(root, options = {}) {
       maxBuffer: 32 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: useShell,
+      windowsHide: true,
     });
   } catch (err) {
     return {

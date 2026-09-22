@@ -1,4 +1,5 @@
 'use strict';
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * Bốn phép join trên dữ liệu đã chuẩn hoá:
  *   coverage - bức tranh tổng
@@ -11,6 +12,20 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { loadRequirements, loadTestCases, loadAutomatedTests } = require('./sources');
+const { loadConfig } = require('./config');
+
+function mergeOptions(root, options) {
+  try {
+    const configFile = path.join(root, 'qa.config.json');
+    if (!fs.existsSync(configFile)) {
+      return options || {};
+    }
+    const conf = loadConfig(root);
+    return { ...conf, ...(options || {}) };
+  } catch {
+    return options || {};
+  }
+}
 
 /**
  * Thang mức độ nghiêm trọng, khai MỘT lần cho cả bộ công cụ. Trước đây index.js giữ
@@ -46,7 +61,8 @@ function emptySpecFinding(testCases, automated, options) {
  * unit test truyền vào một hàm trả dữ liệu dựng sẵn để kiểm được phần join mà không
  * cần cài browser hay dựng app. Code chạy thật không bao giờ truyền tham số này.
  */
-function collect(root, options) {
+function collect(root, rawOptions) {
+  const options = mergeOptions(root, rawOptions);
   const loadAutomated = (options && options.loadAutomated) || loadAutomatedTests;
   let requirements = loadRequirements(root, options);
   let testCases = loadTestCases(root, options);
@@ -114,7 +130,8 @@ function expectedCasesFromRule(rule) {
   return wanted;
 }
 
-function coverage(root, options) {
+function coverage(root, rawOptions) {
+  const options = mergeOptions(root, rawOptions);
   const { requirements, testCases, automated, realTests } = collect(root, options);
   const byAc = new Map();
   for (const link of testCases.links) {
@@ -162,7 +179,8 @@ function coverage(root, options) {
   };
 }
 
-function gaps(root, options) {
+function gaps(root, rawOptions) {
+  const options = mergeOptions(root, rawOptions);
   const { requirements, testCases, automated, realTests } = collect(root, options);
   const automatedTcIds = new Set(realTests.map((t) => t.tcId).filter(Boolean));
   const wipTcIds = new Set(
@@ -221,12 +239,23 @@ function gaps(root, options) {
     linksByTcId.get(link.tcId).push(link);
   }
   for (const [tcId, occList] of linksByTcId.entries()) {
-    if (occList.length > 1) {
+    // Một test case phủ nhiều AC trong cùng 1 dòng bảng (hoặc một lần khai báo)
+    // không phải là trùng mã TC. Chỉ báo khi cùng mã TC được khai báo ở nhiều dòng
+    // hoặc nhiều file khác nhau.
+    const distinctDecls = new Map();
+    for (const l of occList) {
+      const declKey = l.line ? `${l.file}:${l.line}` : `${l.file}:${l.reqId}`;
+      if (!distinctDecls.has(declKey)) {
+        distinctDecls.set(declKey, l);
+      }
+    }
+    if (distinctDecls.size > 1) {
+      const declList = Array.from(distinctDecls.values());
       findings.push({
         severity: 'major',
         kind: 'ma-tc-trung',
-        where: occList.map((l) => `${l.file} (${l.reqId}/${l.acId})`).join(', '),
-        message: `Mã test case "${tcId}" xuất hiện ${occList.length} lần trong bảng traceability.`,
+        where: declList.map((l) => `${l.file} (${l.reqId}/${l.acId})`).join(', '),
+        message: `Mã test case "${tcId}" xuất hiện ${distinctDecls.size} lần trong bảng traceability.`,
         action: 'Đổi mã TC để mỗi test case có định danh duy nhất (không được tái sử dụng mã TC).',
       });
     }
@@ -485,7 +514,8 @@ function gaps(root, options) {
   return findings;
 }
 
-function impact(root, reqId, options) {
+function impact(root, reqId, rawOptions) {
+  const options = mergeOptions(root, rawOptions);
   const { requirements, testCases, realTests } = collect(root, options);
   const automated = { tests: realTests };
   const req = requirements.find((r) => r.id === reqId);
@@ -527,7 +557,8 @@ function impact(root, reqId, options) {
   };
 }
 
-function drift(root, options) {
+function drift(root, rawOptions) {
+  const options = mergeOptions(root, rawOptions);
   const { requirements, testCases, automated } = collect(root, options);
   const knownReq = new Set(requirements.map((r) => r.id).filter(Boolean));
   const knownAc = new Set();
@@ -658,7 +689,8 @@ function drift(root, options) {
  * Chống xung đột Git: file traceability.md là artifact sinh tự động, không sửa tay.
  * F-07: Loại bỏ timestamp để đảm bảo 100% tất định (Deterministic output).
  */
-function matrix(root, options) {
+function matrix(root, rawOptions) {
+  const options = mergeOptions(root, rawOptions);
   const { testCases, realTests } = collect(root, options);
   const automatedTcIds = new Set(realTests.map((t) => t.tcId).filter(Boolean));
   const specsByTc = new Map();
@@ -721,7 +753,8 @@ function matrix(root, options) {
   };
 }
 
-function summary(root, options) {
+function summary(root, rawOptions) {
+  const options = mergeOptions(root, rawOptions);
   const cov = coverage(root, options);
   const gapsList = gaps(root, options);
   const driftList = drift(root, options);

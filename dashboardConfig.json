@@ -3,25 +3,37 @@
     "qc": {
       "label": "QC",
       "baseURL": "https://seeker.vl24hv2.qc.sieuviet-team.com",
-      "apiBaseURL": "https://api.vl24hv2.qc.sieuviet-team.com"
+      "apiBaseURL": "https://api.vl24hv2.qc.sieuviet-team.com",
+      "_siteLabels": {
+        "baseURL": "Cổng Quản Trị Admin",
+        "apiBaseURL": "Backend REST API"
+      }
     },
     "stg": {
       "label": "Staging",
       "baseURL": "https://seeker.vl24hv2.staging.sieuviet-team.com",
-      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com"
+      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com",
+      "_siteLabels": {
+        "baseURL": "Cổng Quản Trị Admin",
+        "apiBaseURL": "Backend REST API"
+      }
     },
     "prod": {
       "label": "Production",
       "baseURL": "https://vieclam24h.vn",
-      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com"
+      "apiBaseURL": "https://api.vl24hv2.staging.sieuviet-team.com",
+      "_siteLabels": {
+        "baseURL": "Cổng Quản Trị Admin",
+        "apiBaseURL": "Backend REST API"
+      }
     }
   },
   "runtime": {
     "defaultEnvironment": "qc",
-    "workers": 2,
+    "workers": 6,
     "testTimeout": 60000,
     "navigationTimeout": 60000,
-    "actionTimeout": 0,
+    "actionTimeout": 15000,
     "retriesLocal": 0,
     "retriesCI": 2,
     "trace": "on-first-retry",
@@ -53,13 +65,13 @@
     "autoCleanupReports": false
   },
   "branding": {
-    "projectName": "Vieclam24h Automation",
+    "projectName": "Vieclam24h Automation Edited",
     "projectSubtitle": "Siêu Việt Group • Playwright",
     "pageTitle": "Vieclam24h Automation Dashboard",
     "logoUrl": "https://vieclam24h.vn/img/mobile-entrypoint/logo-mobile-32x3.png",
     "primaryColor": "#451DA0",
     "backgroundColor": "",
-    "fontSize": "14px"
+    "fontSize": "16px"
   },
   "suites": {
     "smoke-all": {
@@ -336,5 +348,14 @@
     "channelName": "#qa-automation",
     "notifyOnFinish": false,
     "notifyOnlyOnFailure": false
+  },
+  "qa": {
+    "requirements": "requirements",
+    "testCases": "test-cases",
+    "specs": "tests",
+    "decisionsFile": "decisions.json"
+  },
+  "docs": {
+    "dir": "docs"
   }
 }

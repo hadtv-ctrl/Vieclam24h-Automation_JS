@@ -12,14 +12,18 @@ const PROJECT_ROOT = process.cwd();
 function resolveMasterProcessPath() {
   const envPath = process.env.MASTER_PROCESS_ROOT;
   if (envPath && fs.existsSync(path.join(envPath, 'master.py'))) return envPath;
+  const driveRoot = path.parse(path.resolve(PROJECT_ROOT)).root;
   const candidates = [
-    'D:/_Master_Process',
-    'd:/_Master_Process',
     path.resolve(PROJECT_ROOT, '../_Master_Process'),
-    path.resolve(PROJECT_ROOT, '.master_process')
+    path.resolve(PROJECT_ROOT, '../_Master_process'),
+    path.resolve(PROJECT_ROOT, '.master_process'),
+    path.join(driveRoot, '_Master_Process'),
+    path.join(driveRoot, '_Master_process'),
+    'D:/_Master_Process',
+    'C:/_Master_Process',
   ];
   for (const c of candidates) {
-    if (fs.existsSync(path.join(c, 'master.py'))) return c;
+    if (c && fs.existsSync(path.join(c, 'master.py'))) return c;
   }
   throw new Error('[Gate Evidence] Không tìm thấy Master Process Hub (master.py).');
 }

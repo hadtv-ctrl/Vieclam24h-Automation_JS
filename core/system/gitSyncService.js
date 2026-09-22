@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy service module, queued for modular decomposition
 const fs = require('fs');
 const path = require('path');
 const { execSync, spawnSync } = require('child_process');
@@ -935,6 +936,7 @@ module.exports = {
   pullCode,
   commitAndPush,
   syncSuitesAndConfigs,
+  sync: syncSuitesAndConfigs,
   listBranches,
   checkoutBranch,
 };

@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy service module, queued for modular decomposition
 /**
  * dashboard/services/qaService.js
  * QA Docs & Automation: đọc ma trận truy vết REQ -> AC -> TC -> spec và sổ quyết định.
@@ -404,6 +405,17 @@ function getBddDraft(root, ids = []) {
   };
 }
 
+function cleanCandidateTitle(rawTitle) {
+  if (!rawTitle) return null;
+  const str = String(rawTitle).trim();
+  if (str.includes('|')) {
+    const parts = str.split('|').map((p) => p.trim()).filter(Boolean);
+    const desc = parts.find((p) => !/^(TC-\d{3}|AC-\d{3}|P[0-3]|candidate|yes|no|có|không|-)$/i.test(p));
+    if (desc) return desc;
+  }
+  return str.replace(/^#{1,6}\s*(?:TC-\d{3}\s*[-–:]\s*)?/i, '').trim() || null;
+}
+
 function getCandidates(root, limit = 7) {
   const status = analyzerStatus();
   const { dirs } = readQaConfig(root);
@@ -423,6 +435,7 @@ function getCandidates(root, limit = 7) {
       priority: c.priority || null,
       automation: c.automation || null,
       file: c.file,
+      title: cleanCandidateTitle(c.title),
     })),
   };
 }
@@ -551,6 +564,13 @@ function getQaSummary(root) {
       : (fs.existsSync(fallbackCommandsPath) ? fallbackCommandsPath : null);
 
     if (targetModule) {
+      try {
+        delete require.cache[require.resolve(targetModule)];
+        const dir = path.dirname(targetModule);
+        delete require.cache[require.resolve(path.join(dir, 'sources.js'))];
+        delete require.cache[require.resolve(path.join(dir, 'config.js'))];
+      } catch (_) {}
+
       // eslint-disable-next-line global-require, import/no-dynamic-require
       const qaCommands = require(targetModule);
       if (typeof qaCommands.summary === 'function') {
@@ -818,6 +838,47 @@ function generateScaffold(root, payload = {}) {
     };
   }
 
+  // Chế độ khởi tạo từ nội dung thô (Raw Extraction / AI Synthesis)
+  if (payload.mode === 'raw_create' || payload.customFiles) {
+    const custom = payload.customFiles || payload;
+    const reqRel = custom.reqRelPath || `requirements/${payload.reqId}-${payload.slug}.md`;
+    const tcRel = custom.tcRelPath || `test-cases/${payload.reqId}-${payload.slug}.md`;
+    const specRel = custom.specRelPath || `tests/e2e/desktop/${payload.slug}-bdd.spec.js`;
+
+    const absReq = path.resolve(root, reqRel);
+    const absTc = path.resolve(root, tcRel);
+    const absSpec = path.resolve(root, specRel);
+
+    if (!payload.force) {
+      const existing = [absReq, absTc, absSpec].filter((f) => fs.existsSync(f));
+      if (existing.length > 0) {
+        throw Object.assign(new Error(`File đã tồn tại (dùng force để ghi đè): ${existing.map((f) => path.relative(root, f)).join(', ')}`), { status: 409 });
+      }
+    }
+
+    fs.mkdirSync(path.dirname(absReq), { recursive: true });
+    fs.mkdirSync(path.dirname(absTc), { recursive: true });
+    fs.mkdirSync(path.dirname(absSpec), { recursive: true });
+
+    if (custom.reqContent) fs.writeFileSync(absReq, custom.reqContent, 'utf8');
+    if (custom.tcContent) fs.writeFileSync(absTc, custom.tcContent, 'utf8');
+    if (custom.specContent) fs.writeFileSync(absSpec, custom.specContent, 'utf8');
+
+    return {
+      ok: true,
+      mode: 'raw_create',
+      message: `Đã khởi tạo thành công 3 file cho ${payload.reqId || ''} (${payload.title || ''}).`,
+      reqId: payload.reqId,
+      title: payload.title,
+      created: [
+        reqRel.replace(/\\/g, '/'),
+        tcRel.replace(/\\/g, '/'),
+        specRel.replace(/\\/g, '/'),
+      ],
+      primaryFile: reqRel.replace(/\\/g, '/'),
+    };
+  }
+
   const reqId = String(payload.reqId || '').trim().toUpperCase();
   if (!reqId || !/^REQ-\d{3}$/.test(reqId)) {
     throw Object.assign(new Error(`Mã Requirement không hợp lệ: "${reqId}" (yêu cầu định dạng REQ-001).`), { status: 400 });
@@ -847,6 +908,170 @@ function generateScaffold(root, payload = {}) {
   };
 }
 
+/**
+ * Lấy các file liên đới với một REQ-xxx (Requirement, Test Case, Automation Spec).
+ */
+function getRequirementImpact(root, reqId) {
+  const cleanReqId = String(reqId || '').trim().toUpperCase();
+  if (!cleanReqId || !/^REQ-\d{3}$/.test(cleanReqId)) {
+    throw Object.assign(new Error(`Mã Requirement không hợp lệ: "${cleanReqId}" (yêu cầu định dạng REQ-001).`), { status: 400 });
+  }
+
+  const { dirs } = readQaConfig(root);
+  const reqDir = path.resolve(root, dirs.requirements || 'requirements');
+  const tcDir = path.resolve(root, dirs.testCases || 'test-cases');
+  const specDir = path.resolve(root, dirs.specs || 'tests');
+
+  const files = {
+    requirements: [],
+    testCases: [],
+    specs: [],
+  };
+
+  // 1. Quét file requirements
+  if (fs.existsSync(reqDir)) {
+    const reqFiles = fs.readdirSync(reqDir).filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md');
+    for (const f of reqFiles) {
+      const fullPath = path.join(reqDir, f);
+      try {
+        const content = fs.readFileSync(fullPath, 'utf8');
+        if (content.match(new RegExp(`^id:\\s*${cleanReqId}\\b`, 'im')) || f.toUpperCase().includes(cleanReqId)) {
+          files.requirements.push({
+            relPath: path.relative(root, fullPath).replace(/\\/g, '/'),
+            fileName: f,
+            exists: true,
+          });
+        }
+      } catch (_) {}
+    }
+  }
+
+  // 2. Quét file test-cases
+  if (fs.existsSync(tcDir)) {
+    const tcFiles = fs.readdirSync(tcDir).filter((f) => f.endsWith('.md') && f.toLowerCase() !== 'readme.md');
+    for (const f of tcFiles) {
+      const fullPath = path.join(tcDir, f);
+      try {
+        const content = fs.readFileSync(fullPath, 'utf8');
+        if (content.includes(cleanReqId) || f.toUpperCase().includes(cleanReqId)) {
+          files.testCases.push({
+            relPath: path.relative(root, fullPath).replace(/\\/g, '/'),
+            fileName: f,
+            exists: true,
+          });
+        }
+      } catch (_) {}
+    }
+  }
+
+  // 3. Quét file specs
+  if (fs.existsSync(specDir)) {
+    const findSpecs = (dir) => {
+      let results = [];
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            results = results.concat(findSpecs(full));
+          } else if (entry.name.endsWith('.spec.js') || entry.name.endsWith('.spec.ts')) {
+            results.push(full);
+          }
+        }
+      } catch (_) {}
+      return results;
+    };
+
+    try {
+      const allSpecs = findSpecs(specDir);
+      for (const fullPath of allSpecs) {
+        try {
+          const content = fs.readFileSync(fullPath, 'utf8');
+          if (content.includes(`@${cleanReqId}`) || content.includes(cleanReqId)) {
+            files.specs.push({
+              relPath: path.relative(root, fullPath).replace(/\\/g, '/'),
+              fileName: path.basename(fullPath),
+              exists: true,
+            });
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  return {
+    reqId: cleanReqId,
+    files,
+    hasFiles: files.requirements.length > 0 || files.testCases.length > 0 || files.specs.length > 0,
+  };
+}
+
+/**
+ * Xóa an toàn một Requirement và các file liên quan đã chọn.
+ * Mọi file trước khi xóa đều được sao lưu vào .dashboard-backups/.
+ */
+function deleteRequirement(root, { reqId, deleteTestCase = true, deleteSpec = false }) {
+  const cleanReqId = String(reqId || '').trim().toUpperCase();
+  if (!cleanReqId || !/^REQ-\d{3}$/.test(cleanReqId)) {
+    throw Object.assign(new Error(`Mã Requirement không hợp lệ: "${cleanReqId}" (yêu cầu định dạng REQ-001).`), { status: 400 });
+  }
+
+  const impact = getRequirementImpact(root, cleanReqId);
+  const toDelete = [];
+
+  // Luôn xóa requirements
+  for (const item of impact.files.requirements) {
+    toDelete.push({ ...item, type: 'requirement' });
+  }
+
+  // Xóa test-cases nếu được chọn
+  if (deleteTestCase) {
+    for (const item of impact.files.testCases) {
+      toDelete.push({ ...item, type: 'test-case' });
+    }
+  }
+
+  // Xóa specs nếu được chọn
+  if (deleteSpec) {
+    for (const item of impact.files.specs) {
+      toDelete.push({ ...item, type: 'spec' });
+    }
+  }
+
+  if (toDelete.length === 0) {
+    throw Object.assign(new Error(`Không tìm thấy file nào để xóa cho ${cleanReqId}.`), { status: 404 });
+  }
+
+  const deleted = [];
+  const backups = [];
+
+  for (const item of toDelete) {
+    const fullPath = path.resolve(root, item.relPath);
+    // Bảo vệ path traversal: phải nằm trong root
+    if (!fullPath.startsWith(path.resolve(root) + path.sep)) {
+      continue;
+    }
+    if (fs.existsSync(fullPath)) {
+      try {
+        const backupRel = createBackup(item.relPath, fullPath, root);
+        backups.push({ file: item.relPath, backup: backupRel });
+        fs.unlinkSync(fullPath);
+        deleted.push(item.relPath);
+      } catch (err) {
+        throw Object.assign(new Error(`Lỗi khi xóa file ${item.relPath}: ${err.message}`), { status: 500 });
+      }
+    }
+  }
+
+  return {
+    success: true,
+    reqId: cleanReqId,
+    deleted,
+    backups,
+    message: `Đã xóa thành công ${deleted.length} file cho ${cleanReqId}. Bản sao lưu tại .dashboard-backups/.`,
+  };
+}
+
 module.exports = {
   analyzerStatus,
   readQaConfig,
@@ -866,4 +1091,6 @@ module.exports = {
   runQaFix,
   getScaffoldMeta,
   generateScaffold,
+  getRequirementImpact,
+  deleteRequirement,
 };

@@ -2,18 +2,57 @@
   "version": 1,
   "code": {
     "excludedFolders": [
-      "_backup_vieclam24h",
-      ".dashboard-backups",
-      ".dashboard-drafts",
+      "playwright-report",
       "test-results",
-      "playwright-report"
+      ".dashboard-backups",
+      ".dashboard-drafts"
+    ],
+    "roleRules": [
+      {
+        "role": "test",
+        "match": "any",
+        "namePattern": "(\\.(test|spec)\\.[jt]sx?$)",
+        "pathPattern": "(^|/)(tests?|specs?)(/|$)",
+        "ignoreCase": true
+      },
+      {
+        "role": "component",
+        "match": "any",
+        "extensions": [".tsx", ".jsx", ".vue"],
+        "pathPattern": "(^|/)components(/|$)"
+      },
+      {
+        "role": "hook",
+        "match": "any",
+        "namePattern": "^use[A-Z]",
+        "pathPattern": "(^|/)hooks(/|$)"
+      },
+      {
+        "role": "service",
+        "match": "any",
+        "namePattern": "(^|[.\\-_])(service|api|client)([.\\-_]|$)",
+        "pathPattern": "(^|/)services(/|$)",
+        "ignoreCase": true
+      },
+      {
+        "role": "utils",
+        "match": "any",
+        "namePattern": "(^|[.\\-_])(utils?|helpers?)([.\\-_]|$)",
+        "pathPattern": "(^|/)(utils?|helpers?)(/|$)",
+        "ignoreCase": true
+      },
+      {
+        "role": "module",
+        "default": true
+      }
     ],
     "limits": {
-      "module": 100000,
-      "service": 100000,
-      "utils": 100000,
-      "component": 100000,
-      "hook": 100000
+      "test": 1200,
+      "component": 150,
+      "hook": 150,
+      "service": 1000,
+      "utils": 700,
+      "module": 1500
     }
   },
   "knowledge": {

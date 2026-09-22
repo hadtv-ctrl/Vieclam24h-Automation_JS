@@ -1,3 +1,13 @@
+---
+id: REQ-001
+title: Đăng ký tài khoản người tìm việc
+status: Inferred
+version: 1.0
+risk: high
+owner: QA
+test_cases: test-cases/REQ-001-dang-ky-tai-khoan.md
+---
+
 # REQ-001 — Đăng ký tài khoản người tìm việc
 
 | Thuộc tính | Giá trị |

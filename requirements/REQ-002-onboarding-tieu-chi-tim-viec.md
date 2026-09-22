@@ -1,3 +1,13 @@
+---
+id: REQ-002
+title: Onboarding tiêu chí tìm việc sau khi đăng nhập
+status: Inferred
+version: 1.0
+risk: medium
+owner: QA
+test_cases: test-cases/REQ-002-onboarding-tieu-chi-tim-viec.md
+---
+
 # REQ-002 — Onboarding tiêu chí tìm việc sau khi đăng nhập
 
 | Thuộc tính | Giá trị |

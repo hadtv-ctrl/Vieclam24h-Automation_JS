@@ -1,3 +1,13 @@
+---
+id: REQ-005
+title: Quản lý hồ sơ cá nhân của người tìm việc
+status: Inferred
+version: 1.0
+risk: high
+owner: QA
+test_cases: test-cases/REQ-005-quan-ly-ho-so-ca-nhan.md
+---
+
 # REQ-005 — Quản lý hồ sơ cá nhân của người tìm việc
 
 | Thuộc tính | Giá trị |

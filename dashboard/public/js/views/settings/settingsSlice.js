@@ -44,15 +44,15 @@ export class SettingsSlice {
     this.mpHelper.bindEvents(root, this._disposers);
 
     const saveBtn = root.querySelector('#save-settings-button') || root.querySelector('#btn-save-settings');
-    if (saveBtn) {
-      const h = () => (typeof window.saveSettings === 'function' ? window.saveSettings() : this.saveSettings());
+    if (saveBtn && typeof window.saveSettings !== 'function') {
+      const h = () => this.saveSettings();
       saveBtn.addEventListener('click', h);
       this._disposers.push(() => saveBtn.removeEventListener('click', h));
     }
 
     const reloadBtn = root.querySelector('#reload-settings-button');
-    if (reloadBtn) {
-      const h = () => (typeof window.openSettings === 'function' ? window.openSettings() : this.loadSettings());
+    if (reloadBtn && typeof window.openSettings !== 'function') {
+      const h = () => this.loadSettings();
       reloadBtn.addEventListener('click', h);
       this._disposers.push(() => reloadBtn.removeEventListener('click', h));
     }
@@ -106,7 +106,7 @@ export class SettingsSlice {
 
   async loadSettings() {
     try {
-      const res = await apiClient.get('/api/config');
+      const res = await apiClient.get('/api/settings').catch(() => apiClient.get('/api/config'));
       this.config = res || {};
       stateStore.setState({ settings: this.config }, 'settingsSlice.load');
       this.populateForm();
@@ -116,7 +116,7 @@ export class SettingsSlice {
   }
 
   populateForm() {
-    const projInput = document.getElementById('setting-project-name');
+    const projInput = document.getElementById('settings-project-name');
     if (projInput && this.config?.branding?.projectName) {
       projInput.value = this.config.branding.projectName;
     }
@@ -124,9 +124,12 @@ export class SettingsSlice {
 
   async saveSettings() {
     try {
-      const projInput = document.getElementById('setting-project-name');
-      const payload = { ...this.config, branding: { ...this.config.branding, projectName: projInput?.value } };
-      await apiClient.post('/api/config', payload);
+      const projInput = document.getElementById('settings-project-name');
+      const payload = {
+        ...this.config,
+        branding: { ...(this.config.branding || {}), projectName: projInput?.value?.trim() || this.config?.branding?.projectName }
+      };
+      await apiClient.put('/api/settings', payload);
       this.notify('Đã lưu cấu hình hệ thống thành công.');
     } catch (err) {
       this.notify('Lỗi lưu cấu hình: ' + err.message);

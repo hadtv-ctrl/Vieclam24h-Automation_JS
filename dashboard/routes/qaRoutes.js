@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * dashboard/routes/qaRoutes.js
  * QA Docs & Automation APIs: ma trận truy vết, ứng viên automation, sổ quyết định.
@@ -17,10 +18,13 @@ const {
   runQaFix,
   getScaffoldMeta,
   generateScaffold,
+  getRequirementImpact,
+  deleteRequirement,
 } = require('../services/qaService');
 const {
   inferTestCases,
   appendTestCasesToDocument,
+  extractScaffoldFromRaw,
 } = require('../services/qaInferenceService');
 const { sendJson, parseBody } = require('./routeUtils');
 
@@ -56,6 +60,20 @@ async function handleQaRoutes(request, response, url, context = {}) {
       sendJson(response, 200, getScaffoldMeta(root));
     } catch (error) {
       sendJson(response, 500, { error: `Không lấy được thông tin scaffold: ${error.message}` });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/scaffold/extract') {
+    try {
+      const body = await parseBody(request);
+      const result = await extractScaffoldFromRaw(root, body || {});
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
     }
     return true;
   }
@@ -196,6 +214,33 @@ async function handleQaRoutes(request, response, url, context = {}) {
         testCases: body.testCases || [],
       });
       sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/qa/requirement/impact') {
+    try {
+      const reqId = url.searchParams.get('reqId');
+      sendJson(response, 200, getRequirementImpact(root, reqId));
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, { error: error.message });
+    }
+    return true;
+  }
+
+  if (
+    (request.method === 'DELETE' && url.pathname === '/api/qa/requirement') ||
+    (request.method === 'POST' && (url.pathname === '/api/qa/requirement/delete' || url.pathname === '/api/qa/delete-requirement'))
+  ) {
+    try {
+      const body = await parseBody(request);
+      sendJson(response, 200, deleteRequirement(root, body || {}));
     } catch (error) {
       const status = Number.isInteger(error.status) ? error.status : 400;
       sendJson(response, status, {

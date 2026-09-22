@@ -1,3 +1,13 @@
+---
+id: REQ-007
+title: Tìm kiếm việc làm qua trợ lý Chop AI chatbot
+status: Confirmed
+version: 1.0
+risk: medium
+owner: QA
+test_cases: test-cases/REQ-007-tim-viec-qua-chop-ai-chatbot.md
+---
+
 # REQ-007 — Tìm kiếm việc làm qua trợ lý Chop AI chatbot
 
 | Thuộc tính | Giá trị |

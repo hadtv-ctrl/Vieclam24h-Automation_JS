@@ -195,9 +195,22 @@
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
-.qa-table tbody tr:last-child td { border-bottom: none; }
-.qa-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 4%, transparent); }
 .qa-mono { font-family: var(--font-mono); font-size: var(--font-caption); }
+.qa-candidate-title {
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.4;
+  word-break: break-word;
+  max-width: 320px;
+}
+.qa-row-highlight {
+  animation: qaRowHighlightFade 4s ease forwards;
+}
+@keyframes qaRowHighlightFade {
+  0% { background: rgba(59, 130, 246, 0.25) !important; }
+  70% { background: rgba(59, 130, 246, 0.12) !important; }
+  100% { background: transparent; }
+}
 /* Ô "File" trong bảng tổng quan là <button>, không phải <a>: nó mở panel đọc ngay tại chỗ
    chứ không điều hướng đi đâu. Nhưng phải trông như bấm được. */
 .qa-file-link {

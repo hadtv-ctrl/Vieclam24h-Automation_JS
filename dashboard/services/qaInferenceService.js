@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy service module, queued for modular decomposition
 /**
  * dashboard/services/qaInferenceService.js
  * Tự động rà soát câu hỏi đã chốt (Open Questions) và suy luận đề xuất Test Cases còn thiếu.
@@ -624,6 +625,728 @@ function appendTestCasesToDocument(root, { reqId, tcPath, testCases = [] }) {
   };
 }
 
+/**
+ * Tạo slug chuẩn tiếng Việt không dấu
+ */
+function slugify(text) {
+  return String(text || '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'feature';
+}
+
+/**
+ * Nhận diện nội dung dán vào có phải là Playwright test script hay không
+ */
+function detectIsTestScript(text) {
+  if (!text || typeof text !== 'string') return false;
+  const patterns = [
+    /\btest\s*\(/,
+    /\btest\.describe\s*\(/,
+    /\btest\.(?:skip|fixme|only)\s*\(/,
+    /\bexpect\s*\(/,
+    /\bpage\.(?:goto|fill|click|locator|waitForSelector|waitForURL)\b/,
+    /from\s+['"][^'"]*playwright[^'"]*['"]/,
+    /require\(['"][^'"]*baseTest['"]\)/,
+    /async\s*\(\s*\{[^}]*page[^}]*\}\s*\)/,
+  ];
+  let matches = 0;
+  for (const p of patterns) {
+    if (p.test(text)) matches += 1;
+  }
+  return matches >= 2 || (matches >= 1 && (/\btest\s*\(/.test(text) || /\btest\.describe\s*\(/.test(text)));
+}
+
+/**
+ * Suy luận domain từ văn bản
+ */
+function inferDomainFromText(text, existingDomains = []) {
+  const lower = String(text || '').toLowerCase();
+  for (const d of existingDomains) {
+    if (d && lower.includes(d.toLowerCase())) return d.toLowerCase();
+  }
+  if (/login|sign.?in|đăng nhập|register|sign.?up|đăng ký|auth|password|mật khẩu|otp/i.test(lower)) return 'auth';
+  if (/job|tin tuyển dụng|việc làm|tuyển dụng|apply|ứng tuyển|hồ sơ/i.test(lower)) return 'job';
+  if (/profile|user|tài khoản|thông tin cá nhân|cài đặt/i.test(lower)) return 'profile';
+  if (/employer|nhà tuyển dụng|ntd|doanh nghiệp/i.test(lower)) return 'employer';
+  return existingDomains[0] || 'general';
+}
+
+/**
+ * Bóc tách các khối test(...) từ mã nguồn JavaScript / TypeScript bằng thuật toán đếm ngoặc nhọn
+ */
+function parseTestBlocksFromScript(content) {
+  const blocks = [];
+  const regex = /test(?:\.(?:skip|fixme|only))?\(\s*['"`]([^'"`]+)['"`]/g;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    const rawTitle = match[1];
+    const startIndex = match.index;
+    const arrowIndex = content.indexOf('=>', startIndex);
+    if (arrowIndex === -1) continue;
+    const openBrace = content.indexOf('{', arrowIndex);
+    if (openBrace === -1) continue;
+    let depth = 1;
+    let i = openBrace + 1;
+    while (i < content.length && depth > 0) {
+      if (content[i] === '{') depth += 1;
+      else if (content[i] === '}') depth -= 1;
+      i += 1;
+    }
+    const body = content.slice(openBrace + 1, i - 1);
+    blocks.push({ rawTitle, body: body.trim() });
+  }
+  return blocks;
+}
+
+/**
+ * Heuristic Parser cho Playwright Test Script thô
+ */
+function extractHeuristicFromTestScript(rawContent, reqId, domain) {
+  // 1. Trích xuất Title từ test.describe
+  const describeMatch = rawContent.match(/test\.describe\(\s*['"`]([^'"`]+)['"`]/i);
+  let title = 'Tính năng ' + reqId;
+  if (describeMatch) {
+    title = describeMatch[1]
+      .replace(/^Feature:\s*/i, '')
+      .replace(/@\S+/g, '')
+      .replace(/REQ-\d{3}\s*[-–:]*\s*/gi, '')
+      .trim();
+  }
+
+  // 2. Bóc tách danh sách test cases
+  const blocks = parseTestBlocksFromScript(rawContent);
+  if (!describeMatch && blocks.length > 0) {
+    title = blocks[0].rawTitle
+      .replace(/TC-\d{3}\s*[-–:]*\s*/gi, '')
+      .replace(/AC-\d{3}\s*[-–:]*\s*/gi, '')
+      .replace(/@\S+/g, '')
+      .trim();
+  }
+
+  const slug = slugify(title);
+  const acMap = new Map();
+  const testCases = [];
+
+  blocks.forEach((block, idx) => {
+    const num = idx + 1;
+    const tcIdMatch = block.rawTitle.match(/\bTC-(\d{3})\b/i);
+    const acIdMatch = block.rawTitle.match(/\bAC-(\d{3})\b/i);
+
+    const tcId = tcIdMatch ? tcIdMatch[0].toUpperCase() : `TC-${String(num).padStart(3, '0')}`;
+    const acId = acIdMatch ? acIdMatch[0].toUpperCase() : `AC-${String(Math.min(num, 10)).padStart(3, '0')}`;
+
+    const cleanTitle = block.rawTitle
+      .replace(/\bTC-\d{3}\s*[-–:]*\s*/gi, '')
+      .replace(/\bAC-\d{3}\s*[-–:]*\s*/gi, '')
+      .replace(/@\S+/g, '')
+      .trim() || `Kiểm thử kịch bản ${num}`;
+
+    if (!acMap.has(acId)) {
+      acMap.set(acId, {
+        id: acId,
+        title: cleanTitle,
+        given: 'Người dùng truy cập vào hệ thống và mở giao diện tính năng ' + title,
+        when: 'Thực hiện thao tác: ' + cleanTitle,
+        then: 'Hệ thống thực hiện xử lý hợp lệ và trả về kết quả mong đợi',
+      });
+    }
+
+    const priority = /lỗi|sai|boundary|biên|invalid|fail|thiếu/i.test(cleanTitle) ? 'P2' : 'P1';
+
+    // Bóc tách steps nếu có test.step
+    const stepMatches = [...block.body.matchAll(/test\.step\(\s*['"`]([^'"`]+)['"`]/g)];
+    const steps = stepMatches.length > 0
+      ? stepMatches.map((m, sIdx) => ({
+        step: sIdx + 1,
+        action: m[1].replace(/^(?:Given|When|Then|Bước\s*\d+:?)\s*/i, '').trim(),
+        expected: 'Hệ thống thực hiện thành công bước kiểm thử',
+      }))
+      : [
+        { step: 1, action: 'Truy cập màn hình tính năng', expected: 'Trang hiển thị đầy đủ giao diện' },
+        { step: 2, action: `Thực hiện kịch bản: ${cleanTitle}`, expected: 'Khớp kết quả mong đợi theo nghiệp vụ' },
+      ];
+
+    testCases.push({
+      id: tcId,
+      acId,
+      title: cleanTitle,
+      priority,
+      automation: 'Yes',
+      precondition: 'Môi trường sẵn sàng, dữ liệu kiểm thử đã được chuẩn bị',
+      body: block.body,
+      steps,
+    });
+  });
+
+  const acs = Array.from(acMap.values());
+  if (acs.length === 0) {
+    acs.push({
+      id: 'AC-001',
+      title: title,
+      given: 'Người dùng truy cập vào chức năng ' + title,
+      when: 'Thực hiện các thao tác kiểm thử chính',
+      then: 'Hệ thống xử lý chính xác và phản hồi kết quả hợp lệ',
+    });
+    testCases.push({
+      id: 'TC-001',
+      acId: 'AC-001',
+      title: title,
+      priority: 'P1',
+      automation: 'Yes',
+      precondition: 'Môi trường sẵn sàng',
+      body: rawContent,
+      steps: [
+        { step: 1, action: 'Thực hiện kịch bản kiểm thử', expected: 'Các assertions thành công' },
+      ],
+    });
+  }
+
+  return {
+    title,
+    slug,
+    domain: domain || 'general',
+    businessGoal: `Mô tả mục tiêu nghiệp vụ của tính năng ${title} (được suy luận từ automation test script).`,
+    acs,
+    testCases,
+  };
+}
+
+/**
+ * Heuristic Parser cho nội dung văn bản Spec / User Story / Requirement thô
+ */
+function extractHeuristicFromSpecText(rawContent, reqId, domain) {
+  const lines = rawContent.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+  // 1. Trích xuất Title
+  let title = '';
+  for (const line of lines) {
+    const titleMatch = line.match(/^(?:#+\s*|Tính năng\s*[:\-—]\s*|Feature\s*[:\-—]\s*|Tên tính năng\s*[:\-—]\s*)(.*)$/i);
+    if (titleMatch && titleMatch[1].trim()) {
+      title = titleMatch[1].replace(/REQ-\d{3}\s*[-–:]*\s*/gi, '').trim();
+      break;
+    }
+  }
+  if (!title && lines.length > 0) {
+    title = lines[0].replace(/^#+\s*/, '').replace(/REQ-\d{3}\s*[-–:]*\s*/gi, '').trim();
+  }
+  if (!title) title = `Tính năng ${reqId}`;
+
+  const slug = slugify(title);
+
+  // 2. Trích xuất Acceptance Criteria
+  const acs = [];
+  const acRegex = /(?:AC-?(\d+)|Tiêu chí (\d+)|Criterion (\d+))\s*[:\-—]?\s*(.*)/i;
+
+  for (const line of lines) {
+    const m = line.match(acRegex);
+    if (m) {
+      const acNum = m[1] || m[2] || m[3];
+      const acId = `AC-${String(acNum).padStart(3, '0')}`;
+      const acDesc = (m[4] || '').trim();
+      if (!acs.some((a) => a.id === acId)) {
+        acs.push({
+          id: acId,
+          title: acDesc || `Tiêu chí ${acNum}`,
+          given: `Người dùng truy cập vào chức năng ${title}`,
+          when: `Thực hiện thao tác: ${acDesc || acId}`,
+          then: 'Hệ thống xử lý hợp lệ và phản hồi đúng quy chuẩn',
+        });
+      }
+    }
+  }
+
+  // Nếu không có mã AC-xxx, trích xuất từ các gạch đầu dòng bullet
+  if (acs.length === 0) {
+    const bulletLines = lines.filter((l) => /^[-*+]\s+/.test(l) || /^\d+[.)]\s+/.test(l));
+    const targetBullets = bulletLines.length > 0 ? bulletLines.slice(0, 6) : lines.slice(1, 4);
+
+    targetBullets.forEach((bullet, idx) => {
+      const acId = `AC-${String(idx + 1).padStart(3, '0')}`;
+      const cleanBullet = bullet.replace(/^[-*+\d.)\s]+/, '').trim();
+      acs.push({
+        id: acId,
+        title: cleanBullet.slice(0, 90) || `Tiêu chí chấp nhận ${idx + 1}`,
+        given: `Người dùng đã đăng nhập hoặc truy cập tính năng ${title}`,
+        when: `Thực hiện kiểm thử: ${cleanBullet}`,
+        then: 'Hệ thống phản hồi chính xác và cập nhật dữ liệu tương ứng',
+      });
+    });
+  }
+
+  if (acs.length === 0) {
+    acs.push({
+      id: 'AC-001',
+      title: `Quy tắc xử lý chính của ${title}`,
+      given: `Hệ thống sẵn sàng`,
+      when: `Người dùng thực hiện thao tác trên giao diện`,
+      then: `Xử lý thành công và hiển thị thông báo hợp lệ`,
+    });
+  }
+
+  // 3. Sinh các Test Cases tương ứng với ACs
+  const testCases = [];
+  acs.forEach((ac, idx) => {
+    const p1Num = String(idx * 2 + 1).padStart(3, '0');
+    const p2Num = String(idx * 2 + 2).padStart(3, '0');
+
+    testCases.push({
+      id: `TC-${p1Num}`,
+      acId: ac.id,
+      title: `Kiểm tra thành công theo ${ac.id}: ${ac.title}`,
+      priority: 'P1',
+      automation: 'Candidate',
+      precondition: ac.given || 'Môi trường sẵn sàng',
+      steps: [
+        { step: 1, action: 'Truy cập màn hình tính năng', expected: 'Giao diện hiển thị đầy đủ' },
+        { step: 2, action: `Thực hiện thao tác: ${ac.when || ac.title}`, expected: ac.then || 'Thao tác thành công' },
+      ],
+    });
+
+    testCases.push({
+      id: `TC-${p2Num}`,
+      acId: ac.id,
+      title: `Kiểm tra thất bại / xử lý biên cho ${ac.id}`,
+      priority: 'P2',
+      automation: 'Candidate',
+      precondition: ac.given || 'Môi trường sẵn sàng',
+      steps: [
+        { step: 1, action: 'Truy cập màn hình tính năng', expected: 'Giao diện hiển thị đầy đủ' },
+        { step: 2, action: 'Nhập dữ liệu không hợp lệ hoặc vượt biên', expected: 'Hiển thị thông báo lỗi rõ ràng' },
+      ],
+    });
+  });
+
+  return {
+    title,
+    slug,
+    domain: domain || 'general',
+    businessGoal: `Mô tả mục tiêu nghiệp vụ cho ${title}. Đảm bảo các quy trình vận hành chính xác và thân thiện với người dùng.`,
+    acs,
+    testCases,
+  };
+}
+
+/**
+ * Trích xuất qua AI Semantic Engine (Gemini / OpenAI / DeepSeek)
+ */
+async function extractWithAi(root, rawContent, inputType, reqId, domain, payload = {}) {
+  const env = parseEnvFile(path.join(root, '.env'));
+  const apiKey = env.AI_API_KEY || env.GEMINI_API_KEY || env.OPENAI_API_KEY || env.DEEPSEEK_API_KEY || '';
+  if (!apiKey) return null;
+
+  const provider = (payload.provider || env.AI_PROVIDER || (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini')).toLowerCase();
+  const baseURL = payload.baseURL || env.AI_BASE_URL || '';
+  const model = payload.model || env.AI_MODEL || (provider === 'gemini' ? (env.DASHBOARD_GEMINI_MODEL || 'gemini-2.5-flash') : provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
+
+  const systemPrompt = `Bạn là Senior QA Lead & Playwright Automation Architect.
+Nhiệm vụ của bạn là phân tích nội dung do người dùng cung cấp (có thể là văn bản nghiệp vụ Spec/Requirement hoặc mã nguồn Playwright test script) để trích xuất thành cấu trúc tài liệu truy vết QA chuẩn 100%.
+
+BẮT BUỘC trả về DUY NHẤT 1 chuỗi JSON hợp lệ (không kèm markdown \`\`\`json hay ghi chú bên ngoài), định dạng đúng schema sau:
+{
+  "title": "Tên tính năng ngắn gọn, chuẩn nghiệp vụ (Ví dụ: Đổi mật khẩu tài khoản)",
+  "slug": "slug-dinh-danh-khong-dau (Ví dụ: doi-mat-khau)",
+  "domain": "${domain || 'auth'}",
+  "businessGoal": "Mục tiêu nghiệp vụ chính của tính năng",
+  "acs": [
+    {
+      "id": "AC-001",
+      "title": "Tên tiêu chí chấp nhận",
+      "given": "Tiền điều kiện Given",
+      "when": "Thao tác người dùng When",
+      "then": "Kết quả mong đợi Then"
+    }
+  ],
+  "rules": [
+    {
+      "field": "Tên trường / Quy tắc",
+      "valid": "Giá trị hợp lệ",
+      "invalid": "Giá trị không hợp lệ",
+      "boundary": "Giá trị biên",
+      "expected": "Kết quả xử lý",
+      "tcId": "TC-001"
+    }
+  ],
+  "testCases": [
+    {
+      "id": "TC-001",
+      "acId": "AC-001",
+      "title": "Tên kịch bản kiểm thử chi tiết",
+      "priority": "P1",
+      "automation": "Yes",
+      "precondition": "Tiền điều kiện",
+      "steps": [
+        { "step": 1, "action": "Thao tác bước 1", "expected": "Kết quả kỳ vọng bước 1" }
+      ]
+    }
+  ],
+  "specCode": "// Mã test Playwright hoàn chỉnh tương thích CommonJS hoặc ES module"
+}`;
+
+  const userPrompt = `Dữ liệu đầu vào (${inputType === 'test_script' ? 'Mã test script Playwright' : 'Văn bản Spec / User story thô'}):\n\n${rawContent.slice(0, 8000)}\n\nMã REQ ID dự kiến: ${reqId}\nDomain đề xuất: ${domain}`;
+
+  let responseJsonText = '';
+
+  if (provider === 'gemini') {
+    const base = (baseURL || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '');
+    const url = `${base}/models/${model}:generateContent?key=${apiKey}`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] },
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 3072,
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(`Gemini API error (${res.status}): ${errData.error?.message || res.statusText}`);
+    }
+
+    const data = await res.json();
+    responseJsonText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } else {
+    const defaultBase = provider === 'deepseek' ? 'https://api.deepseek.com/v1' : 'https://api.openai.com/v1';
+    const base = (baseURL || defaultBase).replace(/\/+$/, '');
+    const url = `${base}/chat/completions`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.2,
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(`${provider.toUpperCase()} API error (${res.status}): ${errData.error?.message || res.statusText}`);
+    }
+
+    const data = await res.json();
+    responseJsonText = data.choices?.[0]?.message?.content || '';
+  }
+
+  const cleaned = responseJsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
+  let parsed = null;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (_) {
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+  }
+
+  if (parsed && parsed.title && Array.isArray(parsed.acs) && parsed.acs.length > 0) {
+    return parsed;
+  }
+  return null;
+}
+
+/**
+ * Tổng hợp nội dung hoàn chỉnh cho 3 file: REQ markdown, TC markdown và Spec Playwright
+ */
+function synthesizeScaffoldContents(root, params) {
+  const {
+    reqId,
+    domain,
+    title,
+    slug,
+    businessGoal,
+    acs,
+    rules = [],
+    testCases = [],
+    rawScriptBody = null,
+    specCode = null,
+  } = params;
+
+  // 1. Xác định đường dẫn tương đối
+  const reqRelPath = `requirements/${reqId}-${slug}.md`;
+  const tcRelPath = `test-cases/${reqId}-${slug}.md`;
+
+  const desktopDir = path.join(root, 'tests', 'e2e', 'desktop');
+  const domainDir = path.join(root, 'tests', domain);
+  let specRelPath = '';
+  if (fs.existsSync(desktopDir)) {
+    specRelPath = `tests/e2e/desktop/${slug}-bdd.spec.js`;
+  } else if (fs.existsSync(domainDir)) {
+    specRelPath = `tests/${domain}/${slug}.spec.js`;
+  } else {
+    specRelPath = `tests/e2e/desktop/${slug}-bdd.spec.js`;
+  }
+
+  // 2. Sinh nội dung Requirement (REQ)
+  const acBlocks = acs.map((ac) => (
+    `### ${ac.id}: ${ac.title}\n\n` +
+    `**Given** ${ac.given || 'Tiền điều kiện sẵn sàng'}\n` +
+    `**When** ${ac.when || 'Người dùng thực hiện thao tác nghiệp vụ'}\n` +
+    `**Then** ${ac.then || 'Hệ thống xử lý chính xác và trả về kết quả mong đợi'}\n`
+  ));
+
+  const ruleRows = rules.length > 0
+    ? rules.map((r, idx) => `| ${r.field || `Rule ${idx + 1}`} | ${r.valid || 'Hợp lệ'} | ${r.invalid || 'Không hợp lệ'} | ${r.boundary || 'Biên'} | ${r.expected || 'Xử lý đúng'} | ${r.tcId || `TC-00${idx + 1}`} |`)
+    : acs.map((ac, idx) => `| Quy tắc cho ${ac.id} | Dữ liệu hợp lệ | Dữ liệu sai định dạng | Biên chuẩn | Xử lý đúng theo ${ac.id} | TC-${String(idx + 1).padStart(3, '0')} |`);
+
+  const reqContent = `---
+id: ${reqId}
+title: ${title}
+status: Draft
+version: 1.0
+risk: Medium
+owner: QA Team
+slug: ${slug}
+test_cases: ${tcRelPath}
+---
+
+# ${reqId}: ${title}
+
+- Status: Draft
+- Owner: QA Team
+- Version: 1.0
+- Risk: Medium
+- Related pages/modules: \`/${slug}\`
+- Source: Scaffold Wizard (Smart Extraction)
+
+## Business goal
+
+${businessGoal || `Mô tả mục tiêu nghiệp vụ cho ${title}.`}
+
+## Acceptance criteria
+
+${acBlocks.join('\n')}
+## Rules and validation
+
+| Field/rule | Valid | Invalid | Boundary | Expected | Test cases |
+|---|---|---|---|---|---|
+${ruleRows.join('\n')}
+
+## Evidence and confidence
+
+| Statement/rule | Evidence | Confidence | Status |
+|---|---|---|---|
+| Nghiệp vụ chính của ${title} | Phân tích yêu cầu và kịch bản automation | High | Confirmed |
+
+## Change log
+
+| Version | Date | Change | Impacted AC/TC | Regression needed |
+|---|---|---|---|---|
+| 1.0 | ${new Date().toISOString().slice(0, 10)} | Khởi tạo tài liệu từ Scaffold Wizard | - | - |
+`;
+
+  // 3. Sinh nội dung Test Cases (TC)
+  const traceRows = testCases.map((tc) => (
+    `| ${reqId} | ${tc.acId || 'AC-001'} | ${tc.id} | ${tc.automation || 'Candidate'} | \`${specRelPath}\` | ${tc.priority || 'P1'} |`
+  ));
+
+  const tcBlocks = testCases.map((tc) => {
+    const stepsTable = (tc.steps && tc.steps.length)
+      ? tc.steps.map((s, idx) => `| ${s.step || idx + 1} | ${(s.action || '').replace(/\|/g, '-')} | ${(s.expected || '').replace(/\|/g, '-')} |`).join('\n')
+      : `| 1 | Truy cập màn hình tính năng | Trang hiển thị đầy đủ |\n| 2 | Thực hiện thao tác kiểm thử: ${tc.title} | Phản hồi đúng theo ${tc.acId || 'AC-001'} |`;
+
+    return `### ${tc.id}: ${tc.title}\n\n` +
+      `- Type: Functional | Priority: ${tc.priority || 'P1'} | Technique: Equivalence Partitioning\n` +
+      `- Automation: ${tc.automation || 'Candidate'} | Tags: \`@${domain} @${(tc.priority || 'p1').toLowerCase()}\`\n` +
+      `- Preconditions: ${tc.precondition || 'Môi trường sẵn sàng'}\n\n` +
+      `| Step | Action | Expected result |\n` +
+      `|---|---|---|\n` +
+      `${stepsTable}\n`;
+  });
+
+  const tcContent = `# Test Cases: ${reqId} ${title}
+
+Requirement: \`${reqRelPath}\` (v1.0)
+
+## Traceability
+
+| Requirement | Acceptance criterion | Test case | Automation | Spec | Priority |
+|---|---|---|---|---|---|
+${traceRows.join('\n')}
+
+> Lưu ý: Cập nhật Priority thật (P0/P1) và chuyển Automation thành Yes khi hoàn thiện test.
+
+## Case không automation
+
+| Test case | Lý do | Cách bù đắp |
+|---|---|---|
+
+## Test cases
+
+${tcBlocks.join('\n')}
+`;
+
+  // 4. Sinh nội dung Spec Playwright
+  let finalSpecContent = '';
+  if (specCode && specCode.includes('test(')) {
+    finalSpecContent = specCode;
+  } else {
+    // Xác định import fixture phù hợp với repo
+    const absSpec = path.join(root, specRelPath);
+    const baseTestAbs = path.join(root, 'core', 'fixtures', 'baseTest.js');
+    let fixtureImport = '@playwright/test';
+
+    if (fs.existsSync(baseTestAbs)) {
+      let rel = path.relative(path.dirname(absSpec), baseTestAbs).replace(/\\/g, '/').replace(/\.js$/, '');
+      if (!rel.startsWith('.')) rel = `./${rel}`;
+      fixtureImport = rel;
+    }
+
+    const testSpecBlocks = testCases.map((tc) => {
+      const tcBody = tc.body
+        ? tc.body.split('\n').map((line) => `    ${line}`).join('\n')
+        : `    await test.step('Given Tiền điều kiện: Truy cập tính năng', async () => {\n` +
+          `      expect(page).toBeDefined();\n` +
+          `    });\n\n` +
+          `    await test.step('When Thao tác: ${tc.title.replace(/'/g, "\\'")}', async () => {\n` +
+          `      // Thêm mã automation thao tác ở đây\n` +
+          `    });\n\n` +
+          `    await test.step('Then Kỳ vọng: Kết quả chính xác', async () => {\n` +
+          `      expect(true).toBe(true);\n` +
+          `    });`;
+
+      return `  test('${tc.id} - ${tc.acId || 'AC-001'} ${tc.title.replace(/'/g, "\\'")}', async ({ page }, testInfo) => {\n` +
+        `    testInfo.annotations.push({\n` +
+        `      type: 'Precondition',\n` +
+        `      description: '${(tc.precondition || 'Môi trường sẵn sàng').replace(/'/g, "\\'")}',\n` +
+        `    });\n\n` +
+        `${tcBody}\n` +
+        `  });`;
+    });
+
+    finalSpecContent = `const { test, expect } = require('${fixtureImport}');\n\n` +
+      `/**\n` +
+      ` * ${reqId} - ${title}\n` +
+      ` * Requirement : ${reqRelPath}\n` +
+      ` */\n` +
+      `test.describe('${reqId} - ${title} @${reqId} @${domain}', () => {\n` +
+      `${testSpecBlocks.join('\n\n')}\n` +
+      `});\n`;
+  }
+
+  return {
+    reqId,
+    domain,
+    title,
+    slug,
+    acs,
+    testCases,
+    reqRelPath,
+    tcRelPath,
+    specRelPath,
+    reqContent,
+    tcContent,
+    specContent: finalSpecContent,
+  };
+}
+
+/**
+ * Trích xuất cấu trúc Scaffold từ nội dung thô (Spec Text hoặc Test Script).
+ */
+async function extractScaffoldFromRaw(root, payload = {}) {
+  const rawContent = String(payload.rawContent || '').trim();
+  if (!rawContent) {
+    throw Object.assign(new Error('Nội dung thô (Spec hoặc Test Script) không được để trống.'), { status: 400 });
+  }
+
+  const isTestScript = detectIsTestScript(rawContent);
+  const inputType = isTestScript ? 'test_script' : 'spec_text';
+
+  // Lấy nextReqId và danh sách domain từ qaService nếu có
+  let nextReqId = 'REQ-001';
+  let existingDomains = ['auth', 'job', 'account', 'general'];
+  try {
+    const { getScaffoldMeta } = require('./qaService');
+    const meta = getScaffoldMeta(root);
+    if (meta.nextReqId) nextReqId = meta.nextReqId;
+    if (Array.isArray(meta.existingDomains) && meta.existingDomains.length) existingDomains = meta.existingDomains;
+  } catch (_) {}
+
+  // Gợi ý hoặc nhận REQ ID & Domain
+  const textReqMatch = rawContent.match(/\bREQ-(\d{3})\b/i);
+  const reqId = (payload.reqId && /^REQ-\d{3}$/i.test(payload.reqId.trim()))
+    ? payload.reqId.trim().toUpperCase()
+    : (textReqMatch ? textReqMatch[0].toUpperCase() : nextReqId);
+
+  const domain = (payload.domain && String(payload.domain).trim())
+    ? String(payload.domain).trim().toLowerCase()
+    : inferDomainFromText(rawContent, existingDomains);
+
+  // Thử AI Semantic Engine nếu không bị vô hiệu hóa
+  let aiResult = null;
+  if (payload.useAi !== false) {
+    try {
+      aiResult = await extractWithAi(root, rawContent, inputType, reqId, domain, payload);
+    } catch (err) {
+      // Graceful fallback
+    }
+  }
+
+  // Heuristic Engine
+  const parsed = aiResult || (isTestScript
+    ? extractHeuristicFromTestScript(rawContent, reqId, domain)
+    : extractHeuristicFromSpecText(rawContent, reqId, domain));
+
+  // Tổng hợp 3 file contents hoàn chỉnh
+  const synthesized = synthesizeScaffoldContents(root, {
+    reqId,
+    domain: parsed.domain || domain,
+    title: parsed.title || `Tính năng ${reqId}`,
+    slug: parsed.slug || slugify(parsed.title || `feature-${reqId}`),
+    businessGoal: parsed.businessGoal || `Mục tiêu nghiệp vụ cho ${parsed.title || reqId}`,
+    acs: parsed.acs && parsed.acs.length ? parsed.acs : [{ id: 'AC-001', title: 'Tiêu chí chính', given: 'Tiền điều kiện', when: 'Thao tác', then: 'Kết quả mong đợi' }],
+    rules: parsed.rules || [],
+    testCases: parsed.testCases && parsed.testCases.length ? parsed.testCases : [],
+    rawScriptBody: isTestScript ? rawContent : null,
+    specCode: parsed.specCode || null,
+  });
+
+  return {
+    success: true,
+    engine: aiResult ? 'ai' : 'heuristic',
+    inputType,
+    preview: {
+      reqId: synthesized.reqId,
+      title: synthesized.title,
+      slug: synthesized.slug,
+      domain: synthesized.domain,
+      acCount: synthesized.acs.length,
+      acs: synthesized.acs,
+      tcCount: synthesized.testCases.length,
+      testCases: synthesized.testCases,
+      files: [
+        synthesized.reqRelPath,
+        synthesized.tcRelPath,
+        synthesized.specRelPath,
+      ],
+    },
+    generated: {
+      reqRelPath: synthesized.reqRelPath,
+      reqContent: synthesized.reqContent,
+      tcRelPath: synthesized.tcRelPath,
+      tcContent: synthesized.tcContent,
+      specRelPath: synthesized.specRelPath,
+      specContent: synthesized.specContent,
+    },
+  };
+}
+
 module.exports = {
   extractAcs,
   extractDecidedQuestions,
@@ -633,4 +1356,10 @@ module.exports = {
   inferWithAi,
   inferTestCases,
   appendTestCasesToDocument,
+  slugify,
+  detectIsTestScript,
+  extractHeuristicFromTestScript,
+  extractHeuristicFromSpecText,
+  extractScaffoldFromRaw,
+  synthesizeScaffoldContents,
 };

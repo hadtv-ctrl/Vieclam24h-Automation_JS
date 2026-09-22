@@ -126,18 +126,37 @@ export class QaSlice {
       on(root.querySelector('#qa-scaffold-modal-close'), 'click', () => scaffoldModal.close());
       on(root.querySelector('#qa-scaffold-cancel-btn'), 'click', () => scaffoldModal.close());
       on(root.querySelector('#qa-btn-submit-scaffold'), 'click', () => this.submitScaffold());
+      on(root.querySelector('#qa-btn-extract-raw'), 'click', () => this.extractRawScaffold());
 
       root.querySelectorAll('input[name="qa-scaffold-mode"]').forEach((radio) => {
         on(radio, 'change', () => {
-          const isInfer = radio.value === 'infer' && radio.checked;
+          const mode = radio.value;
+          const rawFields = root.querySelector('#qa-scaffold-raw-fields');
           const newFields = root.querySelector('#qa-scaffold-new-fields');
           const inferFields = root.querySelector('#qa-scaffold-infer-fields');
+          const cardRaw = root.querySelector('#qa-mode-card-raw');
           const cardNew = root.querySelector('#qa-mode-card-new');
           const cardInfer = root.querySelector('#qa-mode-card-infer');
-          if (newFields) newFields.style.display = isInfer ? 'none' : 'flex';
-          if (inferFields) inferFields.style.display = isInfer ? 'flex' : 'none';
-          if (cardNew) cardNew.classList.toggle('is-selected', !isInfer);
-          if (cardInfer) cardInfer.classList.toggle('is-selected', isInfer);
+
+          if (rawFields) rawFields.style.display = mode === 'raw' ? 'flex' : 'none';
+          if (newFields) newFields.style.display = mode === 'new' ? 'flex' : 'none';
+          if (inferFields) inferFields.style.display = mode === 'infer' ? 'flex' : 'none';
+
+          if (cardRaw) {
+            cardRaw.classList.toggle('is-selected', mode === 'raw');
+            cardRaw.style.borderColor = mode === 'raw' ? 'var(--accent)' : 'var(--line)';
+            cardRaw.style.background = mode === 'raw' ? 'rgba(59, 130, 246, 0.05)' : 'transparent';
+          }
+          if (cardNew) {
+            cardNew.classList.toggle('is-selected', mode === 'new');
+            cardNew.style.borderColor = mode === 'new' ? 'var(--accent)' : 'var(--line)';
+            cardNew.style.background = mode === 'new' ? 'rgba(59, 130, 246, 0.05)' : 'transparent';
+          }
+          if (cardInfer) {
+            cardInfer.classList.toggle('is-selected', mode === 'infer');
+            cardInfer.style.borderColor = mode === 'infer' ? 'var(--accent)' : 'var(--line)';
+            cardInfer.style.background = mode === 'infer' ? 'rgba(59, 130, 246, 0.05)' : 'transparent';
+          }
         });
       });
     }
@@ -157,6 +176,21 @@ export class QaSlice {
           if (radio.checked) this.runInference();
         });
       });
+    }
+
+    // Reader Delete Button
+    on(root.querySelector('#qa-reader-delete'), 'click', () => this.openDeleteRequirementModal());
+
+    // Delete Modal Events
+    const deleteModal = root.querySelector('#qa-delete-req-modal');
+    if (deleteModal) {
+      on(root.querySelector('#qa-delete-modal-close'), 'click', () => deleteModal.close());
+      on(root.querySelector('#qa-delete-cancel-btn'), 'click', () => deleteModal.close());
+      on(root.querySelector('#qa-delete-submit-btn'), 'click', () => this.submitDeleteRequirement());
+      const confirmInput = root.querySelector('#qa-delete-confirm-input');
+      if (confirmInput) {
+        on(confirmInput, 'input', () => this._checkDeleteConfirmInput());
+      }
     }
 
     const handleKeydown = (e) => {
@@ -209,6 +243,9 @@ export class QaSlice {
       const panel = root.querySelector(`#qa-panel-${name}`);
       if (panel) panel.hidden = name !== tab;
     });
+    if (tab === 'candidates') {
+      this.renderCandidates();
+    }
     if (tab === 'process-studio' && this.processStudio) {
       this.processStudio.loadStatus(root);
     }
@@ -306,8 +343,9 @@ export class QaSlice {
     return node;
   }
 
-  _row(cells) {
+  _row(cells, className) {
     const tr = document.createElement('tr');
+    if (className) tr.className = className;
     cells.forEach((c) => tr.appendChild(c instanceof Node ? c : this._el('td', c)));
     return tr;
   }
@@ -578,13 +616,23 @@ export class QaSlice {
     const domainsList = root.querySelector('#qa-scaffold-domains-list');
     const acCountInput = root.querySelector('#qa-scaffold-ac-count');
     const specPathInput = root.querySelector('#qa-scaffold-spec-path');
-    const radioNew = root.querySelector('input[name="qa-scaffold-mode"][value="new"]');
+    const rawContentInput = root.querySelector('#qa-scaffold-raw-content');
+    const rawReqInput = root.querySelector('#qa-scaffold-raw-req-id');
+    const rawDomainInput = root.querySelector('#qa-scaffold-raw-domain');
+    const previewBox = root.querySelector('#qa-scaffold-raw-preview');
+    const radioRaw = root.querySelector('input[name="qa-scaffold-mode"][value="raw"]');
     if (!modal) return;
 
-    if (radioNew) {
-      radioNew.checked = true;
-      radioNew.dispatchEvent(new Event('change'));
+    this._scaffoldRawExtracted = null;
+    if (radioRaw) {
+      radioRaw.checked = true;
+      radioRaw.dispatchEvent(new Event('change'));
     }
+    if (rawContentInput) rawContentInput.value = '';
+    if (rawReqInput) rawReqInput.value = '';
+    if (rawDomainInput) rawDomainInput.value = '';
+    if (previewBox) previewBox.style.display = 'none';
+
     if (titleInput) titleInput.value = '';
     if (specPathInput) specPathInput.value = '';
     if (acCountInput) acCountInput.value = '2';
@@ -593,7 +641,10 @@ export class QaSlice {
 
     try {
       const meta = await apiClient.get('/api/qa/scaffold/meta');
-      if (reqInput && meta.nextReqId) reqInput.value = meta.nextReqId;
+      if (meta.nextReqId) {
+        if (reqInput) reqInput.value = meta.nextReqId;
+        if (rawReqInput) rawReqInput.placeholder = meta.nextReqId;
+      }
       if (domainsList && Array.isArray(meta.existingDomains)) {
         domainsList.textContent = '';
         for (const d of meta.existingDomains) {
@@ -602,11 +653,90 @@ export class QaSlice {
           domainsList.appendChild(opt);
         }
       }
-      if (domainInput && meta.existingDomains && meta.existingDomains.length > 0) {
-        domainInput.value = meta.existingDomains[0];
+      if (meta.existingDomains && meta.existingDomains.length > 0) {
+        if (domainInput) domainInput.value = meta.existingDomains[0];
+        if (rawDomainInput) rawDomainInput.placeholder = meta.existingDomains[0];
       }
     } catch (_) {
       // fallback
+    }
+  }
+
+  async extractRawScaffold() {
+    const root = this._root();
+    if (!root) return null;
+    const rawContentInput = root.querySelector('#qa-scaffold-raw-content');
+    const rawReqInput = root.querySelector('#qa-scaffold-raw-req-id');
+    const rawDomainInput = root.querySelector('#qa-scaffold-raw-domain');
+    const extractBtn = root.querySelector('#qa-btn-extract-raw');
+    const previewBox = root.querySelector('#qa-scaffold-raw-preview');
+
+    const rawContent = rawContentInput?.value.trim() || '';
+    if (!rawContent) {
+      this.notify('Vui lòng dán nội dung Spec văn bản hoặc Playwright Test Script vào ô nội dung.');
+      return null;
+    }
+
+    const reqId = rawReqInput?.value.trim() || '';
+    const domain = rawDomainInput?.value.trim() || '';
+
+    if (extractBtn) {
+      extractBtn.disabled = true;
+      extractBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Đang phân tích...';
+    }
+
+    try {
+      const res = await apiClient.post('/api/qa/scaffold/extract', {
+        rawContent,
+        reqId,
+        domain,
+      });
+
+      this._scaffoldRawExtracted = res;
+
+      // Hiển thị khung xem trước
+      const engineBadge = root.querySelector('#qa-scaffold-preview-engine-badge');
+      const typeBadge = root.querySelector('#qa-scaffold-preview-type-badge');
+      const previewReqId = root.querySelector('#qa-scaffold-preview-req-id');
+      const previewTitle = root.querySelector('#qa-scaffold-preview-title');
+      const previewDomain = root.querySelector('#qa-scaffold-preview-domain');
+      const previewAcCount = root.querySelector('#qa-scaffold-preview-ac-count');
+      const previewTcCount = root.querySelector('#qa-scaffold-preview-tc-count');
+      const filesList = root.querySelector('#qa-scaffold-preview-files-list');
+
+      if (engineBadge) {
+        engineBadge.textContent = res.engine === 'ai' ? 'AI Semantic' : 'Heuristic Cục Bộ';
+        engineBadge.style.background = res.engine === 'ai' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(59, 130, 246, 0.15)';
+        engineBadge.style.color = res.engine === 'ai' ? '#a855f7' : 'var(--accent)';
+      }
+      if (typeBadge) {
+        typeBadge.textContent = res.inputType === 'test_script' ? 'Playwright Script' : 'Spec Text';
+        typeBadge.style.background = res.inputType === 'test_script' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+        typeBadge.style.color = res.inputType === 'test_script' ? '#eab308' : '#10b981';
+      }
+
+      if (previewReqId) previewReqId.textContent = res.preview.reqId;
+      if (previewTitle) previewTitle.textContent = res.preview.title;
+      if (previewDomain) previewDomain.textContent = res.preview.domain;
+      if (previewAcCount) previewAcCount.textContent = res.preview.acCount;
+      if (previewTcCount) previewTcCount.textContent = res.preview.tcCount;
+
+      if (filesList && Array.isArray(res.preview.files)) {
+        filesList.innerHTML = res.preview.files.map((f) => `<li>${f}</li>`).join('');
+      }
+
+      if (previewBox) previewBox.style.display = 'block';
+
+      this.notify(`Đã phân tích thành công (${res.preview.acCount} ACs, ${res.preview.tcCount} Test Cases).`);
+      return res;
+    } catch (err) {
+      this.notify(`Lỗi phân tích: ${err.message}`);
+      return null;
+    } finally {
+      if (extractBtn) {
+        extractBtn.disabled = false;
+        extractBtn.innerHTML = '<i class="ph-bold ph-lightning"></i> Phân tích &amp; Xem trước';
+      }
     }
   }
 
@@ -615,9 +745,44 @@ export class QaSlice {
     if (!root) return;
     const modal = root.querySelector('#qa-scaffold-modal');
     const submitBtn = root.querySelector('#qa-btn-submit-scaffold');
-    const mode = root.querySelector('input[name="qa-scaffold-mode"]:checked')?.value || 'new';
+    const mode = root.querySelector('input[name="qa-scaffold-mode"]:checked')?.value || 'raw';
 
-    if (mode === 'infer') {
+    if (mode === 'raw') {
+      let extracted = this._scaffoldRawExtracted;
+      if (!extracted) {
+        extracted = await this.extractRawScaffold();
+        if (!extracted) return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Đang khởi tạo...';
+      }
+
+      try {
+        const payload = {
+          mode: 'raw_create',
+          reqId: extracted.preview.reqId,
+          title: extracted.preview.title,
+          slug: extracted.preview.slug,
+          customFiles: extracted.generated,
+        };
+        const res = await apiClient.post('/api/qa/scaffold', payload);
+        if (modal) modal.close();
+        this.notify(res.message || `Đã khởi tạo thành công 3 files cho ${extracted.preview.reqId}.`);
+        await this.reload(true);
+        if (res.primaryFile) {
+          await this.openDocument(res.primaryFile);
+        }
+      } catch (err) {
+        this.notify(`Lỗi khởi tạo 3 files: ${err.message}`);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="ph-bold ph-file-plus"></i> Khởi tạo bộ tài liệu';
+        }
+      }
+    } else if (mode === 'infer') {
       const specPath = root.querySelector('#qa-scaffold-spec-path')?.value.trim();
       if (!specPath) {
         this.notify('Vui lòng nhập đường dẫn spec để suy luận ngược.');
@@ -933,7 +1098,10 @@ export class QaSlice {
       return;
     }
 
-    if (submitBtn) submitBtn.disabled = true;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="ph-bold ph-circle-notch" style="animation: spin 1s linear infinite;"></i> Đang thêm test cases...';
+    }
 
     try {
       const res = await apiClient.post('/api/qa/append-testcases', {
@@ -944,19 +1112,203 @@ export class QaSlice {
 
       if (modal) modal.close();
 
-      // Làm mới dữ liệu QA và tài liệu đang mở
+      // Ghi nhớ các ID test case vừa thêm để highlight trên giao diện
+      this._recentlyAddedTcIds = new Set(toSubmit.map((tc) => tc.suggestedId));
+
+      const tcPathToOpen = res.tcPath || this._inferredTcPath;
+
+      // Làm mới dữ liệu QA và tự động mở tài liệu Test Case
       try {
         await this.reload(false);
-        if (this.activeDocPath) {
+        if (tcPathToOpen) {
+          await this.openDocument(tcPathToOpen);
+
+          // Cuộn mượt và highlight khối test case đầu tiên vừa được thêm
+          const firstAddedId = toSubmit[0]?.suggestedId;
+          if (firstAddedId) {
+            setTimeout(() => {
+              const readerBody = root.querySelector('#qa-reader-body');
+              if (!readerBody) return;
+              const targetEl = Array.from(readerBody.querySelectorAll('h3, tr, p'))
+                .find((el) => el.textContent.includes(firstAddedId));
+              if (targetEl) {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetEl.classList.add('qa-row-highlight');
+                targetEl.style.outline = '2px solid var(--accent)';
+                targetEl.style.borderRadius = '4px';
+                setTimeout(() => {
+                  targetEl.style.outline = '';
+                }, 3500);
+              }
+            }, 250);
+          }
+        } else if (this.activeDocPath) {
           await this.openDocument(this.activeDocPath);
         }
       } catch (refreshErr) {
         console.warn('Lỗi làm mới sau khi thêm test case:', refreshErr);
       }
 
-      this.notify(res.message || `Đã thêm thành công ${toSubmit.length} test case.`);
+      this.notify(res.message || `Đã thêm thành công ${toSubmit.length} test case vào ${tcPathToOpen}.`);
     } catch (err) {
       this.notify(`Lỗi thêm test case: ${err.message}`);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="ph-bold ph-plus-circle"></i> <span id="qa-infer-submit-label">Thêm vào test-cases</span>';
+      }
+    }
+  }
+
+  // --- Xóa Requirement (REQ-xxx) an toàn ---
+
+  _getReqIdFromDoc(doc) {
+    if (!doc) return null;
+    const fromPath = String(doc.path || '').match(/\b(REQ-\d{3})\b/i);
+    if (fromPath) return fromPath[1].toUpperCase();
+    const fromContent = String(doc.content || '').match(/^id:\s*(REQ-\d{3})\b/im);
+    if (fromContent) return fromContent[1].toUpperCase();
+    return null;
+  }
+
+  async openDeleteRequirementModal() {
+    const root = this._root();
+    if (!root || !this._activeDoc) return;
+    const modal = root.querySelector('#qa-delete-req-modal');
+    if (!modal) return;
+
+    const reqId = this._getReqIdFromDoc(this._activeDoc);
+    if (!reqId) {
+      this.notify('Không xác định được mã REQ của tài liệu này.');
+      return;
+    }
+
+    this._deleteTargetReqId = reqId;
+
+    const targetIdEl = root.querySelector('#qa-delete-target-id');
+    const hintEl = root.querySelector('#qa-delete-confirm-hint');
+    const inputEl = root.querySelector('#qa-delete-confirm-input');
+    const submitBtn = root.querySelector('#qa-delete-submit-btn');
+    const listEl = root.querySelector('#qa-delete-files-list');
+
+    if (targetIdEl) targetIdEl.textContent = reqId;
+    if (hintEl) hintEl.textContent = reqId;
+    if (inputEl) inputEl.value = '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.cursor = 'not-allowed';
+      submitBtn.style.opacity = '0.5';
+    }
+
+    if (listEl) {
+      listEl.innerHTML = '<span style="color: var(--muted);"><i class="ph-bold ph-circle-notch" style="animation: spin 1s linear infinite;"></i> Đang quét các file liên đới...</span>';
+    }
+
+    modal.showModal();
+
+    try {
+      const impact = await apiClient.get('/api/qa/requirement/impact', { reqId });
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      const reqFiles = impact.files?.requirements || [];
+      const tcFiles = impact.files?.testCases || [];
+      const specFiles = impact.files?.specs || [];
+
+      if (!reqFiles.length && !tcFiles.length && !specFiles.length) {
+        listEl.innerHTML = '<span style="color: var(--muted);">Không tìm thấy file liên quan trên đĩa.</span>';
+        return;
+      }
+
+      // 1. Requirements (bắt buộc xóa)
+      reqFiles.forEach((f) => {
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+        row.style.cursor = 'default';
+        row.innerHTML = `<input type="checkbox" checked disabled style="accent-color: var(--danger, #ef4444);"> <span><strong style="color: var(--text);">Requirement:</strong> <code class="qa-mono">${f.relPath}</code></span>`;
+        listEl.appendChild(row);
+      });
+
+      // 2. Test cases (mặc định xóa kèm)
+      tcFiles.forEach((f) => {
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+        row.style.cursor = 'pointer';
+        row.innerHTML = `<input type="checkbox" class="qa-delete-chk-tc" checked style="accent-color: var(--danger, #ef4444);"> <span><strong style="color: var(--text);">Test Case:</strong> <code class="qa-mono">${f.relPath}</code></span>`;
+        listEl.appendChild(row);
+      });
+
+      // 3. Specs (mặc định KHÔNG xóa, cảnh báo)
+      specFiles.forEach((f) => {
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+        row.style.cursor = 'pointer';
+        row.innerHTML = `<input type="checkbox" class="qa-delete-chk-spec" style="accent-color: var(--danger, #ef4444);"> <span><strong style="color: #f59e0b;">Automation Spec:</strong> <code class="qa-mono">${f.relPath}</code> <small style="color: var(--muted);">(Mã nguồn Playwright)</small></span>`;
+        listEl.appendChild(row);
+      });
+    } catch (err) {
+      if (listEl) {
+        listEl.innerHTML = `<span style="color: var(--danger, #ef4444);">Lỗi khi quét liên đới: ${err.message}</span>`;
+      }
+    }
+  }
+
+  _checkDeleteConfirmInput() {
+    const root = this._root();
+    if (!root) return;
+    const inputEl = root.querySelector('#qa-delete-confirm-input');
+    const submitBtn = root.querySelector('#qa-delete-submit-btn');
+    if (!inputEl || !submitBtn || !this._deleteTargetReqId) return;
+
+    const val = inputEl.value.trim().toUpperCase();
+    const isMatch = val === this._deleteTargetReqId.toUpperCase();
+    submitBtn.disabled = !isMatch;
+    submitBtn.style.cursor = isMatch ? 'pointer' : 'not-allowed';
+    submitBtn.style.opacity = isMatch ? '1' : '0.5';
+  }
+
+  async submitDeleteRequirement() {
+    const root = this._root();
+    if (!root || !this._deleteTargetReqId) return;
+    const modal = root.querySelector('#qa-delete-req-modal');
+    const submitBtn = root.querySelector('#qa-delete-submit-btn');
+
+    const chkTc = root.querySelector('.qa-delete-chk-tc');
+    const chkSpec = root.querySelector('.qa-delete-chk-spec');
+
+    const deleteTestCase = chkTc ? chkTc.checked : true;
+    const deleteSpec = chkSpec ? chkSpec.checked : false;
+
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const res = await apiClient.delete('/api/qa/requirement', {
+        reqId: this._deleteTargetReqId,
+        deleteTestCase,
+        deleteSpec,
+      });
+
+      if (modal) modal.close();
+
+      this.activeDocPath = null;
+      this._activeDoc = null;
+
+      // Đóng reader, hiển thị lại bảng tổng quan
+      const overview = root.querySelector('#qa-reader-overview');
+      const pane = root.querySelector('#qa-reader-doc');
+      if (overview) overview.hidden = false;
+      if (pane) pane.hidden = true;
+
+      this.notify(res.message || `Đã xóa thành công ${this._deleteTargetReqId}.`);
+      await this.reload(true);
+    } catch (err) {
+      this.notify(`Lỗi khi xóa Requirement: ${err.message}`);
     } finally {
       if (submitBtn) submitBtn.disabled = false;
     }
@@ -1184,9 +1536,11 @@ export class QaSlice {
     const answerLabel = root.querySelector('#qa-reader-answer-label');
     const editBtn = root.querySelector('#qa-reader-edit');
     const inferBtn = root.querySelector('#qa-reader-infer');
+    const deleteBtn = root.querySelector('#qa-reader-delete');
     const editable = Boolean(doc) && doc.kind === 'requirement';
 
     if (editBtn) editBtn.hidden = !editable;
+    if (deleteBtn) deleteBtn.hidden = !editable;
 
     const parsed = editable ? parseOpenQuestions(markdown) : { found: false, questions: [] };
     this._openQuestions = parsed.questions;
@@ -1550,15 +1904,17 @@ export class QaSlice {
       const prioKey = String(c.priority || '').toLowerCase();
       const prioClass = KNOWN_PRIORITY.has(prioKey) ? ` qa-prio-${prioKey}` : '';
       const prio = this._cell(c.priority || '—', `qa-prio${prioClass}`);
+      const isRecent = Boolean(this._recentlyAddedTcIds && this._recentlyAddedTcIds.has(c.id));
       tbody.appendChild(this._row([
         this._pickCell(c.id),
         this._cell(c.id, 'qa-mono'),
+        this._cell(c.title || '—', 'qa-candidate-title'),
         this._cell(c.req || '—', 'qa-mono'),
         this._cell((c.acs || []).join(', ') || '—', 'qa-mono'),
         prio,
         this._cell(AUTOMATION_LABEL[c.automation] || 'Chưa khai', 'qa-dim'),
         this._cell(c.file || '—', 'qa-mono qa-dim'),
-      ]));
+      ], isRecent ? 'qa-row-highlight' : ''));
     });
     wrap.hidden = false;
     this._syncPickState();

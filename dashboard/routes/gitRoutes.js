@@ -75,7 +75,11 @@ async function handleGitRoutes(request, response, url) {
   if (request.method === 'POST' && url.pathname === '/api/git/sync') {
     try {
       const body = await parseBody(request).catch(() => ({}));
-      const result = gitSyncService.sync(body);
+      const syncFn = gitSyncService.syncSuitesAndConfigs || gitSyncService.sync;
+      if (typeof syncFn !== 'function') {
+        return sendJson(response, 500, { ok: false, error: 'Chức năng đồng bộ chưa sẵn sàng' });
+      }
+      const result = syncFn(body);
       return sendJson(response, result.ok ? 200 : 400, result);
     } catch (error) {
       return sendJson(response, 500, { ok: false, error: error.message });

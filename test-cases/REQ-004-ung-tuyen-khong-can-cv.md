@@ -4,10 +4,10 @@
 
 | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
 |---|---|---|---|---|---|
-| TC-013 | AC-012 AC-014 AC-011 | Thành viên ứng tuyển việc không cần CV trên desktop | P1 | Có | tests/e2e/desktop/apply_job_noCV_flow.spec.js |
-| TC-014 | AC-012 AC-014 AC-011 | Thành viên ứng tuyển việc không cần CV trên mobile web | P1 | Có | tests/e2e/mobile-web/apply_job_noCV_flow.mobile.spec.js |
-| TC-015 | AC-013 AC-014 AC-011 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên desktop | P0 | Có | tests/e2e/desktop/guest_apply_job_noCV_with_otp.spec.js |
-| TC-016 | AC-013 AC-014 AC-011 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên mobile web | P0 | Có | tests/e2e/mobile-web/guest_apply_job_noCV_with_otp.mobile.spec.js |
+| TC-013 | AC-012 AC-014 | Thành viên ứng tuyển việc không cần CV trên desktop | P1 | Có | tests/e2e/desktop/apply_job_noCV_flow.spec.js |
+| TC-014 | AC-012 AC-014 | Thành viên ứng tuyển việc không cần CV trên mobile web | P1 | Có | tests/e2e/mobile-web/apply_job_noCV_flow.mobile.spec.js |
+| TC-015 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên desktop | P0 | Có | tests/e2e/desktop/guest_apply_job_noCV_with_otp.spec.js |
+| TC-016 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên mobile web | P0 | Có | tests/e2e/mobile-web/guest_apply_job_noCV_with_otp.mobile.spec.js |
 
 ## Chi tiết
 

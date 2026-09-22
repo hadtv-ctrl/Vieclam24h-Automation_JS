@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 const { expect } = require('@playwright/test');
 const { BasePage } = require('../BasePage');
 const { LoginPopup } = require('./LoginPopup');

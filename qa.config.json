@@ -1,0 +1,6 @@
+{
+  "projectDir": ".",
+  "project": "all",
+  "requirementsDir": "requirements",
+  "testCasesDir": "test-cases"
+}
