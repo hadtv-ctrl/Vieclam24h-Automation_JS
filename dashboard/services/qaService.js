@@ -551,6 +551,13 @@ function getQaSummary(root) {
       : (fs.existsSync(fallbackCommandsPath) ? fallbackCommandsPath : null);
 
     if (targetModule) {
+      try {
+        delete require.cache[require.resolve(targetModule)];
+        const dir = path.dirname(targetModule);
+        delete require.cache[require.resolve(path.join(dir, 'sources.js'))];
+        delete require.cache[require.resolve(path.join(dir, 'config.js'))];
+      } catch (_) {}
+
       // eslint-disable-next-line global-require, import/no-dynamic-require
       const qaCommands = require(targetModule);
       if (typeof qaCommands.summary === 'function') {
