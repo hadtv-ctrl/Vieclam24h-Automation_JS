@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// master-process-disable-size-check: Legacy module, queued for modular decomposition
 'use strict';
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 
 /**
  * tools/scaffold/index.js

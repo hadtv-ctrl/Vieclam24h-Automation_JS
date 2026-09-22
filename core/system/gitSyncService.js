@@ -935,6 +935,7 @@ module.exports = {
   pullCode,
   commitAndPush,
   syncSuitesAndConfigs,
+  sync: syncSuitesAndConfigs,
   listBranches,
   checkoutBranch,
 };

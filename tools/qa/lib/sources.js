@@ -1,5 +1,5 @@
-// master-process-disable-size-check: Legacy module, queued for modular decomposition
 'use strict';
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * Đọc 3 nguồn dữ liệu và chuẩn hoá thành object để join:
  *   1. requirements/*.md   -> REQ + AC + bảng rules
