@@ -1,1 +1,0 @@
-class TestRecordPage extends BasePage {}
