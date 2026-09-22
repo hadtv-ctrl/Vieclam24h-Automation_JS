@@ -46,7 +46,9 @@ async function handleSystemRoutes(request, response, url, context = {}) {
   const engineDir = context.engineDir || path.resolve(__dirname, '../..');
   const appName = context.appName || 'qa-dashboard';
   const port = context.port || 4200;
-  const discordBotDir = process.env.DISCORD_BOT_DIR ? path.resolve(process.env.DISCORD_BOT_DIR) : path.resolve(root, '../discord-qa-bot');
+  const discordBotDir = process.env.DISCORD_BOT_DIR
+    ? path.resolve(process.env.DISCORD_BOT_DIR)
+    : (fs.existsSync(path.resolve(root, '../discord-qa-bot')) ? path.resolve(root, '../discord-qa-bot') : path.resolve(root, 'discord-qa-bot'));
   const discordBotEnvPath = path.join(discordBotDir, '.env');
 
   if (request.method === 'GET' && url.pathname === '/api/config') {
@@ -218,7 +220,7 @@ function handleDiscordBotGetConfig(response, root, discordBotDir, discordBotEnvP
 async function handleDiscordBotPutConfig(request, response, discordBotDir, discordBotEnvPath) {
   try {
     const body = await parseBody(request);
-    if (!fs.existsSync(discordBotDir)) throw new Error(`Thư mục Discord Bot không tồn tại: ${discordBotDir}`);
+    if (!fs.existsSync(discordBotDir)) fs.mkdirSync(discordBotDir, { recursive: true });
     const current = parseEnvFile(discordBotEnvPath);
     if (body.discordToken && !body.discordToken.includes('...')) current.DISCORD_TOKEN = body.discordToken.trim();
     if (body.githubToken && !body.githubToken.includes('...')) current.GITHUB_TOKEN = body.githubToken.trim();

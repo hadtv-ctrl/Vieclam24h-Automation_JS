@@ -1,4 +1,3 @@
-// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * dashboard/services/qaService.js
  * QA Docs & Automation: đọc ma trận truy vết REQ -> AC -> TC -> spec và sổ quyết định.

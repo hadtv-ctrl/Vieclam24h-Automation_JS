@@ -5790,20 +5790,24 @@ function collectSettingsPayload() {
     });
   }
 
+  if (Object.keys(environments).length === 0 && settingsCache?.environments) {
+    Object.assign(environments, JSON.parse(JSON.stringify(settingsCache.environments)));
+  }
+
   const api = {
-    branch: $('#settings-api-branch').value,
-    lang: $('#settings-api-lang').value,
-    registerRetries: readNumber('#settings-register-retries'),
-    registerTimeout: readNumber('#settings-register-timeout'),
-    consentRetries: readNumber('#settings-consent-retries'),
-    consentTimeout: readNumber('#settings-consent-timeout'),
+    branch: $('#settings-api-branch')?.value || 'main',
+    lang: $('#settings-api-lang')?.value || 'vi',
+    registerRetries: readNumber('#settings-register-retries') || 3,
+    registerTimeout: readNumber('#settings-register-timeout') || 5000,
+    consentRetries: readNumber('#settings-consent-retries') || 3,
+    consentTimeout: readNumber('#settings-consent-timeout') || 5000,
   };
-  const token = $('#settings-registration-token').value.trim();
+  const token = $('#settings-registration-token')?.value?.trim();
   if (token) api.registrationBearerToken = token;
 
   const discord = {
-    webhookUrl: $('#settings-discord-webhook')?.value.trim() || '',
-    channelName: $('#settings-discord-channel')?.value.trim() || '#qa-automation-reports',
+    webhookUrl: $('#settings-discord-webhook')?.value?.trim() || '',
+    channelName: $('#settings-discord-channel')?.value?.trim() || '#qa-automation-reports',
     notifyOnFinish: $('#settings-discord-notify-finish')?.checked === true,
     notifyOnlyOnFailure: $('#settings-discord-notify-fail-only')?.checked === true,
   };
@@ -5812,39 +5816,39 @@ function collectSettingsPayload() {
     suites,
     environments,
     runtime: {
-      defaultEnvironment: $('#settings-default-environment').value,
-      workers: readNumber('#settings-workers'),
-      testTimeout: readNumber('#settings-test-timeout'),
-      navigationTimeout: readNumber('#settings-navigation-timeout'),
-      actionTimeout: readNumber('#settings-action-timeout'),
-      retriesLocal: readNumber('#settings-retries-local'),
-      retriesCI: readNumber('#settings-retries-ci'),
-      trace: $('#settings-trace').value,
-      screenshot: $('#settings-screenshot').value,
-      video: $('#settings-video').value,
+      defaultEnvironment: $('#settings-default-environment')?.value || 'staging',
+      workers: readNumber('#settings-workers') || 2,
+      testTimeout: readNumber('#settings-test-timeout') || 60000,
+      navigationTimeout: readNumber('#settings-navigation-timeout') || 30000,
+      actionTimeout: readNumber('#settings-action-timeout') || 15000,
+      retriesLocal: readNumber('#settings-retries-local') || 0,
+      retriesCI: readNumber('#settings-retries-ci') || 1,
+      trace: $('#settings-trace')?.value || 'on-first-retry',
+      screenshot: $('#settings-screenshot')?.value || 'only-on-failure',
+      video: $('#settings-video')?.value || 'retain-on-failure',
       viewport: {
-        width: readNumber('#settings-viewport-width'),
-        height: readNumber('#settings-viewport-height'),
+        width: readNumber('#settings-viewport-width') || 1440,
+        height: readNumber('#settings-viewport-height') || 900,
       },
-      showEnvBanner: $('#settings-show-env-banner').checked,
-      debugOptionalPopups: $('#settings-debug-optional-popups').checked,
+      showEnvBanner: $('#settings-show-env-banner')?.checked ?? true,
+      debugOptionalPopups: $('#settings-debug-optional-popups')?.checked ?? false,
     },
     api,
     discord,
     artifacts: {
-      retentionDays: readNumber('#settings-retention-days'),
-      maxReportsPerDay: readNumber('#settings-max-reports-per-day'),
-      autoCleanupEvidence: $('#settings-auto-cleanup-evidence').checked,
-      autoCleanupReports: $('#settings-auto-cleanup-reports').checked,
+      retentionDays: readNumber('#settings-retention-days') || 30,
+      maxReportsPerDay: readNumber('#settings-max-reports-per-day') || 50,
+      autoCleanupEvidence: $('#settings-auto-cleanup-evidence')?.checked ?? true,
+      autoCleanupReports: $('#settings-auto-cleanup-reports')?.checked ?? true,
     },
     branding: {
-      projectName: $('#settings-project-name').value.trim(),
-      projectSubtitle: $('#settings-project-subtitle').value.trim(),
-      pageTitle: $('#settings-page-title').value.trim(),
-      logoUrl: $('#settings-logo-url').value.trim(),
-      primaryColor: $('#settings-primary-color').value.trim(),
-      backgroundColor: $('#settings-background-color').value.trim(),
-      fontSize: $('#settings-font-size').value.trim(),
+      projectName: $('#settings-project-name')?.value?.trim() || '',
+      projectSubtitle: $('#settings-project-subtitle')?.value?.trim() || '',
+      pageTitle: $('#settings-page-title')?.value?.trim() || '',
+      logoUrl: $('#settings-logo-url')?.value?.trim() || '',
+      primaryColor: $('#settings-primary-color')?.value?.trim() || '',
+      backgroundColor: $('#settings-background-color')?.value?.trim() || '',
+      fontSize: $('#settings-font-size')?.value?.trim() || '',
     },
   };
 }
@@ -5893,54 +5897,40 @@ async function openSettings() {
   } catch (error) { notify(error.message); }
 }
 
-async function saveSettings() {
-  const button = $('#save-settings-button');
-  button.disabled = true;
-  try {
-    const botPayload = {
-      discordToken: $('#settings-bot-token')?.value.trim() || undefined,
-      allowedChannelId: $('#settings-bot-channel-id')?.value.trim(),
-      githubToken: $('#settings-bot-gh-token')?.value.trim() || undefined,
-      githubOwner: $('#settings-bot-gh-owner')?.value.trim(),
-      githubRepo: $('#settings-bot-gh-repo')?.value.trim(),
-      githubWorkflow: $('#settings-bot-gh-workflow')?.value.trim(),
-      githubRef: $('#settings-bot-gh-ref')?.value.trim(),
-    };
+async function saveAiSettingsSilently() {
+  const providerSelect = $('#settings-ai-provider');
+  const apiKeyInput = $('#settings-ai-api-key');
+  const baseUrlInput = $('#settings-ai-base-url');
+  const customModelInput = $('#settings-ai-custom-model');
+  const modelPresetSelect = $('#settings-ai-model-preset');
+  const scopeClient = $('#settings-ai-scope-client');
 
-    const [result] = await Promise.all([
-      request('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(collectSettingsPayload()),
-      }),
-      request('/api/discord-bot/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(botPayload),
-      }).catch((e) => console.error('Lưu Bot config:', e.message))
-    ]);
+  if (!providerSelect) return;
+  const isClientScope = scopeClient?.checked;
+  const provider = providerSelect.value || 'gemini';
+  const apiKey = apiKeyInput?.value?.trim() || '';
+  const baseURL = baseUrlInput?.value?.trim() || '';
+  const model = customModelInput?.value?.trim() || modelPresetSelect?.value || '';
 
-    renderSettings(result.settings);
-    savedSuitesCache = JSON.parse(JSON.stringify(result.settings?.suites || suitesCache));
-    updateSuiteRunButtonState();
-    if (result.settings.branding) applyAppConfig(result.settings.branding);
-    notify(`${result.message} Backup: ${result.backup}`);
-    const config = await request('/api/config');
-    fillSelect('#environment', config.environments, '');
-    if (config.defaults?.environment) $('#environment').value = config.defaults.environment;
-    if (config.defaults?.workers) $('#workers').value = config.defaults.workers;
-
-    testCatalog = { specs: config.specs, specProjects: config.specProjects || {}, projects: config.projects || [] };
-    window.dashboardSuites = config.suites || {};
-    renderRunnerSuiteOptions(window.dashboardSuites);
-  } catch (error) { notify(error.message); }
-  finally { button.disabled = false; }
+  if (isClientScope) {
+    if (apiKey) {
+      const personalConfig = { enabled: true, provider, apiKey, baseURL, model };
+      localStorage.setItem('qa_studio_ai_personal_config', JSON.stringify(personalConfig));
+    }
+  } else if (apiKey || provider) {
+    await request('/api/ai/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, apiKey, baseURL, model }),
+    });
+  }
 }
 
-$('#sync-git-button')?.addEventListener('click', async () => {
-  const btn = $('#sync-git-button');
+async function handleSyncGitSuites(btn) {
+  if (!btn) btn = $('#sync-git-button');
+  if (!btn) return;
   btn.disabled = true;
-  btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Đang đồng bộ...';
+  btn.innerHTML = '<i class="ph ph-spinner-gap spin"></i> Đang đồng bộ...';
   try {
     const result = await request('/api/git/sync', { method: 'POST' });
     notify(result.message || 'Đã đồng bộ hóa Test Suites lên GitHub thành công!');
@@ -5950,18 +5940,19 @@ $('#sync-git-button')?.addEventListener('click', async () => {
     btn.disabled = false;
     btn.innerHTML = '<i class="ph-bold ph-cloud-arrow-up"></i> Đồng bộ lên GitHub';
   }
-});
+}
 
-$('#test-discord-button')?.addEventListener('click', async () => {
-  const btn = $('#test-discord-button');
-  const webhookUrl = $('#settings-discord-webhook')?.value.trim();
-  const channelName = $('#settings-discord-channel')?.value.trim();
+async function handleTestDiscordWebhook(btn) {
+  if (!btn) btn = $('#test-discord-button');
+  if (!btn) return;
+  const webhookUrl = $('#settings-discord-webhook')?.value?.trim();
+  const channelName = $('#settings-discord-channel')?.value?.trim();
   if (!webhookUrl) {
     notify('Vui lòng dán Discord Webhook URL trước khi thử.');
     return;
   }
   btn.disabled = true;
-  btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Đang gửi...';
+  btn.innerHTML = '<i class="ph ph-spinner-gap spin"></i> Đang gửi...';
   try {
     const result = await request('/api/discord/test', {
       method: 'POST',
@@ -5975,7 +5966,79 @@ $('#test-discord-button')?.addEventListener('click', async () => {
     btn.disabled = false;
     btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> Gửi tin nhắn thử';
   }
-});
+}
+
+async function saveSettings() {
+  const button = $('#save-settings-button');
+  if (button) button.disabled = true;
+  try {
+    const payload = collectSettingsPayload();
+
+    const savePromises = [
+      request('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+    ];
+
+    const botToken = $('#settings-bot-token')?.value?.trim();
+    const botChannelId = $('#settings-bot-channel-id')?.value?.trim();
+    const ghToken = $('#settings-bot-gh-token')?.value?.trim();
+    const ghOwner = $('#settings-bot-gh-owner')?.value?.trim();
+    const ghRepo = $('#settings-bot-gh-repo')?.value?.trim();
+
+    if (botToken || botChannelId || ghToken || ghOwner || ghRepo) {
+      const botPayload = {
+        discordToken: botToken || undefined,
+        allowedChannelId: botChannelId,
+        githubToken: ghToken || undefined,
+        githubOwner: ghOwner,
+        githubRepo: ghRepo,
+        githubWorkflow: $('#settings-bot-gh-workflow')?.value?.trim(),
+        githubRef: $('#settings-bot-gh-ref')?.value?.trim(),
+      };
+      savePromises.push(
+        request('/api/discord-bot/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(botPayload),
+        }).catch((e) => console.warn('Lưu Bot config:', e.message))
+      );
+    }
+
+    const activeSubtab = document.querySelector('.settings-subtab.active')?.dataset.subtab;
+    if (activeSubtab === 'ai') {
+      savePromises.push(saveAiSettingsSilently().catch((e) => console.warn('Lưu AI config:', e.message)));
+    }
+
+    const [result] = await Promise.all(savePromises);
+
+    renderSettings(result.settings);
+    savedSuitesCache = JSON.parse(JSON.stringify(result.settings?.suites || suitesCache));
+    updateSuiteRunButtonState();
+    if (result.settings.branding) applyAppConfig(result.settings.branding);
+    notify(`${result.message || 'Đã lưu cấu hình thành công!'}${result.backup ? ' Backup: ' + result.backup : ''}`);
+    const config = await request('/api/config');
+    fillSelect('#environment', config.environments, '');
+    if (config.defaults?.environment) $('#environment').value = config.defaults.environment;
+    if (config.defaults?.workers) $('#workers').value = config.defaults.workers;
+
+    testCatalog = { specs: config.specs, specProjects: config.specProjects || {}, projects: config.projects || [] };
+    window.dashboardSuites = config.suites || {};
+    renderRunnerSuiteOptions(window.dashboardSuites);
+  } catch (error) { 
+    notify(`Lỗi lưu cấu hình: ${error.message}`); 
+  } finally { 
+    if (button) button.disabled = false; 
+  }
+}
+
+window.saveSettings = saveSettings;
+window.openSettings = openSettings;
+window.handleSyncGitSuites = handleSyncGitSuites;
+window.handleTestDiscordWebhook = handleTestDiscordWebhook;
+
 
 async function initialize() {
   try {
@@ -6082,6 +6145,7 @@ document.addEventListener('click', (e) => {
     const envPanel = document.querySelector('.settings-environments');
     const apiPanel = document.querySelector('.settings-api');
     const artifactsPanel = document.querySelector('.settings-artifacts');
+    const mpPanel = document.querySelector('.settings-master-process');
 
     if (suitesPanel) suitesPanel.hidden = target !== 'suites';
     if (documentsPanel) {
@@ -6090,7 +6154,12 @@ document.addEventListener('click', (e) => {
         openSettingsDocuments();
       }
     }
-    if (brandingPanel) brandingPanel.hidden = target !== 'branding';
+    if (brandingPanel) {
+      brandingPanel.hidden = target !== 'branding';
+      if (target === 'branding' && typeof updateBrandingPreview === 'function') {
+        updateBrandingPreview();
+      }
+    }
     if (discordPanel) discordPanel.hidden = target !== 'discord';
     if (aiPanel) {
       aiPanel.hidden = target !== 'ai';
@@ -6098,6 +6167,7 @@ document.addEventListener('click', (e) => {
         initAiSettings();
       }
     }
+    if (mpPanel) mpPanel.hidden = target !== 'master-process';
     
     const isGeneral = target === 'general';
     if (runtimePanel) runtimePanel.hidden = !isGeneral;
@@ -6116,6 +6186,55 @@ document.addEventListener('click', (e) => {
   const reloadBtn = e.target.closest('#reload-settings-button');
   if (reloadBtn) {
     openSettings();
+    return;
+  }
+
+  const syncGitBtn = e.target.closest('#sync-git-button');
+  if (syncGitBtn) {
+    handleSyncGitSuites(syncGitBtn);
+    return;
+  }
+
+  const testDiscordBtn = e.target.closest('#test-discord-button');
+  if (testDiscordBtn) {
+    handleTestDiscordWebhook(testDiscordBtn);
+    return;
+  }
+
+  const colorSwatch = e.target.closest('.color-swatch-btn');
+  if (colorSwatch) {
+    const color = colorSwatch.dataset.color;
+    document.querySelectorAll('.color-swatch-btn').forEach((b) => b.classList.toggle('active', b === colorSwatch));
+    if ($('#settings-primary-color')) $('#settings-primary-color').value = color;
+    if ($('#settings-primary-color-picker')) $('#settings-primary-color-picker').value = color;
+    if (typeof updateBrandingPreview === 'function') updateBrandingPreview();
+    return;
+  }
+
+  const bgSwatch = e.target.closest('.bg-swatch-btn');
+  if (bgSwatch) {
+    const bg = bgSwatch.dataset.bg || '';
+    document.querySelectorAll('.bg-swatch-btn').forEach((b) => b.classList.toggle('active', b === bgSwatch));
+    if ($('#settings-background-color')) $('#settings-background-color').value = bg;
+    if ($('#settings-background-color-picker') && bg) $('#settings-background-color-picker').value = bg;
+    if (typeof updateBrandingPreview === 'function') updateBrandingPreview();
+    return;
+  }
+
+  const resetBgBtn = e.target.closest('#btn-reset-bg-color');
+  if (resetBgBtn) {
+    if ($('#settings-background-color')) $('#settings-background-color').value = '';
+    document.querySelectorAll('.bg-swatch-btn').forEach((b) => b.classList.toggle('active', b.dataset.bg === ''));
+    if (typeof updateBrandingPreview === 'function') updateBrandingPreview();
+    return;
+  }
+
+  const fontBtn = e.target.closest('.font-size-btn');
+  if (fontBtn) {
+    const size = fontBtn.dataset.size || '14px';
+    document.querySelectorAll('.font-size-btn').forEach((b) => b.classList.toggle('active', b === fontBtn));
+    if ($('#settings-font-size')) $('#settings-font-size').value = size;
+    if (typeof updateBrandingPreview === 'function') updateBrandingPreview();
     return;
   }
 
@@ -6337,6 +6456,46 @@ document.addEventListener('click', (e) => {
       if (typeof renderSuitesSidebarList === 'function') renderSuitesSidebarList();
     }
     return;
+  }
+});
+
+document.addEventListener('input', (e) => {
+  const target = e.target;
+  if (!target) return;
+  if (target.id === 'settings-primary-color-picker') {
+    if ($('#settings-primary-color')) $('#settings-primary-color').value = target.value;
+    if (typeof updateBrandingPreview === 'function') updateBrandingPreview();
+    return;
+  }
+  if (target.id === 'settings-background-color-picker') {
+    if ($('#settings-background-color')) $('#settings-background-color').value = target.value;
+    if (typeof updateBrandingPreview === 'function') updateBrandingPreview();
+    return;
+  }
+  if ([
+    'settings-project-name',
+    'settings-project-subtitle',
+    'settings-page-title',
+    'settings-logo-url',
+    'settings-primary-color',
+    'settings-background-color',
+    'settings-font-size',
+  ].includes(target.id)) {
+    if (typeof updateBrandingPreview === 'function') updateBrandingPreview();
+  }
+});
+
+document.addEventListener('submit', (e) => {
+  if (e.target && (e.target.id === 'settings-form' || e.target.closest('#settings-form'))) {
+    e.preventDefault();
+    saveSettings();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target && e.target.closest('#settings-form') && e.target.tagName === 'INPUT') {
+    e.preventDefault();
+    saveSettings();
   }
 });
 
@@ -8265,58 +8424,9 @@ function initSidebarCollapse() {
 initSidebarCollapse();
 
 $('#format-resource-button')?.addEventListener('click', formatCurrentResourceEditor);
-$('#reload-settings-button')?.addEventListener('click', openSettings);
-$('#save-settings-button')?.addEventListener('click', saveSettings);
-[
-  '#settings-project-name',
-  '#settings-project-subtitle',
-  '#settings-page-title',
-  '#settings-logo-url',
-  '#settings-primary-color',
-  '#settings-background-color',
-  '#settings-font-size',
-].forEach((selector) => $(selector)?.addEventListener('input', updateBrandingPreview));
+// Note: Settings event listeners (#reload-settings-button, #save-settings-button, swatches, pickers, etc.)
+// are handled dynamically via universal document event delegation.
 
-$('#settings-primary-color-picker')?.addEventListener('input', (e) => {
-  if ($('#settings-primary-color')) $('#settings-primary-color').value = e.target.value;
-  updateBrandingPreview();
-});
-
-document.querySelectorAll('.color-swatch-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const color = btn.dataset.color;
-    if ($('#settings-primary-color')) $('#settings-primary-color').value = color;
-    if ($('#settings-primary-color-picker')) $('#settings-primary-color-picker').value = color;
-    updateBrandingPreview();
-  });
-});
-
-$('#settings-background-color-picker')?.addEventListener('input', (e) => {
-  if ($('#settings-background-color')) $('#settings-background-color').value = e.target.value;
-  updateBrandingPreview();
-});
-
-document.querySelectorAll('.bg-swatch-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const bg = btn.dataset.bg || '';
-    if ($('#settings-background-color')) $('#settings-background-color').value = bg;
-    if ($('#settings-background-color-picker') && bg) $('#settings-background-color-picker').value = bg;
-    updateBrandingPreview();
-  });
-});
-
-$('#btn-reset-bg-color')?.addEventListener('click', () => {
-  if ($('#settings-background-color')) $('#settings-background-color').value = '';
-  updateBrandingPreview();
-});
-
-document.querySelectorAll('.font-size-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const size = btn.dataset.size || '14px';
-    if ($('#settings-font-size')) $('#settings-font-size').value = size;
-    updateBrandingPreview();
-  });
-});
 
 
 // ==========================================================================

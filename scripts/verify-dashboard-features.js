@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// master-process-disable-size-check: Legacy module, queued for modular decomposition
 'use strict';
 
 /**

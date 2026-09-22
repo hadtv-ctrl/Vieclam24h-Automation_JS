@@ -1,4 +1,3 @@
-// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * dashboard/public/js/views/data/dataSlice.js
  * Test Data Studio Feature Slice (Phase 4.1). Budget <= 250 lines.

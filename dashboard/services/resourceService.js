@@ -1,4 +1,3 @@
-// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * dashboard/services/resourceService.js
  * Manages test resources, document files, report artifacts, and sensitive data masking.

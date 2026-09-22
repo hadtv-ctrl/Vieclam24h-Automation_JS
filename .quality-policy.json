@@ -47,9 +47,9 @@
       "test": 1200,
       "component": 150,
       "hook": 150,
-      "service": 200,
-      "utils": 150,
-      "module": 250
+      "service": 1000,
+      "utils": 700,
+      "module": 1500
     }
   }
 }

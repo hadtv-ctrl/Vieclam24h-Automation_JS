@@ -1,4 +1,3 @@
-// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * dashboard/public/js/views/qa/markdownView.js
  * Dựng Markdown thành DOM — KHÔNG dùng innerHTML ở bất kỳ đâu.
