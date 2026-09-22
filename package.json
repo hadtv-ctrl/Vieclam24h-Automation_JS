@@ -47,7 +47,17 @@
     "git:pull": "node scripts/git-sync.js pull",
     "git:push": "node scripts/git-sync.js push",
     "git:check": "node scripts/git-sync.js check",
-    "update:framework": "node scripts/update-framework.js"
+    "update:framework": "node scripts/update-framework.js",
+    "mp:doctor": "node scripts/run-mp.js doctor .",
+    "mp:audit": "node scripts/run-mp.js audit .",
+    "mp:optimize": "node scripts/run-mp.js optimize .",
+    "mp:candidates": "node scripts/run-mp.js candidates .",
+    "mp:audit-deps": "node scripts/run-mp.js audit-deps .",
+    "mp:probes": "node scripts/run-mp.js probes ALL .",
+    "mp:drift": "node scripts/run-mp.js check-drift .",
+    "mp:sync": "node scripts/run-mp.js sync .",
+    "mp:gate": "node scripts/run-mp.js gate .",
+    "mp:evidence": "node scripts/run-mp.js generate-evidence"
   },
   "dependencies": {
     "dotenv": "^16.3.1"

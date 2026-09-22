@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "active": false,
+  "scope": "ALL",
+  "reason": "",
+  "blocking_findings": [],
+  "activated_at": null,
+  "activated_by": null,
+  "exemption": {
+    "approved": false,
+    "approvers": [],
+    "justification": "",
+    "expires_at": null
+  }
+}

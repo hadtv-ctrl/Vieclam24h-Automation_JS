@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QA Automation Studio</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='20' font-size='20'>⚡</text></svg>" id="favicon">
-  <link rel="stylesheet" href="/styles.css?v=6.3">
+  <link rel="stylesheet" href="/styles.css?v=6.7">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -122,6 +122,15 @@
         <small>Debug trực quan trong cửa sổ riêng</small>
       </div>
     </header>
+
+    <!-- Emergency Freeze Banner (Circuit Breaker) -->
+    <div id="runner-freeze-banner" class="alert-banner is-danger" style="display: none; margin: 0 0 16px 0; padding: 12px 16px; border-radius: 6px; background: rgba(248, 81, 73, 0.15); border: 1px solid #f85149; color: #ff7b72; font-size: 13px; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <i class="ph-bold ph-hand-palm" style="font-size: 18px;"></i>
+        <span><strong>CIRCUIT BREAKER ĐANG KÍCH HOẠT (FEATURE FREEZE):</strong> Mọi lệnh chạy test đã bị đóng băng do lỗi P0: <span id="runner-freeze-banner-reason"></span></span>
+      </div>
+      <a href="#/settings" style="color: #58a6ff; text-decoration: underline; font-weight: 500; font-size: 12px; white-space: nowrap;">Xem trong Settings &rarr;</a>
+    </div>
 
     <section class="workspace">
       <form id="run-form" class="panel controls-panel">
@@ -646,6 +655,6 @@
   </main>
   <script src="/app.js?v=5.8"></script>
   <script src="/agent.js?v=1"></script>
-  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/main.js?v=6.6"></script>
 </body>
 </html>

@@ -13,6 +13,7 @@ const {
   startRun,
   stopRun
 } = require('../services/runnerService');
+const { assertNotFrozen } = require('../../core/utils/circuitBreaker');
 
 async function handleRunnerRoutes(request, response, url, context = {}) {
   const root = context.root || process.env.QA_PROJECT_ROOT || process.cwd();
@@ -42,9 +43,11 @@ async function handleRunnerRoutes(request, response, url, context = {}) {
     if (getActiveRun()) return sendJson(response, 409, { error: 'Đang có một test run khác.' });
     try {
       const options = validateOptions(await parseBody(request), root);
+      assertNotFrozen({ suiteName: options.suite || options.file, projectRoot: root, exitOnError: false });
       return sendJson(response, 202, startRun(options, false, root));
     } catch (error) {
-      return sendJson(response, 400, { error: error.message });
+      const status = String(error.message || '').includes('[CIRCUIT BREAKER]') ? 403 : 400;
+      return sendJson(response, status, { error: error.message });
     }
   }
 
@@ -52,9 +55,11 @@ async function handleRunnerRoutes(request, response, url, context = {}) {
     if (getActiveRun()) return sendJson(response, 409, { error: 'Đang có một test run hoặc UI Mode khác.' });
     try {
       const options = validateOptions(await parseBody(request), root);
+      assertNotFrozen({ suiteName: options.suite || options.file, projectRoot: root, exitOnError: false });
       return sendJson(response, 202, startRun(options, true, root));
     } catch (error) {
-      return sendJson(response, 400, { error: error.message });
+      const status = String(error.message || '').includes('[CIRCUIT BREAKER]') ? 403 : 400;
+      return sendJson(response, status, { error: error.message });
     }
   }
 

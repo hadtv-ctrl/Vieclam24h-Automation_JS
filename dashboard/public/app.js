@@ -6012,7 +6012,38 @@ async function initialize() {
     if (event.type === 'recorder_status') onRecorderStatusUpdate(event.payload);
   };
   events.onerror = () => notify('Mất kết nối tới dashboard server.');
+  checkCircuitBreakerUI();
 }
+
+async function checkCircuitBreakerUI() {
+  try {
+    const res = await request('/api/mp/freeze');
+    const runnerBanner = $('#runner-freeze-banner');
+    const runnerReason = $('#runner-freeze-banner-reason');
+    const suitesBanner = $('#suites-freeze-banner');
+    const suitesReason = $('#suites-freeze-banner-reason');
+    const runBtn = $('#run-button');
+    const uiBtn = $('#ui-button');
+    const suiteRunBtn = $('#suites-subnav-run-btn');
+
+    if (runnerBanner) runnerBanner.style.display = res.active ? 'flex' : 'none';
+    if (runnerReason) runnerReason.textContent = res.reason || '(Lỗi P0 đang kích hoạt Freeze)';
+    if (suitesBanner) suitesBanner.style.display = res.active ? 'flex' : 'none';
+    if (suitesReason) suitesReason.textContent = res.reason || '(Lỗi P0 đang kích hoạt Freeze)';
+
+    if (res.active) {
+      if (runBtn) { runBtn.disabled = true; runBtn.title = `[CIRCUIT BREAKER] Đã đóng băng: ${res.reason}`; }
+      if (uiBtn) { uiBtn.disabled = true; uiBtn.title = `[CIRCUIT BREAKER] Đã đóng băng: ${res.reason}`; }
+      if (suiteRunBtn) { suiteRunBtn.disabled = true; suiteRunBtn.title = `[CIRCUIT BREAKER] Đã đóng băng: ${res.reason}`; suiteRunBtn.style.opacity = '0.6'; }
+    }
+  } catch (_) {}
+}
+
+document.querySelectorAll('.view-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    if (tab.dataset.view === 'runner-view' || tab.dataset.view === 'suites-view') checkCircuitBreakerUI();
+  });
+});
 
 document.querySelectorAll('.runner-mode-tab').forEach((tab) => {
   tab.addEventListener('click', () => {

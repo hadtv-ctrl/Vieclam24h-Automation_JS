@@ -25,6 +25,7 @@ export class SuitesSlice {
     this._bindDomEvents();
     this._registerBridgeActions();
     await this.loadSuites();
+    await this.checkFreezeStatus();
   }
 
   unmount() {
@@ -60,15 +61,11 @@ export class SuitesSlice {
     });
 
     on('#suites-subnav-create', 'click', () => {
-      if (typeof window.createNewSuite === 'function') {
-        return window.createNewSuite();
-      }
+      if (typeof window.createNewSuite === 'function') return window.createNewSuite();
       this.createSuite();
     });
     on('#suites-subnav-delete-btn', 'click', () => {
-      if (typeof window.deleteCurrentSuite === 'function') {
-        return window.deleteCurrentSuite();
-      }
+      if (typeof window.deleteCurrentSuite === 'function') return window.deleteCurrentSuite();
       this.deleteSuite();
     });
 
@@ -85,55 +82,35 @@ export class SuitesSlice {
     });
 
     // Sidebar collapse / expand: delegate cleanly to universal controller with fallback
-    on('#btn-collapse-suites-sidebar', 'click', (e) => {
-      e.stopPropagation();
-      if (typeof window.setSidebarCollapsed === 'function') {
-        window.setSidebarCollapsed('suites', true, true);
-      } else {
-        root.querySelector('#suites-workspace')?.classList.add('sidebar-collapsed');
-      }
-    });
-    on('#btn-toggle-suites-sidebar-head', 'click', (e) => {
-      e.stopPropagation();
-      if (typeof window.toggleSidebar === 'function') {
-        window.toggleSidebar('suites');
-      } else {
-        root.querySelector('#suites-workspace')?.classList.toggle('sidebar-collapsed');
-      }
-    });
-    on('#btn-expand-suites-sidebar', 'click', (e) => {
-      e.stopPropagation();
-      if (typeof window.setSidebarCollapsed === 'function') {
-        window.setSidebarCollapsed('suites', false);
-      } else {
-        root.querySelector('#suites-workspace')?.classList.remove('sidebar-collapsed');
-      }
-    });
-    on('#suites-sidebar-collapsed-strip', 'click', (e) => {
-      e.stopPropagation();
-      if (typeof window.setSidebarCollapsed === 'function') {
-        window.setSidebarCollapsed('suites', false);
-      } else {
-        root.querySelector('#suites-workspace')?.classList.remove('sidebar-collapsed');
-      }
-    });
+    const setCol = (val) => (typeof window.setSidebarCollapsed === 'function') ? window.setSidebarCollapsed('suites', val) : root.querySelector('#suites-workspace')?.classList.toggle('sidebar-collapsed', val);
+    on('#btn-collapse-suites-sidebar', 'click', (e) => { e.stopPropagation(); setCol(true); });
+    on('#btn-toggle-suites-sidebar-head', 'click', (e) => { e.stopPropagation(); (typeof window.toggleSidebar === 'function') ? window.toggleSidebar('suites') : root.querySelector('#suites-workspace')?.classList.toggle('sidebar-collapsed'); });
+    on('#btn-expand-suites-sidebar', 'click', (e) => { e.stopPropagation(); setCol(false); });
+    on('#suites-sidebar-collapsed-strip', 'click', (e) => { e.stopPropagation(); setCol(false); });
   }
 
   _registerBridgeActions() {
     const reg = (name, fn) => this._disposers.push(windowBridge.exposeAction(name, fn));
     reg('selectSuite', (id) => this.selectSuite(id));
-    reg('createSuite', () => {
-      if (typeof window.createNewSuite === 'function') {
-        return window.createNewSuite();
+    reg('createSuite', () => typeof window.createNewSuite === 'function' ? window.createNewSuite() : this.createSuite());
+    reg('deleteCurrentSuite', () => typeof window.deleteCurrentSuite === 'function' ? window.deleteCurrentSuite() : this.deleteSuite());
+  }
+
+  async checkFreezeStatus() {
+    try {
+      const res = await apiClient.get('/api/mp/freeze');
+      const banner = document.getElementById('suites-freeze-banner');
+      const reasonEl = document.getElementById('suites-freeze-banner-reason');
+      const runBtn = document.getElementById('suites-subnav-run-btn');
+      if (banner) banner.style.display = res.active ? 'flex' : 'none';
+      if (reasonEl) reasonEl.textContent = res.reason || '(Lỗi P0 đang kích hoạt Freeze)';
+      if (runBtn && res.active) {
+        runBtn.disabled = true;
+        runBtn.title = `[CIRCUIT BREAKER] Đã đóng băng: ${res.reason}`;
+        runBtn.style.opacity = '0.6';
+        runBtn.style.cursor = 'not-allowed';
       }
-      return this.createSuite();
-    });
-    reg('deleteCurrentSuite', () => {
-      if (typeof window.deleteCurrentSuite === 'function') {
-        return window.deleteCurrentSuite();
-      }
-      return this.deleteSuite();
-    });
+    } catch (_) {}
   }
 
   async loadSuites() {

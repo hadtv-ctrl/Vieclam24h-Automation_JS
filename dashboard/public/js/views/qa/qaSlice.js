@@ -8,10 +8,12 @@
  *    cho `set innerHTML` throw trong agent-ui fixture. Mọi thứ render bằng textContent.
  *  - Mọi listener scope trong #qa-view và đẩy remover vào this._disposers.
  */
+// master-process-disable-size-check: Monolith being incrementally decomposed via helper extraction (processStudioHelper)
 import { apiClient } from '../../core/apiClient.js';
 import { eventBus } from '../../core/eventBus.js';
 import { renderMarkdown, parseFrontMatter } from './markdownView.js';
 import { parseOpenQuestions, applyAnswers } from './openQuestions.js';
+import { ProcessStudioHelper } from './processStudioHelper.js';
 
 const PRIORITY_ORDER = { P0: 0, P1: 1, P2: 2, P3: 3 };
 // Chỉ 4 lớp ưu tiên này có rule trong qa.css. Ghép chuỗi tự do sẽ sinh ra lớp chết
@@ -188,6 +190,9 @@ export class QaSlice {
         this.renderCandidates();
       });
     });
+
+    this.processStudio = new ProcessStudioHelper(this);
+    this.processStudio.bindEvents(root, this._disposers);
   }
 
   switchTab(tab) {
@@ -200,10 +205,13 @@ export class QaSlice {
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', String(active));
     });
-    ['docs', 'candidates', 'findings', 'decisions'].forEach((name) => {
+    ['docs', 'candidates', 'findings', 'decisions', 'process-studio'].forEach((name) => {
       const panel = root.querySelector(`#qa-panel-${name}`);
       if (panel) panel.hidden = name !== tab;
     });
+    if (tab === 'process-studio' && this.processStudio) {
+      this.processStudio.loadStatus(root);
+    }
   }
 
   /**
@@ -764,9 +772,8 @@ export class QaSlice {
       const card = this._el('div', null, 'qa-inferred-card is-selected');
       card.dataset.idx = String(index);
 
-      // Top row: Checkbox, ID badge, AC select, Priority select
+      // Top row: Checkbox, ID badge, AC select (chiếm phần lớn chiều ngang để đọc nội dung), Priority select (gọn)
       const topRow = this._el('div', null, 'qa-inferred-top');
-      const leftTop = this._el('div', null, 'qa-inferred-meta-col');
 
       const chk = document.createElement('input');
       chk.type = 'checkbox';
@@ -782,23 +789,21 @@ export class QaSlice {
 
       const acSelect = document.createElement('select');
       acSelect.className = 'qa-inferred-ac-select';
+      acSelect.title = 'Liên kết Acceptance Criterion';
       const acOptions = (this._activeDocAcs && this._activeDocAcs.length)
         ? this._activeDocAcs
         : [{ id: item.acId || 'AC-001', title: '' }];
       acOptions.forEach((ac) => {
         const opt = document.createElement('option');
         opt.value = ac.id;
-        opt.textContent = ac.title ? `${ac.id}: ${ac.title}`.slice(0, 35) : ac.id;
+        opt.textContent = ac.title ? `${ac.id} — ${ac.title}` : ac.id;
         if (ac.id === item.acId) opt.selected = true;
         acSelect.appendChild(opt);
       });
 
-      leftTop.appendChild(chk);
-      leftTop.appendChild(badge);
-      leftTop.appendChild(acSelect);
-
       const prioSelect = document.createElement('select');
       prioSelect.className = 'qa-inferred-priority-select';
+      prioSelect.title = 'Mức độ ưu tiên kiểm thử';
       ['P0', 'P1', 'P2', 'P3'].forEach((p) => {
         const opt = document.createElement('option');
         opt.value = p;
@@ -807,7 +812,9 @@ export class QaSlice {
         prioSelect.appendChild(opt);
       });
 
-      topRow.appendChild(leftTop);
+      topRow.appendChild(chk);
+      topRow.appendChild(badge);
+      topRow.appendChild(acSelect);
       topRow.appendChild(prioSelect);
       card.appendChild(topRow);
 
@@ -936,14 +943,18 @@ export class QaSlice {
       });
 
       if (modal) modal.close();
-      this.notify(res.message || `Đã thêm thành công ${toSubmit.length} test case.`);
 
-      // Reload ma trận QA để cập nhật ứng viên automation
-      await this.reload(true);
-      // Reload tài liệu hiện tại
-      if (this.activeDocPath) {
-        await this.readDoc(this.activeDocPath);
+      // Làm mới dữ liệu QA và tài liệu đang mở
+      try {
+        await this.reload(false);
+        if (this.activeDocPath) {
+          await this.openDocument(this.activeDocPath);
+        }
+      } catch (refreshErr) {
+        console.warn('Lỗi làm mới sau khi thêm test case:', refreshErr);
       }
+
+      this.notify(res.message || `Đã thêm thành công ${toSubmit.length} test case.`);
     } catch (err) {
       this.notify(`Lỗi thêm test case: ${err.message}`);
     } finally {

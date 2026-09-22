@@ -9,12 +9,13 @@ const {
 const { createPageContainer } = require('./pagesFactory');
 const { cleanupQueueFixture } = require('./cleanupRegistry');
 const { customFixtures } = require('./custom');
+const { assertNotFrozen } = require('../utils/circuitBreaker');
 
 const RESERVED_FIXTURE_NAMES = new Set([
   'test', 'expect', 'page', 'request', 'browser', 'context',
   'basePage', 'pages', 'workerUserData', 'authenticatedUser',
   'cleanupQueue', 'featureName', 'pageObjectsRoot', 'pageObjectsPlatform',
-  'isMobile', 'viewport', 'browserName', 'storageState'
+  'isMobile', 'viewport', 'browserName', 'storageState', 'circuitBreakerGuard'
 ]);
 
 function resolvePlatform({ pageObjectsPlatform, isMobile, testInfo }) {
@@ -94,6 +95,16 @@ const test = base.extend({
     });
     await use({ ...user, runtimeDataPath: workerUserData.filePath });
   },
+  circuitBreakerGuard: [
+    async ({}, use, testInfo) => {
+      assertNotFrozen({
+        suiteName: testInfo.title || testInfo.file,
+        exitOnError: true,
+      });
+      await use();
+    },
+    { auto: true },
+  ],
   cleanupQueue: cleanupQueueFixture,
   ...safeCustomFixtures,
 });

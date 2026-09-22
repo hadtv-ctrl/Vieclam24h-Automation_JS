@@ -106,6 +106,12 @@ function defineQaConfig(customConfig = {}) {
         },
       ],
       [
+        'junit',
+        {
+          outputFile: path.join('test-results', 'junit.xml'),
+        },
+      ],
+      [
         htmlSummaryReporterPath,
         {
           outputFolder: reportDir,

@@ -15,11 +15,320 @@
       </header>
       <div class="settings-subnav" role="tablist">
         <button class="settings-subtab active" type="button" role="tab" data-subtab="general"><i class="ph-bold ph-gear"></i> Cấu hình chung & Môi trường</button>
+        <button class="settings-subtab" type="button" role="tab" data-subtab="master-process"><i class="ph-bold ph-shield-check"></i> Quy trình Master Process</button>
         <button class="settings-subtab" type="button" role="tab" data-subtab="ai"><i class="ph-bold ph-sparkle"></i> Cấu hình AI & API</button>
         <button class="settings-subtab" type="button" role="tab" data-subtab="discord"><i class="ph-bold ph-bell-ringing"></i> Thông báo Discord</button>
         <button class="settings-subtab" type="button" role="tab" data-subtab="branding"><i class="ph-bold ph-paint-brush"></i> Giao diện & Branding</button>
       </div>
       <form id="settings-form" class="settings-page">
+        <section class="panel settings-panel settings-master-process" hidden>
+          <div class="panel-heading settings-panel-heading">
+            <span class="settings-icon"><i class="ph-bold ph-shield-check"></i></span>
+            <div style="flex: 1;">
+              <p>MASTER PROCESS HUB & QUALITY GATES</p>
+              <h2>Chuẩn Hóa Quy Trình, Anti-Drift & Kiểm Định Chất Lượng</h2>
+            </div>
+            <div class="settings-mp-actions-top" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <label for="mp-project-select" style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                <i class="ph-bold ph-folders"></i> Dự án:
+              </label>
+              <select id="mp-project-select" style="background: var(--bg-input, rgba(0,0,0,0.25)); border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 6px; color: var(--text-primary); padding: 5px 10px; font-size: 12px; cursor: pointer;">
+                <option value="">Đang nạp dự án...</option>
+              </select>
+              <div id="mp-satellite-badge-wrap" style="display: none; align-items: center; gap: 6px;">
+                <strong id="mp-satellite-name" class="mp-mono" style="font-size: 12px; color: var(--accent);">—</strong>
+                <span class="settings-badge-status is-active" style="font-size: 10px; padding: 2px 7px;">Vệ tinh</span>
+              </div>
+              <button id="mp-refresh-button" class="ghost" type="button"><i class="ph ph-arrow-clockwise"></i> Kiểm tra lại</button>
+            </div>
+          </div>
+          <div id="mp-spinner" style="display:none; align-items:center; gap:8px; padding:10px 16px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); border-radius:8px; margin: 12px 16px 0; color: var(--primary, #3b82f6); font-size:13px; font-weight:500;">
+            <i class="ph-bold ph-spinner ph-spin"></i>
+            <span id="mp-spinner-text">Đang thực thi tác vụ Master Process... Vui lòng đợi.</span>
+          </div>
+          <!-- 4-Step Interactive Pipeline Stepper -->
+          <div class="mp-pipeline-container">
+            <div class="mp-pipeline-header">
+              <span class="mp-pipeline-badge"><i class="ph-bold ph-git-merge"></i> WORKFLOW 4 BƯỚC CHUẨN</span>
+              <span class="mp-pipeline-caption">Bấm vào từng bước để cuộn nhanh đến tính năng tương ứng</span>
+            </div>
+            <div class="mp-pipeline-track" role="tablist" aria-label="Các bước Master Process">
+              <button type="button" class="mp-pipeline-step-btn active" data-target="#mp-step-1">
+                <span class="mp-step-badge-num">01</span>
+                <div class="mp-step-text-wrap">
+                  <strong class="mp-step-main-title">Khởi động & Đồng bộ</strong>
+                  <span class="mp-step-sub-title">Lock & Sync Hub</span>
+                </div>
+                <i class="ph-bold ph-caret-right mp-step-chevron"></i>
+              </button>
+              <button type="button" class="mp-pipeline-step-btn" data-target="#mp-step-2">
+                <span class="mp-step-badge-num">02</span>
+                <div class="mp-step-text-wrap">
+                  <strong class="mp-step-main-title">Bảo vệ & Kiểm định</strong>
+                  <span class="mp-step-sub-title">Hook & Audit Code</span>
+                </div>
+                <i class="ph-bold ph-caret-right mp-step-chevron"></i>
+              </button>
+              <button type="button" class="mp-pipeline-step-btn" data-target="#mp-step-3">
+                <span class="mp-step-badge-num">03</span>
+                <div class="mp-step-text-wrap">
+                  <strong class="mp-step-main-title">Cầu dao Khẩn cấp</strong>
+                  <span class="mp-step-sub-title">Feature Freeze P0</span>
+                </div>
+                <i class="ph-bold ph-caret-right mp-step-chevron"></i>
+              </button>
+              <button type="button" class="mp-pipeline-step-btn" data-target="#mp-step-4">
+                <span class="mp-step-badge-num">04</span>
+                <div class="mp-step-text-wrap">
+                  <strong class="mp-step-main-title">Nghiệm thu Release</strong>
+                  <span class="mp-step-sub-title">Gate 4 Evidence</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-body mp-workflow-flow">
+            <!-- BƯỚC 01: KHỞI ĐỘNG & ĐỒNG BỘ -->
+            <div id="mp-step-1" class="mp-step-block">
+              <div class="mp-step-block-header">
+                <span class="mp-step-tag">BƯỚC 01</span>
+                <div>
+                  <h3>Khởi Động & Chống Lệch Quy Trình (Setup & Anti-Drift)</h3>
+                  <p>Khóa cứng phiên bản chuẩn từ Hub, so khớp sai lệch và đồng bộ tài liệu, templates sang dự án vệ tinh.</p>
+                </div>
+              </div>
+              <div class="settings-grid mp-step-grid">
+                <!-- Thẻ 1: Anti-Drift & Process Lock -->
+                <div class="settings-card settings-card-wide">
+                  <div class="settings-card-title"><i class="ph ph-lock-key"></i><span>Process Lock & Chống Lệch Quy Trình (Anti-Drift)</span></div>
+                  <div class="mp-card-content">
+                    <div class="mp-guide-callout">
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-lightbulb"></i> Mục đích:</span>
+                        <span>Khóa cứng phiên bản quy chuẩn từ Hub. Phát hiện ngay lập tức nếu mã nguồn hoặc file quy trình bị sửa đổi trái phép (Drift).</span>
+                      </div>
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-clock"></i> Khi nào bấm:</span>
+                        <span>Bấm <strong>Ghim phiên bản (Init)</strong> khi bắt đầu dự án mới. Bấm <strong>So khớp Drift</strong> để kiểm tra độ lệch. Bấm <strong>Xem trước Đồng bộ (--dry-run)</strong> để xem file sẽ thay đổi. Tích chọn xác nhận và bấm <strong>Đồng bộ Hub (Sync)</strong> khi muốn kéo quy trình mới nhất từ Hub.</span>
+                      </div>
+                    </div>
+                    <div class="mp-meta-row">
+                      <div class="mp-meta-item">
+                        <span class="mp-meta-label">Master Process Hub</span>
+                        <strong id="mp-hub-path" class="mp-mono">—</strong>
+                      </div>
+                      <div class="mp-meta-item">
+                        <span class="mp-meta-label">Phiên bản quy trình</span>
+                        <strong id="mp-hub-version">—</strong>
+                      </div>
+                      <div class="mp-meta-item">
+                        <span class="mp-meta-label">Ghim tại Commit</span>
+                        <strong id="mp-hub-commit" class="mp-mono">—</strong>
+                      </div>
+                      <div class="mp-meta-item">
+                        <span class="mp-meta-label">Trạng thái đồng bộ</span>
+                        <div><span id="mp-drift-badge" class="settings-badge-status"><i class="ph-fill ph-circle"></i> Đang kiểm tra...</span></div>
+                      </div>
+                    </div>
+                    <div style="margin: 12px 0 8px;">
+                      <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer; color:var(--text-muted);">
+                        <input type="checkbox" id="mp-sync-confirm-checkbox" style="cursor:pointer;">
+                        <span>Cho phép ghi đè templates có sao lưu (.bak) (<code>--update-templates</code>)</span>
+                      </label>
+                    </div>
+                    <div class="mp-actions-bar" style="display:flex; gap:8px; flex-wrap:wrap;">
+                      <button type="button" id="mp-btn-init" class="primary"><i class="ph-bold ph-push-pin"></i> Ghim phiên bản (Init)</button>
+                      <button type="button" id="mp-btn-sync-dryrun" class="ghost"><i class="ph-bold ph-magnifying-glass"></i> Xem trước Đồng bộ (--dry-run)</button>
+                      <button type="button" id="mp-btn-sync" class="ghost" disabled><i class="ph-bold ph-arrows-clockwise"></i> Đồng bộ Hub (Sync)</button>
+                      <button type="button" id="mp-btn-drift" class="ghost"><i class="ph-bold ph-git-diff"></i> So khớp Drift</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Thẻ 2: Git Pre-commit Hook -->
+                <div class="settings-card settings-card-wide">
+                  <div class="settings-card-title"><i class="ph ph-shield-check"></i><span>Git Pre-commit Hook (Rào Chắn Tự Động)</span></div>
+                  <div class="mp-card-content">
+                    <div class="mp-guide-callout">
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-lightbulb"></i> Mục đích:</span>
+                        <span>Tự động chặn commit ngay trên máy lập trình viên nếu file vượt quá 250 dòng hoặc làm rò rỉ bí mật (API Key, AWS Token).</span>
+                      </div>
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-clock"></i> Khi nào bấm:</span>
+                        <span>Bấm <strong>Cài đặt / Cập nhật Hook</strong> 1 lần duy nhất khi clone dự án hoặc khi Hub nâng cấp Hook V2.</span>
+                      </div>
+                    </div>
+                    <div class="mp-meta-item" style="margin-bottom: 12px;">
+                      <span class="mp-meta-label">Trạng thái Hook</span>
+                      <div><span id="mp-hook-badge" class="settings-badge-status"><i class="ph-fill ph-circle"></i> Đang tải...</span></div>
+                    </div>
+                    <div>
+                      <button type="button" id="mp-btn-hook" class="primary"><i class="ph-bold ph-shield-plus"></i> Cài đặt / Cập nhật Hook</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BƯỚC 02: BẢO VỆ & KIỂM ĐỊNH -->
+            <div id="mp-step-2" class="mp-step-block">
+              <div class="mp-step-block-header">
+                <span class="mp-step-tag">BƯỚC 02</span>
+                <div>
+                  <h3>Bảo Vệ Kiến Trúc Code & Quét Bí Mật (Code Guard & Audit)</h3>
+                  <p>Kiểm tra giới hạn kích thước file theo vai trò (Services &le; 250, Views &le; 250, Core &le; 200) và quét an toàn bảo mật.</p>
+                </div>
+              </div>
+              <div class="settings-grid mp-step-grid">
+                <!-- Thẻ 3: Modularity & Secret Audit -->
+                <div class="settings-card settings-card-wide">
+                  <div class="settings-card-title"><i class="ph ph-file-code"></i><span>Modularity & Secret Audit (Kiểm Định Mã Nguồn)</span></div>
+                  <div class="mp-card-content">
+                    <div class="mp-guide-callout">
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-lightbulb"></i> Mục đích:</span>
+                        <span>Bảo vệ giới hạn số dòng code từng module, chống phình to mã nguồn và phát hiện chuỗi secret vô tình commit.</span>
+                      </div>
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-clock"></i> Khi nào bấm:</span>
+                        <span>Bấm <strong>Quét Staged</strong> trước mỗi commit để kiểm tra các file chuẩn bị đẩy lên. Bấm <strong>Quét toàn bộ</strong> trong đợt kiểm toán định kỳ.</span>
+                      </div>
+                    </div>
+                    <div class="mp-stats-row" style="margin-bottom: 14px;">
+                      <span class="mp-stat-pill">Đã quét: <strong id="mp-scanned-count">—</strong></span>
+                      <span class="mp-stat-pill">Vi phạm: <strong id="mp-violations-count">—</strong></span>
+                      <span class="mp-stat-pill">Miễn trừ: <strong id="mp-exempted-count">—</strong></span>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button type="button" id="mp-btn-audit" class="primary" style="flex: 1; min-width: 160px;"><i class="ph-bold ph-lightning"></i> Quét toàn bộ</button>
+                      <button type="button" id="mp-btn-audit-staged" class="ghost" style="flex: 1; min-width: 160px;"><i class="ph-bold ph-git-commit"></i> Quét Staged</button>
+                    </div>
+                    <div id="mp-audit-details" style="display:none; margin-top:12px; padding:10px 12px; background:rgba(0,0,0,0.15); border:1px solid rgba(255,255,255,0.06); border-radius:6px; font-size:12px; max-height:160px; overflow-y:auto;">
+                      <div style="font-weight:600; margin-bottom:4px; color:var(--text-primary);">Chi tiết kiểm định:</div>
+                      <ul id="mp-audit-violations-list" style="margin:0; padding-left:18px; color:#f85149;"></ul>
+                      <ul id="mp-audit-exemptions-list" style="margin:4px 0 0; padding-left:18px; color:#d29922;"></ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BƯỚC 03: CẦU DAO KHẨN CẤP -->
+            <div id="mp-step-3" class="mp-step-block">
+              <div class="mp-step-block-header">
+                <span class="mp-step-tag mp-tag-danger">BƯỚC 03</span>
+                <div>
+                  <h3>Cầu Dao Khẩn Cấp (Feature Freeze Circuit Breaker)</h3>
+                  <p>Ngắt mạch cứng (Standard 04 §10.3) tự động dừng kiểm thử và release khi phát hiện blocker P0 nghiêm trọng.</p>
+                </div>
+              </div>
+              <div class="settings-grid mp-step-grid">
+                <!-- Thẻ 4: Feature Freeze Circuit Breaker -->
+                <div class="settings-card settings-card-wide">
+                  <div class="settings-card-title"><i class="ph ph-hand-palm"></i><span>Circuit Breaker (Feature Freeze Ngắt Mạch)</span></div>
+                  <div class="mp-card-content">
+                    <div class="mp-guide-callout mp-guide-callout-danger">
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-shield-warning"></i> Mục đích:</span>
+                        <span>Đóng băng ngay lập tức các hoạt động merge, deploy và test suite khi có lỗi P0, bảo vệ toàn vẹn môi trường sản xuất.</span>
+                      </div>
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-clock"></i> Khi nào bấm:</span>
+                        <span>Bấm <strong>Kích hoạt Freeze</strong> khi phát hiện lỗi nghiêm trọng cần ngắt mạch. Bấm <strong>Gỡ bỏ Freeze</strong> sau khi dev hoàn tất sửa chữa và QA đã xác minh.</span>
+                      </div>
+                    </div>
+                    <div class="mp-meta-row">
+                      <div class="mp-meta-item">
+                        <span class="mp-meta-label">Trạng thái Circuit Breaker</span>
+                        <div><span id="mp-freeze-badge" class="settings-badge-status"><i class="ph-fill ph-circle"></i> Đang tải...</span></div>
+                      </div>
+                      <div class="mp-meta-item" style="grid-column: span 2;">
+                        <span class="mp-meta-label">Lý do đóng băng</span>
+                        <div id="mp-freeze-reason" style="font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 4px;">Không có</div>
+                      </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button type="button" id="mp-btn-freeze-toggle" class="danger" style="flex: 1; min-width: 180px;"><i class="ph-bold ph-power"></i> Kích hoạt Freeze</button>
+                      <button type="button" id="mp-btn-freeze-lift" class="ghost" style="flex: 1; min-width: 180px;"><i class="ph-bold ph-lock-key-open"></i> Gỡ bỏ Freeze</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BƯỚC 04: NGHIỆM THU GATE 4 -->
+            <div id="mp-step-4" class="mp-step-block">
+              <div class="mp-step-block-header">
+                <span class="mp-step-tag mp-tag-success">BƯỚC 04</span>
+                <div>
+                  <h3>Nghiệm Thu Bàn Giao Release (Acceptance Gate 4 Evidence)</h3>
+                  <p>Biên bản nghiệm thu bất biến trích xuất từ assertions JUnit thực tế và chữ ký phê duyệt của QA Lead.</p>
+                </div>
+              </div>
+              <div class="settings-grid mp-step-grid">
+                <!-- Thẻ 5: Bằng Chứng Nghiệm Thu Gate 4 -->
+                <div class="settings-card settings-card-wide">
+                  <div class="settings-card-title"><i class="ph ph-certificate"></i><span>Acceptance Gate 4 Evidence (Biên Bản Nghiệm Thu)</span></div>
+                  <div class="mp-card-content">
+                    <div class="mp-guide-callout mp-guide-callout-success">
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-seal-check"></i> Mục đích:</span>
+                        <span>Tổng hợp bằng chứng nghiệm thu (test results, SHA256 receipt) bất biến, đảm bảo không thể làm giả kết quả kiểm thử.</span>
+                      </div>
+                      <div class="mp-guide-row">
+                        <span class="mp-guide-tag"><i class="ph-bold ph-clock"></i> Khi nào bấm:</span>
+                        <span>Bấm <strong>Xuất Bằng Chứng</strong> khi chuẩn bị đóng phase/release. QA Lead bấm <strong>Ký Duyệt Gate 4</strong> để đóng dấu nghiệm thu bàn giao.</span>
+                      </div>
+                    </div>
+                    <div class="mp-meta-row">
+                      <div class="mp-meta-item">
+                        <span class="mp-meta-label">Trạng thái Bằng chứng</span>
+                        <div><span id="mp-evidence-badge" class="settings-badge-status"><i class="ph-fill ph-circle"></i> Chưa tạo</span></div>
+                      </div>
+                      <div class="mp-meta-item" style="grid-column: span 2;">
+                        <span class="mp-meta-label">Mã băm SHA256 / Revision</span>
+                        <div id="mp-evidence-hash" style="font-family: monospace; font-size: 11px; word-break: break-all; color: var(--text-muted); margin-top: 4px;">—</div>
+                      </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button type="button" id="mp-btn-export-evidence" class="primary" style="flex: 1; min-width: 180px;"><i class="ph-bold ph-export"></i> Xuất Bằng Chứng</button>
+                      <button type="button" id="mp-btn-review-gate4" class="ghost" style="flex: 1; min-width: 180px;"><i class="ph-bold ph-check-fat"></i> Ký Duyệt Gate 4</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- NHẬT KÝ THỰC THI & CHẨN ĐOÁN HỆ THỐNG -->
+            <div id="mp-diagnostics" class="mp-step-block">
+              <div class="mp-step-block-header">
+                <span class="mp-step-tag mp-tag-terminal">CHẨN ĐOÁN</span>
+                <div>
+                  <h3>Nhật Ký Thực Thi & Sức Khỏe Môi Trường (Diagnostics & Terminal)</h3>
+                  <p>Chẩn đoán toàn diện (Doctor), chạy kiểm định 6 Probes P1-P6 và theo dõi log thực thi chi tiết.</p>
+                </div>
+              </div>
+              <div class="settings-grid mp-step-grid">
+                <!-- Thẻ 6: Console Log Output Terminal -->
+                <div class="settings-card settings-card-wide">
+                  <div class="settings-card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <i class="ph ph-terminal-window"></i><span>Nhật ký thực thi (Terminal Output)</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button type="button" id="mp-btn-doctor" class="btn-secondary-sm" title="Chạy chẩn đoán toàn diện (Kiểm tra Git, Python, Node, Hub)"><i class="ph-bold ph-first-aid"></i> Doctor</button>
+                      <button type="button" id="mp-btn-probes" class="btn-secondary-sm" title="Chạy kiểm định sức khỏe 6 cổng P1-P6"><i class="ph-bold ph-rocket-launch"></i> Probes ALL</button>
+                      <button type="button" id="mp-btn-clear-log" class="btn-secondary-sm"><i class="ph-bold ph-trash"></i> Xoá log</button>
+                    </div>
+                  </div>
+                  <pre id="mp-terminal-output" class="mp-terminal">Sẵn sàng thực thi lệnh Master Process...</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="panel settings-panel settings-ai" hidden>
           <div class="panel-heading settings-panel-heading">
             <span class="settings-icon"><i class="ph-bold ph-sparkle"></i></span>
