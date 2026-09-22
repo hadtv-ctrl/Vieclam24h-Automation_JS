@@ -11,6 +11,8 @@ const {
   runQaFix,
   getScaffoldMeta,
   generateScaffold,
+  getRequirementImpact,
+  deleteRequirement,
 } = require('./qaService');
 
 test('getQaSummary: trả về đúng JSON 1.0.0 với đầy đủ metrics, health, boundary, decisions, findings', () => {
@@ -80,3 +82,59 @@ test('getQaSummary: Soft Fallback an toàn khi thư mục không có tools/qa', 
     fs.rmSync(emptyTemp, { recursive: true, force: true });
   }
 });
+
+test('getRequirementImpact: tìm đúng các file liên đới của REQ', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'impact-test-'));
+  try {
+    fs.mkdirSync(path.join(tempDir, 'requirements'), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, 'test-cases'), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, 'tests', 'auth'), { recursive: true });
+
+    fs.writeFileSync(path.join(tempDir, 'requirements', 'REQ-099-test.md'), 'id: REQ-099\n# Test REQ');
+    fs.writeFileSync(path.join(tempDir, 'test-cases', 'REQ-099-test.md'), '# TC for REQ-099');
+    fs.writeFileSync(path.join(tempDir, 'tests', 'auth', 'test.spec.ts'), "test.describe('REQ-099', { tag: '@REQ-099' });");
+
+    const impact = getRequirementImpact(tempDir, 'REQ-099');
+    assert.equal(impact.reqId, 'REQ-099');
+    assert.equal(impact.hasFiles, true);
+    assert.equal(impact.files.requirements.length, 1);
+    assert.equal(impact.files.testCases.length, 1);
+    assert.equal(impact.files.specs.length, 1);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('deleteRequirement: xóa an toàn và tạo backup vào .dashboard-backups', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'delete-test-'));
+  try {
+    fs.mkdirSync(path.join(tempDir, 'requirements'), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, 'test-cases'), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, 'tests', 'auth'), { recursive: true });
+
+    const reqPath = path.join(tempDir, 'requirements', 'REQ-099-test.md');
+    const tcPath = path.join(tempDir, 'test-cases', 'REQ-099-test.md');
+    const specPath = path.join(tempDir, 'tests', 'auth', 'test.spec.ts');
+
+    fs.writeFileSync(reqPath, 'id: REQ-099\n# Test REQ');
+    fs.writeFileSync(tcPath, '# TC for REQ-099');
+    fs.writeFileSync(specPath, "test.describe('REQ-099', { tag: '@REQ-099' });");
+
+    const result = deleteRequirement(tempDir, {
+      reqId: 'REQ-099',
+      deleteTestCase: true,
+      deleteSpec: false,
+    });
+
+    assert.equal(result.success, true);
+    assert.equal(result.deleted.length, 2);
+    assert.ok(!fs.existsSync(reqPath));
+    assert.ok(!fs.existsSync(tcPath));
+    assert.ok(fs.existsSync(specPath)); // Spec được giữ lại do deleteSpec: false
+    assert.equal(result.backups.length, 2);
+    assert.ok(fs.existsSync(path.join(tempDir, result.backups[0].backup)));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+

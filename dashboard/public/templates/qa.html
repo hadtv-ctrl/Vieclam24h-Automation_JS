@@ -199,6 +199,9 @@
                   <button type="button" class="btn-secondary-sm" id="qa-reader-edit" hidden>
                     <i class="ph-bold ph-pencil-simple"></i> Sửa tài liệu
                   </button>
+                  <button type="button" class="btn-secondary-sm qa-btn-danger" id="qa-reader-delete" hidden style="color: var(--danger, #ef4444); border-color: rgba(239, 68, 68, 0.3);" title="Xóa Requirement này và các file liên quan">
+                    <i class="ph-bold ph-trash"></i> <span id="qa-reader-delete-label">Xóa Requirement</span>
+                  </button>
                   <button type="button" class="btn-secondary-sm" id="qa-reader-back">
                     <i class="ph-bold ph-arrow-left"></i> Tổng quan
                   </button>
@@ -271,12 +274,13 @@
                 <th style="width: 4%" class="qa-pick-col">
                   <input type="checkbox" id="qa-pick-all" aria-label="Chọn tất cả">
                 </th>
-                <th style="width: 12%">Test case</th>
-                <th style="width: 16%">Requirement</th>
-                <th style="width: 12%">AC</th>
-                <th style="width: 10%">Ưu tiên</th>
-                <th style="width: 14%">Khai báo</th>
-                <th style="width: 32%">Nguồn</th>
+                <th style="width: 10%">Test case</th>
+                <th style="width: 26%">Tiêu đề / Kịch bản</th>
+                <th style="width: 12%">Requirement</th>
+                <th style="width: 10%">AC</th>
+                <th style="width: 8%">Ưu tiên</th>
+                <th style="width: 10%">Khai báo</th>
+                <th style="width: 20%">Nguồn</th>
               </tr>
             </thead>
             <tbody id="qa-candidates-tbody"></tbody>
@@ -591,4 +595,50 @@
           </div>
         </div>
       </dialog>
+
+      <!-- MODAL XÁC NHẬN XÓA REQUIREMENT (AN TOÀN & BACKUP TỰ ĐỘNG) -->
+      <dialog class="app-modal qa-modal" id="qa-delete-req-modal" style="max-width: 560px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 0;">
+        <div class="app-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="ph-bold ph-trash" style="color: var(--danger, #ef4444); font-size: 20px;"></i>
+            <h3 style="margin: 0; font-size: 16px;">Xóa Requirement &amp; Tài Liệu Liên Đới</h3>
+          </div>
+          <button type="button" class="btn-icon-subtle" id="qa-delete-modal-close" style="border: none; background: transparent; font-size: 18px; cursor: pointer; color: var(--muted);" title="Đóng">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+
+        <div class="qa-modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <p class="qa-modal-desc" id="qa-delete-summary" style="margin: 0; font-size: 13px; color: var(--text);">
+            Bạn đang chuẩn bị xóa Requirement <strong id="qa-delete-target-id" class="qa-mono" style="color: var(--danger, #ef4444);">REQ-xxx</strong>.
+          </p>
+
+          <div style="border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <span style="font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Các file liên đới được tìm thấy:</span>
+            <div id="qa-delete-files-list" style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+              <!-- Sẽ được điền động khi mở modal -->
+            </div>
+          </div>
+
+          <div class="qa-alert qa-alert-danger" style="margin: 0; font-size: 11.5px; display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 6px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444;">
+            <i class="ph-bold ph-shield-check" style="font-size: 16px; flex-shrink: 0; margin-top: 1px;"></i>
+            <span><strong>Cơ chế bảo vệ dữ liệu:</strong> Mọi file bị xóa sẽ tự động được sao lưu vào thư mục <code>.dashboard-backups/</code> trên máy chủ trước khi thực thi.</span>
+          </div>
+
+          <div>
+            <label for="qa-delete-confirm-input" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--muted);">
+              Để chống bấm nhầm, vui lòng nhập chính xác mã <span id="qa-delete-confirm-hint" class="qa-mono" style="color: var(--danger, #ef4444); font-weight: 700;">REQ-xxx</span>:
+            </label>
+            <input type="text" id="qa-delete-confirm-input" class="input-sm qa-mono" placeholder="Nhập đúng mã REQ..." style="width: 100%;">
+          </div>
+        </div>
+
+        <div class="app-modal-footer" style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-2);">
+          <button type="button" class="btn-secondary-sm" id="qa-delete-cancel-btn">Hủy bỏ</button>
+          <button type="button" class="btn-danger-sm" id="qa-delete-submit-btn" disabled style="background: var(--danger, #ef4444); color: #fff; border: none; padding: 7px 16px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: not-allowed; display: flex; align-items: center; gap: 6px; opacity: 0.5;">
+            <i class="ph-bold ph-trash"></i> <span>Xác nhận xóa vĩnh viễn</span>
+          </button>
+        </div>
+      </dialog>
+
 

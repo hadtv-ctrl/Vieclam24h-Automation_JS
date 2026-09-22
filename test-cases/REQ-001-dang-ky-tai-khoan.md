@@ -10,10 +10,11 @@
 | TC-004 | AC-002 | Đăng ký bằng số điện thoại kèm OTP trên mobile web | P0 | Có | tests/e2e/mobile-web/register_by_phone-bdd.mobile.spec.js |
 | TC-005 | AC-003 | API đăng ký trả về thành công và cấp token | P1 | Có | tests/api/register_api.spec.js |
 | TC-006 | AC-004 | API chấp thuận dữ liệu cá nhân bằng token vừa cấp | P2 | Có | tests/api/register_api.spec.js |
-| TC-007 | AC-001 | Xác nhận thành công khi bỏ trống số điện thoại (trường tùy chọn theo quyết định) | P1 | candidate | - |
-| TC-008 | AC-001 | Kiểm tra thất bại khi mật khẩu có 7 ký tự (dưới biên tối thiểu 8) | P1 | candidate | - |
-| TC-009 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ cái (thiếu chữ số) | P1 | candidate | - |
-| TC-010 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ số (thiếu chữ cái) | P1 | candidate | - |
+| TC-026 | AC-001 | Xác nhận thành công khi bỏ trống số điện thoại (trường tùy chọn theo quyết định) | P2 | candidate | - |
+| TC-027 | AC-001 | Kiểm tra thất bại khi mật khẩu có 7 ký tự (dưới biên tối thiểu 8) | P2 | candidate | - |
+| TC-028 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ cái (thiếu chữ số) | P2 | candidate | - |
+| TC-029 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ số (thiếu chữ cái) | P2 | candidate | - |
+| TC-030 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -77,13 +78,13 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 | Từ chối consent sau khi đăng ký | AC-002 | Chưa rõ nghiệp vụ, cần chốt trước khi automation | P2 |
 
 
-### TC-007 — Xác nhận thành công khi bỏ trống số điện thoại (trường tùy chọn theo quyết định)
+### TC-026 — Xác nhận thành công khi bỏ trống số điện thoại (trường tùy chọn theo quyết định)
 
-- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
 - **Tiền điều kiện:** Người dùng đang ở màn hình đăng ký / nhập liệu
 - **Dữ liệu kiểm thử:** Bỏ trống trường số điện thoại
-> *Ghi chú nghiệp vụ:* Kiểm thử luồng rẽ nhánh từ quyết định Q-1: số điện thoại không bắt buộc.
+- > *Ghi chú nghiệp vụ:* Kiểm thử luồng rẽ nhánh từ quyết định Q-1: số điện thoại không bắt buộc.
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
@@ -91,13 +92,13 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 | 2 | Để trống trường số điện thoại và bấm gửi form | Hệ thống xử lý thành công, không báo lỗi thiếu số điện thoại |
 
 
-### TC-008 — Kiểm tra thất bại khi mật khẩu có 7 ký tự (dưới biên tối thiểu 8)
+### TC-027 — Kiểm tra thất bại khi mật khẩu có 7 ký tự (dưới biên tối thiểu 8)
 
-- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
 - **Tiền điều kiện:** Người dùng đang ở màn hình nhập liệu
 - **Dữ liệu kiểm thử:** mật khẩu: chuỗi 7 ký tự
-> *Ghi chú nghiệp vụ:* Phân tích biên dưới từ quyết định Q-2: yêu cầu tối thiểu 8 ký tự.
+- > *Ghi chú nghiệp vụ:* Phân tích biên dưới từ quyết định Q-2: yêu cầu tối thiểu 8 ký tự.
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
@@ -106,27 +107,40 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 | 3 | Thử bấm xác nhận / submit | Hệ thống chặn gửi form thành công |
 
 
-### TC-009 — Kiểm tra thất bại khi mật khẩu chỉ chứa chữ cái (thiếu chữ số)
+### TC-028 — Kiểm tra thất bại khi mật khẩu chỉ chứa chữ cái (thiếu chữ số)
 
-- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
 - **Tiền điều kiện:** Người dùng đang ở màn hình nhập liệu
 - **Dữ liệu kiểm thử:** mật khẩu: 'Abcdefgh'
-> *Ghi chú nghiệp vụ:* Quy tắc độ phức tạp từ Q-2: bắt buộc chứa cả chữ và số.
+- > *Ghi chú nghiệp vụ:* Quy tắc độ phức tạp từ Q-2: bắt buộc chứa cả chữ và số.
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
 | 1 | Nhập mật khẩu chỉ gồm chữ cái hợp lệ nhưng không có số | Hệ thống báo lỗi yêu cầu phải chứa ít nhất 1 chữ số |
 
 
-### TC-010 — Kiểm tra thất bại khi mật khẩu chỉ chứa chữ số (thiếu chữ cái)
+### TC-029 — Kiểm tra thất bại khi mật khẩu chỉ chứa chữ số (thiếu chữ cái)
 
-- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
 - **Tiền điều kiện:** Người dùng đang ở màn hình nhập liệu
 - **Dữ liệu kiểm thử:** mật khẩu: '12345678'
-> *Ghi chú nghiệp vụ:* Quy tắc độ phức tạp từ Q-2: bắt buộc chứa cả chữ và số.
+- > *Ghi chú nghiệp vụ:* Quy tắc độ phức tạp từ Q-2: bắt buộc chứa cả chữ và số.
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
 | 1 | Nhập mật khẩu chỉ gồm chữ số nhưng không có chữ cái | Hệ thống báo lỗi yêu cầu phải chứa ít nhất 1 chữ cái |
+
+
+### TC-030 — Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec
+
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Candidate
+- **Tiền điều kiện:** Môi trường sẵn sàng cho kịch bản
+- **Dữ liệu kiểm thử:** Dữ liệu theo nghiệp vụ đã chốt
+- > *Ghi chú nghiệp vụ:* Quyết định chốt từ Q-1: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắt buộc
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Thực hiện thao tác với điều kiện: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắ | Hệ thống phản hồi đúng theo quyết định đã chốt |

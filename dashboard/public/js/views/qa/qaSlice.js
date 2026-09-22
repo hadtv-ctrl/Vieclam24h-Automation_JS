@@ -159,6 +159,21 @@ export class QaSlice {
       });
     }
 
+    // Reader Delete Button
+    on(root.querySelector('#qa-reader-delete'), 'click', () => this.openDeleteRequirementModal());
+
+    // Delete Modal Events
+    const deleteModal = root.querySelector('#qa-delete-req-modal');
+    if (deleteModal) {
+      on(root.querySelector('#qa-delete-modal-close'), 'click', () => deleteModal.close());
+      on(root.querySelector('#qa-delete-cancel-btn'), 'click', () => deleteModal.close());
+      on(root.querySelector('#qa-delete-submit-btn'), 'click', () => this.submitDeleteRequirement());
+      const confirmInput = root.querySelector('#qa-delete-confirm-input');
+      if (confirmInput) {
+        on(confirmInput, 'input', () => this._checkDeleteConfirmInput());
+      }
+    }
+
     const handleKeydown = (e) => {
       if (e.key === 'Escape') {
         const box = root.querySelector('#qa-draft');
@@ -962,6 +977,160 @@ export class QaSlice {
     }
   }
 
+  // --- Xóa Requirement (REQ-xxx) an toàn ---
+
+  _getReqIdFromDoc(doc) {
+    if (!doc) return null;
+    const fromPath = String(doc.path || '').match(/\b(REQ-\d{3})\b/i);
+    if (fromPath) return fromPath[1].toUpperCase();
+    const fromContent = String(doc.content || '').match(/^id:\s*(REQ-\d{3})\b/im);
+    if (fromContent) return fromContent[1].toUpperCase();
+    return null;
+  }
+
+  async openDeleteRequirementModal() {
+    const root = this._root();
+    if (!root || !this._activeDoc) return;
+    const modal = root.querySelector('#qa-delete-req-modal');
+    if (!modal) return;
+
+    const reqId = this._getReqIdFromDoc(this._activeDoc);
+    if (!reqId) {
+      this.notify('Không xác định được mã REQ của tài liệu này.');
+      return;
+    }
+
+    this._deleteTargetReqId = reqId;
+
+    const targetIdEl = root.querySelector('#qa-delete-target-id');
+    const hintEl = root.querySelector('#qa-delete-confirm-hint');
+    const inputEl = root.querySelector('#qa-delete-confirm-input');
+    const submitBtn = root.querySelector('#qa-delete-submit-btn');
+    const listEl = root.querySelector('#qa-delete-files-list');
+
+    if (targetIdEl) targetIdEl.textContent = reqId;
+    if (hintEl) hintEl.textContent = reqId;
+    if (inputEl) inputEl.value = '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.cursor = 'not-allowed';
+      submitBtn.style.opacity = '0.5';
+    }
+
+    if (listEl) {
+      listEl.innerHTML = '<span style="color: var(--muted);"><i class="ph-bold ph-circle-notch" style="animation: spin 1s linear infinite;"></i> Đang quét các file liên đới...</span>';
+    }
+
+    modal.showModal();
+
+    try {
+      const impact = await apiClient.get('/api/qa/requirement/impact', { reqId });
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      const reqFiles = impact.files?.requirements || [];
+      const tcFiles = impact.files?.testCases || [];
+      const specFiles = impact.files?.specs || [];
+
+      if (!reqFiles.length && !tcFiles.length && !specFiles.length) {
+        listEl.innerHTML = '<span style="color: var(--muted);">Không tìm thấy file liên quan trên đĩa.</span>';
+        return;
+      }
+
+      // 1. Requirements (bắt buộc xóa)
+      reqFiles.forEach((f) => {
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+        row.style.cursor = 'default';
+        row.innerHTML = `<input type="checkbox" checked disabled style="accent-color: var(--danger, #ef4444);"> <span><strong style="color: var(--text);">Requirement:</strong> <code class="qa-mono">${f.relPath}</code></span>`;
+        listEl.appendChild(row);
+      });
+
+      // 2. Test cases (mặc định xóa kèm)
+      tcFiles.forEach((f) => {
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+        row.style.cursor = 'pointer';
+        row.innerHTML = `<input type="checkbox" class="qa-delete-chk-tc" checked style="accent-color: var(--danger, #ef4444);"> <span><strong style="color: var(--text);">Test Case:</strong> <code class="qa-mono">${f.relPath}</code></span>`;
+        listEl.appendChild(row);
+      });
+
+      // 3. Specs (mặc định KHÔNG xóa, cảnh báo)
+      specFiles.forEach((f) => {
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+        row.style.cursor = 'pointer';
+        row.innerHTML = `<input type="checkbox" class="qa-delete-chk-spec" style="accent-color: var(--danger, #ef4444);"> <span><strong style="color: #f59e0b;">Automation Spec:</strong> <code class="qa-mono">${f.relPath}</code> <small style="color: var(--muted);">(Mã nguồn Playwright)</small></span>`;
+        listEl.appendChild(row);
+      });
+    } catch (err) {
+      if (listEl) {
+        listEl.innerHTML = `<span style="color: var(--danger, #ef4444);">Lỗi khi quét liên đới: ${err.message}</span>`;
+      }
+    }
+  }
+
+  _checkDeleteConfirmInput() {
+    const root = this._root();
+    if (!root) return;
+    const inputEl = root.querySelector('#qa-delete-confirm-input');
+    const submitBtn = root.querySelector('#qa-delete-submit-btn');
+    if (!inputEl || !submitBtn || !this._deleteTargetReqId) return;
+
+    const val = inputEl.value.trim().toUpperCase();
+    const isMatch = val === this._deleteTargetReqId.toUpperCase();
+    submitBtn.disabled = !isMatch;
+    submitBtn.style.cursor = isMatch ? 'pointer' : 'not-allowed';
+    submitBtn.style.opacity = isMatch ? '1' : '0.5';
+  }
+
+  async submitDeleteRequirement() {
+    const root = this._root();
+    if (!root || !this._deleteTargetReqId) return;
+    const modal = root.querySelector('#qa-delete-req-modal');
+    const submitBtn = root.querySelector('#qa-delete-submit-btn');
+
+    const chkTc = root.querySelector('.qa-delete-chk-tc');
+    const chkSpec = root.querySelector('.qa-delete-chk-spec');
+
+    const deleteTestCase = chkTc ? chkTc.checked : true;
+    const deleteSpec = chkSpec ? chkSpec.checked : false;
+
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const res = await apiClient.delete('/api/qa/requirement', {
+        reqId: this._deleteTargetReqId,
+        deleteTestCase,
+        deleteSpec,
+      });
+
+      if (modal) modal.close();
+
+      this.activeDocPath = null;
+      this._activeDoc = null;
+
+      // Đóng reader, hiển thị lại bảng tổng quan
+      const overview = root.querySelector('#qa-reader-overview');
+      const pane = root.querySelector('#qa-reader-doc');
+      if (overview) overview.hidden = false;
+      if (pane) pane.hidden = true;
+
+      this.notify(res.message || `Đã xóa thành công ${this._deleteTargetReqId}.`);
+      await this.reload(true);
+    } catch (err) {
+      this.notify(`Lỗi khi xóa Requirement: ${err.message}`);
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  }
+
   // --- panel 1: tài liệu ---
 
   renderDocs() {
@@ -1184,9 +1353,11 @@ export class QaSlice {
     const answerLabel = root.querySelector('#qa-reader-answer-label');
     const editBtn = root.querySelector('#qa-reader-edit');
     const inferBtn = root.querySelector('#qa-reader-infer');
+    const deleteBtn = root.querySelector('#qa-reader-delete');
     const editable = Boolean(doc) && doc.kind === 'requirement';
 
     if (editBtn) editBtn.hidden = !editable;
+    if (deleteBtn) deleteBtn.hidden = !editable;
 
     const parsed = editable ? parseOpenQuestions(markdown) : { found: false, questions: [] };
     this._openQuestions = parsed.questions;
@@ -1553,6 +1724,7 @@ export class QaSlice {
       tbody.appendChild(this._row([
         this._pickCell(c.id),
         this._cell(c.id, 'qa-mono'),
+        this._cell(c.title || '—', 'qa-candidate-title'),
         this._cell(c.req || '—', 'qa-mono'),
         this._cell((c.acs || []).join(', ') || '—', 'qa-mono'),
         prio,

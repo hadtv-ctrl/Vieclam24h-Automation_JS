@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 | TC-007 | AC-005 AC-006 AC-007 | Hoàn tất năm bước onboarding trên desktop | P1 | Có | tests/e2e/desktop/onboarding-bdd.spec.js |
 | TC-008 | AC-005 AC-006 AC-007 | Hoàn tất năm bước onboarding trên mobile web | P1 | Có | tests/e2e/mobile-web/onboarding-bdd.mobile.spec.js |
-| TC-009 | AC-005 | Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định) | P1 | candidate | - |
+| TC-031 | AC-005 | Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định) | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -38,9 +38,9 @@
 | Chọn nhiều ngành nghề cùng lúc | AC-006 | Giá trị biên của dữ liệu đầu vào | P2 |
 
 
-### TC-009 — Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định)
+### TC-031 — Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định)
 
-- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
 - **Tiền điều kiện:** Người dùng đang ở màn hình đăng ký / nhập liệu
 - **Dữ liệu kiểm thử:** Bỏ trống trường trường tùy chọn

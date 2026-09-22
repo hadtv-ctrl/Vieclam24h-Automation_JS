@@ -94,13 +94,15 @@ function normalizeAutomation(raw) {
 function tableRowsUnder(lines, headingRe) {
   const out = [];
   let inSection = false;
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (/^#{2,3}\s/.test(line)) inSection = headingRe.test(line);
     if (!inSection) continue;
     if (!line.trim().startsWith('|')) continue;
     const cells = line.split('|').slice(1, -1).map((c) => c.trim());
     if (cells.length < 2) continue;
     if (cells.every((c) => /^:?-{2,}:?$/.test(c))) continue; // dòng phân cách
+    cells.line = i + 1;
     out.push(cells);
   }
   return out;
@@ -198,6 +200,7 @@ function loadTestCases(root, options = {}) {
           spec: (spec || '').replace(/`/g, '').trim(),
           priority: (priority || '').trim(),
           file: rel,
+          line: cells.line || 0,
         });
       } else if (/^TC-\d{3}$/i.test(cells[0] || '')) {
         // Bảng tiếng Việt: | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
@@ -217,6 +220,7 @@ function loadTestCases(root, options = {}) {
             spec,
             priority,
             file: rel,
+            line: cells.line || 0,
           });
         } else {
           for (const rawAc of acsFound) {
@@ -229,6 +233,7 @@ function loadTestCases(root, options = {}) {
               spec,
               priority,
               file: rel,
+              line: cells.line || 0,
             });
           }
         }

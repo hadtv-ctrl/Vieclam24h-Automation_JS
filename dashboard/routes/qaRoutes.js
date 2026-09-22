@@ -17,6 +17,8 @@ const {
   runQaFix,
   getScaffoldMeta,
   generateScaffold,
+  getRequirementImpact,
+  deleteRequirement,
 } = require('../services/qaService');
 const {
   inferTestCases,
@@ -196,6 +198,33 @@ async function handleQaRoutes(request, response, url, context = {}) {
         testCases: body.testCases || [],
       });
       sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/qa/requirement/impact') {
+    try {
+      const reqId = url.searchParams.get('reqId');
+      sendJson(response, 200, getRequirementImpact(root, reqId));
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, { error: error.message });
+    }
+    return true;
+  }
+
+  if (
+    (request.method === 'DELETE' && url.pathname === '/api/qa/requirement') ||
+    (request.method === 'POST' && (url.pathname === '/api/qa/requirement/delete' || url.pathname === '/api/qa/delete-requirement'))
+  ) {
+    try {
+      const body = await parseBody(request);
+      sendJson(response, 200, deleteRequirement(root, body || {}));
     } catch (error) {
       const status = Number.isInteger(error.status) ? error.status : 400;
       sendJson(response, status, {
