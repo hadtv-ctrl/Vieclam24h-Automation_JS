@@ -338,7 +338,7 @@ function findMissingAwaits(bodyLines, firstLineNo, asyncMatchers = ASYNC_MATCHER
 function loadAutomatedTests(root, options = {}) {
   // `.` = gốc repo, cho repo để playwright.config ngay ở root.
   const rel = options.projectDir || 'playwright';
-  const project = options.project || 'chromium';
+  const project = options.project;
   const projectDir = path.resolve(root, rel);
   if (!fs.existsSync(projectDir)) {
     return {
@@ -355,8 +355,11 @@ function loadAutomatedTests(root, options = {}) {
   // "đọc được 0 spec" rơi vào error và finding doc-duoc-0-spec trở thành code chết.
   const args = [
     'playwright', 'test', '--list', '--reporter=json',
-    `--project=${project}`, '--pass-with-no-tests',
+    '--pass-with-no-tests',
   ];
+  if (project && project !== 'all') {
+    args.push(`--project=${project}`);
+  }
   // shell: true nối args thành MỘT chuỗi, nên giá trị có khoảng trắng
   // (vd project tên "Desktop Chrome") bị tách thành hai tham số. Phải tự bọc ngoặc kép.
   const argv = useShell ? args.map((a) => (/\s/.test(a) ? `"${a}"` : a)) : args;

@@ -1,6 +1,6 @@
 {
   "projectDir": ".",
-  "project": "Desktop Smoke Tests",
+  "project": "all",
   "requirementsDir": "requirements",
   "testCasesDir": "test-cases"
 }
