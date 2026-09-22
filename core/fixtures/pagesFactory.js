@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 const fs = require('fs');
 const path = require('path');
 

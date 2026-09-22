@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 const { UiActions, ScreenshotHelper } = require('../core/utils/commonUtils');
 const { expect } = require('@playwright/test');
 

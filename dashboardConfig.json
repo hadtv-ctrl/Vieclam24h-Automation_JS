@@ -2,7 +2,7 @@
   "environments": {
     "qc": {
       "label": "QC",
-      "baseURL": "https://seeker.vl24hv2.qc.sieuviet-team.com",
+      "baseURL": "https://seeker.vl24hv2.qc.sieuviet-team.com/test",
       "apiBaseURL": "https://api.vl24hv2.qc.sieuviet-team.com",
       "_siteLabels": {
         "baseURL": "Cổng Quản Trị Admin",
@@ -30,7 +30,7 @@
   },
   "runtime": {
     "defaultEnvironment": "qc",
-    "workers": 4,
+    "workers": 6,
     "testTimeout": 60000,
     "navigationTimeout": 60000,
     "actionTimeout": 0,
@@ -65,7 +65,7 @@
     "autoCleanupReports": false
   },
   "branding": {
-    "projectName": "Vieclam24h Automation",
+    "projectName": "Vieclam24h Automation Edited",
     "projectSubtitle": "Siêu Việt Group • Playwright",
     "pageTitle": "Vieclam24h Automation Dashboard",
     "logoUrl": "https://vieclam24h.vn/img/mobile-entrypoint/logo-mobile-32x3.png",

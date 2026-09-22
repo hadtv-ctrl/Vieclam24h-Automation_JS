@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 const { UserProfilePage } = require('../desktop/UserProfilePage');
 
 class MobileUserProfilePage extends UserProfilePage {

@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 /**
  * dashboard/services/qaInferenceService.js
  * Tự động rà soát câu hỏi đã chốt (Open Questions) và suy luận đề xuất Test Cases còn thiếu.

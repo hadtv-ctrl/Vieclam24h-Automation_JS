@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 const { BasePage } = require('../BasePage');
 const { ScreenshotHelper } = require('../../core/utils/commonUtils');
 

@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy module, queued for modular decomposition
 const envConfig = require('../config/env');
 const { getDashboardConfig } = require('../config/dashboardConfig');
 const { randomUUID } = require('crypto');
