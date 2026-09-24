@@ -15,7 +15,7 @@
 | TC-028 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ cái (thiếu chữ số) | P2 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-chi-chua-chu-cai-thieu-chu-so.spec.js |
 | TC-029 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ số (thiếu chữ cái) | P2 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-chi-chua-chu-so-thieu-chu-cai.spec.js |
 | TC-030 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | Có | tests/e2e/desktop/kiem-thu-hanh-vi-theo-quyet-dinh-so-dien-thoai-o-form-dang-k.spec.js |
-| TC-032 | AC-001 | Kiểm tra xử lý khi đăng ký bằng email đã tồn tại | P0 | Có | tests/e2e/desktop/dang-ky-bang-email-da-ton-tai.spec.js |
+| TC-048 | AC-001 | Kiểm tra xử lý khi đăng ký bằng email đã tồn tại | P0 | Có | tests/e2e/desktop/dang-ky-bang-email-da-ton-tai.spec.js |
 | TC-033 | AC-002 | Kiểm tra thất bại khi nhập sai mã OTP xác thực | P0 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-nhap-sai-ma-otp-xac-thuc.spec.js |
 | TC-034 | AC-001 | Kiểm tra báo lỗi khi nhập email sai định dạng | P1 | Có | tests/e2e/desktop/kiem-tra-bao-loi-khi-nhap-email-sai-dinh-dang.spec.js |
 | TC-039 | AC-002 | Bấm gửi lại mã OTP khi đăng ký bằng số điện thoại | P2 | Có | tests/e2e/desktop/gui-lai-ma-otp-dang-ky.spec.js |
