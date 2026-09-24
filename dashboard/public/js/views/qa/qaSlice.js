@@ -2274,6 +2274,9 @@ export class QaSlice {
 
     // 2. Render nhóm Findings chung từ trace
     const box = root.querySelector('#qa-findings-groups');
+    // Xả listener của studio trước mọi lượt vẽ lại: khi số xung đột về 0 thì render() của
+    // studio không được gọi nữa, listener cũ sẽ còn bám vào node đã bị gỡ.
+    if (this.conflictStudio) this.conflictStudio.destroy();
     if (!box || !this.trace) return;
     box.textContent = '';
 

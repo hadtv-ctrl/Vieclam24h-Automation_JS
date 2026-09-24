@@ -400,6 +400,22 @@ async function request(url, options) {
   return body;
 }
 
+const sharedResourceDateFormatter = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'medium' });
+const resourceDateCache = new Map();
+function getFormattedResourceDate(timestamp) {
+  if (!timestamp) return 'Không rõ thời gian';
+  let formatted = resourceDateCache.get(timestamp);
+  if (!formatted) {
+    try {
+      formatted = sharedResourceDateFormatter.format(new Date(timestamp));
+    } catch (_) {
+      formatted = 'Không rõ thời gian';
+    }
+    resourceDateCache.set(timestamp, formatted);
+  }
+  return formatted;
+}
+
 function renderResourceList(filter = '') {
   const query = filter.trim().toLowerCase();
   let totalMatches = 0;
@@ -462,94 +478,114 @@ function renderResourceList(filter = '') {
     titleEl.textContent = activeResourceCategory === 'reports' ? 'DANH MỤC BÁO CÁO' : 'DANH MỤC ẢNH EVIDENCE';
   }
 
-  document.querySelectorAll('.resource-item').forEach((button) => button.addEventListener('click', () => loadResource(button.dataset.path, false, button.dataset.category)));
-  document.querySelectorAll('.evidence-folder').forEach((folder) => folder.addEventListener('toggle', () => {
-    if (folder.classList.contains('report-folder')) return;
-    if (folder.open) openEvidenceFolders.add(folder.dataset.folder); else openEvidenceFolders.delete(folder.dataset.folder);
-  }));
-  document.querySelectorAll('.report-folder').forEach((folder) => folder.addEventListener('toggle', () => {
-    if (folder.open) openReportFolders.add(folder.dataset.reportFolder); else openReportFolders.delete(folder.dataset.reportFolder);
-  }));
-  document.querySelectorAll('.delete-folder-button').forEach((button) => button.addEventListener('click', async (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (button.dataset.type === 'report-folder') {
-      await deleteReportFolder(button.dataset.folder);
-    } else {
-      await deleteEvidenceFolder(button.dataset.folder);
-    }
-  }));
+  // Đảm bảo listener ủy quyền (delegated) trên #resource-list đã được đăng ký
+  if (typeof initResourcesViewListeners === 'function') {
+    initResourcesViewListeners();
+  }
 }
 
 function renderReportTree(files, isSearching = false) {
-  const root = {};
-  files.forEach((file) => {
+  const detailMap = new Map();
+  const details = resourceCatalog.reportDetails || [];
+  for (let i = 0; i < details.length; i++) {
+    const d = details[i];
+    detailMap.set(d.path, getFormattedResourceDate(d.modifiedAt));
+  }
+
+  const root = { __total: 0 };
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
     let branch = root;
-    file.split('/').forEach((segment, index, parts) => {
-      if (index === parts.length - 1) {
-        branch.__reports = branch.__reports || [];
+    branch.__total++;
+    const parts = file.split('/');
+    for (let j = 0; j < parts.length; j++) {
+      const seg = parts[j];
+      if (j === parts.length - 1) {
+        if (!branch.__reports) branch.__reports = [];
         branch.__reports.push(file);
       } else {
-        branch[segment] = branch[segment] || {};
-        branch = branch[segment];
+        if (!branch[seg]) branch[seg] = { __total: 0 };
+        branch = branch[seg];
+        branch.__total++;
       }
-    });
-  });
-  const countReports = (branch) => (branch.__reports?.length || 0) + Object.entries(branch)
-    .filter(([key]) => key !== '__reports')
-    .reduce((total, [, child]) => total + countReports(child), 0);
-  const reportItems = (items) => items.map((file) => {
-    const detail = resourceCatalog.reportDetails.find((item) => item.path === file);
-    const createdAt = detail?.modifiedAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(detail.modifiedAt)) : 'Không rõ thời gian';
-    return `<button class="resource-item report-file${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="reports"><span class="res-item-icon-report"><i class="ph-bold ph-file-html"></i></span><div><strong>Báo cáo Playwright</strong><small>${escapeHtml(createdAt)}</small></div></button>`;
-  }).join('');
-  const branchHtml = (branch, parentPath = '') => Object.entries(branch)
-    .filter(([key]) => key !== '__reports')
-    .map(([folder, child]) => {
+    }
+  }
+
+  const reportItems = (items) => {
+    let out = '';
+    for (let i = 0; i < items.length; i++) {
+      const file = items[i];
+      const createdAt = detailMap.get(file) || 'Không rõ thời gian';
+      out += `<button class="resource-item report-file${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="reports"><span class="res-item-icon-report"><i class="ph-bold ph-file-html"></i></span><div><strong>Báo cáo Playwright</strong><small>${escapeHtml(createdAt)}</small></div></button>`;
+    }
+    return out;
+  };
+
+  const branchHtml = (branch, parentPath = '') => {
+    let out = '';
+    for (const folder in branch) {
+      if (folder === '__reports' || folder === '__total') continue;
+      const child = branch[folder];
       const folderPath = parentPath ? `${parentPath}/${folder}` : folder;
       const open = (isSearching || areFoldersExpanded || openReportFolders.has(folderPath)) ? ' open' : '';
-      return `<details class="evidence-folder report-folder" data-report-folder="${escapeHtml(folderPath)}"${open}><summary><span class="folder-icon">▸</span><strong>${escapeHtml(folder)}</strong><small>${countReports(child)}</small><button class="delete-folder-button" type="button" data-folder="${escapeHtml(folderPath)}" data-type="report-folder" title="Xóa folder báo cáo">×</button></summary><div>${branchHtml(child, folderPath)}${reportItems(child.__reports || [])}</div></details>`;
-    }).join('');
+      out += `<details class="evidence-folder report-folder" data-report-folder="${escapeHtml(folderPath)}"${open}><summary><span class="folder-icon">▸</span><strong>${escapeHtml(folder)}</strong><small>${child.__total || 0}</small><button class="delete-folder-button" type="button" data-folder="${escapeHtml(folderPath)}" data-type="report-folder" title="Xóa folder báo cáo">×</button></summary><div>${branchHtml(child, folderPath)}${reportItems(child.__reports || [])}</div></details>`;
+    }
+    return out;
+  };
+
   return branchHtml(root) + reportItems(root.__reports || []);
 }
 
 function renderEvidenceTree(files, isSearching = false) {
-  const root = {};
-  files.forEach((file) => {
+  const detailMap = new Map();
+  const details = resourceCatalog.evidenceDetails || [];
+  for (let i = 0; i < details.length; i++) {
+    const d = details[i];
+    detailMap.set(d.path, getFormattedResourceDate(d.modifiedAt));
+  }
+
+  const root = { __total: 0 };
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
     let branch = root;
-    file.split('/').forEach((segment, index, parts) => {
-      if (index === parts.length - 1) {
-        branch.__files = branch.__files || [];
+    branch.__total++;
+    const parts = file.split('/');
+    for (let j = 0; j < parts.length; j++) {
+      const seg = parts[j];
+      if (j === parts.length - 1) {
+        if (!branch.__files) branch.__files = [];
         branch.__files.push(file);
       } else {
-        branch[segment] = branch[segment] || {};
-        branch = branch[segment];
+        if (!branch[seg]) branch[seg] = { __total: 0 };
+        branch = branch[seg];
+        branch.__total++;
       }
-    });
-  });
+    }
+  }
 
-  const renderBranch = (branch, depth = 0, parentPath = '') => Object.entries(branch)
-    .filter(([key]) => key !== '__files')
-    .map(([folder, child]) => {
-      const childFiles = countTreeFiles(child);
+  const renderBranch = (branch, depth = 0, parentPath = '') => {
+    let out = '';
+    for (const folder in branch) {
+      if (folder === '__files' || folder === '__total') continue;
+      const child = branch[folder];
       const folderPath = parentPath ? `${parentPath}/${folder}` : folder;
       const open = (isSearching || areFoldersExpanded || openEvidenceFolders.has(folderPath)) ? ' open' : '';
-      return `<details class="evidence-folder" data-folder="${escapeHtml(folderPath)}"${open}><summary><span class="folder-icon">▸</span><strong>${escapeHtml(folder)}</strong><small>${childFiles}</small><button class="delete-folder-button" type="button" data-folder="${escapeHtml(folderPath)}" data-type="evidence-folder" title="Xóa folder">×</button></summary><div>${renderBranch(child, depth + 1, folderPath)}${renderFiles(child.__files || [])}</div></details>`;
-    }).join('');
+      out += `<details class="evidence-folder" data-folder="${escapeHtml(folderPath)}"${open}><summary><span class="folder-icon">▸</span><strong>${escapeHtml(folder)}</strong><small>${child.__total || 0}</small><button class="delete-folder-button" type="button" data-folder="${escapeHtml(folderPath)}" data-type="evidence-folder" title="Xóa folder">×</button></summary><div>${renderBranch(child, depth + 1, folderPath)}${renderFiles(child.__files || [])}</div></details>`;
+    }
+    return out;
+  };
 
-  const renderFiles = (items) => [...items].reverse().map((file) => {
-    const detail = resourceCatalog.evidenceDetails.find((item) => item.path === file);
-    const createdAt = detail?.modifiedAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(detail.modifiedAt)) : 'Không rõ thời gian';
-    return `<button class="resource-item evidence-file${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="evidence"><span class="res-item-icon-evidence"><i class="ph-bold ph-image"></i></span><div><strong>${escapeHtml(file.split('/').pop())}</strong><small>${escapeHtml(createdAt)}</small></div></button>`;
-  }).join('');
+  const renderFiles = (items) => {
+    let out = '';
+    for (let i = items.length - 1; i >= 0; i--) {
+      const file = items[i];
+      const createdAt = detailMap.get(file) || 'Không rõ thời gian';
+      out += `<button class="resource-item evidence-file${file === currentResource ? ' active' : ''}" type="button" data-path="${escapeHtml(file)}" data-category="evidence"><span class="res-item-icon-evidence"><i class="ph-bold ph-image"></i></span><div><strong>${escapeHtml(file.split('/').pop())}</strong><small>${escapeHtml(createdAt)}</small></div></button>`;
+    }
+    return out;
+  };
 
   return renderBranch(root) + renderFiles(root.__files || []);
-}
-
-function countTreeFiles(branch) {
-  return (branch.__files?.length || 0) + Object.entries(branch)
-    .filter(([key]) => key !== '__files')
-    .reduce((total, [, child]) => total + countTreeFiles(child), 0);
 }
 
 function hideResourcePreviews() {
@@ -7973,7 +8009,9 @@ document.querySelectorAll('.view-tab').forEach((button) => button.addEventListen
   if (button.dataset.view === 'git-view') await openGitStudio();
 }));
 function switchResourceCategory(category) {
+  if (!category || activeResourceCategory === category) return;
   activeResourceCategory = category;
+
   document.querySelectorAll('.resource-seg-btn').forEach((btn) => {
     const isActive = btn.dataset.category === category;
     btn.classList.toggle('active', isActive);
@@ -7998,7 +8036,10 @@ function switchResourceCategory(category) {
     if (titleEl) titleEl.textContent = 'DANH MỤC ẢNH EVIDENCE';
   }
 
-  renderResourceList(searchInput ? searchInput.value : '');
+  // Chuyển render sang next frame để phản hồi xúc giác của nút bấm diễn ra tức thì (0ms)
+  requestAnimationFrame(() => {
+    renderResourceList(searchInput ? searchInput.value : '');
+  });
 }
 window.switchResourceCategory = switchResourceCategory;
 
@@ -8014,12 +8055,17 @@ document.querySelectorAll('.results-orientation-item').forEach((item) => item.ad
   switchResourceCategory(item.dataset.resultsCategory);
 }));
 
+let resSearchDebounceTimer = null;
 const resSearchInput = $('#resource-search');
 const resSearchClearBtn = $('#resource-search-clear-btn');
 if (resSearchInput) {
   resSearchInput.addEventListener('input', (event) => {
-    if (resSearchClearBtn) resSearchClearBtn.hidden = !event.target.value;
-    renderResourceList(event.target.value);
+    const val = event.target.value;
+    if (resSearchClearBtn) resSearchClearBtn.hidden = !val;
+    if (resSearchDebounceTimer) clearTimeout(resSearchDebounceTimer);
+    resSearchDebounceTimer = setTimeout(() => {
+      renderResourceList(val);
+    }, 120);
   });
 }
 if (resSearchClearBtn && resSearchInput) {
@@ -8027,6 +8073,7 @@ if (resSearchClearBtn && resSearchInput) {
     resSearchInput.value = '';
     resSearchClearBtn.hidden = true;
     resSearchInput.focus();
+    if (resSearchDebounceTimer) clearTimeout(resSearchDebounceTimer);
     renderResourceList('');
   });
 }
@@ -8037,6 +8084,40 @@ function initResourcesViewListeners() {
   const root = document.getElementById('resources-view');
   if (!root || !document.getElementById('resource-refresh-btn')) return;
   isResourcesViewListenersInitialized = true;
+
+  // Ủy quyền toàn bộ sự kiện click và toggle trên cây danh sách #resource-list
+  const resListEl = document.getElementById('resource-list');
+  if (resListEl) {
+    resListEl.addEventListener('click', async (e) => {
+      const delBtn = e.target.closest('.delete-folder-button');
+      if (delBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (delBtn.dataset.type === 'report-folder') {
+          await deleteReportFolder(delBtn.dataset.folder);
+        } else {
+          await deleteEvidenceFolder(delBtn.dataset.folder);
+        }
+        return;
+      }
+      const itemBtn = e.target.closest('.resource-item');
+      if (itemBtn && itemBtn.dataset.path) {
+        loadResource(itemBtn.dataset.path, false, itemBtn.dataset.category);
+      }
+    });
+
+    resListEl.addEventListener('toggle', (e) => {
+      const folder = e.target.closest('details');
+      if (!folder) return;
+      if (folder.classList.contains('report-folder')) {
+        if (folder.open) openReportFolders.add(folder.dataset.reportFolder);
+        else openReportFolders.delete(folder.dataset.reportFolder);
+      } else if (folder.dataset.folder) {
+        if (folder.open) openEvidenceFolders.add(folder.dataset.folder);
+        else openEvidenceFolders.delete(folder.dataset.folder);
+      }
+    }, true);
+  }
 
   document.querySelectorAll('.resource-plat-pill').forEach((pill) => {
     pill.addEventListener('click', () => {

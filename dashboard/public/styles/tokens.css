@@ -18,6 +18,8 @@
   --accent-deep: #2E1065;
   --danger: #ff7078;
   --warning: #ffc857;
+  --success: #34d399;
+  --info: #60a5fa;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
   --code-bg: #090412;
   --code-bg-soft: #0C0617;
@@ -57,6 +59,8 @@
   --accent-deep: #EDE9FE;
   --danger: #c93440;
   --warning: #a66500;
+  --success: #047857;
+  --info: #1d4ed8;
   --shadow: 0 22px 60px rgba(38, 58, 48, 0.1);
   --code-bg: #FCFBFF;
   --code-bg-soft: #F6F4FB;

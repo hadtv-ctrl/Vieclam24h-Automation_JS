@@ -104,7 +104,11 @@
   color: var(--muted);
   cursor: pointer;
   text-align: left;
+  user-select: none;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.resource-seg-btn:active {
+  transform: scale(0.98);
 }
 .resource-seg-btn:hover {
   color: var(--text);

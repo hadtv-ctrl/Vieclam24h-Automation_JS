@@ -35,6 +35,7 @@ const {
   applyFindingFix,
 } = require('../services/qaFindingFixerService');
 const {
+  getConflictContext,
   resolveConflict,
   arbitrateWithAi,
   escalateConflictToDecision,
@@ -349,71 +350,70 @@ async function handleQaRoutes(request, response, url, context = {}) {
     return true;
   }
 
+  // --- Traceability Conflict Studio: client chỉ gửi TC + spec + chiều đồng bộ; AC luôn được
+  // service tính lại từ file thật, nên body không mang AC nào.
+  const sendConflictError = (error) => {
+    const status = Number.isInteger(error.status) ? error.status : 400;
+    const payload = { error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message };
+    if (Array.isArray(error.skipped)) payload.skipped = error.skipped;
+    sendJson(response, status, payload);
+  };
+
+  if (request.method === 'GET' && url.pathname === '/api/qa/conflict/context') {
+    try {
+      sendJson(response, 200, getConflictContext(root, {
+        tcId: url.searchParams.get('tcId'),
+        specFile: url.searchParams.get('specFile'),
+      }));
+    } catch (error) {
+      sendConflictError(error);
+    }
+    return true;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/qa/conflict/resolve') {
     try {
-      const body = await parseBody(request, 256 * 1024);
-      const result = resolveConflict(root, {
+      const body = await parseBody(request, 64 * 1024);
+      sendJson(response, 200, resolveConflict(root, {
         resolutionType: body.resolutionType,
         tcId: body.tcId,
         specFile: body.specFile,
-        docFile: body.docFile,
-        targetAc: body.targetAc,
-        specAc: body.specAc,
-        docAc: body.docAc,
-      });
-      sendJson(response, 200, result);
+      }));
     } catch (error) {
-      const status = Number.isInteger(error.status) ? error.status : 400;
-      sendJson(response, status, {
-        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
-      });
+      sendConflictError(error);
     }
     return true;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/qa/conflict/arbitrate') {
     try {
-      const body = await parseBody(request, 256 * 1024);
+      const body = await parseBody(request, 64 * 1024);
       let clientConfig = body.clientConfig || null;
       if (!clientConfig && request.headers['x-ai-config']) {
         try { clientConfig = JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8')); } catch {}
       }
-      const result = await arbitrateWithAi({
+      sendJson(response, 200, await arbitrateWithAi({
         root,
-        specFile: body.specFile,
         tcId: body.tcId,
-        docFile: body.docFile,
-        specAc: body.specAc,
-        docAc: body.docAc,
+        specFile: body.specFile,
         clientConfig,
-      });
-      sendJson(response, 200, result);
+      }));
     } catch (error) {
-      const status = Number.isInteger(error.status) ? error.status : 400;
-      sendJson(response, status, {
-        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
-      });
+      sendConflictError(error);
     }
     return true;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/qa/conflict/escalate') {
     try {
-      const body = await parseBody(request, 256 * 1024);
-      const result = escalateConflictToDecision(root, {
+      const body = await parseBody(request, 64 * 1024);
+      sendJson(response, 200, escalateConflictToDecision(root, {
         tcId: body.tcId,
         specFile: body.specFile,
-        specAcs: body.specAcs,
-        docFile: body.docFile,
-        docAcs: body.docAcs,
         reason: body.reason,
-      });
-      sendJson(response, 200, result);
+      }));
     } catch (error) {
-      const status = Number.isInteger(error.status) ? error.status : 400;
-      sendJson(response, status, {
-        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
-      });
+      sendConflictError(error);
     }
     return true;
   }

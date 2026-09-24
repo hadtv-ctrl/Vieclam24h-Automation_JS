@@ -17,6 +17,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { normalizeDashboardConfig, DEFAULT_CONFIG } = require('../../core/config/dashboardConfig');
 const { createBackup } = require('./resourceService');
+const { CONFLICT_KIND, parseConflictDetail } = require('./qaConflictService');
 
 // Nạp mềm: satellite chưa sync analyzer thì mục QA vẫn mở được và nói rõ vì sao trống.
 let analyzer = null;
@@ -111,7 +112,11 @@ function getTrace(root) {
   const bySeverity = { major: [], minor: [], info: [] };
   for (const f of report.findings) {
     const bucket = bySeverity[f.severity] || bySeverity.info;
-    bucket.push({ kind: f.kind, label: labelFor(f.kind), severity: f.severity, id: f.id, detail: f.detail });
+    const item = { kind: f.kind, label: labelFor(f.kind), severity: f.severity, id: f.id, detail: f.detail };
+    // Xung đột truy vết được bóc thành cấu trúc ngay tại server, để UI không phải tự đoán
+    // lại detail bằng một regex thứ hai (hai bản regex sớm muộn sẽ lệch nhau).
+    if (f.kind === CONFLICT_KIND) item.conflict = parseConflictDetail(f.detail);
+    bucket.push(item);
   }
 
   const tcByReq = new Map();
@@ -487,6 +492,7 @@ function getDecisions(root) {
         confirmedAt: (d.answer && d.answer.confirmedAt) || '',
       },
       answered: isAnswered(d),
+      source: d.source && typeof d.source === 'object' ? d.source : null,
     })),
   };
 }

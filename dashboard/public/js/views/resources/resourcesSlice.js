@@ -41,10 +41,16 @@ export class ResourcesSlice {
       this._disposers.push(() => el.removeEventListener(evt, fn));
     };
 
-    on('#btn-refresh-resources', 'click', () => {
-      this.loadResources();
-      this.notify('Đã làm mới báo cáo và tài nguyên.');
-    });
+    const refreshBtn = root.querySelector('#resource-refresh-btn') || root.querySelector('#btn-refresh-resources');
+    if (refreshBtn) {
+      const h = () => {
+        this.loadResources();
+        if (typeof window.openExplorer === 'function') window.openExplorer();
+        this.notify('Đã làm mới báo cáo và tài nguyên.');
+      };
+      refreshBtn.addEventListener('click', h);
+      this._disposers.push(() => refreshBtn.removeEventListener('click', h));
+    }
 
     root.querySelectorAll('.resource-seg-btn').forEach((btn) => {
       const h = () => {
