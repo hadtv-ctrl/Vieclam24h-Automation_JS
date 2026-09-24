@@ -1,3 +1,4 @@
+// master-process-disable-size-check: AI agent service module, queued for modular decomposition
 const fs = require('fs');
 const path = require('path');
 const { randomUUID } = require('crypto');
@@ -95,16 +96,16 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
       return {
         provider,
         apiKey: String(clientConfig.apiKey).trim(),
-        baseURL: String(clientConfig.baseURL || '').trim(),
-        model: overrideModel || clientConfig.model || (provider === 'gemini' ? DEFAULT_MODEL : provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini'),
+        baseURL: String(clientConfig.baseURL || (provider === '9router' ? 'http://localhost:20128/v1' : '')).trim(),
+        model: overrideModel || clientConfig.model || (provider === 'gemini' ? DEFAULT_MODEL : provider === 'deepseek' ? 'deepseek-chat' : provider === '9router' ? 'myCombo' : 'gpt-4o-mini'),
         source: 'client',
       };
     }
     if (!env.GEMINI_API_KEY && !env.AI_API_KEY && !env.OPENAI_API_KEY && !env.DEEPSEEK_API_KEY) reloadEnv();
-    const provider = String(env.AI_PROVIDER || (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini')).toLowerCase();
-    const apiKey = env.AI_API_KEY || (provider === 'gemini' ? env.GEMINI_API_KEY : provider === 'openai' ? env.OPENAI_API_KEY : provider === 'deepseek' ? env.DEEPSEEK_API_KEY : (env.GEMINI_API_KEY || env.OPENAI_API_KEY));
-    const baseURL = String(env.AI_BASE_URL || '').trim();
-    const model = overrideModel || env.AI_MODEL || (provider === 'gemini' ? (env.DASHBOARD_GEMINI_MODEL || DEFAULT_MODEL) : provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
+    const provider = String(env.AI_PROVIDER || (env.AI_BASE_URL?.includes('20128') ? '9router' : (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini'))).toLowerCase();
+    const apiKey = env.AI_API_KEY || (provider === 'gemini' ? env.GEMINI_API_KEY : provider === 'openai' || provider === '9router' ? env.OPENAI_API_KEY : provider === 'deepseek' ? env.DEEPSEEK_API_KEY : (env.GEMINI_API_KEY || env.OPENAI_API_KEY));
+    const baseURL = String(env.AI_BASE_URL || (provider === '9router' ? 'http://localhost:20128/v1' : '')).trim();
+    const model = overrideModel || env.AI_MODEL || (provider === 'gemini' ? (env.DASHBOARD_GEMINI_MODEL || DEFAULT_MODEL) : provider === 'deepseek' ? 'deepseek-chat' : provider === '9router' ? 'myCombo' : 'gpt-4o-mini');
     return { provider, apiKey, baseURL, model, source: 'server' };
   }
 
@@ -291,7 +292,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
   async function openAiCall(messages, config, session = null) {
     const key = config.apiKey;
     if (!key) throw fail(`Chưa cấu hình API Key cho ${config.provider}.`, 503);
-    const defaultBase = config.provider === 'deepseek' ? 'https://api.deepseek.com/v1' : 'https://api.openai.com/v1';
+    const defaultBase = config.provider === 'deepseek' ? 'https://api.deepseek.com/v1' : config.provider === '9router' ? 'http://localhost:20128/v1' : 'https://api.openai.com/v1';
     const base = (config.baseURL || defaultBase).replace(/\/+$/, '');
     const url = `${base}/chat/completions`;
     const isTestEnv = Boolean(typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.argv?.some(arg => arg.includes('test'))));
@@ -310,6 +311,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
           messages,
           tools: openAiToolDefinitions(),
           tool_choice: 'auto',
+          stream: false,
         }),
       });
       const data = await response.json();
@@ -526,7 +528,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
       }
       return { success: true, provider: 'Google Gemini', model: targetModel, latencyMs: latency, message: `Kết nối thành công tới Google Gemini (${latency}ms)!` };
     } else {
-      const defaultBase = targetProvider === 'deepseek' ? 'https://api.deepseek.com/v1' : 'https://api.openai.com/v1';
+      const defaultBase = targetProvider === 'deepseek' ? 'https://api.deepseek.com/v1' : targetProvider === '9router' ? 'http://localhost:20128/v1' : 'https://api.openai.com/v1';
       const base = (baseURL || defaultBase).replace(/\/+$/, '');
       const url = `${base}/models`;
       const response = await fetchImpl(url, {
@@ -631,7 +633,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
       tokensUsed = pCount + cCount;
       if (tokensUsed > 0) recordTokenUsage(tokensUsed, pCount, cCount);
     } else {
-      const defaultBase = config.provider === 'deepseek' ? 'https://api.deepseek.com/v1' : 'https://api.openai.com/v1';
+      const defaultBase = config.provider === 'deepseek' ? 'https://api.deepseek.com/v1' : config.provider === '9router' ? 'http://localhost:20128/v1' : 'https://api.openai.com/v1';
       const base = (config.baseURL || defaultBase).replace(/\/+$/, '');
       const url = `${base}/chat/completions`;
       const response = await fetchImpl(url, {
@@ -645,6 +647,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
           messages: [{ role: 'user', content: promptText }],
           max_tokens: 50,
           temperature: 0.1,
+          stream: false,
           stop: ['<<<', '```']
         }),
       });

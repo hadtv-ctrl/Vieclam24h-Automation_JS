@@ -1257,6 +1257,202 @@
   color: var(--muted);
   margin-top: 2px;
 }
+.qa-gap-actions-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.qa-gap-ai-fix-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border: 1px solid #7c3aed;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  box-shadow: 0 1px 3px rgba(139, 92, 246, 0.25);
+  white-space: nowrap;
+}
+.qa-gap-ai-fix-btn:hover {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(139, 92, 246, 0.4);
+}
+.qa-gap-ai-fix-btn:active {
+  transform: translateY(0);
+}
+.qa-gap-ai-fix-btn i {
+  font-size: 13px;
+}
+
+/* --- Traceability Conflict Resolution Studio --- */
+.qa-conflict-studio {
+  margin-top: 14px;
+  margin-bottom: 20px;
+  padding: 16px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 3%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--danger) 22%, var(--line));
+}
+.qa-conflict-studio-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.qa-conflict-head-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.qa-conflict-head-title-group i {
+  font-size: 20px;
+  color: var(--danger);
+}
+.qa-conflict-head-title-group h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.qa-conflict-studio-desc {
+  margin: 0;
+  font-size: var(--font-caption);
+  color: var(--muted);
+  line-height: 1.5;
+}
+.qa-conflict-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+.qa-conflict-group-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.qa-conflict-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+.qa-conflict-group-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: monospace;
+  font-size: 12.5px;
+}
+.qa-conflict-group-file i {
+  color: var(--accent);
+}
+.qa-conflict-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+.qa-conflict-item-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  transition: border-color 0.15s ease;
+}
+.qa-conflict-item-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+.qa-conflict-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.qa-conflict-tc-badge {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.qa-conflict-comp-box {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface-2);
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+.qa-conflict-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.qa-conflict-side-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.qa-conflict-val-pill {
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 12.5px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.qa-val-spec {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+.qa-val-doc {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.qa-conflict-mid-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--danger);
+  font-weight: 600;
+}
+.qa-conflict-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.qa-conflict-ai-box {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--line));
+  border-radius: 6px;
+  padding: 10px 12px;
+}
 
 /* Modals Dialog Styling */
 dialog.qa-modal::backdrop {
@@ -1398,4 +1594,67 @@ dialog.qa-infer-modal {
   color: var(--muted);
   font-weight: 600;
 }
+
+/* --- Requirement QA Impact & Test Analyzer --- */
+.qa-btn-analyze-req {
+  background: color-mix(in srgb, var(--accent) 85%, #8b5cf6) !important;
+  border-color: color-mix(in srgb, var(--accent) 70%, #7c3aed) !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.qa-btn-analyze-req:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.qa-btn-analyze-req:active {
+  transform: translateY(0);
+}
+
+dialog.qa-req-analyzer-modal::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+}
+dialog.qa-req-analyzer-modal {
+  margin: auto;
+  border: 1px solid var(--line);
+}
+.qa-req-tab {
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  border-radius: 6px 6px 0 0;
+}
+.qa-req-tab:hover {
+  color: var(--text) !important;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.qa-req-tab.active {
+  color: var(--text) !important;
+}
+
+@media (max-width: 768px) {
+  dialog.qa-req-analyzer-modal,
+  dialog.qa-finding-fix-modal {
+    width: 98vw !important;
+    max-height: 96vh !important;
+  }
+  .qa-req-scorecard-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .qa-req-tabs {
+    flex-wrap: wrap !important;
+  }
+}
+
+dialog.qa-finding-fix-modal::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+}
+dialog.qa-finding-fix-modal {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
 

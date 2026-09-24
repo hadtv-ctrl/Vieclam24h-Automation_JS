@@ -1,4 +1,4 @@
-// master-process-disable-size-check: Legacy module, queued for modular decomposition
+// master-process-disable-size-check: QA Docs & Automation route handlers including requirement analyzer
 /**
  * dashboard/routes/qaRoutes.js
  * QA Docs & Automation APIs: ma trận truy vết, ứng viên automation, sổ quyết định.
@@ -26,6 +26,19 @@ const {
   appendTestCasesToDocument,
   extractScaffoldFromRaw,
 } = require('../services/qaInferenceService');
+const {
+  analyzeRequirement,
+  scaffoldFromAnalysis,
+} = require('../services/qaRequirementAnalyzerService');
+const {
+  analyzeFindingFix,
+  applyFindingFix,
+} = require('../services/qaFindingFixerService');
+const {
+  resolveConflict,
+  arbitrateWithAi,
+  escalateConflictToDecision,
+} = require('../services/qaConflictService');
 const { sendJson, parseBody } = require('./routeUtils');
 
 const MAX_BODY_BYTES = 1_048_576;
@@ -241,6 +254,160 @@ async function handleQaRoutes(request, response, url, context = {}) {
     try {
       const body = await parseBody(request);
       sendJson(response, 200, deleteRequirement(root, body || {}));
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/analyze-requirement') {
+    try {
+      const body = await parseBody(request, 256 * 1024);
+      let clientConfig = body.clientConfig || null;
+      if (!clientConfig && request.headers['x-ai-config']) {
+        try { clientConfig = JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8')); } catch {}
+      }
+      const result = await analyzeRequirement({
+        root,
+        rawText: body.rawText,
+        mode: body.mode || 'ai',
+        scanExisting: body.scanExisting !== false,
+        clientConfig,
+      });
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/scaffold-from-analysis') {
+    try {
+      const body = await parseBody(request, 512 * 1024);
+      const result = scaffoldFromAnalysis(root, {
+        reqId: body.reqId,
+        title: body.title,
+        domain: body.domain || 'general',
+        analysisResult: body.analysisResult,
+      });
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/finding/ai-analyze-fix') {
+    try {
+      const body = await parseBody(request, 256 * 1024);
+      let clientConfig = body.clientConfig || null;
+      if (!clientConfig && request.headers['x-ai-config']) {
+        try { clientConfig = JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8')); } catch {}
+      }
+      const result = await analyzeFindingFix({
+        root,
+        finding: body.finding,
+        clientConfig,
+      });
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/finding/apply-fix') {
+    try {
+      const body = await parseBody(request, 512 * 1024);
+      const result = applyFindingFix(root, {
+        targetFile: body.targetFile,
+        patchType: body.patchType,
+        originalSnippet: body.originalSnippet,
+        fixedSnippet: body.fixedSnippet,
+        fullContent: body.fullContent,
+      });
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/conflict/resolve') {
+    try {
+      const body = await parseBody(request, 256 * 1024);
+      const result = resolveConflict(root, {
+        resolutionType: body.resolutionType,
+        tcId: body.tcId,
+        specFile: body.specFile,
+        docFile: body.docFile,
+        targetAc: body.targetAc,
+        specAc: body.specAc,
+        docAc: body.docAc,
+      });
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/conflict/arbitrate') {
+    try {
+      const body = await parseBody(request, 256 * 1024);
+      let clientConfig = body.clientConfig || null;
+      if (!clientConfig && request.headers['x-ai-config']) {
+        try { clientConfig = JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8')); } catch {}
+      }
+      const result = await arbitrateWithAi({
+        root,
+        specFile: body.specFile,
+        tcId: body.tcId,
+        docFile: body.docFile,
+        specAc: body.specAc,
+        docAc: body.docAc,
+        clientConfig,
+      });
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 400;
+      sendJson(response, status, {
+        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/conflict/escalate') {
+    try {
+      const body = await parseBody(request, 256 * 1024);
+      const result = escalateConflictToDecision(root, {
+        tcId: body.tcId,
+        specFile: body.specFile,
+        specAcs: body.specAcs,
+        docFile: body.docFile,
+        docAcs: body.docAcs,
+        reason: body.reason,
+      });
+      sendJson(response, 200, result);
     } catch (error) {
       const status = Number.isInteger(error.status) ? error.status : 400;
       sendJson(response, status, {

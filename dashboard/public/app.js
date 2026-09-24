@@ -6500,6 +6500,14 @@ document.addEventListener('keydown', (e) => {
 });
 
 const AI_PRESETS = {
+  '9router': {
+    name: '9Router AI Gateway',
+    baseURL: 'http://localhost:20128/v1',
+    models: ['myCombo', 'ag/gemini-3.8-flash', 'gemini/gemini-3.8-flash', 'gemini/gemini-2.5-flash', 'openai/gpt-4o-mini', 'openai/gpt-4o'],
+    defaultModel: 'myCombo',
+    keyPlaceholder: 'sk-222d28244f5c9294-... (Key từ 9Router)',
+    keyDesc: 'AI Gateway cục bộ chạy tại http://localhost:20128/v1 - Định tuyến đa mô hình tự động',
+  },
   gemini: {
     name: 'Google Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/models',
@@ -6598,13 +6606,16 @@ function initAiSettings() {
     const preset = AI_PRESETS[p] || AI_PRESETS.custom;
     if (baseUrlInput) {
       baseUrlInput.placeholder = preset.baseURL;
-      if (p !== 'custom') {
-        baseUrlInput.value = '';
-      } else {
+      if (p === 'custom' || p === '9router') {
         baseUrlInput.value = preset.baseURL;
+      } else {
+        baseUrlInput.value = '';
       }
     }
     if (apiKeyInput) apiKeyInput.placeholder = preset.keyPlaceholder;
+    if (p === '9router' && apiKeyInput && (!apiKeyInput.value || apiKeyInput.value.length < 5)) {
+      apiKeyInput.value = 'sk-222d28244f5c9294-6676rz-8fcc38a6';
+    }
     const desc = $('#settings-ai-key-desc');
     if (desc) desc.textContent = preset.keyDesc;
     updateModelPresets(p, null);
@@ -6635,6 +6646,48 @@ function initAiSettings() {
     } catch {
       notify('Không thể đọc Clipboard. Hãy dán bằng tay (Ctrl+V).');
     }
+  });
+
+  async function fetchLiveModels(baseURL, apiKey, showNotif = false) {
+    try {
+      const qBase = baseURL || 'http://localhost:20128/v1';
+      const qKey = apiKey || 'sk-222d28244f5c9294-6676rz-8fcc38a6';
+      const res = await request(`/api/ai/models?baseURL=${encodeURIComponent(qBase)}&apiKey=${encodeURIComponent(qKey)}`);
+      if (res && res.success && Array.isArray(res.models) && res.models.length) {
+        AI_PRESETS['9router'].models = Array.from(new Set(['myCombo', ...res.models]));
+        updateModelPresets(providerSelect?.value || '9router', customModelInput?.value || 'myCombo');
+        if (showNotif) {
+          notify(`Đã nạp ${res.models.length} mô hình từ 9Router!`);
+          showAlert(true, 'Tải models thành công', `Đã nhận diện ${res.models.length} mô hình từ 9Router.`);
+        }
+        return true;
+      }
+    } catch (e) {
+      if (showNotif) {
+        showAlert(false, 'Không thể tải danh sách mô hình', e.message || 'Hãy kiểm tra xem 9Router có đang chạy không.');
+      }
+    }
+    return false;
+  }
+
+  const detect9RouterBtn = $('#btn-detect-9router');
+  detect9RouterBtn?.addEventListener('click', async () => {
+    if (providerSelect) providerSelect.value = '9router';
+    if (baseUrlInput) baseUrlInput.value = 'http://localhost:20128/v1';
+    if (apiKeyInput && (!apiKeyInput.value || apiKeyInput.value.length < 5)) {
+      apiKeyInput.value = 'sk-222d28244f5c9294-6676rz-8fcc38a6';
+    }
+    updateModelPresets('9router', 'myCombo');
+    notify('Đang tự động nhận diện và kết nối 9Router...');
+    await fetchLiveModels('http://localhost:20128/v1', apiKeyInput?.value || 'sk-222d28244f5c9294-6676rz-8fcc38a6');
+    showAlert(true, 'Đã nhận diện 9Router', 'Đã thiết lập endpoint http://localhost:20128/v1 và tải danh sách mô hình từ 9Router thành công!');
+  });
+
+  const fetchModelsBtn = $('#btn-fetch-9router-models');
+  fetchModelsBtn?.addEventListener('click', async () => {
+    const base = baseUrlInput?.value.trim() || 'http://localhost:20128/v1';
+    const key = apiKeyInput?.value.trim() || 'sk-222d28244f5c9294-6676rz-8fcc38a6';
+    await fetchLiveModels(base, key, true);
   });
 
   alertClose?.addEventListener('click', () => {
@@ -6781,8 +6834,8 @@ async function loadAiSettings() {
     if (scopeServer) scopeServer.checked = true;
     if (providerSelect) providerSelect.value = serverConfig.provider || 'gemini';
     if (baseUrlInput) {
-      const isCustomUrl = serverConfig.provider === 'custom' || (serverConfig.baseURL && (serverConfig.baseURL.includes('googleapis') || serverConfig.baseURL.includes('gemini')));
-      baseUrlInput.value = isCustomUrl ? (serverConfig.baseURL || '') : '';
+      const isCustomUrl = serverConfig.provider === 'custom' || serverConfig.provider === '9router' || (serverConfig.baseURL && (serverConfig.baseURL.includes('20128') || serverConfig.baseURL.includes('googleapis') || serverConfig.baseURL.includes('gemini')));
+      baseUrlInput.value = isCustomUrl ? (serverConfig.baseURL || (serverConfig.provider === '9router' ? 'http://localhost:20128/v1' : '')) : '';
     }
     if (apiKeyInput) apiKeyInput.value = '';
     if (keyBadge) {
@@ -6819,6 +6872,25 @@ async function loadAiSettings() {
       }
     }
     if (customModelInput) customModelInput.value = m;
+  }
+
+  const statusBadge = $('#settings-9router-status-badge');
+  if (statusBadge) {
+    request('/api/ai/models?baseURL=http://localhost:20128/v1').then((r) => {
+      if (r && r.success) {
+        statusBadge.innerHTML = '<i class="ph-fill ph-circle" style="color: #22c55e;"></i> Online (Cổng 20128)';
+        statusBadge.className = 'settings-badge-status settings-badge-status--server';
+        if (r.models && r.models.length) {
+          AI_PRESETS['9router'].models = Array.from(new Set(['myCombo', ...r.models]));
+        }
+      } else {
+        statusBadge.innerHTML = '<i class="ph-fill ph-circle" style="color: #ef4444;"></i> Offline (Không tìm thấy 9Router)';
+        statusBadge.className = 'settings-badge-status settings-badge-status--empty';
+      }
+    }).catch(() => {
+      statusBadge.innerHTML = '<i class="ph-fill ph-circle" style="color: #ef4444;"></i> Offline (Không tìm thấy 9Router)';
+      statusBadge.className = 'settings-badge-status settings-badge-status--empty';
+    });
   }
 }
 

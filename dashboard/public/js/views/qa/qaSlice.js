@@ -14,6 +14,9 @@ import { eventBus } from '../../core/eventBus.js';
 import { renderMarkdown, parseFrontMatter } from './markdownView.js';
 import { parseOpenQuestions, applyAnswers } from './openQuestions.js';
 import { ProcessStudioHelper } from './processStudioHelper.js';
+import { ReqAnalyzerHelper } from './reqAnalyzerHelper.js';
+import { FindingFixerHelper } from './findingFixerHelper.js';
+import { ConflictStudioHelper } from './conflictStudioHelper.js';
 
 const PRIORITY_ORDER = { P0: 0, P1: 1, P2: 2, P3: 3 };
 // Chỉ 4 lớp ưu tiên này có rule trong qa.css. Ghép chuỗi tự do sẽ sinh ra lớp chết
@@ -56,6 +59,9 @@ export class QaSlice {
     this.pickedIds = new Set();
     this.draftText = '';
     this._lastAuthor = '';
+    this.reqAnalyzer = new ReqAnalyzerHelper(this);
+    this.findingFixer = new FindingFixerHelper(this);
+    this.conflictStudio = new ConflictStudioHelper(this);
   }
 
   async mount() {
@@ -67,6 +73,15 @@ export class QaSlice {
   unmount() {
     this._mounted = false;
     this._flushRenderDisposers();
+    if (this.reqAnalyzer) {
+      this.reqAnalyzer.destroy();
+    }
+    if (this.findingFixer) {
+      this.findingFixer.destroy();
+    }
+    if (this.conflictStudio) {
+      this.conflictStudio.destroy();
+    }
     this._disposers.forEach((d) => { try { d(); } catch (_) {} });
     this._disposers = [];
   }
@@ -227,6 +242,16 @@ export class QaSlice {
 
     this.processStudio = new ProcessStudioHelper(this);
     this.processStudio.bindEvents(root, this._disposers);
+
+    if (this.reqAnalyzer) {
+      this.reqAnalyzer.init(root);
+      this._disposers.push(() => this.reqAnalyzer.destroy());
+    }
+
+    if (this.findingFixer) {
+      this.findingFixer.init(root);
+      this._disposers.push(() => this.findingFixer.destroy());
+    }
   }
 
   switchTab(tab) {
@@ -2179,6 +2204,34 @@ export class QaSlice {
           contentCol.appendChild(detail);
 
           row.appendChild(contentCol);
+
+          // Cột thao tác: Nút AI Sửa Lỗi
+          const actionsCol = document.createElement('div');
+          actionsCol.className = 'qa-gap-actions-col';
+          const fixBtn = document.createElement('button');
+          fixBtn.type = 'button';
+          fixBtn.className = 'qa-gap-ai-fix-btn';
+          fixBtn.title = 'AI chẩn đoán nguyên nhân và tự động sinh bản vá cho lỗi này';
+
+          const fixIcon = document.createElement('i');
+          fixIcon.className = 'ph-bold ph-sparkle';
+          fixBtn.appendChild(fixIcon);
+
+          const fixText = document.createElement('span');
+          fixText.textContent = 'AI Sửa Lỗi';
+          fixBtn.appendChild(fixText);
+
+          const onFixClick = () => {
+            if (this.findingFixer) {
+              this.findingFixer.openModal(root, gap);
+            }
+          };
+          fixBtn.addEventListener('click', onFixClick);
+          this._renderDisposers.push(() => fixBtn.removeEventListener('click', onFixClick));
+
+          actionsCol.appendChild(fixBtn);
+          row.appendChild(actionsCol);
+
           staticGapsList.appendChild(row);
         }
       }
@@ -2210,7 +2263,11 @@ export class QaSlice {
         if (!byKind.has(f.kind)) byKind.set(f.kind, { label: f.label, rows: [] });
         byKind.get(f.kind).rows.push(f);
       });
-      byKind.forEach(({ label, rows }) => {
+      byKind.forEach(({ label, rows }, kind) => {
+        if (kind === 'ac-lech-giua-tai-lieu-va-spec' && this.conflictStudio) {
+          this.conflictStudio.render(section, rows);
+          return;
+        }
         section.appendChild(this._el('p', `${label} — ${rows.length}`, 'qa-finding-kind'));
         const ul = this._el('ul', null, 'qa-finding-list');
         rows.slice(0, 50).forEach((f) => ul.appendChild(this._el('li', f.detail)));
