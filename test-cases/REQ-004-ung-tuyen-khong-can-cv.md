@@ -9,6 +9,10 @@
 | TC-015 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên desktop | P0 | Có | tests/e2e/desktop/guest_apply_job_noCV_with_otp.spec.js |
 | TC-016 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên mobile web | P0 | Có | tests/e2e/mobile-web/guest_apply_job_noCV_with_otp.mobile.spec.js |
 | TC-038 | AC-013 | Khách vãng lai ứng tuyển với số điện thoại đã có tài khoản | P0 | Có | tests/e2e/desktop/khach-vang-lai-ung-tuyen-sdt-da-ton-tai.spec.js |
+| TC-039 | AC-012 | Thành viên đã đăng nhập nhưng số điện thoại chưa xác thực phải thực hiện xác thực OTP khi ứng tuyển | P0 | candidate | - |
+| TC-040 | AC-013 | Khách vãng lai từ chối Consent Form sau khi xác thực OTP thành công khi tạo tài khoản ngầm | P1 | candidate | - |
+| TC-041 | AC-012 | Kiểm tra lỗi validation khi bỏ trống trường bắt buộc trên popup hồ sơ rút gọn do nhà tuyển dụng cấu hình động | P1 | candidate | - |
+| TC-042 | AC-013 | Khách vãng lai nhập số điện thoại đã tồn tại nhưng nhập sai mã OTP đăng nhập | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -60,3 +64,61 @@
 | Bỏ trống trường bắt buộc của hồ sơ rút gọn | AC-012 | Validation ổn định, rẻ để automation | P1 |
 | Khách vãng lai từ chối consent | AC-013 | Ràng buộc pháp lý, cần chốt nghiệp vụ trước | P1 |
 | Bỏ dở luồng rồi quay lại | AC-012 | Khó ổn định khi automation, cân nhắc kiểm thủ công | P3 |
+
+
+### TC-039 — Thành viên đã đăng nhập nhưng số điện thoại chưa xác thực phải thực hiện xác thực OTP khi ứng tuyển
+
+- **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Candidate
+- **Tiền điều kiện:** Tài khoản người dùng đã đăng nhập thành công, số điện thoại trong tài khoản ở trạng thái 'Chưa xác thực'.
+- **Dữ liệu kiểm thử:** SĐT: 0987654321 (chưa xác thực), Mã OTP đúng: 123456
+> *Ghi chú nghiệp vụ:* Theo quyết định [Q-4]: Thành viên đã đăng nhập nhưng SĐT chưa được xác thực thì vẫn bắt buộc trải qua luồng xác thực OTP khi ứng tuyển hồ sơ rút gọn.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Nhấn nút 'Ứng tuyển' tại bài tin tuyển dụng hỗ trợ hồ sơ rút gọn | Mở popup nộp hồ sơ rút gọn điền sẵn thông tin cá nhân của người dùng. |
+| 2 | Nhấn nút 'Gửi đơn ứng tuyển' / 'Tiếp tục' | Hệ thống phát hiện SĐT chưa xác thực và hiển thị màn hình yêu cầu nhập mã OTP gửi về SĐT 0987654321. |
+| 3 | Nhập mã OTP chính xác (123456) và xác nhận | Hệ thống xác thực thành công SĐT, cập nhật trạng thái SĐT đã xác thực cho tài khoản và gửi đơn ứng tuyển thành công. |
+
+
+### TC-040 — Khách vãng lai từ chối Consent Form sau khi xác thực OTP thành công khi tạo tài khoản ngầm
+
+- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Candidate
+- **Tiền điều kiện:** Khách vãng lai chưa đăng nhập hệ thống.
+- **Dữ liệu kiểm thử:** SĐT mới: 0912345678, Mã OTP đúng: 123456
+> *Ghi chú nghiệp vụ:* Theo quyết định [Q-3]: Tài khoản tạo ngầm qua luồng ứng tuyển bắt buộc user phải đồng ý Consent Form mới hoàn tất ứng tuyển. Cần kiểm thử trường hợp người dùng từ chối consent.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Khách vãng lai nhập đầy đủ thông tin rút gọn với SĐT mới và yêu cầu OTP | Hệ thống gửi OTP thành công và hiển thị ô nhập OTP. |
+| 2 | Nhập mã OTP chính xác | Tạo tài khoản ngầm thành công và hiển thị popup Điều khoản đồng ý (Consent Form). |
+| 3 | Nhấn nút 'Từ chối' hoặc tắt màn hình Consent Form | Hệ thống không hoàn tất nộp đơn ứng tuyển, hiển thị thông báo yêu cầu đồng ý điều khoản để tiếp tục ứng tuyển. |
+
+
+### TC-041 — Kiểm tra lỗi validation khi bỏ trống trường bắt buộc trên popup hồ sơ rút gọn do nhà tuyển dụng cấu hình động
+
+- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Candidate
+- **Tiền điều kiện:** Tin tuyển dụng được nhà tuyển dụng cấu hình hiển thị các trường động: Họ tên, Số điện thoại, Email, Kinh nghiệm làm việc.
+- **Dữ liệu kiểm thử:** Họ tên: Nguyễn Văn A, SĐT: 0901234567, Email: (để trống), Kinh nghiệm: (để trống)
+> *Ghi chú nghiệp vụ:* Theo quyết định [Q-2]: Tất cả các trường hiển thị trong popup apply đều là trường bắt buộc (do cấu hình từ phía người đăng tin).
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Mở popup ứng tuyển hồ sơ rút gọn của tin tuyển dụng có cấu hình các trường động | Popup hiển thị đầy đủ các trường: Họ tên, SĐT, Email, Kinh nghiệm làm việc. |
+| 2 | Nhập Họ tên, SĐT và để trống trường Email, Kinh nghiệm, sau đó nhấn 'Nộp ứng tuyển' | Hệ thống chặn không cho gửi đơn, hiển thị thông báo lỗi bắt buộc nhập tại ô Email và Kinh nghiệm. |
+
+
+### TC-042 — Khách vãng lai nhập số điện thoại đã tồn tại nhưng nhập sai mã OTP đăng nhập
+
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Candidate
+- **Tiền điều kiện:** SĐT 0909888777 đã có tài khoản tồn tại trên hệ thống. Khách vãng lai chưa đăng nhập.
+- **Dữ liệu kiểm thử:** SĐT đã tồn tại: 0909888777, OTP sai: 000000
+> *Ghi chú nghiệp vụ:* Theo quyết định [Q-1]: Nếu SĐT đã tồn tại, hệ thống thực hiện đăng nhập cho user sau khi OTP thành công. Kiểm thử ca biên nhập sai OTP.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Nhập SĐT 0909888777 vào form ứng tuyển rút gọn và bấm gửi OTP | Hệ thống nhận diện và gửi mã OTP về số điện thoại đã đăng ký. |
+| 2 | Nhập mã OTP sai (000000) và nhấn 'Xác nhận' | Hệ thống hiển thị lỗi mã OTP không hợp lệ, KHÔNG tự động đăng nhập người dùng và KHÔNG gửi đơn ứng tuyển. |
