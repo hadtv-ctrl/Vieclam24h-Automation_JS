@@ -48,7 +48,8 @@ async function handleQaRoutes(request, response, url, context = {}) {
 
   if (request.method === 'GET' && url.pathname === '/api/qa/summary') {
     try {
-      sendJson(response, 200, getQaSummary(root));
+      const force = url.searchParams.get('force') === 'true';
+      sendJson(response, 200, getQaSummary(root, { force }));
     } catch (error) {
       sendJson(response, 500, { error: `Không lấy được tổng quan QA: ${error.message}` });
     }

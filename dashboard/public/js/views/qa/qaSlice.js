@@ -293,12 +293,12 @@ export class QaSlice {
     const root = this._root();
     if (!root) return;
 
-    const [trace, candidates, decisions, documents, summary] = await Promise.allSettled([
+    // Fast-path: nạp song song 4 endpoint thiết yếu (~200ms) để render UI ngay lập tức
+    const [trace, candidates, decisions, documents] = await Promise.allSettled([
       apiClient.get('/api/qa/trace'),
       apiClient.get('/api/qa/candidates', { limit: 50 }),
       apiClient.get('/api/qa/decisions'),
       apiClient.get('/api/qa/documents'),
-      apiClient.get('/api/qa/summary'),
     ]);
 
     if (trace.status !== 'fulfilled') {
@@ -310,7 +310,6 @@ export class QaSlice {
     }
 
     this.trace = trace.value;
-    this.summary = summary.status === 'fulfilled' ? summary.value : null;
     this.candidates = candidates.status === 'fulfilled' && Array.isArray(candidates.value.candidates)
       ? candidates.value.candidates
       : [];
@@ -323,11 +322,28 @@ export class QaSlice {
       candidates.status === 'rejected' ? { part: 'ứng viên automation', reason: candidates.reason } : null,
       decisions.status === 'rejected' ? { part: 'sổ quyết định', reason: decisions.reason } : null,
       documents.status === 'rejected' ? { part: 'danh sách tài liệu', reason: documents.reason } : null,
-      summary.status === 'rejected' ? { part: 'bộ chỉ số QA Core', reason: summary.reason } : null,
     ].filter(Boolean);
 
+    // Render ngay toàn bộ tài liệu, test cases và khung chỉ số tức thì
     this.renderAll();
-    if (announce) this.notify('Đã làm mới dữ liệu QA.');
+
+    // Chạy ngầm summary để nạp chỉ số chuyên sâu và scorecard (không chặn mở tab)
+    const summaryUrl = announce ? '/api/qa/summary?force=true' : '/api/qa/summary';
+    apiClient.get(summaryUrl).then((summaryRes) => {
+      if (!this._mounted) return;
+      this.summary = summaryRes;
+      this._renderExecutiveScorecard();
+      this.renderFindings();
+      if (announce) this.notify('Đã làm mới dữ liệu QA.');
+    }).catch((err) => {
+      if (!this._mounted) return;
+      this._degraded.push({ part: 'bộ chỉ số QA Core', reason: err });
+      if (announce) this.notify('Đã làm mới dữ liệu QA (chỉ số chuyên sâu chưa hoàn tất).');
+    });
+
+    if (announce && !this.summary) {
+      this.notify('Đã cập nhật danh sách tài liệu. Đang tổng hợp chỉ số chuyên sâu...');
+    }
   }
 
   /**
@@ -480,7 +496,26 @@ export class QaSlice {
   _renderExecutiveScorecard() {
     const root = this._root();
     if (!root) return;
-    const summary = this.summary;
+    let summary = this.summary;
+    if (!summary && this.trace) {
+      const c = this.trace.counts || {};
+      const autoCount = this.trace.automatedCount || 0;
+      const acCount = c.acceptanceCriteria || 0;
+      const covPercent = acCount > 0 ? Number(((autoCount / acCount) * 100).toFixed(1)) : 0;
+      summary = {
+        systemHealth: this.trace.majorCount > 0 ? 'WARNING' : 'HEALTHY',
+        health: { totalFindings: this.trace.majorCount || 0 },
+        metrics: {
+          coveragePercent: covPercent,
+          coveredAcCount: autoCount,
+          acceptanceCriteria: acCount,
+          automatedTests: autoCount,
+          candidateTests: this.candidates ? this.candidates.length : 0,
+          testCases: c.testCases || 0,
+        },
+        boundary: { status: 'ALIGNED', shipCount: '—', seedCount: '—', ownCount: '—' },
+      };
+    }
     if (!summary) return;
 
     // 1. Health Badge

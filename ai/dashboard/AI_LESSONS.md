@@ -236,5 +236,23 @@ Only record a lesson after the defect is confirmed and its root cause is underst
 - Regression check: Run `npm run test:dashboard:api` (asserting `POST /api/recorder/start` concurrent calls reject with 409 and accept only 1 session) and `tests/dashboard/foundation-parity.spec.js`.
 - Related files: `dashboard/public/js/views/recorder/recorderSlice.js`, `dashboard/public/app.js`, `dashboard/routes/recorderRoutes.js`, `tests/dashboard-api/recorder.test.js`.
 
+### 2026-09-24 — Progressive View Loading and Shared Test Discovery for Heavy Diagnostic Tabs
+
+- Area: QA Docs & Automation View Performance & Subprocess Optimization (`qaSlice.js`, `qaService.js`, `commands.js`, `sources.js`).
+- Symptom: Opening tab "TÀI LIỆU QA & ỨNG VIÊN AUTOMATION" (`#/qa`) took ~16 seconds to load, freezing the tab switch and document reader.
+- Root cause:
+  1. *Frontend Blocking on Heavy Endpoint*: `qaSlice.js` used `Promise.allSettled` waiting for all 5 endpoints including `/api/qa/summary` before calling `renderAll()`.
+  2. *Triple Subprocess Redundancy*: `tools/qa/lib/commands.js`'s `summary()` called `coverage()`, `gaps()`, and `drift()` sequentially, each independently invoking `loadAutomatedTests(root, options)` which executed `npx playwright test --list` 3 times (4.7s x 3 = ~14.1s).
+  3. *Slow Subprocess Invocation*: `sources.js` spawned `npx` via `shell: true` on Windows, which invoked `cmd.exe` -> `npx.cmd` -> `node.exe`.
+  4. *Missing In-Memory Cache*: Every page reload or tab switch re-executed the full test discovery process.
+- Correct pattern:
+  1. *Progressive View Rendering*: Load the 4 fast endpoints (`trace`, `candidates`, `decisions`, `documents`) first in ~200ms and immediately render the view; load `summary` asynchronously in the background and display fallback scorecard instantly.
+  2. *Shared Automated Test Discovery*: Run `loadAutomated` once in `summary()` and pass the result to `coverage`, `gaps`, and `drift`.
+  3. *Direct CLI Execution*: Execute `node_modules/@playwright/test/cli.js` directly with `process.execPath` without shell when available.
+  4. *In-Memory Caching*: Cache `getQaSummary` for 60s with automatic invalidation on mutating endpoints.
+- Preventive rule: Never block primary view rendering on heavy CLI diagnostic summaries. Never invoke repeated subprocesses when data can be shared across pipeline steps.
+- Regression check: Run `node --test dashboard/services/qaService.test.js tests/dashboard-api/qa.test.js`.
+- Related files: `dashboard/public/js/views/qa/qaSlice.js`, `dashboard/services/qaService.js`, `dashboard/routes/qaRoutes.js`, `tools/qa/lib/commands.js`, `tools/qa/lib/sources.js`.
+
 
 
