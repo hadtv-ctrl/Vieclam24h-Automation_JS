@@ -1,8 +1,11 @@
 {
+  "version": 1,
   "code": {
     "excludedFolders": [
       "playwright-report",
-      "test-results"
+      "test-results",
+      ".dashboard-backups",
+      ".dashboard-drafts"
     ],
     "roleRules": [
       {
@@ -51,5 +54,12 @@
       "utils": 700,
       "module": 1500
     }
+  },
+  "knowledge": {
+    "maxLines": 150,
+    "candidateLines": 50,
+    "maxEstimatedTokens": 1200,
+    "manifestEstimatedTokens": 1500,
+    "charactersPerToken": 3.8
   }
 }
