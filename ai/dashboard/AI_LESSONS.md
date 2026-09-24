@@ -2,6 +2,11 @@
 
 This file is the version-controlled memory for agents maintaining the Dashboard. Read it before modifying anything under `dashboard/`.
 
+> **This file belongs to THIS project. The Hub never overwrites it.**
+> `ai/dashboard/AI_LESSONS.md` is excluded from Hub-to-Spoke sync. The Hub still owns and
+> updates `ai/dashboard/DASHBOARD_AI_PROMPT.md` and everything under `dashboard/`.
+> A lesson that applies to EVERY project belongs in `DASHBOARD_AI_PROMPT.md` via a PR to the Hub.
+
 Only record a lesson after the defect is confirmed and its root cause is understood. Do not store chat transcripts, guesses, credentials, personal data, or duplicate lessons. Consolidate an existing entry when the same cause appears again.
 
 ## Required entry format
@@ -16,6 +21,36 @@ Only record a lesson after the defect is confirmed and its root cause is underst
 - Related files
 
 ## Confirmed lessons
+
+### 2026-09-22 — Ensure Standalone Controllers Re-bind Dynamically Loaded View Templates
+
+- Area: AI Agent View & On-Demand Template Lifecycle (`agent.js`, `agentSlice.js`).
+- Symptom: Opening the AI Agent tab showed "Mất kết nối Dashboard. Kiểm tra máy chủ rồi thử lại.", model select stuck on "Đang kiểm tra mô hình...", and controls disabled despite API test connection being successful in Settings.
+- Root cause: In Phase 5 on-demand template loading, view HTML is fetched and injected asynchronously when navigating to the tab. Standalone script `agent.js` was evaluated on initial page load when `#agent-form` and view DOM elements did not exist yet, causing module element references (`model`, `history`, `form`, etc.) to remain null. Calling `loadHistory()` threw a TypeError on `null.replaceChildren()`, which was caught and misinterpreted as a dashboard connection loss. Concurrently, `agentSlice.js` had stub event listeners on `#agent-start` calling non-existent endpoint `/api/agent/session`.
+- Correct pattern: Standalone feature scripts must re-query elements dynamically (`ensureElements()`), ensure safe DOM manipulation (`if (history)`), bind on-demand buttons idempotently, and export lifecycle hooks (e.g. `window.initAgentView`). View slices must delegate lifecycle mounting directly to the canonical view initialization hook rather than maintaining competing or broken API stubs.
+- Preventive rule: Whenever moving inline HTML into on-demand templates (`/templates/*.html`), verify that all associated controllers properly re-bind DOM nodes upon template insertion and run end-to-end browser click tests for tab transitions.
+- Regression check: Run `node --test dashboard/agent-ui-lifecycle.test.js dashboard/agent-ui-session.test.js` and verify browser navigation to AI Agent tab populates models and displays "Sẵn sàng".
+- Related files: `dashboard/public/agent.js`, `dashboard/public/js/views/agent/agentSlice.js`.
+
+### 2026-09-22 — Test All Endpoints of New Pages and Features to Avoid False-Positive HTTP 400s
+
+- Area: Dashboard REST APIs, CLI Diagnostic Wrappers & Settings/QA Views.
+- Symptom: Clicking Doctor or Probes ALL button displayed `HTTP 400: Bad Request` in the terminal output even though the diagnostic tool ran and returned report details.
+- Root cause: Backend route logic conflated CLI exit code 1 (which diagnostic and linting tools return when findings/violations are present) with client request error (`res.ok ? 200 : 400`), while frontend helper didn't extract the stdout payload on non-200 responses.
+- Correct pattern: Diagnostic and scanner commands that execute to completion must always return HTTP 200 with the execution payload `{ ok, code, stdout, stderr }` (409 only when a mutex is locked; 400/403 strictly reserved for invalid request bodies, malformed targets, or security violations). Frontend helpers must also safely extract `payload.stdout` or `payload.output` on error recovery.
+- Preventive rule: Always test 100% of API endpoints and UI action buttons on any newly created page or feature via both HTTP requests and live browser clicks before closing acceptance gates; verify all valid actions return HTTP 200.
+- Regression check: Run `npm run test:dashboard:api` and verify `POST /api/mp/doctor` and `POST /api/mp/probes` return status 200 with stdout output.
+- Related files: `dashboard/routes/masterProcessRoutes.js`, `dashboard/services/masterProcessService.js`, `dashboard/public/js/views/settings/masterProcessHelper.js`, `dashboard/public/js/views/qa/processStudioHelper.js`.
+
+### 2026-09-22 — Prevent Happy-Path Blindspots and Single-Target Bias in Hub-to-Spoke Integrations
+
+- Area: Master Process Integration & Multi-Project Dashboard.
+- Symptom: Direct mutation endpoints (/audit, /doctor...) were unmutexed, CarThings satellite was left unpinned without hooks, and a hardcoded string ('201 Scanned...') remained in QA View.
+- Root cause: Happy-path testing bias (verifying only that button clicks run commands), focusing on one satellite while neglecting the second, and avoiding UI expansion due to modularity line-budget anxiety instead of proactive refactoring.
+- Correct pattern: Enforce mutex execution lock at the service layer for all mutation actions; provide target selector UI for all whitelisted projects; proactively refactor event bindings and helpers before hitting the 250-line limit; never leave placeholder strings in production code.
+- Preventive rule: Multi-satellite verification must validate all N satellites before closing acceptance gates; all endpoints must have native API contract tests covering 200, 400, 403, and 409 status codes.
+- Regression check: Run `npm run test:dashboard:api`, `node dashboard/services/masterProcessService.test.js`, and verify all satellites via `python master.py check-drift <target>`.
+- Related files: `dashboard/services/masterProcessService.js`, `dashboard/routes/masterProcessRoutes.js`, `dashboard/public/js/views/settings/masterProcessHelper.js`, `dashboard/public/js/views/qa/processStudioHelper.js`.
 
 ### 2026-09-05 — Base fixtures must be parsed as DI capabilities, not UI Page Objects
 

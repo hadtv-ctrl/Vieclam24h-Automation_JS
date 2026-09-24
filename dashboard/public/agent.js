@@ -58,21 +58,24 @@
     if (byId('resource-editor') && !byId('resource-editor').hidden) return 'Trình sửa tài nguyên (Resource Editor) đang mở. Hãy lưu hoặc đóng lại trước khi giao việc cho Agent.';
     return null;
   }
+  function ensureElements() { form = byId('agent-form'); model = byId('agent-model'); prompt = byId('agent-prompt'); start = byId('agent-start'); stop = byId('agent-stop'); history = byId('agent-history'); events = byId('agent-events'); }
   function hasUnsavedCode() { return Boolean(getUnsavedCodeReason()); }
   async function loadHistory() {
+    ensureElements();
     const data = await api('/api/agent/sessions');
-    history.replaceChildren();
-    if (!data.sessions.length) history.add(new Option('Chưa có phiên nào', ''));
-    for (const session of data.sessions) history.add(new Option(`${labels[session.status] || 'Phiên'} · ${session.prompt.slice(0, 65)}`, session.id));
-    if (selectedId) history.value = selectedId;
+    if (history) {
+      history.replaceChildren();
+      if (!data.sessions.length) history.add(new Option('Chưa có phiên nào', ''));
+      for (const s of data.sessions) history.add(new Option(`${labels[s.status] || 'Phiên'} · ${s.prompt.slice(0, 65)}`, s.id));
+      if (selectedId) history.value = selectedId;
+    }
     return data.sessions;
   }
   function formatTokens(num) { return (Number(num) || 0).toLocaleString('vi-VN'); }
 
   function updateTokenQuota(quota, session = null) {
     const percent = Math.max(0, Math.min(100, typeof quota?.remainingPercent === 'number' ? quota.remainingPercent : 100));
-    const percentText = `${percent}%`;
-    const pillPercent = byId('agent-quota-pill-percent'), quotaPercent = byId('agent-quota-percent');
+    const percentText = `${percent}%`, pillPercent = byId('agent-quota-pill-percent'), quotaPercent = byId('agent-quota-percent');
     if (pillPercent) pillPercent.textContent = percentText;
     if (quotaPercent) quotaPercent.textContent = percentText;
     const isHealthy = percent >= 50, isWarning = percent >= 20 && percent < 50, isDanger = percent < 20;
@@ -98,16 +101,16 @@
   }
 
   function render(session) {
+    ensureElements();
     selectedId = session.id;
     activeId = session.status === 'running' ? session.id : null;
-    byId('agent-state').textContent = labels[session.status] || 'Sẵn sàng';
-    byId('agent-state').classList.toggle('modified', session.status === 'running');
-    byId('agent-session-task').textContent = session.prompt;
-    byId('agent-event-count').textContent = `${session.events.length} hoạt động`;
+    byId('agent-state') && (byId('agent-state').textContent = labels[session.status] || 'Sẵn sàng', byId('agent-state').classList.toggle('modified', session.status === 'running'));
+    byId('agent-session-task') && (byId('agent-session-task').textContent = session.prompt);
+    byId('agent-event-count') && (byId('agent-event-count').textContent = `${session.events.length} hoạt động`);
     updateTokenQuota(session.tokenQuota, session);
     feedback(session.error || '');
     const renderKey = JSON.stringify(session.events);
-    if (lastRender !== renderKey) {
+    if (lastRender !== renderKey && events) {
       const expanded = new Set([...events.querySelectorAll('details[open]')].map(node => node.dataset.eventId));
       const nearEnd = events.scrollHeight - events.clientHeight - events.scrollTop < 60, priorScroll = events.scrollTop;
       events.replaceChildren();
@@ -136,10 +139,10 @@
       events.scrollTop = nearEnd ? events.scrollHeight : priorScroll;
       lastRender = renderKey;
     }
-    byId('agent-summary-section').hidden = session.status === 'running' || !session.summary;
-    byId('agent-summary').textContent = session.summary || '';
-    byId('agent-files-section').hidden = !session.changedFiles.length;
-    byId('agent-files').replaceChildren(...session.changedFiles.map(file => {
+    byId('agent-summary-section') && (byId('agent-summary-section').hidden = session.status === 'running' || !session.summary);
+    byId('agent-summary') && (byId('agent-summary').textContent = session.summary || '');
+    byId('agent-files-section') && (byId('agent-files-section').hidden = !session.changedFiles.length);
+    byId('agent-files')?.replaceChildren?.(...session.changedFiles.map(file => {
       const item = document.createElement('li');
       item.textContent = `${({ add: 'Thêm', delete: 'Xóa', update: 'Sửa' })[file.kind] || 'Sửa'} · ${file.path}`;
       return item;
@@ -166,6 +169,7 @@
     if (session.status === 'running') timer = setTimeout(() => poll(session.id, generation), 1000);
   }
   async function refresh() {
+    bind();
     if (refreshPending) return;
     refreshPending = true; controls();
     const refreshBtn = byId('agent-refresh');
@@ -173,15 +177,15 @@
     try {
       const state = await api('/api/agent/status?refresh=1');
       available = state.available;
+      ensureElements();
       if (model) {
         const previous = model.value;
         model.replaceChildren();
-        if (!state.models.length) model.add(new Option('Chưa có model Gemini', ''));
-        for (const item of state.models) model.add(new Option(item.name, item.name));
-        model.value = state.models.some(item => item.name === previous) ? previous : state.selectedModel;
+        if (!state.models?.length) model.add(new Option('Chưa có model Gemini', ''));
+        for (const item of (state.models || [])) model.add(new Option(item.name, item.name));
+        model.value = state.models?.some(item => item.name === previous) ? previous : state.selectedModel;
       }
-      const conn = byId('agent-connection');
-      if (conn) conn.textContent = state.message;
+      if (byId('agent-connection')) byId('agent-connection').textContent = state.message;
       updateTokenQuota(state.tokenQuota, null);
       if (byId('agent-eyebrow')) byId('agent-eyebrow').textContent = state.provider ? state.provider.toUpperCase() : 'AI AGENT';
       const sessions = await loadHistory();
@@ -189,11 +193,10 @@
       const id = activeId || (selectedId && sessions.some(s => s.id === selectedId) ? selectedId : sessions[0]?.id);
       if (id) watch((await api(`/api/agent/sessions/${id}`)).session);
       else feedback();
-    } catch {
+    } catch (error) {
       available = false;
-      const message = 'Mất kết nối Dashboard. Kiểm tra máy chủ rồi thử lại.';
-      const conn = byId('agent-connection');
-      if (conn) conn.textContent = message;
+      const message = error?.message || 'Mất kết nối Dashboard. Kiểm tra máy chủ rồi thử lại.';
+      if (byId('agent-connection')) byId('agent-connection').textContent = message;
       feedback(message);
     } finally {
       refreshPending = false;
@@ -203,11 +206,11 @@
     }
   }
   function bind() {
-    form = byId('agent-form');
+    ensureElements();
+    const refreshBtn = byId('agent-refresh');
+    if (refreshBtn && !refreshBtn._b) { refreshBtn._b = true; refreshBtn.addEventListener('click', refresh); }
     if (!form || form._b) return;
     form._b = true;
-    model = byId('agent-model'); prompt = byId('agent-prompt'); start = byId('agent-start');
-    stop = byId('agent-stop'); history = byId('agent-history'); events = byId('agent-events');
     form.addEventListener('submit', async event => {
       event.preventDefault();
       if (working || activeId || refreshPending || !available) return;
@@ -219,31 +222,26 @@
       try {
         const { session } = await api('/api/agent/sessions', { prompt: prompt.value, model: model.value });
         watch(session); await loadHistory();
-      } catch (error) { feedback(error.message); }
-      finally { working = false; controls(); }
+      } catch (error) { feedback(error.message); } finally { working = false; controls(); }
     });
     stop?.addEventListener('click', async () => {
       if (!activeId || working) return;
       working = true; controls();
-      try { watch((await api(`/api/agent/sessions/${activeId}/stop`, {})).session); }
-      catch (error) { feedback(error.message); }
-      finally { working = false; controls(); }
+      try { watch((await api(`/api/agent/sessions/${activeId}/stop`, {})).session); } catch (error) { feedback(error.message); } finally { working = false; controls(); }
     });
     history?.addEventListener('change', async () => {
       if (!history.value || activeId) return;
       working = true; controls();
-      try { watch((await api(`/api/agent/sessions/${history.value}`)).session); }
-      catch (error) { feedback(error.message); }
-      finally { working = false; controls(); }
+      try { watch((await api(`/api/agent/sessions/${history.value}`)).session); } catch (error) { feedback(error.message); } finally { working = false; controls(); }
     });
     prompt?.addEventListener('input', () => feedback(''));
     prompt?.addEventListener('keydown', event => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); if (!start?.disabled) form?.requestSubmit(); }
     });
   }
-  byId('agent-refresh')?.addEventListener('click', refresh);
   byId('agent-tab')?.addEventListener('click', refresh);
   window.addEventListener('beforeunload', () => { clearTimeout(timer); generation += 1; });
   bind();
   if (byId('agent-view') && !byId('agent-view').hidden) refresh();
+  if (typeof window !== 'undefined') window.initAgentView = async () => { bind(); await refresh(); };
 })();
