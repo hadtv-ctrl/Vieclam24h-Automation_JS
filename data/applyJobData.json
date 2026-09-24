@@ -68,5 +68,6 @@
       "uploadFile": "data/pexels-eberhardgross-640781.jpg"
     }
   },
-  "cvPath": "data/TemplateCV.pdf"
+  "cvPath": "data/TemplateCV.pdf",
+  "invalidCvPath": "data/invalid_cv.txt"
 }

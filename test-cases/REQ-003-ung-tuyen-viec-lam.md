@@ -8,6 +8,8 @@
 | TC-010 | AC-008 AC-010 AC-011 | Ứng tuyển bằng file CV trên mobile web | P0 | Có | tests/e2e/mobile-web/apply_job_with_CV_flow-bdd.mobile.spec.js |
 | TC-011 | AC-009 AC-010 AC-011 | Ứng tuyển bằng hồ sơ trực tuyến trên desktop | P1 | Có | tests/e2e/desktop/apply_job_with_profile_flow-bdd.spec.js |
 | TC-012 | AC-009 AC-010 AC-011 | Ứng tuyển bằng hồ sơ trực tuyến trên mobile web | P1 | Có | tests/e2e/mobile-web/apply_job_with_profile_flow-bdd.mobile.spec.js |
+| TC-036 | AC-008 | Tải lên file CV sai định dạng hoặc quá dung lượng | P1 | Có | tests/e2e/desktop/tai-len-cv-sai-dinh-dang.spec.js |
+| TC-037 | AC-011 | Kiểm tra trạng thái việc làm đã nộp (Nộp lại hồ sơ hoặc Đã ứng tuyển) | P0 | Có | tests/e2e/desktop/kiem-tra-trang-thai-viec-lam-da-ung-tuyen.spec.js |
 
 ## Chi tiết
 
@@ -46,3 +48,31 @@
 | Nộp hồ sơ trực tuyến khi thiếu mục bắt buộc | AC-009 | Cần chốt mục bắt buộc trước, sau đó rất đáng phủ | P1 |
 | Bỏ qua gợi ý nộp hàng loạt | AC-010 | Nhánh từ chối hiện hoàn toàn trống | P2 |
 | Ứng tuyển việc làm đã hết hạn | AC-008 | Khó dựng dữ liệu ổn định, cân nhắc kiểm thủ công | P2 |
+
+
+### TC-036 — Tải lên file CV sai định dạng hoặc quá dung lượng
+
+- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Negative Validation
+- **Automation:** Có
+- **Tiền điều kiện:** Người dùng đã đăng nhập và đang ở popup chọn phương thức ứng tuyển bằng CV
+- **Dữ liệu kiểm thử:** File không hợp lệ hoặc sai định dạng cho phép
+- > *Ghi chú nghiệp vụ:* Đảm bảo hệ thống chặn file sai extension và hiển thị hướng dẫn định dạng hợp lệ.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Tải lên file sai định dạng hoặc không hợp lệ | Hệ thống hiển thị thông báo lỗi định dạng file không được hỗ trợ |
+| 2 | Kiểm tra nút tiếp tục | Hệ thống không cho phép tiếp tục luồng nộp hồ sơ |
+
+
+### TC-037 — Kiểm tra trạng thái việc làm đã nộp (Nộp lại hồ sơ hoặc Đã ứng tuyển)
+
+- **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Ràng buộc chống trùng lặp / Trạng thái việc làm
+- **Automation:** Có
+- **Tiền điều kiện:** Người dùng đã đăng nhập và mở lại chi tiết việc làm đã ứng tuyển thành công trước đó
+- **Dữ liệu kiểm thử:** Việc làm đã nộp trong tài khoản
+- > *Ghi chú nghiệp vụ:* Tránh ứng viên vô tình nộp trùng lặp và xác thực trạng thái ghi nhận hồ sơ của nhà tuyển dụng.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Mở trang chi tiết việc làm đã từng ứng tuyển thành công | Trang chi tiết việc làm hiển thị |
+| 2 | Kiểm tra nút ứng tuyển | Nút hiển thị trạng thái "Đã ứng tuyển" hoặc cho phép "Nộp lại hồ sơ" thay vì nút ứng tuyển lần đầu thông thường |

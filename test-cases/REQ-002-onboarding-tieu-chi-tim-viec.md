@@ -6,7 +6,8 @@
 |---|---|---|---|---|---|
 | TC-007 | AC-005 AC-006 AC-007 | Hoàn tất năm bước onboarding trên desktop | P1 | Có | tests/e2e/desktop/onboarding-bdd.spec.js |
 | TC-008 | AC-005 AC-006 AC-007 | Hoàn tất năm bước onboarding trên mobile web | P1 | Có | tests/e2e/mobile-web/onboarding-bdd.mobile.spec.js |
-| TC-031 | AC-005 | Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định) | P2 | candidate | - |
+| TC-031 | AC-005 | Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định) | P2 | Có | tests/e2e/desktop/xac-nhan-thanh-cong-khi-bo-trong-truong-tuy-chon-truong-tuy-.spec.js |
+| TC-035 | AC-005 | Kiểm tra đóng modal onboarding giữa chừng và kiểm tra trạng thái trang chủ | P1 | Có | tests/e2e/desktop/dong-modal-onboarding-giua-chung.spec.js |
 
 ## Chi tiết
 
@@ -41,7 +42,7 @@
 ### TC-031 — Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định)
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Người dùng đang ở màn hình đăng ký / nhập liệu
 - **Dữ liệu kiểm thử:** Bỏ trống trường trường tùy chọn
 > *Ghi chú nghiệp vụ:* Kiểm thử luồng rẽ nhánh từ quyết định Q-1: trường tùy chọn không bắt buộc.
@@ -50,3 +51,17 @@
 |---|---|---|
 | 1 | Nhập đầy đủ các trường thông tin bắt buộc khác | Các trường bắt buộc hợp lệ |
 | 2 | Để trống trường trường tùy chọn và bấm gửi form | Hệ thống xử lý thành công, không báo lỗi thiếu trường tùy chọn |
+
+
+### TC-035 — Kiểm tra đóng modal onboarding giữa chừng và kiểm tra trạng thái trang chủ
+
+- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Kiểm thử luồng bỏ qua / State transition
+- **Automation:** Có
+- **Tiền điều kiện:** Người dùng đã đăng nhập và thấy modal Onboarding (Bước 1)
+- **Dữ liệu kiểm thử:** Bấm nút đóng modal
+- > *Ghi chú nghiệp vụ:* Kiểm thử khả năng bỏ qua onboarding mà không gây treo màn hình hoặc mất quyền truy cập trang chủ.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Bấm nút đóng modal onboarding giữa chừng | Modal onboarding đóng lại thành công |
+| 2 | Kiểm tra giao diện trang chủ | Nội dung trang chủ hiển thị đầy đủ, không còn overlay chặn tương tác |

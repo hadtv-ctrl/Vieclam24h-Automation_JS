@@ -84,7 +84,7 @@ Luồng ứng tuyển không cần CV tách riêng tại REQ-004 vì nó có quy
 
 ## Open questions
 
-1. Trong bảy mục của hồ sơ trực tuyến, mục nào bắt buộc để nộp được? — cần PO xác nhận
-2. Bulk apply nộp tối đa bao nhiêu việc một lần, và tiêu chí "việc làm tương tự" là gì? — cần PO xác nhận
-3. Vì sao ứng tuyển lại cần OTP dù người dùng đã đăng nhập? — cần PO xác nhận
-4. Người dùng có được ứng tuyển cùng một việc nhiều lần không? — cần PO xác nhận
+1. Trong bảy mục của hồ sơ trực tuyến, mục nào bắt buộc để nộp được? — **Đã chốt (Hà Đinh, 2026-09-24):** chỉ cần có CV - tức hồ sơ trực tuyến, hoặc có thể ứng tuyển bằng các thông tin trong Hồ sơ của tôi với các thông tin ghi chú bên ngoài hoàn thành là User có thể apply
+2. Bulk apply nộp tối đa bao nhiêu việc một lần, và tiêu chí "việc làm tương tự" là gì? — **Đã chốt (Hà Đinh, 2026-09-24):** có thể nộp với tất cả các job xuất hiện trong danh sách job hiển thị, tiêu chí đó là việc làm tương tự của job vừa nộp trước đó, list danh cách là việc làm tương tự job vừa nộp trước đó
+3. Vì sao ứng tuyển lại cần OTP dù người dùng đã đăng nhập? — **Đã chốt (Hà Đinh, 2026-09-24):** nếu User chưa xác thực số điện thoại thì cần xác thực số điện thoại để ứng tuyển nhằm mục đích chống spam đối với những user ảo
+4. Người dùng có được ứng tuyển cùng một việc nhiều lần không? — **Đã chốt (Hà Đinh, 2026-09-24):** người dùng có thể ứng tuyển cùng 1 việc nhiều lần, nhưng phải không cùng 1 ngày. Tức là trong 1 ngày chỉ được ứng tuyển việc đó 1 lần thôi.

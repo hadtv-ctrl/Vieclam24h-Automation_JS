@@ -8,6 +8,7 @@
 | TC-014 | AC-012 AC-014 | Thành viên ứng tuyển việc không cần CV trên mobile web | P1 | Có | tests/e2e/mobile-web/apply_job_noCV_flow.mobile.spec.js |
 | TC-015 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên desktop | P0 | Có | tests/e2e/desktop/guest_apply_job_noCV_with_otp.spec.js |
 | TC-016 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên mobile web | P0 | Có | tests/e2e/mobile-web/guest_apply_job_noCV_with_otp.mobile.spec.js |
+| TC-038 | AC-013 | Khách vãng lai ứng tuyển với số điện thoại đã có tài khoản | P0 | Có | tests/e2e/desktop/khach-vang-lai-ung-tuyen-sdt-da-ton-tai.spec.js |
 
 ## Chi tiết
 
@@ -35,6 +36,19 @@
   - Danh sách đã ứng tuyển hiển thị — Ẩn trong Page Object.
   - Tài khoản mới thực sự được tạo — **Không kiểm chứng**. Không có bước nào xác nhận người dùng đã ở trạng thái đăng nhập bằng số điện thoại vừa nhập.
 - **Giá trị nghiệp vụ**: đây là luồng chuyển đổi khách vãng lai thành người dùng có tài khoản, nên xếp P0 dù kỹ thuật phức tạp.
+
+### TC-038 — Khách vãng lai ứng tuyển với số điện thoại đã có tài khoản
+
+- **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân vùng tương đương / Rủi ro tài khoản
+- **Automation:** Có
+- **Tiền điều kiện:** Người dùng chưa đăng nhập, đang ở màn hình ứng tuyển việc làm không cần CV
+- **Dữ liệu kiểm thử:** Số điện thoại đã được đăng ký tài khoản trước đó trong hệ thống
+- > *Ghi chú nghiệp vụ:* Tránh việc vô tình tạo tài khoản trùng hoặc ghi đè thông tin tài khoản người dùng cũ khi khách ứng tuyển.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Mở form ứng tuyển việc làm không cần CV | Form ứng tuyển hiển thị trường nhập họ tên và số điện thoại |
+| 2 | Nhập số điện thoại đã có tài khoản và nộp thông tin | Hệ thống nhận diện số điện thoại đã có tài khoản, yêu cầu đăng nhập hoặc hiển thị cảnh báo tài khoản tồn tại |
 
 ## Ứng viên automation cho REQ-004
 

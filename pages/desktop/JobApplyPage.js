@@ -19,6 +19,12 @@ class JobApplyPage extends BasePage {
     // Upload CV
     this.btnUploadCV = this.page.locator('[data-test-id="apply-method-selector__option-cv"]').first();
     this.inpCV = this.page.locator('input[type="file"]').first();
+    this.cvUploadError = this.page.locator(
+      '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
+    ).filter({
+      hasText: /định dạng|dung lượng|kích thước|không hợp lệ|pdf|doc/i,
+    }).or(this.page.getByText(/định dạng.*không hợp lệ|dung lượng|kích thước.*quá lớn/i)).first();
+    this.btnAlreadyApplied = this.page.getByRole('button', { name: /Đã ứng tuyển|Nộp lại hồ sơ/i }).first();
 
 
     // Giới thiệu

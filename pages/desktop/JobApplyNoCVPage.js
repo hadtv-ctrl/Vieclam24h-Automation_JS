@@ -17,6 +17,11 @@ class JobApplyNoCVPage extends BasePage {
     // Locators được scope vào apply modal để tránh ambiguous match với login/verification popups
     this.txtFullName = this.applyModal.getByRole('textbox', { name: /Nhập họ và tên/i }).first();
     this.txtPhone = this.applyModal.getByRole('textbox', { name: /Nhập số điện thoại/i }).first();
+    this.accountExistsNotice = this.page.locator(
+      '[class*="notice"], [class*="alert"], [class*="modal"], [role="dialog"]'
+    ).filter({
+      hasText: /đã có tài khoản|đã tồn tại|đăng nhập/i,
+    }).or(this.page.getByText(/số điện thoại.*đã có tài khoản|đã được đăng ký/i)).first();
     this.txtProvince = this.page.getByText('Chọn tỉnh', { exact: true })
       .or(this.page.getByRole('textbox', { name: /Chọn tỉnh/i }))
       .or(this.page.locator('[data-test-id="common__select-input"]').filter({ hasText: /Chọn tỉnh/i }))

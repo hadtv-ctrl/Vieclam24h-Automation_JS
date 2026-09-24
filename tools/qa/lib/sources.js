@@ -185,7 +185,9 @@ function loadTestCases(root, options = {}) {
     const baseReqMatch = base.match(/^(REQ-\d{3})/i);
     const defaultReqId = baseReqMatch ? baseReqMatch[1].toUpperCase() : null;
 
+    let rowIdx = 0;
     for (const cells of tableRowsUnder(lines, /^##\s+(?:Traceability|Bảng truy vết)/i)) {
+      rowIdx++;
       if (/^REQ-\d{3}$/i.test(cells[0] || '')) {
         const [reqId, acId, tcId, automation, spec, priority] = cells;
         const auto = normalizeAutomation(automation);
@@ -198,6 +200,7 @@ function loadTestCases(root, options = {}) {
           spec: (spec || '').replace(/`/g, '').trim(),
           priority: (priority || '').trim(),
           file: rel,
+          rowId: `${rel}:${rowIdx}`,
         });
       } else if (/^TC-\d{3}$/i.test(cells[0] || '')) {
         // Bảng tiếng Việt: | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
@@ -217,6 +220,7 @@ function loadTestCases(root, options = {}) {
             spec,
             priority,
             file: rel,
+            rowId: `${rel}:${rowIdx}`,
           });
         } else {
           for (const rawAc of acsFound) {
@@ -229,6 +233,7 @@ function loadTestCases(root, options = {}) {
               spec,
               priority,
               file: rel,
+              rowId: `${rel}:${rowIdx}`,
             });
           }
         }

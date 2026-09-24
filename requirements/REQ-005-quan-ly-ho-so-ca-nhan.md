@@ -100,7 +100,13 @@ Việc cho phép nhà tuyển dụng tìm thấy hồ sơ là một hành độn
 
 ## Open questions
 
-1. Mã xác minh bốn chữ số khi bật tìm kiếm hồ sơ được gửi qua đâu — SMS hay email? — cần PO xác nhận
-2. Tiêu chí tìm việc ở đây và tiêu chí khai ở onboarding (REQ-002) có đồng bộ với nhau không? — cần PO/BA xác nhận
-3. Khi chuyển đổi CV, dữ liệu mới ghi đè hay gộp với dữ liệu hồ sơ đang có? — cần PO xác nhận
-4. Trong bảy mục nội dung hồ sơ, mục nào bắt buộc để hồ sơ được coi là hoàn thiện? — cần PO xác nhận
+1. Mã xác minh bốn chữ số khi bật tìm kiếm hồ sơ được gửi qua đâu — SMS hay email? — **Đã chốt (Hà Đinh, 2026-09-24):** gửi qua email và Số điện thoại, nhưng đối với những tài khoản nào chưa xác nhận cả 2 thông tin là email và số điện thoại thì sẽ phải OTP. nếu thiếu xác thực email thì OTP sẽ gửi qua email, OTP này không phải là 1111 ở môi trường  QC/STG, còn nếu số điện thoại chưa xác thực thì otp nó sẽ là 1111 ờ môi trường QC/STG
+2. Tiêu chí tìm việc ở đây và tiêu chí khai ở onboarding (REQ-002) có đồng bộ với nhau không? — **Đã chốt (Hà Đinh, 2026-09-24):** có
+3. Khi chuyển đổi CV, dữ liệu mới ghi đè hay gộp với dữ liệu hồ sơ đang có? — **Đã chốt (Hà Đinh, 2026-09-24):** gộp với dữ liệu đang có, nhưng ở dạng là trường chứ không phải cộng thông tin vào trường đang có data, ví dụ nếu kỹ năng hay kinh nghiệm làm việc đã có thì sẽ ghi đè, còn nếu chưa có thì ghi thêm
+4. Trong bảy mục nội dung hồ sơ, mục nào bắt buộc để hồ sơ được coi là hoàn thiện? — **Đã chốt (Hà Đinh, 2026-09-24):** Thông tin cá nhân
+
+Kinh nghiệm
+
+Giới thiệu bản thân
+
+Học vấn

@@ -25,7 +25,14 @@ const { createBackup } = require('./resourceService');
  */
 function resolveSafePath(root, rawWhere) {
   if (!rawWhere || typeof rawWhere !== 'string') return null;
-  const trimmed = rawWhere.trim();
+  let trimmed = rawWhere.trim();
+
+  // Nếu chuỗi chứa nhiều file/vị trí cách nhau bởi dấu phẩy, lấy vị trí đầu tiên
+  if (trimmed.includes(',')) {
+    trimmed = trimmed.split(',')[0].trim();
+  }
+  // Bỏ phần chú thích trong ngoặc đơn nếu có: ví dụ "test-cases/REQ-002...md (REQ-002/AC-005)" -> "test-cases/REQ-002...md"
+  trimmed = trimmed.replace(/\s*\([^)]*\)\s*$/, '').trim();
 
   // Nhận diện số dòng ở cuối chuỗi dạng :<number>
   const match = trimmed.match(/^(.*?)(?::(\d+))?$/);
@@ -234,7 +241,38 @@ function analyzeWithHeuristicFix({ root, finding, fileContext }) {
     };
   }
 
-  // 7. Fallback tổng quát cho các loại lỗi khác
+  // 7. Lỗi: ma-tc-trung (Trùng mã test case trong bảng Traceability)
+  if (kind === 'ma-tc-trung' && content) {
+    const lines = content.split(/\r?\n/);
+    const tcMatch = (message || '').match(/Mã test case "([^"]+)"/) || (finding.id || '').match(/TC-\d+/);
+    const tcId = tcMatch ? tcMatch[1] : 'TC-001';
+
+    const matchingIndices = [];
+    lines.forEach((line, idx) => {
+      if (line.includes(`| ${tcId} `) || line.includes(`|${tcId}|`) || line.includes(` ${tcId} |`)) {
+        matchingIndices.push(idx);
+      }
+    });
+
+    if (matchingIndices.length > 0) {
+      const targetIdx = matchingIndices.length > 1 ? matchingIndices[1] : matchingIndices[0];
+      const origLine = lines[targetIdx];
+      const nextTcId = `${tcId}-b`;
+      const fixedLine = origLine.replace(tcId, nextTcId);
+
+      return {
+        rootCause: `Mã test case \`${tcId}\` bị khai báo lặp lại trong bảng Traceability, làm sai lệch liên kết ma trận kiểm thử.`,
+        explanation: `Đổi mã test case tại dòng bị trùng sang \`${nextTcId}\` để đảm bảo tính duy nhất.`,
+        targetFile: relPath,
+        patchType: 'replace_lines',
+        originalSnippet: origLine,
+        fixedSnippet: fixedLine,
+        diff: generateUnifiedDiff(origLine, fixedLine, relPath),
+      };
+    }
+  }
+
+  // 8. Fallback tổng quát cho các loại lỗi khác
   return {
     rootCause: `Phát hiện vấn đề: ${message || kind}.`,
     explanation: finding.action || 'Vui lòng kiểm tra lại cấu trúc file và đồng bộ lại với ma trận Traceability.',
@@ -367,22 +405,71 @@ Hãy phân tích và trả về đối tượng JSON đề xuất bản vá chí
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.1,
+        stream: false,
         response_format: { type: 'json_object' },
       }),
     });
 
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(`${provider} API trả về lỗi (${res.status}): ${errData.error?.message || res.statusText}`);
+      const errText = await res.text().catch(() => '');
+      let errMsg = res.statusText;
+      try {
+        const errJson = JSON.parse(errText);
+        errMsg = errJson.error?.message || errMsg;
+      } catch (_) {
+        if (errText) errMsg = errText.slice(0, 150);
+      }
+      throw new Error(`${provider} API trả về lỗi (${res.status}): ${errMsg}`);
     }
 
-    const data = await res.json();
-    responseJsonText = data.choices?.[0]?.message?.content || '';
+    const rawText = await res.text();
+    let data = null;
+    try {
+      data = JSON.parse(rawText);
+    } catch (_) {
+      // Xử lý trường hợp reverse proxy / 9Router trả về SSE chunk "data: {...}" dù đã set stream: false
+      if (rawText.includes('data:')) {
+        const sseLines = rawText.split('\n');
+        let combined = '';
+        for (const line of sseLines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data:') && !trimmed.includes('[DONE]')) {
+            try {
+              const chunk = JSON.parse(trimmed.slice(5).trim());
+              combined += chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.message?.content || '';
+            } catch (_) {}
+          }
+        }
+        if (combined) {
+          responseJsonText = combined;
+        }
+      }
+    }
+
+    if (data && !responseJsonText) {
+      responseJsonText = data.choices?.[0]?.message?.content || '';
+    }
   }
 
-  // Làm sạch code fences nếu có
-  const cleanJson = responseJsonText.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
-  const parsed = JSON.parse(cleanJson);
+  // Làm sạch và bóc tách JSON an toàn khỏi code blocks hoặc text ngoài lề
+  let cleanJson = (responseJsonText || '').trim();
+  const codeBlockMatch = cleanJson.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (codeBlockMatch) {
+    cleanJson = codeBlockMatch[1].trim();
+  } else {
+    const firstBrace = cleanJson.indexOf('{');
+    const lastBrace = cleanJson.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      cleanJson = cleanJson.slice(firstBrace, lastBrace + 1).trim();
+    }
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cleanJson);
+  } catch (parseErr) {
+    throw new Error(`AI không trả về JSON hợp lệ: ${cleanJson.slice(0, 120)}...`);
+  }
 
   return {
     rootCause: parsed.rootCause || 'Đã phân tích qua AI Copilot.',

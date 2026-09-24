@@ -10,11 +10,15 @@
 | TC-004 | AC-002 | Đăng ký bằng số điện thoại kèm OTP trên mobile web | P0 | Có | tests/e2e/mobile-web/register_by_phone-bdd.mobile.spec.js |
 | TC-005 | AC-003 | API đăng ký trả về thành công và cấp token | P1 | Có | tests/api/register_api.spec.js |
 | TC-006 | AC-004 | API chấp thuận dữ liệu cá nhân bằng token vừa cấp | P2 | Có | tests/api/register_api.spec.js |
-| TC-026 | AC-001 | Xác nhận thành công khi bỏ trống số điện thoại (trường tùy chọn theo quyết định) | P2 | candidate | - |
-| TC-027 | AC-001 | Kiểm tra thất bại khi mật khẩu có 7 ký tự (dưới biên tối thiểu 8) | P2 | candidate | - |
-| TC-028 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ cái (thiếu chữ số) | P2 | candidate | - |
-| TC-029 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ số (thiếu chữ cái) | P2 | candidate | - |
-| TC-030 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | candidate | - |
+| TC-026 | AC-001 | Xác nhận thành công khi bỏ trống số điện thoại (trường tùy chọn theo quyết định) | P2 | Có | tests/e2e/desktop/xac-nhan-thanh-cong-khi-bo-trong-so-dien-thoai-truong-tuy-ch.spec.js |
+| TC-027 | AC-001 | Kiểm tra thất bại khi mật khẩu có 7 ký tự (dưới biên tối thiểu 8) | P2 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-co-7-ky-tu-duoi-bien-toi-thie.spec.js |
+| TC-028 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ cái (thiếu chữ số) | P2 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-chi-chua-chu-cai-thieu-chu-so.spec.js |
+| TC-029 | AC-001 | Kiểm tra thất bại khi mật khẩu chỉ chứa chữ số (thiếu chữ cái) | P2 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-chi-chua-chu-so-thieu-chu-cai.spec.js |
+| TC-030 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | Có | tests/e2e/desktop/kiem-thu-hanh-vi-theo-quyet-dinh-so-dien-thoai-o-form-dang-k.spec.js |
+| TC-032 | AC-001 | Kiểm tra xử lý khi đăng ký bằng email đã tồn tại | P0 | Có | tests/e2e/desktop/dang-ky-bang-email-da-ton-tai.spec.js |
+| TC-033 | AC-002 | Kiểm tra thất bại khi nhập sai mã OTP xác thực | P0 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-nhap-sai-ma-otp-xac-thuc.spec.js |
+| TC-034 | AC-001 | Kiểm tra báo lỗi khi nhập email sai định dạng | P1 | Có | tests/e2e/desktop/kiem-tra-bao-loi-khi-nhap-email-sai-dinh-dang.spec.js |
+| TC-039 | AC-002 | Bấm gửi lại mã OTP khi đăng ký bằng số điện thoại | P2 | Có | tests/e2e/desktop/gui-lai-ma-otp-dang-ky.spec.js |
 
 ## Chi tiết
 
@@ -81,7 +85,7 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 ### TC-026 — Xác nhận thành công khi bỏ trống số điện thoại (trường tùy chọn theo quyết định)
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Người dùng đang ở màn hình đăng ký / nhập liệu
 - **Dữ liệu kiểm thử:** Bỏ trống trường số điện thoại
 - > *Ghi chú nghiệp vụ:* Kiểm thử luồng rẽ nhánh từ quyết định Q-1: số điện thoại không bắt buộc.
@@ -95,7 +99,7 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 ### TC-027 — Kiểm tra thất bại khi mật khẩu có 7 ký tự (dưới biên tối thiểu 8)
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Người dùng đang ở màn hình nhập liệu
 - **Dữ liệu kiểm thử:** mật khẩu: chuỗi 7 ký tự
 - > *Ghi chú nghiệp vụ:* Phân tích biên dưới từ quyết định Q-2: yêu cầu tối thiểu 8 ký tự.
@@ -110,7 +114,7 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 ### TC-028 — Kiểm tra thất bại khi mật khẩu chỉ chứa chữ cái (thiếu chữ số)
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Người dùng đang ở màn hình nhập liệu
 - **Dữ liệu kiểm thử:** mật khẩu: 'Abcdefgh'
 - > *Ghi chú nghiệp vụ:* Quy tắc độ phức tạp từ Q-2: bắt buộc chứa cả chữ và số.
@@ -123,7 +127,7 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 ### TC-029 — Kiểm tra thất bại khi mật khẩu chỉ chứa chữ số (thiếu chữ cái)
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Người dùng đang ở màn hình nhập liệu
 - **Dữ liệu kiểm thử:** mật khẩu: '12345678'
 - > *Ghi chú nghiệp vụ:* Quy tắc độ phức tạp từ Q-2: bắt buộc chứa cả chữ và số.
@@ -136,7 +140,7 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 ### TC-030 — Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Môi trường sẵn sàng cho kịch bản
 - **Dữ liệu kiểm thử:** Dữ liệu theo nghiệp vụ đã chốt
 - > *Ghi chú nghiệp vụ:* Quyết định chốt từ Q-1: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắt buộc
@@ -144,3 +148,60 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
 | 1 | Thực hiện thao tác với điều kiện: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắ | Hệ thống phản hồi đúng theo quyết định đã chốt |
+
+
+### TC-032 — Kiểm tra xử lý khi đăng ký bằng email đã tồn tại
+
+- **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân vùng tương đương / Negative
+- **Automation:** Có
+- **Tiền điều kiện:** Người dùng đang ở màn hình nhập email đăng ký
+- **Dữ liệu kiểm thử:** Email đã tồn tại trong hệ thống
+- > *Ghi chú nghiệp vụ:* Kiểm thử nhánh negative phổ biến khi người dùng nhập email đã đăng ký.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Nhập email đã tồn tại trong hệ thống và bấm Tiếp tục | Hệ thống nhận diện email đã tồn tại |
+| 2 | Kiểm tra màn hình tiếp theo | Hệ thống không mở form tạo tài khoản mới mà chuyển sang đăng nhập hoặc báo email đã tồn tại |
+
+
+### TC-033 — Kiểm tra thất bại khi nhập sai mã OTP xác thực
+
+- **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Nhánh lỗi / Ràng buộc bảo mật
+- **Automation:** Có
+- **Tiền điều kiện:** Người dùng đang ở màn hình nhập mã xác thực OTP
+- **Dữ liệu kiểm thử:** Mã OTP không chính xác ('9999')
+- > *Ghi chú nghiệp vụ:* Ràng buộc bảo mật xác thực OTP khi đăng ký bằng số điện thoại.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Nhập mã OTP sai khác mã xác thực chuẩn | Hệ thống hiển thị thông báo lỗi mã xác thực không chính xác |
+| 2 | Kiểm tra trạng thái form | Hệ thống chặn người dùng tiến vào form tạo tài khoản |
+
+
+### TC-034 — Kiểm tra báo lỗi khi nhập email sai định dạng
+
+- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Kiểm thử giá trị biên / Validation
+- **Automation:** Có
+- **Tiền điều kiện:** Người dùng đang ở màn hình nhập email đăng ký
+- **Dữ liệu kiểm thử:** Chuỗi email không hợp lệ
+- > *Ghi chú nghiệp vụ:* Kiểm tra validation format email ở bước đầu luồng đăng ký.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Nhập chuỗi email không đúng định dạng và bấm Tiếp tục | Hệ thống hiển thị thông báo lỗi định dạng email |
+| 2 | Kiểm tra trạng thái điều hướng | Hệ thống chặn tiếp tục sang bước tạo tài khoản |
+
+
+### TC-039 — Bấm gửi lại mã OTP khi đăng ký bằng số điện thoại
+
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Luồng xử lý sự cố / Countdown
+- **Automation:** Có
+- **Tiền điều kiện:** Người dùng đang ở màn hình nhập mã xác thực OTP sau khi nhập số điện thoại đăng ký
+- **Dữ liệu kiểm thử:** Số điện thoại hợp lệ chưa từng đăng ký
+- > *Ghi chú nghiệp vụ:* Đảm bảo tính khả dụng khi người dùng không nhận được SMS lần đầu, có thể yêu cầu gửi lại OTP.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Nhập số điện thoại đăng ký và bấm Tiếp tục đến màn hình OTP | Màn hình xác thực OTP hiển thị trường nhập mã và nút gửi lại mã / đếm ngược thời gian |
+| 2 | Kiểm tra nút hoặc bộ đếm gửi lại OTP và bấm gửi lại (nếu sẵn sàng) | Hệ thống tiếp tục giữ trạng thái chờ OTP và kích hoạt chu kỳ gửi lại mã xác thực mới |
+
