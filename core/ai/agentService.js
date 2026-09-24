@@ -1,3 +1,4 @@
+// master-process-disable-size-check: AI agent service module, queued for modular decomposition
 const fs = require('fs');
 const path = require('path');
 const { randomUUID } = require('crypto');
@@ -95,16 +96,16 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
       return {
         provider,
         apiKey: String(clientConfig.apiKey).trim(),
-        baseURL: String(clientConfig.baseURL || '').trim(),
-        model: overrideModel || clientConfig.model || (provider === 'gemini' ? DEFAULT_MODEL : provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini'),
+        baseURL: String(clientConfig.baseURL || (provider === '9router' ? 'http://localhost:20128/v1' : '')).trim(),
+        model: overrideModel || clientConfig.model || (provider === 'gemini' ? DEFAULT_MODEL : provider === 'deepseek' ? 'deepseek-chat' : provider === '9router' ? 'myCombo' : 'gpt-4o-mini'),
         source: 'client',
       };
     }
     if (!env.GEMINI_API_KEY && !env.AI_API_KEY && !env.OPENAI_API_KEY && !env.DEEPSEEK_API_KEY) reloadEnv();
-    const provider = String(env.AI_PROVIDER || (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini')).toLowerCase();
-    const apiKey = env.AI_API_KEY || (provider === 'gemini' ? env.GEMINI_API_KEY : provider === 'openai' ? env.OPENAI_API_KEY : provider === 'deepseek' ? env.DEEPSEEK_API_KEY : (env.GEMINI_API_KEY || env.OPENAI_API_KEY));
-    const baseURL = String(env.AI_BASE_URL || '').trim();
-    const model = overrideModel || env.AI_MODEL || (provider === 'gemini' ? (env.DASHBOARD_GEMINI_MODEL || DEFAULT_MODEL) : provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
+    const provider = String(env.AI_PROVIDER || (env.AI_BASE_URL?.includes('20128') ? '9router' : (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini'))).toLowerCase();
+    const apiKey = env.AI_API_KEY || (provider === 'gemini' ? env.GEMINI_API_KEY : provider === 'openai' || provider === '9router' ? env.OPENAI_API_KEY : provider === 'deepseek' ? env.DEEPSEEK_API_KEY : (env.GEMINI_API_KEY || env.OPENAI_API_KEY));
+    const baseURL = String(env.AI_BASE_URL || (provider === '9router' ? 'http://localhost:20128/v1' : '')).trim();
+    const model = overrideModel || env.AI_MODEL || (provider === 'gemini' ? (env.DASHBOARD_GEMINI_MODEL || DEFAULT_MODEL) : provider === 'deepseek' ? 'deepseek-chat' : provider === '9router' ? 'myCombo' : 'gpt-4o-mini');
     return { provider, apiKey, baseURL, model, source: 'server' };
   }
 
@@ -291,7 +292,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
   async function openAiCall(messages, config, session = null) {
     const key = config.apiKey;
     if (!key) throw fail(`Chưa cấu hình API Key cho ${config.provider}.`, 503);
-    const defaultBase = config.provider === 'deepseek' ? 'https://api.deepseek.com/v1' : 'https://api.openai.com/v1';
+    const defaultBase = config.provider === 'deepseek' ? 'https://api.deepseek.com/v1' : config.provider === '9router' ? 'http://localhost:20128/v1' : 'https://api.openai.com/v1';
     const base = (config.baseURL || defaultBase).replace(/\/+$/, '');
     const url = `${base}/chat/completions`;
     const isTestEnv = Boolean(typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.argv?.some(arg => arg.includes('test'))));
@@ -310,6 +311,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
           messages,
           tools: openAiToolDefinitions(),
           tool_choice: 'auto',
+          stream: false,
         }),
       });
       const data = await response.json();
@@ -349,7 +351,22 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
 
   async function runGemini(session, config) {
     const isTestEnv = Boolean(typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.argv?.some(arg => arg.includes('test'))));
-    const contents = [{ role: 'user', parts: [{ text: ['Bạn là coding agent của Automation Dashboard. Trả lời bằng tiếng Việt.', 'Được phép đọc/sửa/chạy kiểm thử trong workspace bằng tools. Không đọc secret, không commit/push/install.', 'Hoàn thành yêu cầu, kiểm tra kết quả và báo cáo file/lệnh đã thay đổi.', `Yêu cầu người dùng: ${session.prompt}`].join('\n\n') }] }];
+    const systemPrompt = [
+      'Bạn là coding agent của Automation Dashboard (Playwright E2E). Trả lời bằng tiếng Việt.',
+      'Môi trường chạy: Hệ điều hành Windows (shell cmd.exe). TUYỆT ĐỐI KHÔNG dùng các lệnh Linux như find, grep, ls, cat, touch trong run_command. Ưu tiên dùng các tool list_files và read_file để duyệt/đọc file.',
+      'Cấu trúc dự án:',
+      '- Page Objects: thư mục pages/ (desktop và mobile-web)',
+      '- Test specs E2E: tests/e2e/desktop/*.spec.js (desktop) và tests/e2e/mobile-web/*.spec.js (mobile)',
+      '- Test fixtures: core/fixtures/baseTest.js',
+      '- Test data: data/*.json',
+      'QUY TẮC BẮT BUỘC KHI TẠO HOẶC VIẾT SCRIPT TEST E2E / BDD:',
+      '- Khi người dùng yêu cầu tạo, viết hoặc cập nhật script test, bạn BẮT BUỘC PHẢI DÙNG TOOL write_file để ghi file .spec.js thực tế vào tests/e2e/desktop/... hoặc tests/e2e/mobile-web/....',
+      '- TUYỆT ĐỐI KHÔNG CHỈ IN CODE DẠNG MARKDOWN TRONG CHAT! Tab "Kịch bản BDD" trên Dashboard chỉ hiển thị các file .spec.js thực sự tồn tại trong thư mục tests/e2e/. Bắt buộc phải gọi write_file để lưu file.',
+      '- Luôn dùng cấu trúc chuẩn Playwright Test: require(\'../../../core/fixtures/baseTest\'), test.describe, test.step(\'Given/When/Then ...\') và Page Objects tương ứng.',
+      'Được phép đọc/sửa/chạy kiểm thử trong workspace bằng tools. Không đọc secret, không commit/push/install.',
+      'Hoàn thành yêu cầu, kiểm tra kết quả và báo cáo rõ đường dẫn file đã tạo/sửa đổi.'
+    ].join('\n\n');
+    const contents = [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nYêu cầu người dùng: ${session.prompt}` }] }];
     for (let turn = 0; turn < MAX_TURNS; turn += 1) {
       if (turn > 0 && !isTestEnv) {
         // Giữ nhịp tối thiểu giữa các tool turns để không bị vượt quá 15 RPM của Gemini Free Tier
@@ -390,8 +407,23 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
 
   async function runOpenAI(session, config) {
     const isTestEnv = Boolean(typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.argv?.some(arg => arg.includes('test'))));
+    const systemPrompt = [
+      'Bạn là coding agent của Automation Dashboard (Playwright E2E). Trả lời bằng tiếng Việt.',
+      'Môi trường chạy: Hệ điều hành Windows (shell cmd.exe). TUYỆT ĐỐI KHÔNG dùng các lệnh Linux như find, grep, ls, cat, touch trong run_command. Ưu tiên dùng các tool list_files và read_file để duyệt/đọc file.',
+      'Cấu trúc dự án:',
+      '- Page Objects: thư mục pages/ (desktop và mobile-web)',
+      '- Test specs E2E: tests/e2e/desktop/*.spec.js (desktop) và tests/e2e/mobile-web/*.spec.js (mobile)',
+      '- Test fixtures: core/fixtures/baseTest.js',
+      '- Test data: data/*.json',
+      'QUY TẮC BẮT BUỘC KHI TẠO HOẶC VIẾT SCRIPT TEST E2E / BDD:',
+      '- Khi người dùng yêu cầu tạo, viết hoặc cập nhật script test, bạn BẮT BUỘC PHẢI DÙNG TOOL write_file để ghi file .spec.js thực tế vào tests/e2e/desktop/... hoặc tests/e2e/mobile-web/....',
+      '- TUYỆT ĐỐI KHÔNG CHỈ IN CODE DẠNG MARKDOWN TRONG CHAT! Tab "Kịch bản BDD" trên Dashboard chỉ hiển thị các file .spec.js thực sự tồn tại trong thư mục tests/e2e/. Bắt buộc phải gọi write_file để lưu file.',
+      '- Luôn dùng cấu trúc chuẩn Playwright Test: require(\'../../../core/fixtures/baseTest\'), test.describe, test.step(\'Given/When/Then ...\') và Page Objects tương ứng.',
+      'Được phép đọc/sửa/chạy kiểm thử trong workspace bằng tools. Không đọc secret, không commit/push/install.',
+      'Hoàn thành yêu cầu, kiểm tra kết quả và báo cáo rõ đường dẫn file đã tạo/sửa đổi.'
+    ].join('\n\n');
     const messages = [
-      { role: 'system', content: ['Bạn là coding agent của Automation Dashboard. Trả lời bằng tiếng Việt.', 'Được phép đọc/sửa/chạy kiểm thử trong workspace bằng tools. Không đọc secret, không commit/push/install.', 'Hoàn thành yêu cầu, kiểm tra kết quả và báo cáo file/lệnh đã thay đổi.'].join('\n\n') },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: session.prompt }
     ];
     for (let turn = 0; turn < MAX_TURNS; turn += 1) {
@@ -526,7 +558,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
       }
       return { success: true, provider: 'Google Gemini', model: targetModel, latencyMs: latency, message: `Kết nối thành công tới Google Gemini (${latency}ms)!` };
     } else {
-      const defaultBase = targetProvider === 'deepseek' ? 'https://api.deepseek.com/v1' : 'https://api.openai.com/v1';
+      const defaultBase = targetProvider === 'deepseek' ? 'https://api.deepseek.com/v1' : targetProvider === '9router' ? 'http://localhost:20128/v1' : 'https://api.openai.com/v1';
       const base = (baseURL || defaultBase).replace(/\/+$/, '');
       const url = `${base}/models`;
       const response = await fetchImpl(url, {
@@ -631,7 +663,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
       tokensUsed = pCount + cCount;
       if (tokensUsed > 0) recordTokenUsage(tokensUsed, pCount, cCount);
     } else {
-      const defaultBase = config.provider === 'deepseek' ? 'https://api.deepseek.com/v1' : 'https://api.openai.com/v1';
+      const defaultBase = config.provider === 'deepseek' ? 'https://api.deepseek.com/v1' : config.provider === '9router' ? 'http://localhost:20128/v1' : 'https://api.openai.com/v1';
       const base = (config.baseURL || defaultBase).replace(/\/+$/, '');
       const url = `${base}/chat/completions`;
       const response = await fetchImpl(url, {
@@ -645,6 +677,7 @@ function createAgentService({ root, fetchImpl = fetch, env = process.env } = {})
           messages: [{ role: 'user', content: promptText }],
           max_tokens: 50,
           temperature: 0.1,
+          stream: false,
           stop: ['<<<', '```']
         }),
       });

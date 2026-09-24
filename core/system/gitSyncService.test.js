@@ -26,6 +26,13 @@ test('gitSyncService security shield blocks sensitive and transient paths', () =
   assert.equal(isBlockedPath('tests/e2e/temp_verify.js'), true);
   assert.equal(isBlockedPath('tests/e2e/ai_quick.spec.js'), true);
   assert.equal(isBlockedPath('test_rec.js'), true);
+  assert.equal(isBlockedPath('test_output.txt'), true);
+  assert.equal(isBlockedPath('sub/test_output.txt'), true);
+  assert.equal(isBlockedPath('run_output.txt'), true);
+  assert.equal(isBlockedPath('tests/e2e/login-ai.spec.js'), true);
+  assert.equal(isBlockedPath('tests/e2e/payment_ai.spec.ts'), true);
+  assert.equal(isBlockedPath('tests/drafts/checkout.spec.js'), true);
+  assert.equal(isBlockedPath('tests/dashboard/test-results/video.webm'), true);
   assert.equal(isBlockedPath('tests/e2e/admin-add-company.spec.js'), false);
 });
 

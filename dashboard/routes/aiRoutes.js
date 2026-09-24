@@ -33,17 +33,42 @@ async function handleAiRoutes(request, response, url, context = {}) {
   if (request.method === 'GET' && url.pathname === '/api/ai/config') {
     const env = parseEnvFile(path.join(root, '.env'));
     const activeKey = env.AI_API_KEY || env.GEMINI_API_KEY || env.OPENAI_API_KEY || env.DEEPSEEK_API_KEY || '';
-    const provider = env.AI_PROVIDER || (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini');
-    const model = env.AI_MODEL || (provider === 'gemini' ? (env.DASHBOARD_GEMINI_MODEL || 'gemini-2.5-flash') : provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
+    const provider = env.AI_PROVIDER || (env.AI_BASE_URL && env.AI_BASE_URL.includes('20128') ? '9router' : (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini'));
+    const model = env.AI_MODEL || (provider === 'gemini' ? (env.DASHBOARD_GEMINI_MODEL || 'gemini-2.5-flash') : provider === 'deepseek' ? 'deepseek-chat' : provider === '9router' ? 'myCombo' : 'gpt-4o-mini');
     return sendJson(response, 200, {
-      provider, baseURL: env.AI_BASE_URL || '', model, hasKey: Boolean(activeKey),
+      provider, baseURL: env.AI_BASE_URL || (provider === '9router' ? 'http://localhost:20128/v1' : ''), model, hasKey: Boolean(activeKey),
       maskedKey: activeKey ? `${activeKey.slice(0, 6)}...${activeKey.slice(-4)}` : '',
     }) || true;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/ai/models') {
+    try {
+      const env = parseEnvFile(path.join(root, '.env'));
+      const qBase = url.searchParams.get('baseURL');
+      const qKey = url.searchParams.get('apiKey');
+      const base = (qBase || env.AI_BASE_URL || 'http://localhost:20128/v1').replace(/\/+$/, '');
+      const key = qKey || env.AI_API_KEY || env.OPENAI_API_KEY || 'sk-222d28244f5c9294-6676rz-8fcc38a6';
+      const resp = await fetch(`${base}/models`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${key}` },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (!resp.ok) return sendJson(response, 200, { success: false, error: `HTTP ${resp.status}`, models: [] }) || true;
+      const data = await resp.json();
+      const models = Array.isArray(data.data) ? data.data.map(m => m.id).filter(Boolean) : [];
+      return sendJson(response, 200, { success: true, count: models.length, models }) || true;
+    } catch (e) {
+      return sendJson(response, 200, { success: false, error: e.message, models: [] }) || true;
+    }
   }
 
   if ((request.method === 'PUT' || request.method === 'POST') && url.pathname === '/api/ai/config') {
     try {
       const body = await parseBody(request);
+      const env = parseEnvFile(path.join(root, '.env'));
+      const provider = body.provider || env.AI_PROVIDER || 'gemini';
+      const baseURL = body.baseURL !== undefined && body.baseURL !== '' ? body.baseURL : (env.AI_BASE_URL || (provider === '9router' ? 'http://localhost:20128/v1' : ''));
+      const model = body.model || env.AI_MODEL || '';
       const envPath = path.join(root, '.env');
       const current = parseEnvFile(envPath);
       if (body.provider) current.AI_PROVIDER = body.provider;
@@ -59,6 +84,7 @@ async function handleAiRoutes(request, response, url, context = {}) {
         if (body.provider === 'gemini') current.GEMINI_API_KEY = body.apiKey;
         else if (body.provider === 'openai') current.OPENAI_API_KEY = body.apiKey;
         else if (body.provider === 'deepseek') current.DEEPSEEK_API_KEY = body.apiKey;
+        else if (body.provider === '9router') current.OPENAI_API_KEY = body.apiKey;
       }
       writeEnvFile(envPath, current);
       try { require('dotenv').config({ path: envPath, override: true }); } catch {}
@@ -70,13 +96,17 @@ async function handleAiRoutes(request, response, url, context = {}) {
   if (request.method === 'POST' && url.pathname === '/api/ai/test-connection') {
     try {
       const body = await parseBody(request);
+      const env = parseEnvFile(path.join(root, '.env'));
+      const provider = body.provider || env.AI_PROVIDER || 'gemini';
+      const baseURL = body.baseURL !== undefined && body.baseURL !== '' ? body.baseURL : (env.AI_BASE_URL || '');
+      const model = body.model || env.AI_MODEL || '';
       let keyToTest = body.apiKey;
       if (!keyToTest || keyToTest.includes('...')) {
         const env = parseEnvFile(path.join(root, '.env'));
         keyToTest = env.AI_API_KEY || (body.provider === 'gemini' ? env.GEMINI_API_KEY : body.provider === 'openai' ? env.OPENAI_API_KEY : body.provider === 'deepseek' ? env.DEEPSEEK_API_KEY : env.GEMINI_API_KEY);
       }
       const result = await agentService.testConnection({
-        provider: body.provider, apiKey: keyToTest, baseURL: body.baseURL, model: body.model,
+        provider, apiKey: keyToTest, baseURL, model,
       });
       sendJson(response, 200, result);
     } catch (e) { sendJson(response, 400, { error: e.message || 'Kiểm tra kết nối thất bại.' }); }

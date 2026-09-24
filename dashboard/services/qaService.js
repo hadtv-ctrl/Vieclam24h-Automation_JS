@@ -17,6 +17,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { normalizeDashboardConfig, DEFAULT_CONFIG } = require('../../core/config/dashboardConfig');
 const { createBackup } = require('./resourceService');
+const { CONFLICT_KIND, parseConflictDetail } = require('./qaConflictService');
 
 // Nạp mềm: satellite chưa sync analyzer thì mục QA vẫn mở được và nói rõ vì sao trống.
 let analyzer = null;
@@ -111,7 +112,11 @@ function getTrace(root) {
   const bySeverity = { major: [], minor: [], info: [] };
   for (const f of report.findings) {
     const bucket = bySeverity[f.severity] || bySeverity.info;
-    bucket.push({ kind: f.kind, label: labelFor(f.kind), severity: f.severity, id: f.id, detail: f.detail });
+    const item = { kind: f.kind, label: labelFor(f.kind), severity: f.severity, id: f.id, detail: f.detail };
+    // Xung đột truy vết được bóc thành cấu trúc ngay tại server, để UI không phải tự đoán
+    // lại detail bằng một regex thứ hai (hai bản regex sớm muộn sẽ lệch nhau).
+    if (f.kind === CONFLICT_KIND) item.conflict = parseConflictDetail(f.detail);
+    bucket.push(item);
   }
 
   const tcByReq = new Map();
@@ -308,6 +313,7 @@ function saveDocument(root, payload = {}) {
 
   const backup = createBackup(entry.path, absPath, root);
   fs.writeFileSync(absPath, content, 'utf8');
+  invalidateQaSummaryCache();
 
   return {
     path: entry.path,
@@ -486,6 +492,7 @@ function getDecisions(root) {
         confirmedAt: (d.answer && d.answer.confirmedAt) || '',
       },
       answered: isAnswered(d),
+      source: d.source && typeof d.source === 'object' ? d.source : null,
     })),
   };
 }
@@ -545,8 +552,21 @@ function saveDecisionAnswer(root, payload = {}) {
 
   const backup = createBackup(relPath, absPath, root);
   fs.writeFileSync(absPath, serialized, 'utf8');
+  invalidateQaSummaryCache();
 
   return { backup, decision: { id: target.id, status: target.status, answer: target.answer, answered: isAnswered(target) } };
+}
+
+// In-Memory Cache cho QA Summary: Tránh gọi lại Playwright test discovery liên tục khi người dùng duyệt dashboard.
+let summaryCache = null;
+let summaryCacheTime = 0;
+let summaryCacheRoot = '';
+const SUMMARY_CACHE_TTL_MS = 60_000;
+
+function invalidateQaSummaryCache() {
+  summaryCache = null;
+  summaryCacheTime = 0;
+  summaryCacheRoot = '';
 }
 
 /**
@@ -554,7 +574,17 @@ function saveDecisionAnswer(root, payload = {}) {
  * Hỗ trợ Soft Fallback: nếu vệ tinh chưa có tools/qa, tự động tổng hợp từ getTrace(root),
  * không để sập route HTTP.
  */
-function getQaSummary(root) {
+function getQaSummary(root, options = {}) {
+  const force = Boolean(options && options.force);
+  if (
+    !force &&
+    summaryCache &&
+    summaryCacheRoot === root &&
+    Date.now() - summaryCacheTime < SUMMARY_CACHE_TTL_MS
+  ) {
+    return summaryCache;
+  }
+
   // 1. Thử gọi trực tiếp in-process
   try {
     const commandsPath = path.join(root, 'tools', 'qa', 'lib', 'commands.js');
@@ -564,17 +594,14 @@ function getQaSummary(root) {
       : (fs.existsSync(fallbackCommandsPath) ? fallbackCommandsPath : null);
 
     if (targetModule) {
-      try {
-        delete require.cache[require.resolve(targetModule)];
-        const dir = path.dirname(targetModule);
-        delete require.cache[require.resolve(path.join(dir, 'sources.js'))];
-        delete require.cache[require.resolve(path.join(dir, 'config.js'))];
-      } catch (_) {}
-
       // eslint-disable-next-line global-require, import/no-dynamic-require
       const qaCommands = require(targetModule);
       if (typeof qaCommands.summary === 'function') {
-        return qaCommands.summary(root, { json: true });
+        const res = qaCommands.summary(root, { json: true });
+        summaryCache = res;
+        summaryCacheTime = Date.now();
+        summaryCacheRoot = root;
+        return res;
       }
     }
   } catch (_) {
@@ -593,7 +620,11 @@ function getQaSummary(root) {
           windowsHide: true,
           timeout: 15000,
         });
-        return JSON.parse(out);
+        const parsed = JSON.parse(out);
+        summaryCache = parsed;
+        summaryCacheTime = Date.now();
+        summaryCacheRoot = root;
+        return parsed;
       }
     } catch (__) {
       // Tiếp tục fallback bên dưới
@@ -740,6 +771,10 @@ function runQaFix(root, options = {}) {
   const changes = res.changes || [];
   const reconciledLinks = changes.filter((c) => c.kind === 'chuan-hoa-duong-dan-spec').length;
   const registeredCandidates = changes.filter((c) => c.kind === 'them-test-case-chua-khai-bao').length;
+
+  if (!dryRun && changes.length > 0) {
+    invalidateQaSummaryCache();
+  }
 
   return {
     ok: true,
@@ -899,6 +934,8 @@ function generateScaffold(root, payload = {}) {
     acCount,
     force: Boolean(payload.force),
   });
+
+  invalidateQaSummaryCache();
 
   return {
     ok: true,
@@ -1063,6 +1100,8 @@ function deleteRequirement(root, { reqId, deleteTestCase = true, deleteSpec = fa
     }
   }
 
+  invalidateQaSummaryCache();
+
   return {
     success: true,
     reqId: cleanReqId,
@@ -1088,6 +1127,7 @@ module.exports = {
   isAnswered,
   FALLBACK_DIRS,
   getQaSummary,
+  invalidateQaSummaryCache,
   runQaFix,
   getScaffoldMeta,
   generateScaffold,

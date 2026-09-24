@@ -317,7 +317,7 @@ function inferWithHeuristic({ reqId, decidedQuestions, existingTcIds, existingTc
  * Động cơ AI: Gửi toàn văn ngữ cảnh cho LLM (Gemini / OpenAI / DeepSeek)
  */
 async function inferWithAi({ reqId, reqContent, decidedQuestions, existingTcIds, existingTcTitles, acs, clientConfig, root }) {
-  const env = parseEnvFile(path.join(root, '.env'));
+  const env = parseEnvFile(path.join(root || process.cwd(), '.env'));
   const apiKey = (clientConfig && clientConfig.apiKey) || env.AI_API_KEY || env.GEMINI_API_KEY || env.OPENAI_API_KEY || env.DEEPSEEK_API_KEY;
   const provider = (clientConfig && clientConfig.provider) || env.AI_PROVIDER || (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini');
   const baseURL = (clientConfig && clientConfig.baseURL) || env.AI_BASE_URL || '';
@@ -419,6 +419,7 @@ Hãy đề xuất các Test Case còn thiếu dựa trên các quyết định m
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.2,
+        stream: false,
       }),
     });
 
@@ -935,7 +936,7 @@ function extractHeuristicFromSpecText(rawContent, reqId, domain) {
  * Trích xuất qua AI Semantic Engine (Gemini / OpenAI / DeepSeek)
  */
 async function extractWithAi(root, rawContent, inputType, reqId, domain, payload = {}) {
-  const env = parseEnvFile(path.join(root, '.env'));
+  const env = parseEnvFile(path.join(root || process.cwd(), '.env'));
   const apiKey = env.AI_API_KEY || env.GEMINI_API_KEY || env.OPENAI_API_KEY || env.DEEPSEEK_API_KEY || '';
   if (!apiKey) return null;
 

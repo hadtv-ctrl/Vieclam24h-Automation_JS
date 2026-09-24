@@ -95,7 +95,10 @@
       <!-- Smart Action Bar -->
       <div class="qa-action-bar" id="qa-action-bar">
         <div class="qa-action-left">
-          <button type="button" class="btn-primary-sm qa-action-btn qa-btn-autofix" id="qa-btn-autofix" title="Quét và tự động chuẩn hóa đường dẫn spec lệch, đăng ký candidate mới">
+          <button type="button" class="btn-primary-sm qa-action-btn qa-btn-analyze-req" id="qa-btn-analyze-req" title="Dán nội dung requirement để phân tích số lượng test case, tác động hệ thống và câu hỏi làm rõ logic">
+            <i class="ph-bold ph-sparkle"></i> Phân tích Yêu cầu (AI Analyzer)
+          </button>
+          <button type="button" class="btn-secondary-sm qa-action-btn qa-btn-autofix" id="qa-btn-autofix" title="Quét và tự động chuẩn hóa đường dẫn spec lệch, đăng ký candidate mới">
             <i class="ph-bold ph-lightning"></i> Tự động chuẩn hoá (Auto-Fix)
           </button>
           <button type="button" class="btn-secondary-sm qa-action-btn qa-btn-scaffold" id="qa-btn-scaffold" title="Khởi tạo đồng bộ REQ, TC và Spec với mã kế tiếp hoặc từ Spec">
@@ -111,15 +114,19 @@
         <div class="script-subnav-tabs">
           <button type="button" class="view-subtab script-subtab active" data-qa-tab="docs" role="tab" aria-selected="true">
             <i class="ph-bold ph-files"></i> Tài liệu
-          </button>
-          <button type="button" class="view-subtab script-subtab" data-qa-tab="candidates" role="tab" aria-selected="false">
-            <i class="ph-bold ph-robot"></i> Ứng viên automation
+            <span class="qa-tab-badge qa-tab-badge-neutral" id="qa-tab-badge-docs" hidden></span>
           </button>
           <button type="button" class="view-subtab script-subtab" data-qa-tab="findings" role="tab" aria-selected="false">
             <i class="ph-bold ph-warning-octagon"></i> Vấn đề
+            <span class="qa-tab-badge qa-tab-badge-danger" id="qa-tab-badge-findings" hidden></span>
+          </button>
+          <button type="button" class="view-subtab script-subtab" data-qa-tab="candidates" role="tab" aria-selected="false">
+            <i class="ph-bold ph-robot"></i> Ứng viên automation
+            <span class="qa-tab-badge qa-tab-badge-neutral" id="qa-tab-badge-candidates" hidden></span>
           </button>
           <button type="button" class="view-subtab script-subtab" data-qa-tab="decisions" role="tab" aria-selected="false">
             <i class="ph-bold ph-gavel"></i> Quyết định
+            <span class="qa-tab-badge qa-tab-badge-neutral" id="qa-tab-badge-decisions" hidden></span>
           </button>
           <button type="button" class="view-subtab script-subtab" data-qa-tab="process-studio" role="tab" aria-selected="false">
             <i class="ph-bold ph-shield-check"></i> Master Process Studio
@@ -219,6 +226,27 @@
         </div>
       </section>
 
+      <!-- VẤN ĐỀ -->
+      <section class="panel qa-panel" id="qa-panel-findings" role="tabpanel" hidden>
+        <!-- Card Cảnh báo Lỗ hổng Sớm (Static Findings & Gaps Card) -->
+        <div class="qa-static-gaps-card" id="qa-static-gaps-card" hidden>
+          <div class="qa-static-gaps-head">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="ph-bold ph-shield-warning" style="color: var(--warning); font-size: 20px;"></i>
+              <strong>Cảnh Báo Lỗ Hổng Kỹ Thuật Sớm (Static Findings &amp; Gaps)</strong>
+            </div>
+            <span class="qa-badge qa-badge-warn" id="qa-static-gaps-badge">0 cảnh báo</span>
+          </div>
+          <p class="qa-static-gaps-desc">
+            Phát hiện sớm các lỗi tĩnh nguy hiểm: thiếu <code>await</code> trên locator matcher Playwright, thiếu test giá trị biên BVA, hoặc liên kết spec bị lệch.
+          </p>
+          <div class="qa-static-gaps-list" id="qa-static-gaps-list"></div>
+        </div>
+
+        <div class="qa-empty" id="qa-findings-empty" hidden></div>
+        <div class="qa-findings-groups" id="qa-findings-groups"></div>
+      </section>
+
       <!-- ỨNG VIÊN AUTOMATION -->
       <section class="panel qa-panel" id="qa-panel-candidates" role="tabpanel" hidden>
         <p class="subtitle qa-panel-hint">
@@ -288,27 +316,6 @@
         </div>
       </section>
 
-      <!-- VẤN ĐỀ -->
-      <section class="panel qa-panel" id="qa-panel-findings" role="tabpanel" hidden>
-        <!-- Card Cảnh báo Lỗ hổng Sớm (Static Findings & Gaps Card) -->
-        <div class="qa-static-gaps-card" id="qa-static-gaps-card" hidden>
-          <div class="qa-static-gaps-head">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <i class="ph-bold ph-shield-warning" style="color: var(--warning); font-size: 20px;"></i>
-              <strong>Cảnh Báo Lỗ Hổng Kỹ Thuật Sớm (Static Findings &amp; Gaps)</strong>
-            </div>
-            <span class="qa-badge qa-badge-warn" id="qa-static-gaps-badge">0 cảnh báo</span>
-          </div>
-          <p class="qa-static-gaps-desc">
-            Phát hiện sớm các lỗi tĩnh nguy hiểm: thiếu <code>await</code> trên locator matcher Playwright, thiếu test giá trị biên BVA, hoặc liên kết spec bị lệch.
-          </p>
-          <div class="qa-static-gaps-list" id="qa-static-gaps-list"></div>
-        </div>
-
-        <div class="qa-empty" id="qa-findings-empty" hidden></div>
-        <div class="qa-findings-groups" id="qa-findings-groups"></div>
-      </section>
-
       <!-- QUYẾT ĐỊNH -->
       <section class="panel qa-panel" id="qa-panel-decisions" role="tabpanel" hidden>
         <div class="qa-empty" id="qa-decisions-empty" hidden></div>
@@ -337,7 +344,7 @@
           <!-- 4 Badges Row -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
             <!-- Badge 1: Policy Status -->
-            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+            <div class="qa-studio-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
               <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
                 <i class="ph ph-file-text"></i> Policy Status
               </span>
@@ -345,15 +352,15 @@
             </div>
 
             <!-- Badge 2: Modularity Health -->
-            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+            <div class="qa-studio-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
               <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
                 <i class="ph ph-check-circle"></i> Modularity Health
               </span>
-              <strong id="qa-mp-badge-modularity" style="font-size: 13px; color: var(--success, #10b981);">Đang tải...</strong>
+              <strong id="qa-mp-badge-modularity" style="font-size: 13px; color: var(--success);">Đang tải...</strong>
             </div>
 
             <!-- Badge 3: Learning Status -->
-            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+            <div class="qa-studio-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
               <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
                 <i class="ph ph-brain"></i> Learning Status
               </span>
@@ -361,11 +368,11 @@
             </div>
 
             <!-- Badge 4: Freeze Status -->
-            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+            <div class="qa-studio-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
               <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
                 <i class="ph ph-hand-palm"></i> Freeze Circuit Breaker
               </span>
-              <strong id="qa-mp-badge-freeze" style="font-size: 13px; color: var(--success, #10b981);">Đang tải...</strong>
+              <strong id="qa-mp-badge-freeze" style="font-size: 13px; color: var(--success);">Đang tải...</strong>
             </div>
           </div>
 
@@ -715,6 +722,298 @@ test.describe('Đổi mật khẩu @account', () => {
           <button type="button" class="btn-danger-sm" id="qa-delete-submit-btn" disabled style="background: var(--danger, #ef4444); color: #fff; border: none; padding: 7px 16px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: not-allowed; display: flex; align-items: center; gap: 6px; opacity: 0.5;">
             <i class="ph-bold ph-trash"></i> <span>Xác nhận xóa vĩnh viễn</span>
           </button>
+        </div>
+      </dialog>
+
+      <!-- MODAL PHÂN TÍCH REQUIREMENT & ĐÁNH GIÁ TÁC ĐỘNG QA (REQUIREMENT ANALYZER) -->
+      <dialog class="app-modal qa-req-analyzer-modal" id="qa-req-analyzer-modal" style="max-width: 1040px; width: 95vw; max-height: 92vh; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 24px 48px rgba(0,0,0,0.35); padding: 0; overflow: hidden;">
+        <div class="app-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--surface-2);">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(139, 92, 246, 0.15); display: flex; align-items: center; justify-content: center; color: #8b5cf6;">
+              <i class="ph-bold ph-sparkle" style="font-size: 20px;"></i>
+            </div>
+            <div>
+              <h3 class="app-modal-title" style="margin: 0; font-size: 15px; font-weight: 600;">Phân Tích Yêu Cầu &amp; Đánh Giá Tác Động QA</h3>
+              <p class="subtitle" style="margin: 0; font-size: 11.5px; color: var(--muted);">Dán văn bản requirement để ước tính test case, phân tích tác động hệ thống và bộ câu hỏi làm rõ logic</p>
+            </div>
+          </div>
+          <button type="button" class="btn-icon-subtle" id="qa-req-analyzer-close" style="border: none; background: transparent; font-size: 18px; cursor: pointer; color: var(--muted);" title="Đóng">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+        <div class="qa-modal-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; max-height: calc(92vh - 130px); overflow-y: auto;">
+          <!-- 1. INPUT SECTION -->
+          <div id="qa-req-analyzer-input-section" style="display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label for="qa-req-analyzer-text" style="font-size: 12.5px; font-weight: 600; color: var(--text);">
+                  <i class="ph-bold ph-clipboard-text"></i> Nội dung Requirement / User Story / Change Request (Văn bản thô):
+                </label>
+                <button type="button" class="btn-text-sm" id="qa-req-analyzer-sample-btn" style="font-size: 11.5px; color: var(--accent); background: transparent; border: none; cursor: pointer;">
+                  <i class="ph-bold ph-lightbulb"></i> Nạp requirement mẫu
+                </button>
+              </div>
+              <textarea id="qa-req-analyzer-text" rows="9" class="input-sm" style="width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; line-height: 1.5; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); resize: vertical;" placeholder="Dán nội dung requirement từ Jira, Confluence, Slack, PRD hoặc Change Request vào đây...&#10;&#10;Ví dụ:&#10;Hồ sơ giáo viên có thêm trường 'Trung tâm sát hạch' đứng cạnh 'Trung tâm đang công tác'.&#10;- Bắt buộc cả khi tạo mới và khi cập nhật (hồ sơ cũ chưa có sẽ bị chặn lưu).&#10;- Khu vực đào tạo (phường/xã) nâng hạn mức tối đa từ 6 lên 10 mục.&#10;- Nút 'Dùng lại trung tâm đang công tác' tự copy và biến mất khi 2 ô trùng nhau."></textarea>
+            </div>
+
+            <!-- Controls bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-2); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
+                <span style="font-size: 12px; font-weight: 600; color: var(--muted);">Động cơ:</span>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer;">
+                  <input type="radio" name="qa-req-mode" value="ai" checked style="accent-color: #8b5cf6;">
+                  <span>AI Semantic Engine (Chuyên sâu)</span>
+                  <span class="qa-req-ai-badge" id="qa-req-analyzer-ai-badge" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 600;">Đang kiểm tra AI...</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer;">
+                  <input type="radio" name="qa-req-mode" value="heuristic" style="accent-color: #8b5cf6;">
+                  <span>Quy chuẩn Heuristic / BVA (Offline)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--muted);">
+                  <input type="checkbox" id="qa-req-analyzer-scan-ctx" checked style="accent-color: var(--accent);">
+                  <span>Đối chiếu test-cases &amp; specs hiện có trong repo</span>
+                </label>
+              </div>
+              <button type="button" class="btn-primary-sm" id="qa-req-analyzer-btn-submit" style="background: #8b5cf6; border-color: #7c3aed;">
+                <i class="ph-bold ph-sparkle"></i> Bắt đầu Phân tích
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. LOADING STATE -->
+          <div id="qa-req-analyzer-loading" style="display: none; padding: 48px 20px; text-align: center;">
+            <div class="spinner" style="margin: 0 auto 14px; width: 32px; height: 32px; border: 3px solid var(--line); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <p style="font-size: 13.5px; font-weight: 600; color: var(--text); margin: 0 0 6px;">Đang phân tích Requirement &amp; Lập Ma Trận Tác Động QA...</p>
+            <p style="font-size: 12px; color: var(--muted); margin: 0;">Đối chiếu logic, suy luận ca kiểm thử biên (BVA), rà soát test cases có sẵn và xây dựng bộ câu hỏi phản biện.</p>
+          </div>
+
+          <!-- 3. RESULTS SECTION -->
+          <div id="qa-req-analyzer-results-section" style="display: none; flex-direction: column; gap: 14px;">
+            <!-- Scorecard summary row -->
+            <div class="qa-req-scorecard-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+              <div style="background: var(--surface-2); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line);">
+                <small style="display: block; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase;">Test Cases Đề Xuất</small>
+                <strong style="font-size: 18px; color: var(--accent);" id="qa-req-stat-tc">0 TCs</strong>
+              </div>
+              <div style="background: var(--surface-2); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line);">
+                <small style="display: block; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase;">Mức Rủi Ro Hệ Thống</small>
+                <strong style="font-size: 16px; color: #f59e0b;" id="qa-req-stat-risk">Trung bình</strong>
+              </div>
+              <div style="background: var(--surface-2); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line);">
+                <small style="display: block; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase;">TC Có Sẵn Cần Sửa</small>
+                <strong style="font-size: 18px; color: #ef4444;" id="qa-req-stat-impacted">0 TC</strong>
+              </div>
+              <div style="background: var(--surface-2); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line);">
+                <small style="display: block; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase;">Câu Hỏi Logic PO/BA</small>
+                <strong style="font-size: 18px; color: #10b981;" id="qa-req-stat-logic">0</strong>
+              </div>
+              <div style="background: var(--surface-2); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <small style="display: block; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase;">Câu Hỏi Phản Biện QA</small>
+                  <strong style="font-size: 18px; color: #8b5cf6;" id="qa-req-stat-qa">0</strong>
+                </div>
+                <button type="button" class="btn-secondary-sm" id="qa-req-analyzer-btn-reinput" title="Nhập lại hoặc bổ sung requirement" style="font-size: 11.5px; padding: 4px 8px;">
+                  <i class="ph-bold ph-pencil-simple"></i> Sửa lại
+                </button>
+              </div>
+            </div>
+
+            <!-- Fallback / Error notice if any -->
+            <div id="qa-req-fallback-alert" style="display: none; padding: 8px 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; font-size: 12px; color: #f59e0b;">
+              <i class="ph-bold ph-warning"></i> <span id="qa-req-fallback-text"></span>
+            </div>
+
+            <!-- Results Subnav Tabs -->
+            <div class="qa-req-tabs" style="display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 2px;">
+              <button type="button" class="qa-req-tab active" data-tab="tc" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid #8b5cf6; color: var(--text); cursor: pointer;">
+                <i class="ph-bold ph-list-checks"></i> Test Cases Đề Xuất (<span id="qa-req-tab-tc-count">0</span>)
+              </button>
+              <button type="button" class="qa-req-tab" data-tab="impact" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;">
+                <i class="ph-bold ph-git-diff"></i> Tác Động Hệ Thống &amp; Test Cases Cũ (<span id="qa-req-tab-impact-count">0</span>)
+              </button>
+              <button type="button" class="qa-req-tab" data-tab="logic" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;">
+                <i class="ph-bold ph-chat-centered-dots"></i> Câu Hỏi Làm Rõ Logic PO/BA (<span id="qa-req-tab-logic-count">0</span>)
+              </button>
+              <button type="button" class="qa-req-tab" data-tab="qa" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;">
+                <i class="ph-bold ph-shield-warning"></i> Bộ Câu Hỏi Phản Biện Của Team QA (<span id="qa-req-tab-qa-count">0</span>)
+              </button>
+            </div>
+
+            <!-- Panel 1: Test Cases -->
+            <div class="qa-req-panel" id="qa-req-panel-tc" style="display: flex; flex-direction: column; gap: 10px;">
+              <div id="qa-req-tc-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+
+            <!-- Panel 2: System Impact & Existing TCs -->
+            <div class="qa-req-panel" id="qa-req-panel-impact" style="display: none; flex-direction: column; gap: 14px;">
+              <!-- System impact overview -->
+              <div style="background: var(--surface-2); padding: 14px; border-radius: 8px; border: 1px solid var(--line);">
+                <h4 style="margin: 0 0 8px; font-size: 13.5px; font-weight: 600;"><i class="ph-bold ph-cpu"></i> Đánh Giá Tác Động Hệ Thống</h4>
+                <p style="margin: 0 0 10px; font-size: 12.5px; line-height: 1.5;" id="qa-req-impact-summary"></p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 10px;">
+                  <div>
+                    <strong style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px;">BỀ MẶT / MÀN HÌNH ẢNH HƯỞNG:</strong>
+                    <ul id="qa-req-impact-surfaces" style="margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.5;"></ul>
+                  </div>
+                  <div>
+                    <strong style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px;">API ENDPOINTS LIÊN QUAN:</strong>
+                    <ul id="qa-req-impact-apis" style="margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.5; font-family: var(--font-mono, monospace);"></ul>
+                  </div>
+                  <div>
+                    <strong style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px;">DỮ LIỆU / SCHEMA THAY ĐỔI:</strong>
+                    <ul id="qa-req-impact-schema" style="margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.5;"></ul>
+                  </div>
+                  <div>
+                    <strong style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px;">QUY TẮC NGHIỆP VỤ THAY ĐỔI:</strong>
+                    <ul id="qa-req-impact-rules" style="margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.5;"></ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Existing test cases impact -->
+              <div style="background: var(--surface-2); padding: 14px; border-radius: 8px; border: 1px solid var(--line);">
+                <h4 style="margin: 0 0 10px; font-size: 13.5px; font-weight: 600;"><i class="ph-bold ph-warning-octagon"></i> Các Test Case / Specs Hiện Có Trong Repo Cần Sửa Đổi</h4>
+                <div id="qa-req-existing-impact-container" style="overflow-x: auto;">
+                  <table class="qa-table" style="width: 100%; font-size: 12px;">
+                    <thead>
+                      <tr>
+                        <th style="width: 25%;">Kịch bản / Spec File</th>
+                        <th style="width: 25%;">Hành vi Hiện Tại</th>
+                        <th style="width: 30%;">Thay Đổi Cần Làm</th>
+                        <th style="width: 20%;">Mức Độ / Lý Do</th>
+                      </tr>
+                    </thead>
+                    <tbody id="qa-req-existing-impact-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel 3: Logic Clarifications -->
+            <div class="qa-req-panel" id="qa-req-panel-logic" style="display: none; flex-direction: column; gap: 10px;">
+              <div id="qa-req-logic-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+
+            <!-- Panel 4: QA Team Inquiries -->
+            <div class="qa-req-panel" id="qa-req-panel-qa" style="display: none; flex-direction: column; gap: 10px;">
+              <div id="qa-req-qa-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app-modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--surface-2);">
+          <div>
+            <button type="button" class="btn-secondary-sm" id="qa-req-analyzer-btn-copy" style="display: none;">
+              <i class="ph-bold ph-copy"></i> Sao chép Báo cáo (Markdown)
+            </button>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-secondary-sm" id="qa-req-analyzer-btn-cancel">Đóng</button>
+            <button type="button" class="btn-primary-sm" id="qa-req-analyzer-btn-scaffold" style="display: none; background: #10b981; border-color: #059669;">
+              <i class="ph-bold ph-file-plus"></i> Tạo REQ &amp; Test Cases vào Repo
+            </button>
+          </div>
+
+        </div>
+      </dialog>
+
+      <!-- MODAL AI FIX CHO STATIC FINDINGS & GAPS -->
+      <dialog class="app-modal qa-finding-fix-modal" id="qa-finding-fix-modal" style="max-width: 960px; width: 92vw; max-height: 90vh; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 24px 48px rgba(0,0,0,0.35); padding: 0; overflow: hidden;">
+        <div class="app-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--surface-2);">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(139, 92, 246, 0.15); display: flex; align-items: center; justify-content: center; color: #8b5cf6;">
+              <i class="ph-bold ph-sparkle" style="font-size: 20px;"></i>
+            </div>
+            <div>
+              <h3 class="app-modal-title" style="margin: 0; font-size: 15px; font-weight: 600;">AI Copilot: Khắc Phục Lỗ Hổng Kỹ Thuật (Static Finding Fixer)</h3>
+              <p class="subtitle" style="margin: 0; font-size: 11.5px; color: var(--muted);">Chẩn đoán nguyên nhân gốc rễ, đối chiếu mã nguồn và tự động sinh bản vá Playwright/BDD</p>
+            </div>
+          </div>
+          <button type="button" class="btn-icon-subtle" id="qa-finding-fix-close" style="border: none; background: transparent; font-size: 18px; cursor: pointer; color: var(--muted);" title="Đóng">
+            <i class="ph ph-x"></i>
+          </button>
+        </div>
+
+        <div class="qa-modal-body" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; max-height: calc(90vh - 130px); overflow-y: auto;">
+          <!-- 1. ISSUE SUMMARY BANNER -->
+          <div class="qa-fix-issue-banner" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="qa-badge qa-badge-warn" id="qa-fix-issue-severity">WARNING</span>
+                <strong id="qa-fix-issue-kind" style="font-size: 13px;">...</strong>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="qa-gap-location" id="qa-fix-issue-where">...</span>
+                <span class="qa-req-ai-badge" id="qa-fix-ai-engine-badge" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(139, 92, 246, 0.15); color: #8b5cf6; font-weight: 600;">Đang kiểm tra AI...</span>
+              </div>
+            </div>
+            <p id="qa-fix-issue-message" style="margin: 0; font-size: 12.5px; color: var(--text); line-height: 1.4;"></p>
+          </div>
+
+          <!-- 2. LOADING STATE -->
+          <div id="qa-finding-fix-loading" style="display: none; padding: 40px 20px; text-align: center;">
+            <div class="spinner" style="margin: 0 auto 12px; width: 30px; height: 30px; border: 3px solid var(--line); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <p style="font-size: 13px; font-weight: 600; color: var(--text); margin: 0 0 4px;">AI đang đọc ngữ cảnh file và thiết kế bản vá...</p>
+            <p style="font-size: 11.5px; color: var(--muted); margin: 0;">Kiểm tra cú pháp Playwright, quy chuẩn định danh và đối chiếu an toàn.</p>
+          </div>
+
+          <!-- 3. ERROR STATE -->
+          <div id="qa-finding-fix-error" style="display: none; padding: 14px 16px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; font-size: 12.5px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 4px;">
+              <i class="ph-bold ph-warning-circle"></i> Không thể phân tích lỗi
+            </div>
+            <p id="qa-finding-fix-error-msg" style="margin: 0;"></p>
+          </div>
+
+          <!-- 4. DIAGNOSIS & PATCH RESULTS -->
+          <div id="qa-finding-fix-results" style="display: none; flex-direction: column; gap: 12px;">
+            <!-- Root Cause Box -->
+            <div style="background: var(--surface-2); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line);">
+              <h4 style="margin: 0 0 6px; font-size: 12.5px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 6px;">
+                <i class="ph-bold ph-lightbulb"></i> Phân Tích Nguyên Nhân &amp; Rủi Ro Kỹ Thuật
+              </h4>
+              <p id="qa-fix-root-cause" style="margin: 0; font-size: 12px; line-height: 1.5; color: var(--text);"></p>
+            </div>
+
+            <!-- Technical Advice Box -->
+            <div style="background: var(--surface-2); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line);">
+              <h4 style="margin: 0 0 6px; font-size: 12.5px; font-weight: 600; color: #10b981; display: flex; align-items: center; gap: 6px;">
+                <i class="ph-bold ph-check-circle"></i> Giải Pháp Khắc Phục Đề Xuất
+              </h4>
+              <p id="qa-fix-explanation" style="margin: 0; font-size: 12px; line-height: 1.5; color: var(--text);"></p>
+            </div>
+
+            <!-- Visual Code Diff Viewer -->
+            <div style="background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line); overflow: hidden;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: rgba(0,0,0,0.15); border-bottom: 1px solid var(--line);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <i class="ph-bold ph-git-diff" style="color: var(--accent);"></i>
+                  <span id="qa-fix-diff-file" style="font-family: monospace; font-size: 12px; font-weight: 600;">...</span>
+                  <span class="qa-badge qa-badge-info" id="qa-fix-patch-type">replace_lines</span>
+                </div>
+                <button type="button" class="btn-text-sm" id="qa-finding-fix-copy-snippet" style="font-size: 11px; color: var(--accent); cursor: pointer; background: transparent; border: none;">
+                  <i class="ph-bold ph-copy"></i> Sao chép đoạn mã mới
+                </button>
+              </div>
+
+              <!-- Diff lines content -->
+              <div class="qa-diff-viewer" id="qa-fix-diff-viewer" style="padding: 10px 14px; font-family: monospace; font-size: 11.5px; line-height: 1.6; max-height: 260px; overflow-y: auto; background: var(--surface);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app-modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--surface-2);">
+          <div style="font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px;">
+            <i class="ph-bold ph-shield-check" style="color: #10b981;"></i>
+            <span>Tự động sao lưu file vào <code>.dashboard-backups/</code> trước khi ghi đè.</span>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-secondary-sm" id="qa-finding-fix-btn-close">Đóng</button>
+            <button type="button" class="btn-primary-sm" id="qa-finding-fix-btn-apply" style="background: #8b5cf6; border-color: #7c3aed;">
+              <i class="ph-bold ph-lightning"></i> Áp dụng bản vá ngay
+            </button>
+          </div>
         </div>
       </dialog>
 

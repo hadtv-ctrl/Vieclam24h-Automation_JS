@@ -14,6 +14,9 @@ import { eventBus } from '../../core/eventBus.js';
 import { renderMarkdown, parseFrontMatter } from './markdownView.js';
 import { parseOpenQuestions, applyAnswers } from './openQuestions.js';
 import { ProcessStudioHelper } from './processStudioHelper.js';
+import { ReqAnalyzerHelper } from './reqAnalyzerHelper.js';
+import { FindingFixerHelper } from './findingFixerHelper.js';
+import { ConflictStudioHelper } from './conflictStudioHelper.js';
 
 const PRIORITY_ORDER = { P0: 0, P1: 1, P2: 2, P3: 3 };
 // Chỉ 4 lớp ưu tiên này có rule trong qa.css. Ghép chuỗi tự do sẽ sinh ra lớp chết
@@ -56,6 +59,9 @@ export class QaSlice {
     this.pickedIds = new Set();
     this.draftText = '';
     this._lastAuthor = '';
+    this.reqAnalyzer = new ReqAnalyzerHelper(this);
+    this.findingFixer = new FindingFixerHelper(this);
+    this.conflictStudio = new ConflictStudioHelper(this);
   }
 
   async mount() {
@@ -67,6 +73,15 @@ export class QaSlice {
   unmount() {
     this._mounted = false;
     this._flushRenderDisposers();
+    if (this.reqAnalyzer) {
+      this.reqAnalyzer.destroy();
+    }
+    if (this.findingFixer) {
+      this.findingFixer.destroy();
+    }
+    if (this.conflictStudio) {
+      this.conflictStudio.destroy();
+    }
     this._disposers.forEach((d) => { try { d(); } catch (_) {} });
     this._disposers = [];
   }
@@ -227,6 +242,16 @@ export class QaSlice {
 
     this.processStudio = new ProcessStudioHelper(this);
     this.processStudio.bindEvents(root, this._disposers);
+
+    if (this.reqAnalyzer) {
+      this.reqAnalyzer.init(root);
+      this._disposers.push(() => this.reqAnalyzer.destroy());
+    }
+
+    if (this.findingFixer) {
+      this.findingFixer.init(root);
+      this._disposers.push(() => this.findingFixer.destroy());
+    }
   }
 
   switchTab(tab) {
@@ -268,12 +293,12 @@ export class QaSlice {
     const root = this._root();
     if (!root) return;
 
-    const [trace, candidates, decisions, documents, summary] = await Promise.allSettled([
+    // Fast-path: nạp song song 4 endpoint thiết yếu (~200ms) để render UI ngay lập tức
+    const [trace, candidates, decisions, documents] = await Promise.allSettled([
       apiClient.get('/api/qa/trace'),
       apiClient.get('/api/qa/candidates', { limit: 50 }),
       apiClient.get('/api/qa/decisions'),
       apiClient.get('/api/qa/documents'),
-      apiClient.get('/api/qa/summary'),
     ]);
 
     if (trace.status !== 'fulfilled') {
@@ -285,7 +310,6 @@ export class QaSlice {
     }
 
     this.trace = trace.value;
-    this.summary = summary.status === 'fulfilled' ? summary.value : null;
     this.candidates = candidates.status === 'fulfilled' && Array.isArray(candidates.value.candidates)
       ? candidates.value.candidates
       : [];
@@ -298,11 +322,30 @@ export class QaSlice {
       candidates.status === 'rejected' ? { part: 'ứng viên automation', reason: candidates.reason } : null,
       decisions.status === 'rejected' ? { part: 'sổ quyết định', reason: decisions.reason } : null,
       documents.status === 'rejected' ? { part: 'danh sách tài liệu', reason: documents.reason } : null,
-      summary.status === 'rejected' ? { part: 'bộ chỉ số QA Core', reason: summary.reason } : null,
     ].filter(Boolean);
 
+    // Render ngay toàn bộ tài liệu, test cases và khung chỉ số tức thì
     this.renderAll();
-    if (announce) this.notify('Đã làm mới dữ liệu QA.');
+
+    // Chạy ngầm summary để nạp chỉ số chuyên sâu và scorecard (không chặn mở tab)
+    const summaryUrl = announce ? '/api/qa/summary?force=true' : '/api/qa/summary';
+    apiClient.get(summaryUrl).then((summaryRes) => {
+      if (!this._mounted) return;
+      this.summary = summaryRes;
+      this._renderStats();
+      this._renderExecutiveScorecard();
+      this._renderTabBadges();
+      this.renderFindings();
+      if (announce) this.notify('Đã làm mới dữ liệu QA.');
+    }).catch((err) => {
+      if (!this._mounted) return;
+      this._degraded.push({ part: 'bộ chỉ số QA Core', reason: err });
+      if (announce) this.notify('Đã làm mới dữ liệu QA (chỉ số chuyên sâu chưa hoàn tất).');
+    });
+
+    if (announce && !this.summary) {
+      this.notify('Đã cập nhật danh sách tài liệu. Đang tổng hợp chỉ số chuyên sâu...');
+    }
   }
 
   /**
@@ -328,6 +371,7 @@ export class QaSlice {
     this._renderSourceBar();
     this._renderStats();
     this._renderExecutiveScorecard();
+    this._renderTabBadges();
     this.renderDocs();
     this.renderCandidates();
     this.renderFindings();
@@ -448,18 +492,44 @@ export class QaSlice {
     set('qa-stat-ac', c.acceptanceCriteria);
     set('qa-stat-tc', c.testCases);
     set('qa-stat-auto', this.trace.automatedCount);
-    set('qa-stat-major', this.trace.majorCount);
+    const summaryMajor = (this.summary && Array.isArray(this.summary.findings))
+      ? this.summary.findings.filter((f) => f.severity === 'blocker' || f.severity === 'major').length
+      : 0;
+    set('qa-stat-major', (this.trace.majorCount || 0) + summaryMajor);
     box.hidden = false;
   }
 
   _renderExecutiveScorecard() {
     const root = this._root();
     if (!root) return;
-    const summary = this.summary;
+    let summary = this.summary;
+    if (!summary && this.trace) {
+      const c = this.trace.counts || {};
+      const autoCount = this.trace.automatedCount || 0;
+      const acCount = c.acceptanceCriteria || 0;
+      const covPercent = acCount > 0 ? Number(((autoCount / acCount) * 100).toFixed(1)) : 0;
+      summary = {
+        systemHealth: this.trace.majorCount > 0 ? 'WARNING' : 'HEALTHY',
+        health: { totalFindings: this.trace.majorCount || 0 },
+        metrics: {
+          coveragePercent: covPercent,
+          coveredAcCount: autoCount,
+          acceptanceCriteria: acCount,
+          automatedTests: autoCount,
+          candidateTests: this.candidates ? this.candidates.length : 0,
+          testCases: c.testCases || 0,
+        },
+        boundary: { status: 'ALIGNED', shipCount: '—', seedCount: '—', ownCount: '—' },
+      };
+    }
     if (!summary) return;
 
     // 1. Health Badge
-    const healthStatus = summary.systemHealth || summary.health?.status || 'HEALTHY';
+    let healthStatus = summary.systemHealth || summary.health?.status || 'HEALTHY';
+    const traceMajors = (this.trace?.findings?.major || []).length || (this.trace?.majorCount || 0);
+    if (healthStatus === 'HEALTHY' && traceMajors > 0) {
+      healthStatus = 'WARNING';
+    }
     const badge = root.querySelector('#qa-health-badge');
     const icon = root.querySelector('#qa-health-icon');
     const statusText = root.querySelector('#qa-health-status');
@@ -478,7 +548,11 @@ export class QaSlice {
     }
     if (statusText) statusText.textContent = healthStatus;
     if (findingsText) {
-      const count = summary.health?.totalFindings ?? (summary.findings || []).length;
+      const summaryCount = summary.health?.totalFindings ?? (summary.findings || []).length;
+      const traceCount = this.trace && this.trace.findings
+        ? ((this.trace.findings.major || []).length + (this.trace.findings.minor || []).length + (this.trace.findings.info || []).length)
+        : (this.trace?.majorCount || 0);
+      const count = summaryCount + traceCount;
       findingsText.textContent = `${count} phát hiện`;
     }
 
@@ -524,6 +598,92 @@ export class QaSlice {
     if (shieldStatus) shieldStatus.textContent = bStatus;
     if (shieldDetails) {
       shieldDetails.textContent = `Ship: ${b.shipCount || 0} · Seed: ${b.seedCount || 0} · Own: ${b.ownCount || 0}`;
+    }
+  }
+
+  _renderTabBadges() {
+    const root = this._root();
+    if (!root) return;
+
+    // 1. Badge Tài liệu: tổng số tài liệu hiện có
+    const docsBadge = root.querySelector('#qa-tab-badge-docs');
+    if (docsBadge) {
+      const docCount = this.documents ? this.documents.length : 0;
+      if (docCount > 0) {
+        docsBadge.textContent = String(docCount);
+        docsBadge.className = 'qa-tab-badge qa-tab-badge-neutral';
+        docsBadge.title = `${docCount} tài liệu`;
+        docsBadge.hidden = false;
+      } else {
+        docsBadge.hidden = true;
+      }
+    }
+
+    // 2. Badge Vấn đề: số lỗi/cảnh báo từ cả static analysis (summary) lẫn ma trận truy vết (trace)
+    const findingsBadge = root.querySelector('#qa-tab-badge-findings');
+    if (findingsBadge) {
+      let blockerCount = 0;
+      let majorCount = 0;
+      let totalCount = 0;
+
+      // Nguồn 1: Static findings từ tools/qa summary (nếu đã nạp xong)
+      if (this.summary && Array.isArray(this.summary.findings)) {
+        totalCount += this.summary.findings.length;
+        blockerCount += this.summary.findings.filter((f) => f.severity === 'blocker').length;
+        majorCount += this.summary.findings.filter((f) => f.severity === 'major').length;
+      }
+
+      // Nguồn 2: Traceability findings từ ma trận truy vết (trace report)
+      if (this.trace && this.trace.findings) {
+        const tf = this.trace.findings;
+        const traceMajor = (tf.major || []).length;
+        const traceMinor = (tf.minor || []).length;
+        const traceInfo = (tf.info || []).length;
+        majorCount += traceMajor;
+        totalCount += traceMajor + traceMinor + traceInfo;
+      }
+
+      if (totalCount > 0) {
+        findingsBadge.textContent = String(totalCount);
+        findingsBadge.hidden = false;
+        if (blockerCount > 0 || majorCount > 0) {
+          findingsBadge.className = 'qa-tab-badge qa-tab-badge-danger';
+          findingsBadge.title = `Đang có ${totalCount} vấn đề (${blockerCount > 0 ? `${blockerCount} blocker, ` : ''}${majorCount} major) — Cần ưu tiên xử lý trước`;
+        } else {
+          findingsBadge.className = 'qa-tab-badge qa-tab-badge-warning';
+          findingsBadge.title = `Đang có ${totalCount} cảnh báo`;
+        }
+      } else {
+        findingsBadge.textContent = '0';
+        findingsBadge.className = 'qa-tab-badge qa-tab-badge-success';
+        findingsBadge.title = 'Hệ thống sạch, không có vấn đề';
+        findingsBadge.hidden = false;
+      }
+    }
+
+    // 3. Badge Ứng viên automation: số test case chưa có script
+    const candidatesBadge = root.querySelector('#qa-tab-badge-candidates');
+    if (candidatesBadge) {
+      const candCount = this.candidates ? this.candidates.length : 0;
+      candidatesBadge.textContent = String(candCount);
+      candidatesBadge.className = 'qa-tab-badge qa-tab-badge-neutral';
+      candidatesBadge.title = `${candCount} ứng viên automation`;
+      candidatesBadge.hidden = false;
+    }
+
+    // 4. Badge Quyết định: số quyết định đã ghi sổ
+    const decisionsBadge = root.querySelector('#qa-tab-badge-decisions');
+    if (decisionsBadge) {
+      const decList = this.decisions
+        ? (Array.isArray(this.decisions.decisions) ? this.decisions.decisions : (Array.isArray(this.decisions) ? this.decisions : []))
+        : [];
+      if (decList.length > 0) {
+        decisionsBadge.textContent = String(decList.length);
+        decisionsBadge.className = 'qa-tab-badge qa-tab-badge-neutral';
+        decisionsBadge.hidden = false;
+      } else {
+        decisionsBadge.hidden = true;
+      }
     }
   }
 
@@ -2179,6 +2339,34 @@ export class QaSlice {
           contentCol.appendChild(detail);
 
           row.appendChild(contentCol);
+
+          // Cột thao tác: Nút AI Sửa Lỗi
+          const actionsCol = document.createElement('div');
+          actionsCol.className = 'qa-gap-actions-col';
+          const fixBtn = document.createElement('button');
+          fixBtn.type = 'button';
+          fixBtn.className = 'qa-gap-ai-fix-btn';
+          fixBtn.title = 'AI chẩn đoán nguyên nhân và tự động sinh bản vá cho lỗi này';
+
+          const fixIcon = document.createElement('i');
+          fixIcon.className = 'ph-bold ph-sparkle';
+          fixBtn.appendChild(fixIcon);
+
+          const fixText = document.createElement('span');
+          fixText.textContent = 'AI Sửa Lỗi';
+          fixBtn.appendChild(fixText);
+
+          const onFixClick = () => {
+            if (this.findingFixer) {
+              this.findingFixer.openModal(root, gap);
+            }
+          };
+          fixBtn.addEventListener('click', onFixClick);
+          this._renderDisposers.push(() => fixBtn.removeEventListener('click', onFixClick));
+
+          actionsCol.appendChild(fixBtn);
+          row.appendChild(actionsCol);
+
           staticGapsList.appendChild(row);
         }
       }
@@ -2186,6 +2374,9 @@ export class QaSlice {
 
     // 2. Render nhóm Findings chung từ trace
     const box = root.querySelector('#qa-findings-groups');
+    // Xả listener của studio trước mọi lượt vẽ lại: khi số xung đột về 0 thì render() của
+    // studio không được gọi nữa, listener cũ sẽ còn bám vào node đã bị gỡ.
+    if (this.conflictStudio) this.conflictStudio.destroy();
     if (!box || !this.trace) return;
     box.textContent = '';
 
@@ -2210,7 +2401,11 @@ export class QaSlice {
         if (!byKind.has(f.kind)) byKind.set(f.kind, { label: f.label, rows: [] });
         byKind.get(f.kind).rows.push(f);
       });
-      byKind.forEach(({ label, rows }) => {
+      byKind.forEach(({ label, rows }, kind) => {
+        if (kind === 'ac-lech-giua-tai-lieu-va-spec' && this.conflictStudio) {
+          this.conflictStudio.render(section, rows);
+          return;
+        }
         section.appendChild(this._el('p', `${label} — ${rows.length}`, 'qa-finding-kind'));
         const ul = this._el('ul', null, 'qa-finding-list');
         rows.slice(0, 50).forEach((f) => ul.appendChild(this._el('li', f.detail)));
