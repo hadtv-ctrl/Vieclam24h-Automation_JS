@@ -38,6 +38,49 @@
 .qa-hero-right { gap: 10px; }
 .qa-stat-danger strong { color: var(--danger); }
 
+/* Badge hiển thị số lượng & cảnh báo trực quan trên subtabs của QA Docs */
+.qa-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  margin-left: 6px;
+  letter-spacing: -0.02em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.qa-tab-badge[hidden] { display: none; }
+
+.qa-tab-badge-danger {
+  background: color-mix(in srgb, var(--danger) 18%, var(--surface));
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 30%, transparent);
+}
+
+.qa-tab-badge-warning {
+  background: color-mix(in srgb, var(--warning) 16%, var(--surface));
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--line));
+}
+
+.qa-tab-badge-neutral {
+  background: color-mix(in srgb, var(--text) 8%, var(--surface));
+  color: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+}
+
+.qa-tab-badge-success {
+  background: color-mix(in srgb, var(--success) 14%, var(--surface));
+  color: var(--success);
+  border: 1px solid color-mix(in srgb, var(--success) 35%, var(--line));
+}
+
 .qa-alert {
   display: flex;
   align-items: flex-start;
@@ -1116,9 +1159,9 @@
   font-weight: 700;
 }
 .qa-health-pill.is-healthy, .qa-shield-pill.is-aligned {
-  background: color-mix(in srgb, var(--success, #10b981) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--success, #10b981) 40%, transparent);
-  color: var(--success, #10b981);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 40%, transparent);
+  color: var(--success);
 }
 .qa-health-pill.is-warning, .qa-shield-pill.is-drifted {
   background: color-mix(in srgb, var(--warning) 15%, transparent);
@@ -1138,7 +1181,7 @@
   font-size: var(--font-control);
 }
 .qa-tag-auto {
-  color: var(--success, #10b981);
+  color: var(--success);
   display: flex;
   align-items: center;
   gap: 4px;

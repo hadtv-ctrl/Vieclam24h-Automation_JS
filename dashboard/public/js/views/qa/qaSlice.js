@@ -333,6 +333,7 @@ export class QaSlice {
       if (!this._mounted) return;
       this.summary = summaryRes;
       this._renderExecutiveScorecard();
+      this._renderTabBadges();
       this.renderFindings();
       if (announce) this.notify('Đã làm mới dữ liệu QA.');
     }).catch((err) => {
@@ -369,6 +370,7 @@ export class QaSlice {
     this._renderSourceBar();
     this._renderStats();
     this._renderExecutiveScorecard();
+    this._renderTabBadges();
     this.renderDocs();
     this.renderCandidates();
     this.renderFindings();
@@ -584,6 +586,87 @@ export class QaSlice {
     if (shieldStatus) shieldStatus.textContent = bStatus;
     if (shieldDetails) {
       shieldDetails.textContent = `Ship: ${b.shipCount || 0} · Seed: ${b.seedCount || 0} · Own: ${b.ownCount || 0}`;
+    }
+  }
+
+  _renderTabBadges() {
+    const root = this._root();
+    if (!root) return;
+
+    // 1. Badge Tài liệu: tổng số tài liệu hiện có
+    const docsBadge = root.querySelector('#qa-tab-badge-docs');
+    if (docsBadge) {
+      const docCount = this.documents ? this.documents.length : 0;
+      if (docCount > 0) {
+        docsBadge.textContent = String(docCount);
+        docsBadge.className = 'qa-tab-badge qa-tab-badge-neutral';
+        docsBadge.title = `${docCount} tài liệu`;
+        docsBadge.hidden = false;
+      } else {
+        docsBadge.hidden = true;
+      }
+    }
+
+    // 2. Badge Vấn đề: số lỗi/cảnh báo, nổi bật màu đỏ khi có blocker/major
+    const findingsBadge = root.querySelector('#qa-tab-badge-findings');
+    if (findingsBadge) {
+      let blockerCount = 0;
+      let majorCount = 0;
+      let totalCount = 0;
+
+      if (this.summary && Array.isArray(this.summary.findings)) {
+        totalCount = this.summary.findings.length;
+        blockerCount = this.summary.findings.filter((f) => f.severity === 'blocker').length;
+        majorCount = this.summary.findings.filter((f) => f.severity === 'major').length;
+      } else if (this.trace && this.trace.findings) {
+        const tf = this.trace.findings;
+        majorCount = (tf.major || []).length;
+        const minorCount = (tf.minor || []).length;
+        const infoCount = (tf.info || []).length;
+        totalCount = majorCount + minorCount + infoCount;
+      }
+
+      if (totalCount > 0) {
+        findingsBadge.textContent = String(totalCount);
+        findingsBadge.hidden = false;
+        if (blockerCount > 0 || majorCount > 0) {
+          findingsBadge.className = 'qa-tab-badge qa-tab-badge-danger';
+          findingsBadge.title = `Đang có ${totalCount} vấn đề (${blockerCount > 0 ? `${blockerCount} blocker, ` : ''}${majorCount} major) — Cần ưu tiên xử lý trước`;
+        } else {
+          findingsBadge.className = 'qa-tab-badge qa-tab-badge-warning';
+          findingsBadge.title = `Đang có ${totalCount} cảnh báo`;
+        }
+      } else {
+        findingsBadge.textContent = '0';
+        findingsBadge.className = 'qa-tab-badge qa-tab-badge-success';
+        findingsBadge.title = 'Hệ thống sạch, không có vấn đề';
+        findingsBadge.hidden = false;
+      }
+    }
+
+    // 3. Badge Ứng viên automation: số test case chưa có script
+    const candidatesBadge = root.querySelector('#qa-tab-badge-candidates');
+    if (candidatesBadge) {
+      const candCount = this.candidates ? this.candidates.length : 0;
+      candidatesBadge.textContent = String(candCount);
+      candidatesBadge.className = 'qa-tab-badge qa-tab-badge-neutral';
+      candidatesBadge.title = `${candCount} ứng viên automation`;
+      candidatesBadge.hidden = false;
+    }
+
+    // 4. Badge Quyết định: số quyết định đã ghi sổ
+    const decisionsBadge = root.querySelector('#qa-tab-badge-decisions');
+    if (decisionsBadge) {
+      const decList = this.decisions
+        ? (Array.isArray(this.decisions.decisions) ? this.decisions.decisions : (Array.isArray(this.decisions) ? this.decisions : []))
+        : [];
+      if (decList.length > 0) {
+        decisionsBadge.textContent = String(decList.length);
+        decisionsBadge.className = 'qa-tab-badge qa-tab-badge-neutral';
+        decisionsBadge.hidden = false;
+      } else {
+        decisionsBadge.hidden = true;
+      }
     }
   }
 

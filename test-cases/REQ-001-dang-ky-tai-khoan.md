@@ -25,6 +25,7 @@
 | TC-043 | AC-002 | Xác thực OTP thành công bằng mã cố định '1111' trên môi trường Test | P0 | candidate | - |
 | TC-044 | AC-002 | Kiểm tra báo lỗi khi nhập số điện thoại sai định dạng | P1 | candidate | - |
 | TC-045 | AC-003 | API Đăng ký trả về lỗi 400 Bad Request khi mật khẩu không tuân thủ quy định Q-2 | P1 | candidate | - |
+| TC-049 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -291,3 +292,16 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
 | 1 | Gửi request POST tới endpoint đăng ký với mật khẩu chỉ có chữ 'onlyletters'. | API trả về HTTP Status Code 400 Bad Request kèm thông điệp lỗi quy định mật khẩu không hợp lệ. |
+
+
+### TC-049 — Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec
+
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Candidate
+- **Tiền điều kiện:** Môi trường sẵn sàng cho kịch bản
+- **Dữ liệu kiểm thử:** Dữ liệu theo nghiệp vụ đã chốt
+> *Ghi chú nghiệp vụ:* Quyết định chốt từ Q-1: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắt buộc
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Thực hiện thao tác với điều kiện: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắ | Hệ thống phản hồi đúng theo quyết định đã chốt |

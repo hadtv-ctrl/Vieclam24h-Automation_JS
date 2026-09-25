@@ -121,6 +121,24 @@ test('analyzeWithHeuristicFix: sửa lỗi khong-doc-duoc-requirement bằng cre
   assert.ok(res.fullContent.includes('# REQ-001'));
 });
 
+test('analyzeWithHeuristicFix: sửa lỗi ma-tc-trung bằng cách đổi tên test case bị trùng', () => {
+  const content = `| Test case | AC | Mô tả |\n|---|---|---|\n| TC-007 | AC-001 | Bước 1 |\n| TC-007 | AC-002 | Bước 2 |\n`;
+  const finding = {
+    kind: 'ma-tc-trung',
+    where: 'test-cases/REQ-002.md',
+    message: 'Mã test case "TC-007" xuất hiện 2 lần trong bảng traceability.',
+  };
+  const fileContext = {
+    relPath: 'test-cases/REQ-002.md',
+    lineNumber: null,
+    content,
+  };
+
+  const res = analyzeWithHeuristicFix({ root: '', finding, fileContext });
+  assert.equal(res.patchType, 'replace_lines');
+  assert.ok(res.fixedSnippet.includes('TC-007-b'));
+});
+
 test('analyzeFindingFix: trả về cấu trúc kết quả hợp lệ ở chế độ heuristic fallback', async () => {
   const tmpRoot = path.join(os.tmpdir(), 'qa-analyze-fix-' + Date.now());
   fs.mkdirSync(path.join(tmpRoot, 'tests'), { recursive: true });

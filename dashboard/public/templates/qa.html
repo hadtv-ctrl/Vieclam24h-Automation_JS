@@ -114,15 +114,19 @@
         <div class="script-subnav-tabs">
           <button type="button" class="view-subtab script-subtab active" data-qa-tab="docs" role="tab" aria-selected="true">
             <i class="ph-bold ph-files"></i> Tài liệu
-          </button>
-          <button type="button" class="view-subtab script-subtab" data-qa-tab="candidates" role="tab" aria-selected="false">
-            <i class="ph-bold ph-robot"></i> Ứng viên automation
+            <span class="qa-tab-badge qa-tab-badge-neutral" id="qa-tab-badge-docs" hidden></span>
           </button>
           <button type="button" class="view-subtab script-subtab" data-qa-tab="findings" role="tab" aria-selected="false">
             <i class="ph-bold ph-warning-octagon"></i> Vấn đề
+            <span class="qa-tab-badge qa-tab-badge-danger" id="qa-tab-badge-findings" hidden></span>
+          </button>
+          <button type="button" class="view-subtab script-subtab" data-qa-tab="candidates" role="tab" aria-selected="false">
+            <i class="ph-bold ph-robot"></i> Ứng viên automation
+            <span class="qa-tab-badge qa-tab-badge-neutral" id="qa-tab-badge-candidates" hidden></span>
           </button>
           <button type="button" class="view-subtab script-subtab" data-qa-tab="decisions" role="tab" aria-selected="false">
             <i class="ph-bold ph-gavel"></i> Quyết định
+            <span class="qa-tab-badge qa-tab-badge-neutral" id="qa-tab-badge-decisions" hidden></span>
           </button>
           <button type="button" class="view-subtab script-subtab" data-qa-tab="process-studio" role="tab" aria-selected="false">
             <i class="ph-bold ph-shield-check"></i> Master Process Studio
@@ -222,6 +226,27 @@
         </div>
       </section>
 
+      <!-- VẤN ĐỀ -->
+      <section class="panel qa-panel" id="qa-panel-findings" role="tabpanel" hidden>
+        <!-- Card Cảnh báo Lỗ hổng Sớm (Static Findings & Gaps Card) -->
+        <div class="qa-static-gaps-card" id="qa-static-gaps-card" hidden>
+          <div class="qa-static-gaps-head">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="ph-bold ph-shield-warning" style="color: var(--warning); font-size: 20px;"></i>
+              <strong>Cảnh Báo Lỗ Hổng Kỹ Thuật Sớm (Static Findings &amp; Gaps)</strong>
+            </div>
+            <span class="qa-badge qa-badge-warn" id="qa-static-gaps-badge">0 cảnh báo</span>
+          </div>
+          <p class="qa-static-gaps-desc">
+            Phát hiện sớm các lỗi tĩnh nguy hiểm: thiếu <code>await</code> trên locator matcher Playwright, thiếu test giá trị biên BVA, hoặc liên kết spec bị lệch.
+          </p>
+          <div class="qa-static-gaps-list" id="qa-static-gaps-list"></div>
+        </div>
+
+        <div class="qa-empty" id="qa-findings-empty" hidden></div>
+        <div class="qa-findings-groups" id="qa-findings-groups"></div>
+      </section>
+
       <!-- ỨNG VIÊN AUTOMATION -->
       <section class="panel qa-panel" id="qa-panel-candidates" role="tabpanel" hidden>
         <p class="subtitle qa-panel-hint">
@@ -291,27 +316,6 @@
         </div>
       </section>
 
-      <!-- VẤN ĐỀ -->
-      <section class="panel qa-panel" id="qa-panel-findings" role="tabpanel" hidden>
-        <!-- Card Cảnh báo Lỗ hổng Sớm (Static Findings & Gaps Card) -->
-        <div class="qa-static-gaps-card" id="qa-static-gaps-card" hidden>
-          <div class="qa-static-gaps-head">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <i class="ph-bold ph-shield-warning" style="color: var(--warning); font-size: 20px;"></i>
-              <strong>Cảnh Báo Lỗ Hổng Kỹ Thuật Sớm (Static Findings &amp; Gaps)</strong>
-            </div>
-            <span class="qa-badge qa-badge-warn" id="qa-static-gaps-badge">0 cảnh báo</span>
-          </div>
-          <p class="qa-static-gaps-desc">
-            Phát hiện sớm các lỗi tĩnh nguy hiểm: thiếu <code>await</code> trên locator matcher Playwright, thiếu test giá trị biên BVA, hoặc liên kết spec bị lệch.
-          </p>
-          <div class="qa-static-gaps-list" id="qa-static-gaps-list"></div>
-        </div>
-
-        <div class="qa-empty" id="qa-findings-empty" hidden></div>
-        <div class="qa-findings-groups" id="qa-findings-groups"></div>
-      </section>
-
       <!-- QUYẾT ĐỊNH -->
       <section class="panel qa-panel" id="qa-panel-decisions" role="tabpanel" hidden>
         <div class="qa-empty" id="qa-decisions-empty" hidden></div>
@@ -340,7 +344,7 @@
           <!-- 4 Badges Row -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
             <!-- Badge 1: Policy Status -->
-            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+            <div class="qa-studio-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
               <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
                 <i class="ph ph-file-text"></i> Policy Status
               </span>
@@ -348,15 +352,15 @@
             </div>
 
             <!-- Badge 2: Modularity Health -->
-            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+            <div class="qa-studio-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
               <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
                 <i class="ph ph-check-circle"></i> Modularity Health
               </span>
-              <strong id="qa-mp-badge-modularity" style="font-size: 13px; color: var(--success, #10b981);">Đang tải...</strong>
+              <strong id="qa-mp-badge-modularity" style="font-size: 13px; color: var(--success);">Đang tải...</strong>
             </div>
 
             <!-- Badge 3: Learning Status -->
-            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+            <div class="qa-studio-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
               <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
                 <i class="ph ph-brain"></i> Learning Status
               </span>
@@ -364,11 +368,11 @@
             </div>
 
             <!-- Badge 4: Freeze Status -->
-            <div class="hero-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
+            <div class="qa-studio-stat-card" style="padding: 12px 14px; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--line);">
               <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px;">
                 <i class="ph ph-hand-palm"></i> Freeze Circuit Breaker
               </span>
-              <strong id="qa-mp-badge-freeze" style="font-size: 13px; color: var(--success, #10b981);">Đang tải...</strong>
+              <strong id="qa-mp-badge-freeze" style="font-size: 13px; color: var(--success);">Đang tải...</strong>
             </div>
           </div>
 
