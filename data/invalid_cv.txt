@@ -1,0 +1,2 @@
+Day la tap tin text khong dung dinh dang CV ho tro (he thong chi chap nhan PDF, DOC, DOCX).
+File test cho TC-036 negative validation.

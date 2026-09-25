@@ -11,15 +11,15 @@ Sinh lại bằng máy:
 
 | Requirement | Chủ đề | Số AC | Số TC | Số spec |
 |---|---|---|---|---|
-| REQ-001 | Đăng ký tài khoản người tìm việc | 4 | 6 | 5 |
-| REQ-002 | Onboarding tiêu chí tìm việc | 3 | 2 | 2 |
-| REQ-003 | Ứng tuyển bằng CV hoặc hồ sơ trực tuyến | 4 | 4 | 4 |
-| REQ-004 | Ứng tuyển việc không cần CV | 3 | 4 | 4 |
+| REQ-001 | Đăng ký tài khoản người tìm việc | 4 | 15 | 14 |
+| REQ-002 | Onboarding tiêu chí tìm việc | 3 | 4 | 4 |
+| REQ-003 | Ứng tuyển bằng CV hoặc hồ sơ trực tuyến | 4 | 6 | 6 |
+| REQ-004 | Ứng tuyển việc không cần CV | 3 | 5 | 5 |
 | REQ-005 | Quản lý hồ sơ cá nhân | 5 | 6 | 6 |
 | REQ-006 | Trợ lý AI hoàn thiện hồ sơ | 2 | 2 | 2 |
 | REQ-007 | Tìm kiếm việc làm qua trợ lý Chop AI chatbot | 1 | 1 | 1 |
 
-Ghi chú: REQ-001 có 6 test case trên 5 file spec vì file spec API chứa hai test case.
+Ghi chú: REQ-001 có 15 test case trên 14 file spec vì file spec API chứa hai test case.
 AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của REQ-004, vì danh sách việc làm đã
 ứng tuyển là điểm neo chung của cả hai luồng.
 
@@ -52,6 +52,20 @@ AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của RE
 | TC-023 | REQ-006 | AC-020 AC-021 | Desktop | P2 | Có | tests/e2e/desktop/profile_ai_writing-bdd.spec.js |
 | TC-024 | REQ-006 | AC-020 AC-021 | Mobile web | P2 | Có | tests/e2e/mobile-web/profile_ai_writing-bdd.mobile.spec.js |
 | TC-025 | REQ-007 | AC-022 | Desktop | P1 | Có | tests/e2e/desktop/chop_chatbot_job_search-bdd.spec.js |
+| TC-026 | REQ-001 | AC-001 | Desktop | P2 | Có | tests/e2e/desktop/xac-nhan-thanh-cong-khi-bo-trong-so-dien-thoai-truong-tuy-ch.spec.js |
+| TC-027 | REQ-001 | AC-001 | Desktop | P2 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-co-7-ky-tu-duoi-bien-toi-thie.spec.js |
+| TC-028 | REQ-001 | AC-001 | Desktop | P2 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-chi-chua-chu-cai-thieu-chu-so.spec.js |
+| TC-029 | REQ-001 | AC-001 | Desktop | P2 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-chi-chua-chu-so-thieu-chu-cai.spec.js |
+| TC-030 | REQ-001 | AC-001 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-hanh-vi-theo-quyet-dinh-so-dien-thoai-o-form-dang-k.spec.js |
+| TC-031 | REQ-002 | AC-005 | Desktop | P2 | Có | tests/e2e/desktop/xac-nhan-thanh-cong-khi-bo-trong-truong-tuy-chon-truong-tuy-.spec.js |
+| TC-032 | REQ-001 | AC-001 | Desktop | P0 | Có | tests/e2e/desktop/dang-ky-bang-email-da-ton-tai.spec.js |
+| TC-033 | REQ-001 | AC-002 | Desktop | P0 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-nhap-sai-ma-otp-xac-thuc.spec.js |
+| TC-034 | REQ-001 | AC-001 | Desktop | P1 | Có | tests/e2e/desktop/kiem-tra-bao-loi-khi-nhap-email-sai-dinh-dang.spec.js |
+| TC-035 | REQ-002 | AC-005 | Desktop | P1 | Có | tests/e2e/desktop/dong-modal-onboarding-giua-chung.spec.js |
+| TC-036 | REQ-003 | AC-008 | Desktop | P1 | Có | tests/e2e/desktop/tai-len-cv-sai-dinh-dang.spec.js |
+| TC-037 | REQ-003 | AC-011 | Desktop | P0 | Có | tests/e2e/desktop/kiem-tra-trang-thai-viec-lam-da-ung-tuyen.spec.js |
+| TC-038 | REQ-004 | AC-013 | Desktop | P0 | Có | tests/e2e/desktop/khach-vang-lai-ung-tuyen-sdt-da-ton-tai.spec.js |
+| TC-039 | REQ-001 | AC-002 | Desktop | P2 | Có | tests/e2e/desktop/gui-lai-ma-otp-dang-ky.spec.js |
 
 ## Chất lượng bằng chứng của từng test case
 
@@ -60,7 +74,7 @@ cấp, đọc từ chính spec.
 
 | Mức | Nghĩa | Test case |
 |---|---|---|
-| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-025 (toàn bộ 25 test case) |
+| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-039 (toàn bộ 39 test case) |
 
 ### Quan hệ với cảnh báo của công cụ
 

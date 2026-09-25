@@ -25,6 +25,53 @@ class LoginPopup extends BasePage {
     this.registerPhoneInput = page.getByPlaceholder(/Nhập số điện thoại/i).first();
     this.passwordInput = page.getByPlaceholder(/Nhập mật khẩu/i).first();
     this.submitBtn = page.locator('//button[@type="submit"]').last();
+
+    this.passwordLengthError = page.locator(
+      '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
+    ).filter({
+      hasText: /8 ký tự|tối thiểu 8|ít nhất 8/i,
+    }).or(page.getByText(/8 ký tự|tối thiểu 8|ít nhất 8/i)).first();
+
+    this.passwordDigitError = page.locator(
+      '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
+    ).filter({
+      hasText: /chữ số|ít nhất 1.*số|cả chữ và số/i,
+    }).or(page.getByText(/chữ số|ít nhất 1.*số|cả chữ và số/i)).first();
+
+    this.passwordLetterError = page.locator(
+      '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
+    ).filter({
+      hasText: /chữ cái|ít nhất 1.*chữ|cả chữ và số/i,
+    }).or(page.getByText(/chữ cái|ít nhất 1.*chữ|cả chữ và số/i)).first();
+
+    this.phoneError = page.locator(
+      '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
+    ).filter({
+      hasText: /số điện thoại/i,
+    }).first();
+
+    this.passwordError = page.locator(
+      '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
+    ).filter({
+      hasText: /mật khẩu|8 ký tự|tối thiểu|chữ số|chữ cái|chữ và số/i,
+    }).first();
+
+    this.emailError = page.locator(
+      '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
+    ).filter({
+      hasText: /email.*không hợp lệ|đúng định dạng|email/i,
+    }).or(page.getByText(/email.*không hợp lệ|đúng định dạng/i)).first();
+
+    this.otpError = page.locator(
+      '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
+    ).filter({
+      hasText: /mã xác thực|otp.*không đúng|không chính xác/i,
+    }).or(page.getByText(/mã xác thực.*không đúng|otp.*không đúng|không chính xác/i)).first();
+
+    this.loginPasswordInput = page.getByPlaceholder(/nhập mật khẩu của bạn|nhập mật khẩu/i).first();
+
+    this.resendOtpBtn = page.getByRole('button', { name: /Gửi lại mã|Gửi lại OTP|Gửi lại/i }).or(page.getByText(/Gửi lại mã/i)).first();
+    this.otpCountdown = page.locator('[class*="countdown"], [class*="timer"], span:has-text("s")').first();
   }
 
   async clickLoginHeader() {
@@ -163,6 +210,37 @@ class LoginPopup extends BasePage {
 
   async fillOtpCode(code) {
     await this.fillCodeInputs(this.otpInputs, code);
+  }
+
+  async clearPassword() {
+    await this.passwordInput.fill('');
+  }
+
+  async clearRegisterPhone() {
+    if (await this.registerPhoneInput.isVisible()) {
+      await this.registerPhoneInput.fill('');
+    }
+  }
+
+  async isSubmitEnabled() {
+    return this.submitBtn.isEnabled();
+  }
+
+  async openEmailRegisterModal(email) {
+    await this.clickLoginHeader();
+    await this.waitForModalVisible();
+    try {
+      await this.clickEmailLoginOption();
+    } catch {
+      // Bỏ qua nếu form email hiển thị sẵn
+    }
+    await this.fillEmail(email);
+    await this.clickContinue();
+    await this.waitForRegisterFormVisible();
+  }
+
+  async clickResendOtp() {
+    return this.actions.click(this.resendOtpBtn);
   }
 }
 

@@ -231,31 +231,24 @@ function gaps(root, rawOptions) {
     }
   }
 
-  // F-03: Kiểm tra trùng mã TC trong bảng Traceability
-  const linksByTcId = new Map();
+  // F-03: Kiểm tra trùng mã TC trong bảng Traceability (chỉ báo lỗi khi xuất hiện ở nhiều dòng/file khác nhau)
+  const rowsByTcId = new Map();
   for (const link of testCases.links) {
     if (!link.tcId) continue;
-    if (!linksByTcId.has(link.tcId)) linksByTcId.set(link.tcId, []);
-    linksByTcId.get(link.tcId).push(link);
-  }
-  for (const [tcId, occList] of linksByTcId.entries()) {
-    // Một test case phủ nhiều AC trong cùng 1 dòng bảng (hoặc một lần khai báo)
-    // không phải là trùng mã TC. Chỉ báo khi cùng mã TC được khai báo ở nhiều dòng
-    // hoặc nhiều file khác nhau.
-    const distinctDecls = new Map();
-    for (const l of occList) {
-      const declKey = l.line ? `${l.file}:${l.line}` : `${l.file}:${l.reqId}`;
-      if (!distinctDecls.has(declKey)) {
-        distinctDecls.set(declKey, l);
-      }
+    if (!rowsByTcId.has(link.tcId)) rowsByTcId.set(link.tcId, new Map());
+    const rowKey = link.rowId || `${link.file}:${link.tcId}`;
+    if (!rowsByTcId.get(link.tcId).has(rowKey)) {
+      rowsByTcId.get(link.tcId).set(rowKey, link);
     }
-    if (distinctDecls.size > 1) {
-      const declList = Array.from(distinctDecls.values());
+  }
+  for (const [tcId, rowMap] of rowsByTcId.entries()) {
+    if (rowMap.size > 1) {
+      const occList = Array.from(rowMap.values());
       findings.push({
         severity: 'major',
         kind: 'ma-tc-trung',
-        where: declList.map((l) => `${l.file} (${l.reqId}/${l.acId})`).join(', '),
-        message: `Mã test case "${tcId}" xuất hiện ${distinctDecls.size} lần trong bảng traceability.`,
+        where: occList.map((l) => `${l.file} (${l.reqId}/${l.acId})`).join(', '),
+        message: `Mã test case "${tcId}" xuất hiện ${rowMap.size} lần trong bảng traceability.`,
         action: 'Đổi mã TC để mỗi test case có định danh duy nhất (không được tái sử dụng mã TC).',
       });
     }
@@ -755,9 +748,12 @@ function matrix(root, rawOptions) {
 
 function summary(root, rawOptions) {
   const options = mergeOptions(root, rawOptions);
-  const cov = coverage(root, options);
-  const gapsList = gaps(root, options);
-  const driftList = drift(root, options);
+  const loadAutomated = (options && options.loadAutomated) || loadAutomatedTests;
+  const sharedAutomated = loadAutomated(root, options);
+  const sharedOpts = { ...options, loadAutomated: () => sharedAutomated };
+  const cov = coverage(root, sharedOpts);
+  const gapsList = gaps(root, sharedOpts);
+  const driftList = drift(root, sharedOpts);
 
   const allFindings = [...gapsList, ...driftList];
   const blockerCount = allFindings.filter((f) => f.severity === 'blocker').length;

@@ -75,7 +75,7 @@ vừa nhập. Đây là lý do luồng này tách khỏi REQ-003 thay vì là m�
 
 ## Open questions
 
-1. Khi khách vãng lai nhập số điện thoại đã tồn tại, hệ thống xử lý thế nào? — cần PO xác nhận, ưu tiên cao
-2. Hồ sơ rút gọn gồm những trường bắt buộc nào? — cần PO xác nhận
-3. Tài khoản tạo ngầm qua luồng này khác gì tài khoản đăng ký bình thường ở REQ-001? — cần PO/BA xác nhận
-4. Vì sao thành viên đã đăng nhập vẫn có thể bị hỏi OTP khi ứng tuyển? — cần PO xác nhận
+1. Khi khách vãng lai nhập số điện thoại đã tồn tại, hệ thống xử lý thế nào? — cần PO xác nhận, ưu tiên cao — **Đã chốt (Hà Đinh, 2026-09-24):** thì hệ thống sẽ thực hiện đăng nhập luôn cho user đó sau khi user đó OTP thành công
+2. Hồ sơ rút gọn gồm những trường bắt buộc nào? — **Đã chốt (Hà Đinh, 2026-09-24):** các thông tin hiển thị trong popup apply đều là trường bắt buộc, còn form đó hiển thị trường nào là do người đăng tin setting ở hệ thống của họ
+3. Tài khoản tạo ngầm qua luồng này khác gì tài khoản đăng ký bình thường ở REQ-001? — **Đã chốt (Hà Đinh, 2026-09-24):** không khác gì cả, nó sẽ thực hiện tạo tài khoản cho user với thông tin như tạo tài khoản bằng số điện thoại, sau khi tạo xong thì user phải chấp nhận consent form thì user mới tiếp tục apply được
+4. Vì sao thành viên đã đăng nhập vẫn có thể bị hỏi OTP khi ứng tuyển? — **Đã chốt (Hà Đinh, 2026-09-24):** vì thông tin số điện thoại chưa xác thực thì vẫn bị hỏi OTP

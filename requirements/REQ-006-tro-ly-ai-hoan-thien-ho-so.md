@@ -65,7 +65,7 @@ Giọng văn quan sát được trong dữ liệu test: Chuyên nghiệp, Thuy�
 
 ## Open questions
 
-1. Danh sách giọng văn đầy đủ gồm những gì? Dữ liệu test chỉ dùng ba giọng. — cần PO xác nhận
-2. Có giới hạn số lần dùng AI trên mỗi người dùng hoặc mỗi ngày không? — cần PO xác nhận
-3. Khi dịch vụ AI lỗi, hệ thống hiển thị gì cho người dùng? — cần PO xác nhận
-4. Nội dung AI sinh ra được kiểm duyệt trước khi lưu vào hồ sơ không? — cần PO xác nhận
+1. Danh sách giọng văn đầy đủ gồm những gì? Dữ liệu test chỉ dùng ba giọng. — **Đã chốt (Hà Đinh, 2026-09-24):** mới chỉ có 3 giọng văn đó thôi, chưa có những thông tin mới nếu thay đổi
+2. Có giới hạn số lần dùng AI trên mỗi người dùng hoặc mỗi ngày không? — **Đã chốt (Hà Đinh, 2026-09-24):** có, nhưng tôi không muốn test case đó.
+3. Khi dịch vụ AI lỗi, hệ thống hiển thị gì cho người dùng? — **Đã chốt (Hà Đinh, 2026-09-24):** hiển thị popup báo lỗi
+4. Nội dung AI sinh ra được kiểm duyệt trước khi lưu vào hồ sơ không? — **Đã chốt (Hà Đinh, 2026-09-24):** không cần kiểm duyệt, user sẽ tự chịu trách nhiệm là dùng hay không dùng thông tin do AI sinh ra
