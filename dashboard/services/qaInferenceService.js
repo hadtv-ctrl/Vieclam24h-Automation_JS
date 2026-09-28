@@ -11,6 +11,8 @@ const fs = require('fs');
 const path = require('path');
 const { createBackup } = require('./resourceService');
 const { parseEnvFile } = require('../routes/aiRoutes');
+const { mayUseServerKey } = require('./aiEndpointPolicy');
+const { callAi } = require('../../core/ai/gateway/index');
 
 const RE_REQ = /\bREQ-(\d{3})\b/;
 const RE_AC = /\bAC-(\d{3})\b/g;
@@ -316,17 +318,7 @@ function inferWithHeuristic({ reqId, decidedQuestions, existingTcIds, existingTc
 /**
  * Động cơ AI: Gửi toàn văn ngữ cảnh cho LLM (Gemini / OpenAI / DeepSeek)
  */
-async function inferWithAi({ reqId, reqContent, decidedQuestions, existingTcIds, existingTcTitles, acs, clientConfig, root }) {
-  const env = parseEnvFile(path.join(root || process.cwd(), '.env'));
-  const apiKey = (clientConfig && clientConfig.apiKey) || env.AI_API_KEY || env.GEMINI_API_KEY || env.OPENAI_API_KEY || env.DEEPSEEK_API_KEY;
-  const provider = (clientConfig && clientConfig.provider) || env.AI_PROVIDER || (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini');
-  const baseURL = (clientConfig && clientConfig.baseURL) || env.AI_BASE_URL || '';
-  const model = (clientConfig && clientConfig.model) || env.AI_MODEL || (provider === 'gemini' ? (env.DASHBOARD_GEMINI_MODEL || 'gemini-2.5-flash') : provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
-
-  if (!apiKey) {
-    throw new Error('Chưa cấu hình API Key cho AI. Vui lòng cấu hình API Key trong mục Cài đặt AI của Dashboard hoặc file .env');
-  }
-
+async function inferWithAi({ reqId, reqContent, decidedQuestions, existingTcIds, existingTcTitles, acs, clientConfig, root, signal = null }) {
   const nextTcId = getNextTcId(existingTcIds);
   const acListStr = acs.map((a) => `- ${a.id}: ${a.title}`).join('\n') || '- AC-001: Yêu cầu chung';
   const existingTcStr = existingTcTitles.map((t) => `- ${t}`).join('\n') || '(Chưa có test case nào)';
@@ -372,81 +364,23 @@ ${existingTcStr}
 
 Hãy đề xuất các Test Case còn thiếu dựa trên các quyết định mới trên. Trả về đúng JSON schema quy định.`;
 
-  let responseJsonText = '';
+  const messages = [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }];
+  const res = await callAi({
+    task: 'inferTestCases',
+    messages,
+    schema: { type: 'object', properties: { testCases: { type: 'array' } } },
+    clientConfig,
+    root: root || process.cwd(),
+    signal,
+    tier: 'deep',
+    timeoutMs: 60000
+  });
 
-  if (provider === 'gemini') {
-    const targetModel = model || 'gemini-2.5-flash';
-    const base = (baseURL || 'https://generativelanguage.googleapis.com/v1beta/models').replace(/\/+$/, '');
-    const url = `${base}/${encodeURIComponent(targetModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 2048,
-        },
-      }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(`Gemini API trả về lỗi (${res.status}): ${errData.error?.message || res.statusText}`);
-    }
-
-    const data = await res.json();
-    responseJsonText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  } else {
-    // OpenAI / DeepSeek / Custom
-    const defaultBase = provider === 'deepseek' ? 'https://api.deepseek.com/v1' : 'https://api.openai.com/v1';
-    const base = (baseURL || defaultBase).replace(/\/+$/, '');
-    const url = `${base}/chat/completions`;
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.2,
-        stream: false,
-      }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(`${provider.toUpperCase()} API trả về lỗi (${res.status}): ${errData.error?.message || res.statusText}`);
-    }
-
-    const data = await res.json();
-    responseJsonText = data.choices?.[0]?.message?.content || '';
+  if (!res.ok) {
+    throw new Error(res.message || 'Lỗi khi gọi AI');
   }
 
-  // Bóc tách JSON an toàn
-  const cleaned = responseJsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
-  let parsed;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch (e) {
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      parsed = JSON.parse(jsonMatch[0]);
-    } else {
-      throw new Error(`AI trả về định dạng không phải JSON hợp lệ: ${cleaned.slice(0, 200)}`);
-    }
-  }
-
-  const list = Array.isArray(parsed.testCases) ? parsed.testCases : [];
+  const list = Array.isArray(res.data?.testCases) ? res.data.testCases : [];
   return list.map((tc, idx) => ({
     suggestedId: tc.suggestedId || getNextTcId(existingTcIds, idx),
     acId: tc.acId || (acs[0] && acs[0].id) || 'AC-001',
@@ -936,14 +870,6 @@ function extractHeuristicFromSpecText(rawContent, reqId, domain) {
  * Trích xuất qua AI Semantic Engine (Gemini / OpenAI / DeepSeek)
  */
 async function extractWithAi(root, rawContent, inputType, reqId, domain, payload = {}) {
-  const env = parseEnvFile(path.join(root || process.cwd(), '.env'));
-  const apiKey = env.AI_API_KEY || env.GEMINI_API_KEY || env.OPENAI_API_KEY || env.DEEPSEEK_API_KEY || '';
-  if (!apiKey) return null;
-
-  const provider = (payload.provider || env.AI_PROVIDER || (env.OPENAI_API_KEY ? 'openai' : env.DEEPSEEK_API_KEY ? 'deepseek' : 'gemini')).toLowerCase();
-  const baseURL = payload.baseURL || env.AI_BASE_URL || '';
-  const model = payload.model || env.AI_MODEL || (provider === 'gemini' ? (env.DASHBOARD_GEMINI_MODEL || 'gemini-2.5-flash') : provider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini');
-
   const systemPrompt = `Bạn là Senior QA Lead & Playwright Automation Architect.
 Nhiệm vụ của bạn là phân tích nội dung do người dùng cung cấp (có thể là văn bản nghiệp vụ Spec/Requirement hoặc mã nguồn Playwright test script) để trích xuất thành cấu trúc tài liệu truy vết QA chuẩn 100%.
 
@@ -990,74 +916,26 @@ BẮT BUỘC trả về DUY NHẤT 1 chuỗi JSON hợp lệ (không kèm markdo
 
   const userPrompt = `Dữ liệu đầu vào (${inputType === 'test_script' ? 'Mã test script Playwright' : 'Văn bản Spec / User story thô'}):\n\n${rawContent.slice(0, 8000)}\n\nMã REQ ID dự kiến: ${reqId}\nDomain đề xuất: ${domain}`;
 
-  let responseJsonText = '';
+  const messages = [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }];
+  const res = await callAi({
+    task: 'extractScaffold',
+    messages,
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        acs: { type: 'array' }
+      }
+    },
+    clientConfig: payload,
+    root: root || process.cwd(),
+    signal: payload.signal || null,
+    tier: 'deep',
+    timeoutMs: 60000
+  });
 
-  if (provider === 'gemini') {
-    const base = (baseURL || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '');
-    const url = `${base}/models/${model}:generateContent?key=${apiKey}`;
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 3072,
-        },
-      }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(`Gemini API error (${res.status}): ${errData.error?.message || res.statusText}`);
-    }
-
-    const data = await res.json();
-    responseJsonText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  } else {
-    const defaultBase = provider === 'deepseek' ? 'https://api.deepseek.com/v1' : 'https://api.openai.com/v1';
-    const base = (baseURL || defaultBase).replace(/\/+$/, '');
-    const url = `${base}/chat/completions`;
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.2,
-      }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(`${provider.toUpperCase()} API error (${res.status}): ${errData.error?.message || res.statusText}`);
-    }
-
-    const data = await res.json();
-    responseJsonText = data.choices?.[0]?.message?.content || '';
-  }
-
-  const cleaned = responseJsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
-  let parsed = null;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch (_) {
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
-  }
-
-  if (parsed && parsed.title && Array.isArray(parsed.acs) && parsed.acs.length > 0) {
-    return parsed;
+  if (res.ok && res.data && res.data.title && Array.isArray(res.data.acs) && res.data.acs.length > 0) {
+    return res.data;
   }
   return null;
 }
@@ -1289,9 +1167,10 @@ async function extractScaffoldFromRaw(root, payload = {}) {
     ? String(payload.domain).trim().toLowerCase()
     : inferDomainFromText(rawContent, existingDomains);
 
-  // Thử AI Semantic Engine nếu không bị vô hiệu hóa
+  // Test script đã có cấu trúc (test title, tag @TC/@AC, step) nên đọc bằng code là đủ và không bị
+  // viết lại spec. Chỉ văn bản spec thô mới thử AI Semantic Engine, và chỉ khi không bị vô hiệu hóa.
   let aiResult = null;
-  if (payload.useAi !== false) {
+  if (!isTestScript && payload.useAi !== false) {
     try {
       aiResult = await extractWithAi(root, rawContent, inputType, reqId, domain, payload);
     } catch (err) {

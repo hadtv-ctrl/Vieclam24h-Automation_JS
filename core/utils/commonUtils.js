@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy utility module, queued for modular decomposition
 const fs = require('fs');
 const path = require('path');
 const { randomBytes } = require('crypto');

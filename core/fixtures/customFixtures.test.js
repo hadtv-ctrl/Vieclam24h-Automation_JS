@@ -66,3 +66,51 @@ test('loadCustomFixtures dynamically loads fixtures from custom directory', () =
     fs.rmSync(tmpCustomDir, { recursive: true, force: true });
   }
 });
+
+test('CleanupRegistry safely handles non-Error throws (throw null / string) without aborting remaining tasks (R07)', async () => {
+  const registry = new CleanupRegistry();
+  const executed = [];
+
+  registry.register(() => {
+    executed.push('task_1');
+  }, { label: 'Task 1' });
+
+  registry.register(() => {
+    // Cố ý throw null
+    throw null;
+  }, { label: 'Task Null Throw' });
+
+  registry.register(() => {
+    // Cố ý throw string
+    throw 'Non-Error string exception';
+  }, { label: 'Task String Throw' });
+
+  registry.register(() => {
+    executed.push('task_4');
+  }, { label: 'Task 4' });
+
+  const errors = await registry.runAll();
+  assert.equal(errors.length, 2, 'Cả hai task ném lỗi phải được ghi nhận');
+  assert.ok(errors[0] instanceof Error);
+  assert.ok(errors[1] instanceof Error);
+  assert.equal(errors[0].label, 'Task String Throw');
+  assert.equal(errors[1].label, 'Task Null Throw');
+  // LIFO: task_4 chạy trước task_1
+  assert.deepEqual(executed, ['task_4', 'task_1'], 'Các task còn lại vẫn phải chạy đầy đủ');
+});
+
+test('cleanupQueueFixture respects testInfo.status to avoid false positive when test timed out or failed (R07)', async () => {
+  const mockTestInfo = { status: 'timedOut' };
+  let cleanupRun = false;
+
+  // Khi testInfo.status === 'timedOut' và cleanup bị fail:
+  // Không được throw "Kịch bản chính thành công nhưng dọn dẹp thất bại" (TeardownFailureError)
+  await cleanupQueueFixture({}, async (cleanupQueue) => {
+    cleanupQueue(async () => {
+      cleanupRun = true;
+      throw new Error('Cleanup API failed');
+    });
+  }, mockTestInfo);
+
+  assert.equal(cleanupRun, true);
+});

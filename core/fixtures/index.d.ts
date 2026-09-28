@@ -11,10 +11,16 @@ export interface AuthenticatedUser {
   runtimeDataPath: string;
 }
 
-export interface CleanupRegistry {
+export interface CleanupQueueCallable {
+  (taskFn: () => Promise<void> | void, metadata?: { label?: string; resourceId?: string; timeoutMs?: number }): void;
   register(taskFn: () => Promise<void> | void, metadata?: { label?: string; resourceId?: string; timeoutMs?: number }): void;
-  runAll(): Promise<Error[]>;
-  size(): number;
+  registry: {
+    tasks: Array<{ fn: () => Promise<void> | void; label: string; resourceId?: string; timeoutMs?: number }>;
+    isRunning: boolean;
+    lastSummary: { total: number; passed: number; failed: number };
+    register(taskFn: () => Promise<void> | void, options?: any): void;
+    runAll(): Promise<Error[]>;
+  };
 }
 
 /**
@@ -37,7 +43,7 @@ export interface FrameworkFixtures {
   basePage: BasePage;
   pages: PagesContainer;
   authenticatedUser: AuthenticatedUser;
-  cleanupQueue: CleanupRegistry;
+  cleanupQueue: CleanupQueueCallable;
   pageObjectsRoot?: string;
   pageObjectsPlatform?: 'desktop' | 'mobile-web' | 'auto';
 }

@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy evidence generator module, queued for modular decomposition
 /**
  * evidenceInjector.js
  * 

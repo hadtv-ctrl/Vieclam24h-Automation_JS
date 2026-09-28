@@ -412,6 +412,10 @@
   border-radius: 10px !important;
   animation: fadeIn 0.2s ease;
 }
+/* .settings-card sets display: grid, which would otherwise override the hidden attribute. */
+.settings-ai-alert[hidden] {
+  display: none;
+}
 .settings-ai-alert--success {
   background: color-mix(in srgb, #10b981 8%, var(--surface)) !important;
   border-color: color-mix(in srgb, #10b981 35%, var(--line)) !important;

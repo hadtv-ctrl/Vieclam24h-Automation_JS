@@ -183,5 +183,14 @@ test.describe('Phân Hệ Quản Lý Fixture & Dọn Dẹp Data Toàn Diện (Co
         config: {},
       }, ROOT);
     }, /trùng với từ khóa hoặc Core Fixture/);
+
+    // Fixture Studio phải dùng đúng danh sách của baseTest (circuitBreakerGuard là auto fixture của baseTest)
+    assert.throws(() => {
+      createCustomFixture({
+        name: 'circuitBreakerGuard',
+        template: 'cleanup_api',
+        config: {},
+      }, ROOT);
+    }, /trùng với từ khóa hoặc Core Fixture/);
   });
 });

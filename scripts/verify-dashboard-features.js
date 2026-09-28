@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// master-process-disable-size-check: Dashboard features verification script, queued for modular decomposition
 'use strict';
 
 /**

@@ -43,6 +43,12 @@ async function removeRuntimeUserData(filePath) {
 }
 
 async function createRegisteredUserForPrecondition() {
+  console.warn(
+    '[authSetup] ⚠️  STUB: createRegisteredUserForPrecondition() chưa được override.\n'
+    + '  → Trả về dữ liệu user giả, KHÔNG gọi API/UI đăng ký thật.\n'
+    + '  → Tạo file core/local/authSetup.local.js để cài đặt luồng đăng ký thật.\n'
+    + '  → Xem hướng dẫn tại: core/local/README.md'
+  );
   return {
     email: generateRandomEmail(),
     phone: generateRandomVNPhone(),
@@ -54,6 +60,11 @@ async function createRegisteredUserForPrecondition() {
 }
 
 async function loginUserFromDataForPrecondition(page, providedUser = null) {
+  console.warn(
+    '[authSetup] ⚠️  STUB: loginUserFromDataForPrecondition() chưa được override.\n'
+    + '  → Không thực hiện đăng nhập, session vẫn ở trạng thái anonymous.\n'
+    + '  → Tạo file core/local/authSetup.local.js để cài đặt luồng đăng nhập thật.'
+  );
   const user = providedUser || (await createRegisteredUserForPrecondition());
   return user;
 }

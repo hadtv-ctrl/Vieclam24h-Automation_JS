@@ -8,14 +8,14 @@
  * - OWN-01..05: mọi listener đi qua `_on()` và được xả trong `destroy()`; phản hồi đến muộn
  *   tìm lại thẻ theo khóa trong DOM hiện tại thay vì ghi vào node đã bị thay.
  * - ASYNC-01: trong lúc một thao tác ghi đang chạy, toàn bộ nút hành động của studio bị khóa.
- * - Không dùng innerHTML với dữ liệu từ repo hay AI.
+ * - Không dùng innerHTML với dữ liệu từ repo.
  */
 
 import { apiClient } from '../../core/apiClient.js';
 import { toast } from '../../core/toast.js';
 
 const CONFLICT_KIND = 'ac-lech-giua-tai-lieu-va-spec';
-const AI_TIMEOUT_MS = 60000;
+const ARBITRATE_TIMEOUT_MS = 15000;
 
 const keyOf = (c) => `${c.specFile}::${c.tcId}`;
 const signatureOf = (c) => `${keyOf(c)}::${c.specAcs.join(',')}::${c.docAcs.join(',')}`;
@@ -261,9 +261,10 @@ export class ConflictStudioHelper {
       `Sửa tag AC trong tiêu đề test ${c.tcId} thành ${list(c.docAcs)}`);
     this._on(btnSpec, 'click', () => this.executeResolve(c, 'sync_spec_to_doc'));
 
-    const btnAi = this._actionButton('Trọng tài AI', 'ph-sparkle', 'qa-gap-ai-fix-btn',
-      'Đọc assertion trong test và Given-When-Then của AC để đề xuất phía đúng');
-    this._on(btnAi, 'click', () => this.runArbitration(c));
+    const btnArbitrate = this._actionButton('Đề xuất phân xử', 'ph-lightbulb', 'btn-secondary-sm',
+      'Đề xuất phía đúng từ định nghĩa AC, assertion trong test và lần sửa gần nhất của hai phía');
+    btnArbitrate.dataset.action = 'arbitrate';
+    this._on(btnArbitrate, 'click', () => this.runArbitration(c));
 
     const btnEsc = this._actionButton(pending ? `Đã ghi sổ ${pending.id}` : 'Ghi sổ quyết định', 'ph-scales',
       'btn-secondary-sm', 'Tạo quyết định chờ PO / Tech Lead duyệt trong sổ quyết định');
@@ -277,7 +278,7 @@ export class ConflictStudioHelper {
     btnCtx.appendChild(this._el('span', null, 'Xem ngữ cảnh'));
     this._on(btnCtx, 'click', () => this._toggleContext(card));
 
-    actions.append(btnDoc, btnSpec, btnAi, btnEsc, btnCtx);
+    actions.append(btnDoc, btnSpec, btnArbitrate, btnEsc, btnCtx);
     card.appendChild(actions);
 
     const feedback = this._el('div', 'qa-conflict-feedback');
@@ -452,11 +453,11 @@ export class ConflictStudioHelper {
     if (box) {
       box.hidden = false;
       box.textContent = '';
-      box.appendChild(this._el('p', 'qa-conflict-muted', 'Trọng tài đang đọc assertion và Given-When-Then…'));
+      box.appendChild(this._el('p', 'qa-conflict-muted', 'Đang đối chiếu định nghĩa AC, assertion và lịch sử sửa…'));
     }
     this._setBusy(true);
     try {
-      const res = await apiClient.post('/api/qa/conflict/arbitrate', { tcId: c.tcId, specFile: c.specFile }, { timeout: AI_TIMEOUT_MS });
+      const res = await apiClient.post('/api/qa/conflict/arbitrate', { tcId: c.tcId, specFile: c.specFile }, { timeout: ARBITRATE_TIMEOUT_MS });
       this._verdictCache.set(sig, res);
       const live = this._cardFor(key);
       if (live && live.dataset.conflictSig === sig) this._renderVerdict(live, c, res);
@@ -484,13 +485,12 @@ export class ConflictStudioHelper {
       toDoc ? `Đề xuất: tài liệu theo Spec → ${list(c.specAcs)}` : `Đề xuất: spec theo Tài liệu → ${list(c.docAcs)}`));
     const confidence = Number(res.confidence) || 0;
     top.appendChild(this._el('span', `qa-conflict-chip ${confidence >= 75 ? 'is-ok' : 'is-warn'}`, `Độ tin cậy ${confidence}%`));
-    top.appendChild(this._el('span', 'qa-conflict-muted', res.engine === 'ai' ? `AI · ${res.engineNote || ''}` : (res.engineNote || 'Luật suy luận tĩnh')));
     box.appendChild(top);
     box.appendChild(this._el('p', 'qa-conflict-verdict-reason', res.reason || ''));
 
     const row = this._el('div', 'qa-conflict-actions');
     const apply = this._actionButton('Áp dụng đề xuất', 'ph-check', 'btn-primary-sm',
-      'Thực hiện đúng phương án trọng tài đề xuất');
+      'Thực hiện đúng phương án được đề xuất');
     this._on(apply, 'click', () => this.executeResolve(c, res.recommendation));
     row.appendChild(apply);
     if (confidence < 75) {

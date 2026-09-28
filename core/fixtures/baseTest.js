@@ -8,15 +8,9 @@ const {
 } = require('../utils/authSetup');
 const { createPageContainer } = require('./pagesFactory');
 const { cleanupQueueFixture } = require('./cleanupRegistry');
+const { RESERVED_FIXTURE_NAMES } = require('./reservedFixtureNames');
 const { customFixtures } = require('./custom');
 const { assertNotFrozen } = require('../utils/circuitBreaker');
-
-const RESERVED_FIXTURE_NAMES = new Set([
-  'test', 'expect', 'page', 'request', 'browser', 'context',
-  'basePage', 'pages', 'workerUserData', 'authenticatedUser',
-  'cleanupQueue', 'featureName', 'pageObjectsRoot', 'pageObjectsPlatform',
-  'isMobile', 'viewport', 'browserName', 'storageState', 'circuitBreakerGuard'
-]);
 
 function resolvePlatform({ pageObjectsPlatform, isMobile, testInfo }) {
   // 1. Explicit override option has highest precedence

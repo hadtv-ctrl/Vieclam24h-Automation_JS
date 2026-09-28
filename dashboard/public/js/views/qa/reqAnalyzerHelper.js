@@ -13,6 +13,7 @@ export class ReqAnalyzerHelper {
     this.qaSlice = qaSlice;
     this.disposers = [];
     this.currentResult = null;
+    this.currentTestCases = [];
     this.currentRawText = '';
   }
 
@@ -29,6 +30,10 @@ export class ReqAnalyzerHelper {
     const reinputBtn = root.querySelector('#qa-req-analyzer-btn-reinput');
     const copyBtn = root.querySelector('#qa-req-analyzer-btn-copy');
     const scaffoldBtn = root.querySelector('#qa-req-analyzer-btn-scaffold');
+    const formatJiraBtn = root.querySelector('#qa-req-btn-format-jira');
+    const jiraKeyInput = root.querySelector('#qa-req-jira-key');
+    const clarityBtn = root.querySelector('#qa-req-btn-clarity');
+    const generateTcBtn = root.querySelector('#qa-req-btn-generate-tc');
 
     if (!modal) return;
 
@@ -37,6 +42,24 @@ export class ReqAnalyzerHelper {
       target.addEventListener(evt, handler);
       this.disposers.push(() => target.removeEventListener(evt, handler));
     };
+
+    // Chuyển Jira Markup sang Markdown
+    addEvt(formatJiraBtn, 'click', () => {
+      const textarea = root.querySelector('#qa-req-analyzer-text');
+      if (!textarea || !textarea.value.trim()) {
+        toast.info('Vui lòng dán nội dung requirement trước khi chuyển đổi.');
+        return;
+      }
+      const original = textarea.value;
+      const formatted = this.parseJiraMarkup(original);
+      textarea.value = formatted;
+
+      if (jiraKeyInput && !jiraKeyInput.value.trim()) {
+        const detectedKey = this.extractJiraKey(original) || this.extractJiraKey(formatted);
+        if (detectedKey) jiraKeyInput.value = detectedKey;
+      }
+      toast.success('Đã chuyển đổi Jira markup sang Markdown.');
+    });
 
     // Mở modal
     addEvt(openBtn, 'click', () => this.openModal(root));
@@ -76,6 +99,18 @@ export class ReqAnalyzerHelper {
     // Bắt đầu phân tích
     addEvt(submitBtn, 'click', () => this.runAnalysis(root));
 
+    // BA-1: Soát độ rõ requirement
+    addEvt(clarityBtn, 'click', () => this.runClarityCheck(root));
+
+    // QA-1: Sinh test case từ AC
+    addEvt(generateTcBtn, 'click', () => this.runGenerateTestCases(root));
+
+    // QA-2: Sinh Playwright spec từ test cases
+    const generateSpecBtn = root.querySelector('#qa-req-btn-generate-spec');
+    if (generateSpecBtn) {
+      addEvt(generateSpecBtn, 'click', () => this.runGenerateSpec(root));
+    }
+
     // Chuyển Tabs kết quả
     const tabBtns = root.querySelectorAll('.qa-req-tab');
     tabBtns.forEach((tabBtn) => {
@@ -90,6 +125,276 @@ export class ReqAnalyzerHelper {
 
     // 1-Click Scaffold
     addEvt(scaffoldBtn, 'click', () => this.scaffoldFiles(root));
+  }
+
+  async runClarityCheck(root) {
+    const textarea = root.querySelector('#qa-req-analyzer-text');
+    const rawText = textarea ? textarea.value.trim() : '';
+
+    if (!rawText) {
+      toast.warn('Vui lòng nhập hoặc dán nội dung requirement trước khi soát độ rõ.');
+      if (textarea) textarea.focus();
+      return;
+    }
+
+    const inputSection = root.querySelector('#qa-req-analyzer-input-section');
+    const loadingSection = root.querySelector('#qa-req-analyzer-loading');
+    const resultsSection = root.querySelector('#qa-req-analyzer-results-section');
+
+    if (inputSection) inputSection.style.display = 'none';
+    if (loadingSection) loadingSection.style.display = 'block';
+    if (resultsSection) resultsSection.style.display = 'none';
+
+    try {
+      const res = await apiClient.post('/api/ai/req-clarity', {
+        requirementText: rawText,
+        title: this.extractJiraKey(rawText) || 'Requirement',
+      });
+
+      if (!res.ok) throw new Error(res.error || 'Lỗi khi soát requirement');
+
+      if (loadingSection) loadingSection.style.display = 'none';
+      if (resultsSection) resultsSection.style.display = 'flex';
+
+      this.renderClarityResult(root, res);
+      const scoreBadge = root.querySelector('#qa-req-tab-clarity-score');
+      if (scoreBadge) scoreBadge.textContent = `${res.score}/100`;
+
+      this.switchTab(root, 'clarity');
+      toast.success(`Đã soát độ rõ thành công (Điểm: ${res.score}/100)!`);
+    } catch (err) {
+      if (loadingSection) loadingSection.style.display = 'none';
+      if (inputSection) inputSection.style.display = 'flex';
+      toast.error(`Lỗi soát độ rõ: ${err.message}`);
+    }
+  }
+
+  renderClarityResult(root, res) {
+    const container = root.querySelector('#qa-req-clarity-result');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const scoreColors = {
+      clear: '#10b981',
+      needs_clarification: '#f59e0b',
+      ambiguous: '#ef4444'
+    };
+    const statusLabels = {
+      clear: 'Rõ ràng (Đạt chuẩn)',
+      needs_clarification: 'Cần làm rõ thêm',
+      ambiguous: 'Quá mơ hồ / Thiếu tiêu chí'
+    };
+    const color = scoreColors[res.status] || '#f59e0b';
+    const label = statusLabels[res.status] || res.status;
+
+    const ambiguitiesHtml = (res.ambiguities || []).map((a) => `
+      <div style="background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid ${color}; border-radius: 6px; padding: 10px 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <strong style="color: ${color}; font-size: 13px;">"${this._escape(a.phrase)}"</strong>
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--line); color: var(--muted);">Cụm từ định tính</span>
+        </div>
+        <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;"><strong>Vấn đề:</strong> ${this._escape(a.reason)}</div>
+        <div style="font-size: 12px; color: var(--accent);"><strong>Đề xuất viết lại:</strong> ${this._escape(a.suggestion)}</div>
+      </div>
+    `).join('');
+
+    const missingHtml = (res.missingAspects || []).map((m) => `
+      <span style="font-size: 11.5px; padding: 3px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2);">
+        <i class="ph-bold ph-warning"></i> ${this._escape(m)}
+      </span>
+    `).join(' ');
+
+    container.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; background: var(--surface-2); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line);">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px; font-weight: 700; color: ${color};">${res.score}/100</span>
+            <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: color-mix(in srgb, ${color} 15%, transparent); color: ${color};">${label}</span>
+          </div>
+          <p style="margin: 4px 0 0; font-size: 12.5px; color: var(--text);">${this._escape(res.summary || '')}</p>
+        </div>
+      </div>
+
+      ${res.missingAspects?.length ? `
+        <div>
+          <strong style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px;">CÁC GÓC CẠNH CÒN THIẾU TIÊU CHÍ KIỂM ĐỊNH:</strong>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">${missingHtml}</div>
+        </div>
+      ` : ''}
+
+      <div>
+        <strong style="display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px;">DANH SÁCH CỤM TỪ MƠ HỒ CẦN LÀM RÕ (${res.ambiguities?.length || 0}):</strong>
+        <div style="display: flex; flex-direction: column; gap: 8px;">${ambiguitiesHtml || '<p style="color: var(--muted); font-size: 12px;">Không phát hiện từ ngữ mơ hồ.</p>'}</div>
+      </div>
+
+      ${res.clarifiedDraft ? `
+        <div style="background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="font-size: 12.5px; color: var(--accent);"><i class="ph-bold ph-note-pencil"></i> Bản nháp BDD (Given-When-Then) — điền các chỗ &lt;…&gt;:</strong>
+            <button type="button" class="btn-text-sm" id="btn-copy-bdd-draft" style="color: var(--accent); font-size: 11.5px; cursor: pointer; border: none; background: transparent;">
+              <i class="ph-bold ph-copy"></i> Sao chép BDD
+            </button>
+          </div>
+          <pre style="margin: 0; padding: 10px; background: var(--surface); border-radius: 6px; font-size: 12px; line-height: 1.5; color: var(--text); white-space: pre-wrap; word-break: break-word;"><code>${this._escape(res.clarifiedDraft)}</code></pre>
+        </div>
+      ` : ''}
+    `;
+
+    const copyBddBtn = container.querySelector('#btn-copy-bdd-draft');
+    if (copyBddBtn) {
+      copyBddBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(res.clarifiedDraft);
+          toast.success('Đã sao chép văn bản BDD viết lại vào clipboard!');
+        } catch (_) {
+          toast.warn('Không thể sao chép tự động.');
+        }
+      });
+    }
+  }
+
+  async runGenerateTestCases(root) {
+    const textarea = root.querySelector('#qa-req-analyzer-text');
+    const rawText = textarea ? textarea.value.trim() : '';
+
+    if (!rawText) {
+      toast.warn('Vui lòng nhập hoặc dán nội dung requirement trước khi sinh test cases.');
+      if (textarea) textarea.focus();
+      return;
+    }
+
+    const inputSection = root.querySelector('#qa-req-analyzer-input-section');
+    const loadingSection = root.querySelector('#qa-req-analyzer-loading');
+    const resultsSection = root.querySelector('#qa-req-analyzer-results-section');
+
+    if (inputSection) inputSection.style.display = 'none';
+    if (loadingSection) loadingSection.style.display = 'block';
+    if (resultsSection) resultsSection.style.display = 'none';
+
+    try {
+      const jiraKeyInput = root.querySelector('#qa-req-jira-key');
+      const reqId = jiraKeyInput?.value.trim() || this.extractJiraKey(rawText) || 'REQ-001';
+
+      const res = await apiClient.post('/api/ai/generate-tc', {
+        criteriaText: rawText,
+        startTcNumber: 1
+      });
+
+      if (!res.ok) throw new Error(res.error || 'Lỗi khi sinh test cases');
+
+      if (loadingSection) loadingSection.style.display = 'none';
+      if (resultsSection) resultsSection.style.display = 'flex';
+
+      const typeLabels = { positive: 'Positive', negative: 'Negative', boundary: 'Boundary' };
+      const formattedTcs = (res.testCases || []).map((tc) => ({
+        suggestedId: tc.tcId,
+        acId: tc.acId,
+        title: tc.title,
+        type: typeLabels[tc.type] || 'Positive',
+        priority: tc.priority || 'P1',
+        precondition: tc.given,
+        steps: Array.isArray(tc.steps) && tc.steps.length
+          ? tc.steps
+          : [{ step: 1, action: tc.when, expected: tc.then }],
+        testData: tc.testData || ''
+      }));
+
+      this.currentTestCasesText = rawText;
+      this.renderTestCases(root, formattedTcs);
+      const tabTcCount = root.querySelector('#qa-req-tab-tc-count');
+      const statTc = root.querySelector('#qa-req-stat-tc');
+      if (tabTcCount) tabTcCount.textContent = String(formattedTcs.length);
+      if (statTc) statTc.textContent = `${formattedTcs.length} TCs`;
+
+      this.switchTab(root, 'tc');
+      toast.success(`Đã sinh ${formattedTcs.length} test case. ${res.coverageNotes || ''}`.trim());
+    } catch (err) {
+      if (loadingSection) loadingSection.style.display = 'none';
+      if (inputSection) inputSection.style.display = 'flex';
+      toast.error(`Lỗi sinh test cases: ${err.message}`);
+    }
+  }
+
+  async runGenerateSpec(root) {
+    const textarea = root.querySelector('#qa-req-analyzer-text');
+    const rawText = textarea ? textarea.value.trim() : '';
+
+    if (!rawText) {
+      toast.warn('Vui lòng nhập hoặc dán nội dung requirement trước khi sinh Playwright spec.');
+      if (textarea) textarea.focus();
+      return;
+    }
+
+    const inputSection = root.querySelector('#qa-req-analyzer-input-section');
+    const loadingSection = root.querySelector('#qa-req-analyzer-loading');
+    const resultsSection = root.querySelector('#qa-req-analyzer-results-section');
+
+    if (inputSection) inputSection.style.display = 'none';
+    if (loadingSection) loadingSection.style.display = 'block';
+    if (resultsSection) resultsSection.style.display = 'none';
+
+    try {
+      const jiraKeyInput = root.querySelector('#qa-req-jira-key');
+      const reqId = jiraKeyInput?.value.trim() || this.extractJiraKey(rawText) || 'REQ-001';
+
+      const res = await apiClient.post('/api/ai/generate-spec', {
+        reqId,
+        tcList: this.currentTestCasesText === rawText ? (this.currentTestCases || []) : [],
+        criteriaText: rawText
+      });
+
+      if (!res.specCode) throw new Error(res.error || 'Không sinh được mã nguồn spec.');
+
+      if (loadingSection) loadingSection.style.display = 'none';
+      if (resultsSection) resultsSection.style.display = 'flex';
+
+      this.renderSpecResult(root, res);
+      const tabSpecStatus = root.querySelector('#qa-req-tab-spec-status');
+      if (tabSpecStatus) tabSpecStatus.textContent = 'Đã sinh';
+
+      this.switchTab(root, 'spec');
+      toast.success(`Đã sinh mã Playwright spec (${res.fileName}) thành công!`);
+    } catch (err) {
+      if (loadingSection) loadingSection.style.display = 'none';
+      if (inputSection) inputSection.style.display = 'flex';
+      toast.error(`Lỗi sinh spec: ${err.message}`);
+    }
+  }
+
+  renderSpecResult(root, res) {
+    const container = root.querySelector('#qa-req-spec-result');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div style="background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <i class="ph-bold ph-file-code" style="color: #6366f1; font-size: 18px;"></i>
+            <strong style="font-family: var(--font-mono, monospace); font-size: 13px;">${this._escape(res.fileName || 'spec.js')}</strong>
+            <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(99, 102, 241, 0.15); color: #6366f1; font-weight: 600;">
+              ${(res.tests || []).filter((t) => t.runnable).length}/${(res.tests || []).length} test chạy được
+            </span>
+          </div>
+          <button type="button" class="btn-secondary-sm" id="btn-copy-spec-code" style="font-size: 11.5px;">
+            <i class="ph-bold ph-copy"></i> Sao chép mã Spec
+          </button>
+        </div>
+        <p style="font-size: 12px; color: var(--muted); margin: 0;">${this._escape(res.summary || '')}</p>
+        <pre style="margin: 0; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font-family: var(--font-mono, monospace); font-size: 12px; line-height: 1.5; color: var(--text); overflow-x: auto; max-height: 380px;"><code>${this._escape(res.specCode || '')}</code></pre>
+      </div>
+    `;
+
+    const copyBtn = container.querySelector('#btn-copy-spec-code');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(res.specCode || '');
+          toast.success('Đã sao chép mã Playwright spec vào clipboard!');
+        } catch (_) {
+          toast.warn('Không thể tự động ghi vào clipboard.');
+        }
+      });
+    }
   }
 
   async openModal(root) {
@@ -111,19 +416,19 @@ export class ReqAnalyzerHelper {
     if (!badge) return;
 
     badge.textContent = 'Đang kiểm tra AI...';
-    badge.style.background = 'rgba(156, 163, 175, 0.15)';
+    badge.style.background = 'var(--surface-variant, rgba(156, 163, 175, 0.15))';
     badge.style.color = 'var(--muted)';
 
     try {
       const config = await apiClient.get('/api/ai/config');
       if (config && config.hasKey) {
         badge.textContent = `🟢 Sẵn sàng (${config.provider} - ${config.model})`;
-        badge.style.background = 'rgba(16, 185, 129, 0.15)';
-        badge.style.color = '#10b981';
+        badge.style.background = 'var(--success-subtle, rgba(16, 185, 129, 0.15))';
+        badge.style.color = 'var(--success)';
       } else {
         badge.textContent = '⚪ Chưa cấu hình Key';
-        badge.style.background = 'rgba(239, 68, 68, 0.15)';
-        badge.style.color = '#ef4444';
+        badge.style.background = 'var(--danger-subtle, rgba(239, 68, 68, 0.15))';
+        badge.style.color = 'var(--danger)';
       }
     } catch (_) {
       badge.textContent = '⚪ Không khả dụng';
@@ -155,7 +460,7 @@ export class ReqAnalyzerHelper {
     }
 
     this.currentRawText = rawText;
-    const mode = root.querySelector('input[name="qa-req-mode"]:checked')?.value || 'ai';
+    const mode = root.querySelector('input[name="qa-req-mode"]:checked')?.value || 'heuristic';
     const scanExisting = Boolean(root.querySelector('#qa-req-analyzer-scan-ctx')?.checked);
 
     const inputSection = root.querySelector('#qa-req-analyzer-input-section');
@@ -166,23 +471,76 @@ export class ReqAnalyzerHelper {
     if (loadingSection) loadingSection.style.display = 'block';
     if (resultsSection) resultsSection.style.display = 'none';
 
-    try {
-      const res = await apiClient.post('/api/qa/analyze-requirement', {
-        rawText,
-        mode,
-        scanExisting,
+    if (this._activeRequest) {
+      try { this._activeRequest.cancel(); } catch (_) {}
+      this._activeRequest = null;
+    }
+
+    if (window.AiStatus && !this._statusBar && loadingSection) {
+      this._statusBar = window.AiStatus.createAiStatusBar({
+        container: loadingSection,
+        onCancel: () => {
+          if (this._activeRequest) {
+            try { this._activeRequest.cancel(); } catch (_) {}
+            this._activeRequest = null;
+          }
+          if (this._statusBar) this._statusBar.clear();
+          this.showInputView(root);
+          toast.info('Đã hủy phân tích requirement.');
+        },
+        onRetry: () => this.runAnalysis(root),
       });
+    }
+
+    if (this._statusBar) {
+      this._statusBar.setPending(mode === 'ai' ? 'Đang chờ AI phân tích requirement…' : 'Đang phân tích requirement…', { showCancel: true });
+    }
+
+    const startAi = window.AiRequest && typeof window.AiRequest.startAiRequest === 'function';
+    try {
+      let res;
+      if (startAi) {
+        this._activeRequest = window.AiRequest.startAiRequest({
+          url: '/api/qa/analyze-requirement',
+          body: { rawText, mode, scanExisting },
+          timeoutMs: 60000,
+          owner: this,
+        });
+        res = await this._activeRequest.promise;
+      } else {
+        res = await apiClient.post('/api/qa/analyze-requirement', { rawText, mode, scanExisting });
+      }
+      const jiraKeyInput = root.querySelector('#qa-req-jira-key');
+      if (jiraKeyInput && !jiraKeyInput.value.trim()) {
+        const detected = this.extractJiraKey(rawText);
+        if (detected) jiraKeyInput.value = detected;
+      }
+      if (res && jiraKeyInput?.value.trim()) {
+        res.source = jiraKeyInput.value.trim();
+      }
 
       this.currentResult = res;
+      if (this._statusBar) this._statusBar.clear();
       if (loadingSection) loadingSection.style.display = 'none';
       if (resultsSection) resultsSection.style.display = 'flex';
 
+      this.currentTestCasesText = rawText;
       this.renderResults(root, res);
       toast.success('Phân tích requirement thành công!');
     } catch (err) {
-      if (loadingSection) loadingSection.style.display = 'none';
-      if (inputSection) inputSection.style.display = 'flex';
+      if (err.name === 'AbortError' || err.code === 'CANCELLED' || err.message === 'Tác vụ đã được hủy.') {
+        this.showInputView(root);
+        return;
+      }
+      if (this._statusBar) {
+        this._statusBar.setError(err.message || 'Lỗi phân tích requirement.', { showRetry: true });
+      } else {
+        if (loadingSection) loadingSection.style.display = 'none';
+        if (inputSection) inputSection.style.display = 'flex';
+      }
       toast.error(`Lỗi phân tích: ${err.message || 'Không thể xử lý yêu cầu.'}`);
+    } finally {
+      this._activeRequest = null;
     }
   }
 
@@ -203,7 +561,7 @@ export class ReqAnalyzerHelper {
     if (statTc) statTc.textContent = `${tcCount} TCs`;
     if (statRisk) {
       statRisk.textContent = riskLevel;
-      statRisk.style.color = riskLevel === 'Cao' ? '#ef4444' : riskLevel === 'Thấp' ? '#10b981' : '#f59e0b';
+      statRisk.style.color = riskLevel === 'Cao' ? 'var(--danger)' : riskLevel === 'Thấp' ? 'var(--success)' : 'var(--warning)';
     }
     if (statImpacted) statImpacted.textContent = `${impactedCount} TC`;
     if (statLogic) statLogic.textContent = String(logicCount);
@@ -254,6 +612,8 @@ export class ReqAnalyzerHelper {
   }
 
   renderTestCases(root, testCases) {
+    // "Sinh Spec" đọc lại đúng danh sách đang hiển thị (từ Phân tích hoặc Sinh Test Case).
+    this.currentTestCases = testCases;
     const container = root.querySelector('#qa-req-tc-list');
     if (!container) return;
     container.innerHTML = '';
@@ -529,10 +889,14 @@ export class ReqAnalyzerHelper {
     const reqId = window.prompt('Nhập mã Requirement (ví dụ REQ-016):', 'REQ-016');
     if (!reqId) return;
 
+    const jiraKeyInput = root?.querySelector?.('#qa-req-jira-key');
+    const source = jiraKeyInput?.value.trim() || this.extractJiraKey(this.currentRawText) || this.currentResult.source;
+
     try {
       const res = await apiClient.post('/api/qa/scaffold-from-analysis', {
         reqId,
         title,
+        source: source || undefined,
         analysisResult: this.currentResult,
       });
 
@@ -547,6 +911,65 @@ export class ReqAnalyzerHelper {
     }
   }
 
+  parseJiraMarkup(raw) {
+    if (!raw || typeof raw !== 'string') return '';
+    let text = raw;
+    if (/<[a-z][\s\S]*>/i.test(text)) {
+      text = text.replace(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi, (_, lvl, c) => `${'#'.repeat(Number(lvl))} ${c.trim()}\n\n`);
+      text = text.replace(/<(?:strong|b)[^>]*>([\s\S]*?)<\/(?:strong|b)>/gi, '**$1**');
+      text = text.replace(/<(?:em|i)[^>]*>([\s\S]*?)<\/(?:em|i)>/gi, '*$1*');
+      text = text.replace(/<(?:del|s|strike)[^>]*>([\s\S]*?)<\/(?:del|s|strike)>/gi, '~~$1~~');
+      text = text.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, '`$1`');
+      text = text.replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, '```\n$1\n```\n\n');
+      text = text.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '- $1\n');
+      text = text.replace(/<\/?(?:ul|ol)[^>]*>/gi, '\n');
+      text = text.replace(/<br\s*\/?>/gi, '\n');
+      text = text.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, '$1\n\n');
+      text = text.replace(/<[^>]+>/g, '');
+      text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+    }
+    text = text.replace(/\{code(?::([a-z]+))?\}([\s\S]*?)\{code\}/gi, (_, lang, code) => `\`\`\`${lang || ''}\n${code.trim()}\n\`\`\`\n`);
+    text = text.replace(/\{noformat\}([\s\S]*?)\{noformat\}/gi, (_, code) => `\`\`\`\n${code.trim()}\n\`\`\`\n`);
+    text = text.replace(/\{quote\}([\s\S]*?)\{quote\}/gi, (_, q) => q.trim().split('\n').map((l) => `> ${l}`).join('\n') + '\n\n');
+    text = text.replace(/^bq\.\s*(.+)$/gm, '> $1');
+    text = text.replace(/^(\s*)#+\s+/gm, '$11. ');
+    text = text.replace(/^(\s*)\*\s+/gm, '$1- ');
+    text = text.replace(/^h([1-6])\.\s*(.+)$/gm, (_, lvl, title) => `${'#'.repeat(Number(lvl))} ${title.trim()}`);
+    text = text.replace(/(^|[\s(])\*([^\s*][^*]*[^\s*])\*([\s).,!?:]|$)/g, '$1**$2**$3');
+    text = text.replace(/(^|[\s(])_([^\s_][^_]*[^\s_])_([\s).,!?:]|$)/g, '$1*$2*$3');
+    text = text.replace(/(^|[\s(])-([^\s-][^-]*[^\s-])-([\s).,!?:]|$)/g, '$1~~$2~~$3');
+    text = text.replace(/\{\{([^{}]+)\}\}/g, '`$1`');
+    text = text.replace(/\[([^|\]]+)\|([^\]]+)\]/g, '[$1]($2)');
+    text = text.replace(/\[([a-z]+:\/\/[^\]]+)\]/g, '<$1>');
+    const lines = text.split('\n');
+    const resultLines = [];
+    let inTable = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('||') && line.endsWith('||')) {
+        const headers = line.slice(2, -2).split('||').map((h) => h.trim());
+        resultLines.push(`| ${headers.join(' | ')} |`);
+        resultLines.push(`| ${headers.map(() => '---').join(' | ')} |`);
+        inTable = true;
+      } else if (line.startsWith('|') && line.endsWith('|') && !line.startsWith('||')) {
+        const cells = line.slice(1, -1).split('|').map((c) => c.trim());
+        resultLines.push(`| ${cells.join(' | ')} |`);
+        inTable = true;
+      } else {
+        if (inTable) inTable = false;
+        resultLines.push(lines[i]);
+      }
+    }
+    return resultLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  extractJiraKey(text) {
+    if (!text) return null;
+    // AC-xxx / TC-xxx là mã truy vết của framework, không phải issue Jira (giống core/ai/tasks/jiraStoryParser.js).
+    const keys = String(text).match(/\b[A-Z][A-Z0-9]+-\d+\b/g) || [];
+    return keys.find((key) => !['AC', 'TC'].includes(key.split('-')[0])) || null;
+  }
+
   _escape(str) {
     if (!str) return '';
     return String(str)
@@ -557,6 +980,14 @@ export class ReqAnalyzerHelper {
   }
 
   destroy() {
+    if (this._activeRequest) {
+      try { this._activeRequest.cancel(); } catch (_) {}
+      this._activeRequest = null;
+    }
+    if (this._statusBar) {
+      try { this._statusBar.dispose(); } catch (_) {}
+      this._statusBar = null;
+    }
     this.disposers.forEach((d) => {
       try { d(); } catch (_) {}
     });

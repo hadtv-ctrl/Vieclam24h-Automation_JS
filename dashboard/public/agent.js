@@ -78,7 +78,7 @@
     const percentText = `${percent}%`, pillPercent = byId('agent-quota-pill-percent'), quotaPercent = byId('agent-quota-percent');
     if (pillPercent) pillPercent.textContent = percentText;
     if (quotaPercent) quotaPercent.textContent = percentText;
-    const isHealthy = percent >= 50, isWarning = percent >= 20 && percent < 50, isDanger = percent < 20;
+    const isHealthy = percent >= 30, isWarning = percent >= 10 && percent < 30, isDanger = percent < 10;
     for (const el of [byId('agent-quota-pill'), byId('agent-quota-badge'), byId('agent-quota-bar-fill')]) {
       el?.classList?.toggle?.('is-healthy', isHealthy);
       el?.classList?.toggle?.('is-warning', isWarning);

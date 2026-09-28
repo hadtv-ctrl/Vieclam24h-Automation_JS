@@ -25,7 +25,7 @@ if (testFiles.length === 0) {
 console.log(`Discovered ${testFiles.length} API test files in tests/dashboard-api/`);
 testFiles.forEach((f) => console.log(` - ${path.basename(f)}`));
 
-const args = ['--test', ...testFiles];
+const args = ['--test', '--test-concurrency=1', ...testFiles];
 const result = spawnSync(process.execPath, args, {
   stdio: 'inherit',
   cwd: path.resolve(__dirname, '..')

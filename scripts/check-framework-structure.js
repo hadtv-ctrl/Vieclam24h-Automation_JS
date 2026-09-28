@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { findHardcodedSecrets } = require('./lib/secretScan');
 
 function runFrameworkCheck({ root = process.cwd(), targetArgs = [] } = {}) {
   const sourceDirs = ['tests/e2e', 'tests/api', 'pages', 'core/utils', 'core/fixtures'];
@@ -59,6 +60,20 @@ function runFrameworkCheck({ root = process.cwd(), targetArgs = [] } = {}) {
       }
     }
   }
+
+  const aiHostPattern = /\b(?:generativelanguage\.googleapis\.com|api\.openai\.com|api\.deepseek\.com)\b/g;
+  const aiDirs = ['core', 'dashboard'];
+  const aiFiles = aiDirs.flatMap(walk).filter((f) => f.endsWith('.js'));
+  for (const file of aiFiles) {
+    const norm = file.split(path.sep).join('/');
+    if (norm.endsWith('.test.js') || norm.endsWith('.spec.js') || norm.startsWith('core/ai/gateway/adapters/') || norm === 'core/ai/gateway/endpointPolicy.js' || norm.startsWith('dashboard/public/')) {
+      continue;
+    }
+    const content = fs.readFileSync(path.join(root, file), 'utf8');
+    reportMatches(file, content, aiHostPattern, 'calls direct AI host outside gateway adapters (AI17-01)');
+  }
+
+  issues.push(...findHardcodedSecrets({ root, files: targetArgs.length > 0 ? files : null }));
 
   const passed = issues.length === 0;
   const summary = passed

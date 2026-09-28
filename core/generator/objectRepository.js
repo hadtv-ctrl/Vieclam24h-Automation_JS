@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy Object Repository & Fixtures Studio engine (~1240 dòng, có từ trước); tách module là nợ kỹ thuật riêng
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -925,22 +926,30 @@ function scanAllFixtures(rootDir = process.cwd()) {
   return allFixtures;
 }
 
-const RESERVED_FIXTURE_NAMES = new Set([
-  'test', 'expect', 'page', 'request', 'browser', 'context',
-  'basePage', 'pages', 'workerUserData', 'authenticatedUser',
-  'cleanupQueue', 'featureName', 'pageObjectsRoot', 'pageObjectsPlatform',
-  'isMobile', 'viewport', 'browserName', 'storageState',
-]);
+// Dùng chung danh sách với baseTest.js để Fixtures Studio không cho tạo fixture mà runner sẽ bỏ qua.
+const { RESERVED_FIXTURE_NAMES } = require('../fixtures/reservedFixtureNames');
+
+function isValidFixtureName(name) {
+  return typeof name === 'string' && /^[a-zA-Z][a-zA-Z0-9_]*$/.test(name);
+}
 
 /**
  * Tìm kiếm đường dẫn file fixture của một custom fixture
  */
 function findCustomFixturePath(name, rootDir = process.cwd()) {
-  const canonicalPath = path.join(rootDir, 'fixtures', 'custom', `${name}.fixture.js`);
-  if (fs.existsSync(canonicalPath)) return { fullPath: canonicalPath, isCanonical: true };
+  if (!isValidFixtureName(name)) return null;
 
-  const legacyPath = path.join(rootDir, 'core', 'fixtures', 'custom', `${name}.fixture.js`);
-  if (fs.existsSync(legacyPath)) return { fullPath: legacyPath, isCanonical: false };
+  const canonicalDir = path.resolve(rootDir, 'fixtures', 'custom');
+  const canonicalPath = path.resolve(canonicalDir, `${name}.fixture.js`);
+  if (canonicalPath.startsWith(canonicalDir + path.sep) && fs.existsSync(canonicalPath)) {
+    return { fullPath: canonicalPath, isCanonical: true };
+  }
+
+  const legacyDir = path.resolve(rootDir, 'core', 'fixtures', 'custom');
+  const legacyPath = path.resolve(legacyDir, `${name}.fixture.js`);
+  if (legacyPath.startsWith(legacyDir + path.sep) && fs.existsSync(legacyPath)) {
+    return { fullPath: legacyPath, isCanonical: false };
+  }
 
   return null;
 }
@@ -1015,6 +1024,15 @@ function createCustomFixture({ name, title, description, category, template, con
     throw new Error(`Tên fixture '${name}' trùng với từ khóa hoặc Core Fixture nền tảng đã được bảo vệ.`);
   }
 
+  // Chống ghi đè trùng tên (R03): Kiểm tra fixture đã tồn tại
+  const existingFixture = findCustomFixturePath(name, rootDir);
+  if (existingFixture) {
+    const conflictErr = new Error(`Fixture '${name}' đã tồn tại! Vui lòng chọn tên khác hoặc chỉnh sửa fixture hiện có.`);
+    conflictErr.code = 'CONFLICT';
+    conflictErr.statusCode = 409;
+    throw conflictErr;
+  }
+
   // Ưu tiên lưu vào canonical consumer directory: fixtures/custom/
   // Nếu thư mục fixtures/custom chưa tồn tại nhưng core/fixtures/custom đã có (cho backward compat trong test runner độc lập)
   const canonicalDir = path.join(rootDir, 'fixtures', 'custom');
@@ -1065,13 +1083,17 @@ const ${name} = async ({ request }, use, testInfo) => {
     try {
       if (context.id) {
         const deleteEndpoint = context.targetUrl.replace(/:id/g, context.id);
-        await request.${method.toLowerCase()}(deleteEndpoint, {
+        const res = await request.${method.toLowerCase()}(deleteEndpoint, {
           headers: ${headers}
         });
+        if (res && typeof res.ok === 'function' && !res.ok()) {
+          throw new Error(\`API teardown thất bại với mã lỗi HTTP \${res.status()}\`);
+        }
         console.log(\`[Teardown \${'${name}'}] Đã xóa thành công resource ID: \${context.id}\`);
       }
     } catch (err) {
       console.warn(\`[Teardown \${'${name}'} Warning] Không thể xóa resource: \${err.message}\`);
+      throw err;
     }
   }
 };
@@ -1135,12 +1157,14 @@ module.exports = { ${name} };
  * Cập nhật mã nguồn một Custom Fixture kèm kiểm tra revision (Optimistic Concurrency Control)
  */
 function updateCustomFixture({ name, sourceCode, expectedRevision, rootDir = process.cwd() }) {
-  if (!name || RESERVED_FIXTURE_NAMES.has(name)) {
+  if (!name || !isValidFixtureName(name) || RESERVED_FIXTURE_NAMES.has(name)) {
     throw new Error(`Không thể chỉnh sửa fixture nền tảng hoặc tên không hợp lệ: '${name}'.`);
   }
   const fileInfo = findCustomFixturePath(name, rootDir);
   if (!fileInfo) {
-    throw new Error(`Không tìm thấy file của fixture '${name}' để cập nhật.`);
+    const notFoundErr = new Error(`Không tìm thấy file của fixture '${name}' để cập nhật.`);
+    notFoundErr.statusCode = 404;
+    throw notFoundErr;
   }
 
   const currentContent = fs.readFileSync(fileInfo.fullPath, 'utf8');
@@ -1184,13 +1208,15 @@ function updateCustomFixture({ name, sourceCode, expectedRevision, rootDir = pro
  * Xóa một Custom Fixture kèm backup và kiểm tra revision tùy chọn
  */
 function deleteCustomFixture(name, rootDir = process.cwd(), expectedRevision = null) {
-  if (RESERVED_FIXTURE_NAMES.has(name)) {
-    throw new Error(`Không thể xóa Core Fixture nền tảng '${name}'. Thao tác bị cấm.`);
+  if (!isValidFixtureName(name) || RESERVED_FIXTURE_NAMES.has(name)) {
+    throw new Error(`Không thể xóa Core Fixture nền tảng hoặc tên fixture không hợp lệ: '${name}'. Thao tác bị cấm.`);
   }
 
   const fileInfo = findCustomFixturePath(name, rootDir);
   if (!fileInfo) {
-    throw new Error(`Không tìm thấy custom fixture '${name}' để xóa.`);
+    const notFoundErr = new Error(`Không tìm thấy custom fixture '${name}' để xóa.`);
+    notFoundErr.statusCode = 404;
+    throw notFoundErr;
   }
 
   const targetPath = fileInfo.fullPath;

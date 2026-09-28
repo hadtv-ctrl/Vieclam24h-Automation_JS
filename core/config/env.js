@@ -14,6 +14,19 @@ if (process.env.SHOW_ENV_BANNER === '1' || dashboardConfig.runtime.showEnvBanner
   console.log(`Running tests on ${ENV.toUpperCase()} environment`);
 }
 
+// Guard: Cảnh báo khi baseURL vẫn là placeholder mặc định của Hub template
+const resolvedBaseURL = environments[ENV].baseURL || '';
+const PLACEHOLDER_URLS = ['https://example.com', 'https://staging.example.com', 'http://example.com'];
+if (PLACEHOLDER_URLS.includes(resolvedBaseURL)) {
+  const isFrameworkCheck = process.argv.some((a) => a.includes('check-framework') || a.includes('check:framework'));
+  if (!isFrameworkCheck) {
+    console.warn(
+      `[env] ⚠️  baseURL cho môi trường '${ENV}' vẫn là placeholder '${resolvedBaseURL}'.\\n`
+      + `  → Cập nhật URL thật trong dashboardConfig.json hoặc core/config/dashboardConfig.json.`
+    );
+  }
+}
+
 module.exports = {
   name: ENV,
   ...environments[ENV],

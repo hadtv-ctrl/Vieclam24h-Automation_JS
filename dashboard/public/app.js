@@ -6541,7 +6541,7 @@ const AI_PRESETS = {
     baseURL: 'http://localhost:20128/v1',
     models: ['myCombo', 'ag/gemini-3.8-flash', 'gemini/gemini-3.8-flash', 'gemini/gemini-2.5-flash', 'openai/gpt-4o-mini', 'openai/gpt-4o'],
     defaultModel: 'myCombo',
-    keyPlaceholder: 'sk-222d28244f5c9294-... (Key từ 9Router)',
+    keyPlaceholder: 'sk-... (để trống nếu 9Router không bật xác thực)',
     keyDesc: 'AI Gateway cục bộ chạy tại http://localhost:20128/v1 - Định tuyến đa mô hình tự động',
   },
   gemini: {
@@ -6649,9 +6649,6 @@ function initAiSettings() {
       }
     }
     if (apiKeyInput) apiKeyInput.placeholder = preset.keyPlaceholder;
-    if (p === '9router' && apiKeyInput && (!apiKeyInput.value || apiKeyInput.value.length < 5)) {
-      apiKeyInput.value = 'sk-222d28244f5c9294-6676rz-8fcc38a6';
-    }
     const desc = $('#settings-ai-key-desc');
     if (desc) desc.textContent = preset.keyDesc;
     updateModelPresets(p, null);
@@ -6687,17 +6684,22 @@ function initAiSettings() {
   async function fetchLiveModels(baseURL, apiKey, showNotif = false) {
     try {
       const qBase = baseURL || 'http://localhost:20128/v1';
-      const qKey = apiKey || 'sk-222d28244f5c9294-6676rz-8fcc38a6';
-      const res = await request(`/api/ai/models?baseURL=${encodeURIComponent(qBase)}&apiKey=${encodeURIComponent(qKey)}`);
-      if (res && res.success && Array.isArray(res.models) && res.models.length) {
-        AI_PRESETS['9router'].models = Array.from(new Set(['myCombo', ...res.models]));
-        updateModelPresets(providerSelect?.value || '9router', customModelInput?.value || 'myCombo');
-        if (showNotif) {
-          notify(`Đã nạp ${res.models.length} mô hình từ 9Router!`);
-          showAlert(true, 'Tải models thành công', `Đã nhận diện ${res.models.length} mô hình từ 9Router.`);
-        }
-        return true;
+      // The key travels in a header, never in the URL, so it stays out of history and server logs.
+      const headers = apiKey ? { 'X-AI-Config': btoa(unescape(encodeURIComponent(JSON.stringify({ apiKey })))) } : {};
+      const res = await request(`/api/ai/models?baseURL=${encodeURIComponent(qBase)}`, { headers });
+      if (!res?.success) {
+        throw new Error(/^HTTP 40[13]$/.test(res?.error || '')
+          ? `Endpoint yêu cầu API Key hợp lệ (${res.error}). Nhập API Key rồi thử lại.`
+          : (res?.error || 'Hãy kiểm tra xem 9Router có đang chạy không.'));
       }
+      if (!Array.isArray(res.models) || !res.models.length) throw new Error('Endpoint không trả về mô hình nào.');
+      AI_PRESETS['9router'].models = Array.from(new Set(['myCombo', ...res.models]));
+      updateModelPresets(providerSelect?.value || '9router', customModelInput?.value || 'myCombo');
+      if (showNotif) {
+        notify(`Đã nạp ${res.models.length} mô hình từ 9Router!`);
+        showAlert(true, 'Tải models thành công', `Đã nhận diện ${res.models.length} mô hình từ 9Router.`);
+      }
+      return true;
     } catch (e) {
       if (showNotif) {
         showAlert(false, 'Không thể tải danh sách mô hình', e.message || 'Hãy kiểm tra xem 9Router có đang chạy không.');
@@ -6710,19 +6712,15 @@ function initAiSettings() {
   detect9RouterBtn?.addEventListener('click', async () => {
     if (providerSelect) providerSelect.value = '9router';
     if (baseUrlInput) baseUrlInput.value = 'http://localhost:20128/v1';
-    if (apiKeyInput && (!apiKeyInput.value || apiKeyInput.value.length < 5)) {
-      apiKeyInput.value = 'sk-222d28244f5c9294-6676rz-8fcc38a6';
-    }
     updateModelPresets('9router', 'myCombo');
     notify('Đang tự động nhận diện và kết nối 9Router...');
-    await fetchLiveModels('http://localhost:20128/v1', apiKeyInput?.value || 'sk-222d28244f5c9294-6676rz-8fcc38a6');
-    showAlert(true, 'Đã nhận diện 9Router', 'Đã thiết lập endpoint http://localhost:20128/v1 và tải danh sách mô hình từ 9Router thành công!');
+    await fetchLiveModels('http://localhost:20128/v1', apiKeyInput?.value.trim() || '', true);
   });
 
   const fetchModelsBtn = $('#btn-fetch-9router-models');
   fetchModelsBtn?.addEventListener('click', async () => {
     const base = baseUrlInput?.value.trim() || 'http://localhost:20128/v1';
-    const key = apiKeyInput?.value.trim() || 'sk-222d28244f5c9294-6676rz-8fcc38a6';
+    const key = apiKeyInput?.value.trim() || '';
     await fetchLiveModels(base, key, true);
   });
 
@@ -6808,7 +6806,76 @@ function initAiSettings() {
     }
   });
 
+  async function loadAiAuditLogTable() {
+    const tbody = $('#ai-audit-table-body');
+    const totalEl = $('#ai-audit-total-tokens');
+    const countEl = $('#ai-audit-call-count');
+    const rateEl = $('#ai-audit-success-rate');
+    if (!tbody) return;
+
+    try {
+      const res = await request('/api/ai/audit?limit=50').catch(() => ({ ok: false, records: [] }));
+      const records = res?.records || [];
+
+      if (countEl) countEl.textContent = `${records.length} lượt`;
+
+      let totalTokens = 0;
+      let okCount = 0;
+      records.forEach((r) => {
+        const u = r.usage?.totalTokens || r.usage?.total_tokens || 0;
+        totalTokens += Number(u) || 0;
+        if (r.outcome === 'ok' || r.outcome === 'success') okCount++;
+      });
+
+      if (totalEl) totalEl.textContent = `${totalTokens.toLocaleString()} token`;
+      if (rateEl) {
+        const rate = records.length ? Math.round((okCount / records.length) * 100) : 100;
+        rateEl.textContent = `${rate}%`;
+      }
+
+      if (!records.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding: 16px; text-align: center; color: var(--muted);">Chưa có lịch sử giao dịch AI nào được ghi nhận.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = records.map((r) => {
+        const tsFormatted = r.ts ? new Date(r.ts).toLocaleTimeString() : '—';
+        const isOk = r.outcome === 'ok' || r.outcome === 'success';
+        const statusBadge = isOk
+          ? '<span style="color: var(--success); font-weight: 600;">Thành công</span>'
+          : `<span style="color: var(--danger); font-weight: 600;">Lỗi (${escapeHtml(r.errorCode || r.outcome || '')})</span>`;
+        const tokens = r.usage?.totalTokens || r.usage?.total_tokens || (r.inputChars ? `≈${Math.round(r.inputChars / 4)}` : '0');
+
+        return `
+          <tr style="border-bottom: 1px solid var(--line);">
+            <td style="padding: 6px 10px; font-family: var(--font-mono, monospace); font-size: 11px;">${escapeHtml(tsFormatted)}</td>
+            <td style="padding: 6px 10px; font-weight: 600;">${escapeHtml(r.task || 'unknown')}</td>
+            <td style="padding: 6px 10px; color: var(--muted); font-size: 11px;">${escapeHtml(r.model || '—')}</td>
+            <td style="padding: 6px 10px; font-size: 11px;">${r.durationMs || 0} ms</td>
+            <td style="padding: 6px 10px; font-family: var(--font-mono, monospace); font-size: 11px; color: var(--accent);">${tokens}</td>
+            <td style="padding: 6px 10px;">${statusBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (_) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding: 16px; text-align: center; color: var(--danger);">Không thể nạp nhật ký AI.</td></tr>';
+    }
+  }
+
+  $('#btn-ai-audit-refresh')?.addEventListener('click', () => loadAiAuditLogTable());
+  $('#btn-ai-audit-clear')?.addEventListener('click', async () => {
+    if (!confirm('Bạn có chắc muốn xóa toàn bộ file log AI trong thư mục .tmp không?')) return;
+    try {
+      await request('/api/ai/audit', { method: 'DELETE' });
+      notify('Đã xóa toàn bộ nhật ký AI!');
+      loadAiAuditLogTable();
+    } catch (e) {
+      notify(`Lỗi xóa log: ${e.message}`);
+    }
+  });
+
   loadAiSettings();
+  loadAiAuditLogTable();
 }
 
 async function loadAiSettings() {
@@ -6912,9 +6979,14 @@ async function loadAiSettings() {
 
   const statusBadge = $('#settings-9router-status-badge');
   if (statusBadge) {
-    request('/api/ai/models?baseURL=http://localhost:20128/v1').then((r) => {
-      if (r && r.success) {
-        statusBadge.innerHTML = '<i class="ph-fill ph-circle" style="color: #22c55e;"></i> Online (Cổng 20128)';
+    const statusHeaders = personal?.enabled && personal.apiKey
+      ? { 'X-AI-Config': btoa(unescape(encodeURIComponent(JSON.stringify({ apiKey: personal.apiKey })))) }
+      : {};
+    request('/api/ai/models?baseURL=http://localhost:20128/v1', { headers: statusHeaders }).then((r) => {
+      if (r && (r.success || /^HTTP 40[13]$/.test(r.error || ''))) {
+        statusBadge.innerHTML = r.success
+          ? '<i class="ph-fill ph-circle" style="color: #22c55e;"></i> Online (Cổng 20128)'
+          : '<i class="ph-fill ph-circle" style="color: #22c55e;"></i> Online (Cổng 20128) · cần API Key';
         statusBadge.className = 'settings-badge-status settings-badge-status--server';
         if (r.models && r.models.length) {
           AI_PRESETS['9router'].models = Array.from(new Set(['myCombo', ...r.models]));
@@ -15085,27 +15157,149 @@ function initVisualBuilderControls() {
 }
 
 async function initPlanThreeControls() {
-  document.getElementById('diagnostics-analyze-btn')?.addEventListener('click', async () => {
+  const runTriage = async () => {
     const input = document.getElementById('diagnostics-error-input');
     const results = document.getElementById('diagnostics-results');
     if (!input?.value.trim()) return notify('Vui lòng dán lỗi hoặc stack trace.');
+
+    results.innerHTML = `<div style="padding: 12px; color: var(--muted);"><i class="ph-bold ph-spinner" style="animation: spin 1s linear infinite;"></i> Đang phân tích nguyên nhân lỗi...</div>`;
+
     try {
-      const result = await request('/api/diagnostics/analyze', {
+      const res = await request('/api/diagnostics/triage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: input.value, testTitle: currentRun?.options?.spec || '' }),
+        body: JSON.stringify({
+          error: input.value,
+          testTitle: currentRun?.options?.spec || ''
+        }),
       });
-      results.innerHTML = result.findings.map((finding) => `
-        <article class="diagnostic-finding">
-          <strong>${escapeHtml(finding.code)}</strong>
-          <p>${escapeHtml(finding.message)}</p>
-          <small>Confidence: ${Math.round(finding.confidence * 100)}%</small>
-          ${finding.suggestedFix ? `<div class="diagnostic-fix-preview">Preview: ${escapeHtml(finding.suggestedFix.preview)}</div>` : ''}
-        </article>`).join('');
+
+      const catLabels = {
+        product_bug: { label: 'Lỗi sản phẩm (Product Bug)', color: 'var(--danger, #ef4444)' },
+        test_bug: { label: 'Lỗi kịch bản test (Test Bug)', color: 'var(--warning, #f59e0b)' },
+        environment: { label: 'Lỗi hạ tầng / mạng (Environment)', color: 'var(--muted, #6b7280)' },
+        flaky: { label: 'Lỗi chập chờn / Flaky (Timing)', color: 'var(--accent, #8b5cf6)' },
+        unknown: { label: 'Chưa xác định được nguyên nhân', color: 'var(--muted, #6b7280)' }
+      };
+
+      const catInfo = catLabels[res.category] || catLabels.unknown;
+
+      results.innerHTML = `
+        <article class="diagnostic-finding" style="display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--surface-2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <strong style="color: ${catInfo.color}; font-size: 13.5px;">${catInfo.label}</strong>
+              <small style="color: var(--muted); font-size: 11.5px;">(Độ tin cậy: ${Number(res.confidence) || 0}%)</small>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 13px; line-height: 1.45; color: var(--text);">${escapeHtml(res.summary || '')}</p>
+          ${res.evidence ? `<pre style="margin: 0; padding: 8px; font-size: 11.5px; background: var(--surface); border-radius: 6px; overflow-x: auto; color: var(--muted); max-height: 120px;"><code>${escapeHtml(res.evidence)}</code></pre>` : ''}
+          ${res.suggestedFix ? `<div class="diagnostic-fix-preview" style="font-size: 12px; padding: 8px 10px; border-radius: 6px; background: rgba(139, 92, 246, 0.08); border-left: 3px solid #8b5cf6;"><strong>Gợi ý khắc phục:</strong> ${escapeHtml(res.suggestedFix)}</div>` : ''}
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <button type="button" class="btn-secondary-sm" id="btn-diagnostics-draft-bug" style="font-size: 11.5px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" title="Soạn thảo Bug Report chi tiết chuẩn Jira từ kết quả chẩn đoán lỗi">
+              <i class="ph-bold ph-bug"></i> Soạn Bug nháp (Jira/Markdown)
+            </button>
+            <button type="button" class="btn-secondary-sm" id="btn-diagnostics-suggest-locator" style="font-size: 11.5px; color: #3b82f6; border-color: rgba(59, 130, 246, 0.4);" title="Đề xuất locator Playwright bền vững từ locator lỗi và DOM (QA-5)">
+              <i class="ph-bold ph-crosshair"></i> Đề xuất locator
+            </button>
+          </div>
+          <div id="diagnostics-bug-report-container" style="display: none; margin-top: 8px;"></div>
+        </article>`;
+
+      document.getElementById('btn-diagnostics-suggest-locator')?.addEventListener('click', async () => {
+        const bugContainer = document.getElementById('diagnostics-bug-report-container');
+        if (!bugContainer) return;
+        bugContainer.style.display = 'block';
+        bugContainer.innerHTML = '<div style="font-size: 12px; color: var(--muted);"><i class="ph-bold ph-spinner ph-spin"></i> Đang phân tích DOM và đề xuất locator bền vững…</div>';
+        try {
+          const locRes = await fetch('/api/ai/suggest-locator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              brokenLocator: res.locator || '',
+              errorMessage: input.value,
+              domSnippet: res.evidence || '',
+              pageUrl: '/'
+            })
+          }).then(r => r.json());
+
+          const sug = locRes.primarySuggestion || {};
+          bugContainer.innerHTML = `
+            <div style="border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--surface); display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="font-size: 12.5px; color: var(--accent);"><i class="ph-bold ph-crosshair"></i> ${escapeHtml(sug.type || 'Locator')} (Độ tin cậy: ${Math.round((sug.confidence || 0.8) * 100)}%)</strong>
+              </div>
+              <pre style="margin: 0; padding: 8px; font-size: 12px; font-family: var(--font-mono, monospace); background: var(--surface-2); border-radius: 4px; color: #10b981; white-space: pre-wrap;"><code>${escapeHtml(sug.code || '')}</code></pre>
+              <small style="color: var(--muted); font-size: 11px;">${escapeHtml(sug.rationale || '')}</small>
+              <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-text-sm" id="btn-copy-suggested-locator" style="color: var(--accent); cursor: pointer; border: none; background: transparent; font-size: 11.5px;">
+                  <i class="ph-bold ph-copy"></i> Sao chép locator
+                </button>
+              </div>
+            </div>`;
+
+          document.getElementById('btn-copy-suggested-locator')?.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(sug.code || '');
+              if (window.toast) window.toast.success('Đã sao chép locator vào clipboard!');
+            } catch (_) {}
+          });
+        } catch (err) {
+          bugContainer.innerHTML = `<small style="color: var(--danger);">Lỗi đề xuất locator: ${escapeHtml(err.message)}</small>`;
+        }
+      });
+
+      document.getElementById('btn-diagnostics-draft-bug')?.addEventListener('click', async () => {
+        const bugContainer = document.getElementById('diagnostics-bug-report-container');
+        if (!bugContainer) return;
+        bugContainer.style.display = 'block';
+        bugContainer.innerHTML = '<div style="font-size: 12px; color: var(--muted);"><i class="ph-bold ph-spinner ph-spin"></i> Đang soạn thảo Bug Report nháp…</div>';
+        try {
+          const bugRes = await fetch('/api/ai/draft-bug', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              testTitle: currentRun?.options?.spec || '',
+              errorText: input.value,
+              triageCategory: res.category,
+              triageSummary: res.summary,
+              suggestedFix: res.suggestedFix || '',
+              locator: res.locator || '',
+            })
+          }).then(r => r.json());
+
+          if (!bugRes.ok) throw new Error(bugRes.error || 'Lỗi soạn bug');
+
+          bugContainer.innerHTML = `
+            <div style="border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--surface); display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="font-size: 12.5px; color: var(--danger);">${escapeHtml(bugRes.title)}</strong>
+                <span style="font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.15); color: #ef4444; font-weight: 700;">${escapeHtml(bugRes.severity)}</span>
+              </div>
+              <pre style="margin: 0; padding: 8px; font-size: 11px; background: var(--surface-2); border-radius: 4px; max-height: 180px; overflow-y: auto; color: var(--text); white-space: pre-wrap;"><code>${escapeHtml(bugRes.markdownReport || '')}</code></pre>
+              <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-text-sm" id="btn-copy-bug-report" style="color: var(--accent); cursor: pointer; border: none; background: transparent; font-size: 11.5px;">
+                  <i class="ph-bold ph-copy"></i> Sao chép Markdown Jira
+                </button>
+              </div>
+            </div>`;
+
+          document.getElementById('btn-copy-bug-report')?.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(bugRes.markdownReport || '');
+              if (window.toast) window.toast.success('Đã sao chép Bug Report nháp vào clipboard!');
+            } catch (_) {}
+          });
+        } catch (e) {
+          bugContainer.innerHTML = `<div style="font-size: 11.5px; color: var(--danger);">Lỗi soạn bug: ${escapeHtml(e.message)}</div>`;
+        }
+      });
     } catch (error) {
-      results.textContent = error.message;
+      results.innerHTML = `<div style="padding: 10px; color: var(--danger);">Lỗi phân tích: ${escapeHtml(error.message)}</div>`;
     }
-  });
+  };
+
+  document.getElementById('diagnostics-analyze-btn')?.addEventListener('click', () => runTriage());
 }
 
 let builderLoadedFixtures = [];
@@ -15761,27 +15955,34 @@ async function updateGlobalHeaderTokenQuota() {
     if (clientConfig) {
       headers['X-AI-Config'] = btoa(unescape(encodeURIComponent(JSON.stringify(clientConfig))));
     }
-    const res = await fetch('/api/agent/status', { headers });
+    const res = await fetch('/api/ai/usage');
     if (!res.ok) return;
     const data = await res.json();
-    if (data.tokenQuota) {
-      const percent = data.tokenQuota.remainingPercent ?? 100;
-      const pillPercent = document.getElementById('agent-quota-pill-percent');
-      if (pillPercent) pillPercent.textContent = `${percent}%`;
-      const pill = document.getElementById('agent-quota-pill');
-      if (pill) {
-        pill.classList.toggle('is-healthy', percent >= 50);
-        pill.classList.toggle('is-warning', percent >= 20 && percent < 50);
-        pill.classList.toggle('is-danger', percent < 20);
-        pill.title = `Hạn mức Token: ${percent}% còn lại (${data.tokenQuota.modelName || 'AI'}) - Bấm để mở tab AI Agent`;
+    const percent = Math.max(0, Math.min(100, data.remainingPercent ?? 100));
+    const pillPercent = document.getElementById('agent-quota-pill-percent');
+    if (pillPercent) pillPercent.textContent = `${percent}%`;
+    const pill = document.getElementById('agent-quota-pill');
+    const icon = document.getElementById('agent-quota-pill-icon');
+    if (pill) {
+      if (data.isBlocked) {
+        pill.classList.remove('is-healthy', 'is-warning');
+        pill.classList.add('is-danger');
+        if (icon) icon.className = 'ph-bold ph-lock-key';
+        const waitSec = Math.max(1, Math.ceil((data.blockedUntil - Date.now()) / 1000));
+        pill.title = `Tạm khóa do chạm giới hạn (429). Thử lại sau ${waitSec}s.`;
+      } else {
+        pill.classList.toggle('is-healthy', percent >= 30);
+        pill.classList.toggle('is-warning', percent >= 10 && percent < 30);
+        pill.classList.toggle('is-danger', percent < 10);
+        if (icon) icon.className = 'ph-bold ph-gauge';
+        const usedFmt = (data.usedTokens || 0).toLocaleString('vi-VN');
+        const budgetFmt = (data.budget || 1000000).toLocaleString('vi-VN');
+        const remFmt = (data.remainingTokens || 0).toLocaleString('vi-VN');
+        pill.title = `Token 5 giờ (ước tính): ${usedFmt} / ${budgetFmt} (${100 - percent}%) · Còn lại: ${remFmt} tokens`;
       }
     }
   } catch (_) {}
 }
-
-document.getElementById('agent-quota-pill')?.addEventListener('click', () => {
-  document.getElementById('agent-tab')?.click();
-});
 
 updateGlobalHeaderTokenQuota();
 window.addEventListener('focus', updateGlobalHeaderTokenQuota);
@@ -16966,11 +17167,62 @@ function renderFixturesList() {
     `;
   }).join('');
 
+function isFixtureDirty() {
+  if (!currentSelectedFixture || !currentSelectedFixture.isCustom) return false;
+  const editor = document.getElementById('fx-source-editor');
+  if (!editor) return false;
+  return editor.value !== (currentSelectedFixture.rawCode || '');
+}
+
+function updateFixtureDirtyIndicator(dirty) {
+  let dirtyBadge = document.getElementById('fx-dirty-badge');
+  if (!dirtyBadge) {
+    const modeBadge = document.getElementById('fx-mode-badge');
+    if (modeBadge && modeBadge.parentElement) {
+      dirtyBadge = document.createElement('span');
+      dirtyBadge.id = 'fx-dirty-badge';
+      dirtyBadge.className = 'fx-dirty-pill';
+      dirtyBadge.style.fontSize = '11px';
+      dirtyBadge.style.fontWeight = '600';
+      dirtyBadge.style.padding = '2px 8px';
+      dirtyBadge.style.borderRadius = '999px';
+      dirtyBadge.style.display = 'none';
+      dirtyBadge.style.marginLeft = '6px';
+      modeBadge.parentElement.appendChild(dirtyBadge);
+    }
+  }
+  if (dirtyBadge) {
+    if (dirty) {
+      dirtyBadge.textContent = '● Chưa lưu';
+      dirtyBadge.style.display = 'inline-flex';
+      dirtyBadge.style.background = 'rgba(234, 179, 8, 0.15)';
+      dirtyBadge.style.color = '#eab308';
+      dirtyBadge.style.border = '1px solid rgba(234, 179, 8, 0.3)';
+    } else {
+      dirtyBadge.textContent = '✓ Đã lưu';
+      dirtyBadge.style.display = 'inline-flex';
+      dirtyBadge.style.background = 'rgba(34, 197, 94, 0.15)';
+      dirtyBadge.style.color = '#22c55e';
+      dirtyBadge.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+      setTimeout(() => {
+        if (!isFixtureDirty() && dirtyBadge) dirtyBadge.style.display = 'none';
+      }, 2000);
+    }
+  }
+}
+
   container.querySelectorAll('.fixture-card-item').forEach((card) => {
     card.addEventListener('click', () => {
       const name = card.dataset.name;
       const found = repoFixtures.find((f) => f.name === name);
-      if (found) selectFixture(found);
+      if (found) {
+        if (currentSelectedFixture && currentSelectedFixture.name === found.name) return;
+        if (isFixtureDirty()) {
+          const ok = confirm(`Bạn có thay đổi chưa lưu trong fixture "${currentSelectedFixture.name}". Bạn có muốn chuyển sang fixture khác mà không lưu không?`);
+          if (!ok) return;
+        }
+        selectFixture(found);
+      }
     });
   });
 
@@ -16978,8 +17230,20 @@ function renderFixturesList() {
     selectFixture(filtered[0]);
   } else if (currentSelectedFixture) {
     const stillExists = filtered.find((f) => f.name === currentSelectedFixture.name);
-    if (stillExists) selectFixture(stillExists);
-    else if (filtered.length > 0) selectFixture(filtered[0]);
+    if (stillExists) {
+      // Bảo toàn bản thảo: chỉ cập nhật highlight card, không gọi lại selectFixture ghi đè textarea
+      document.querySelectorAll('#fixtures-list-container .fixture-card-item').forEach((card) => {
+        const isThis = card.dataset.name === currentSelectedFixture.name;
+        card.classList.toggle('is-selected', isThis);
+        card.classList.toggle('active', isThis);
+      });
+    } else if (filtered.length > 0) {
+      if (isFixtureDirty()) {
+        const ok = confirm(`Bạn có thay đổi chưa lưu trong fixture "${currentSelectedFixture.name}". Bạn có muốn chuyển sang fixture khác không?`);
+        if (!ok) return;
+      }
+      selectFixture(filtered[0]);
+    }
   }
 }
 
@@ -17049,6 +17313,7 @@ async function selectFixture(fx) {
     if (sourceEditor) {
       sourceEditor.style.display = 'block';
       sourceEditor.value = sourceCode;
+      updateFixtureDirtyIndicator(false);
     }
     if (editorHint) editorHint.textContent = 'Mã nguồn fixture tùy biến có thể chỉnh sửa trực tiếp. Bấm "Lưu thay đổi" để áp dụng.';
   } else {
@@ -17128,8 +17393,11 @@ function initFixturesStudioListeners() {
     }
   });
 
-  $('#fixtures-search-input')?.addEventListener('input', () => {
+  $('#fx-source-editor')?.addEventListener('input', () => {
+    updateFixtureDirtyIndicator(isFixtureDirty());
+  });
 
+  $('#fixtures-search-input')?.addEventListener('input', () => {
     renderFixturesList();
   });
 
@@ -17154,6 +17422,10 @@ function initFixturesStudioListeners() {
   });
 
   $('#btn-open-create-fixture-modal')?.addEventListener('click', () => {
+    if (isFixtureDirty()) {
+      const ok = confirm(`Bạn có thay đổi chưa lưu trong fixture "${currentSelectedFixture.name}". Bạn có chắc chắn muốn mở trình tạo fixture mới không?`);
+      if (!ok) return;
+    }
     const modal = document.getElementById('modal-create-fixture');
     if (modal) {
       $('#form-create-fixture')?.reset();
@@ -17268,6 +17540,8 @@ function initFixturesStudioListeners() {
       if (res.success) {
         showToast(res.message || 'Đã lưu thay đổi fixture thành công!', 'success');
         currentSelectedFixture.revision = res.revision;
+        currentSelectedFixture.rawCode = sourceCode;
+        updateFixtureDirtyIndicator(false);
         if ($('#fx-detail-revision')) $('#fx-detail-revision').textContent = 'rev: ' + res.revision;
         await loadFixturesList();
       } else {

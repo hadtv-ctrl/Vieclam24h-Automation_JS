@@ -18,6 +18,7 @@ const { execFileSync } = require('child_process');
 const { normalizeDashboardConfig, DEFAULT_CONFIG } = require('../../core/config/dashboardConfig');
 const { createBackup } = require('./resourceService');
 const { CONFLICT_KIND, parseConflictDetail } = require('./qaConflictService');
+const { enrichFindings } = require('./qaFindingCatalog');
 
 // Nạp mềm: satellite chưa sync analyzer thì mục QA vẫn mở được và nói rõ vì sao trống.
 let analyzer = null;
@@ -569,12 +570,51 @@ function invalidateQaSummaryCache() {
   summaryCacheRoot = '';
 }
 
+// PLAN-18: finding của lần quét gần nhất theo root, tra theo findingKey. Không gắn với TTL
+// cache, để batch fixer luôn tra được finding do chính server quét thay vì tin dữ liệu client.
+const findingsIndexByRoot = new Map();
+let scanCounter = 0;
+
+function countBySeverity(findings, severity) {
+  return findings.filter((f) => f.severity === severity).length;
+}
+
 /**
  * Lấy báo cáo tổng quan QA chuẩn JSON 1.0.0 (Coverage, System Health, Boundary, Decisions, Findings).
+ * Finding được gộp trùng (cùng spec chạy ở nhiều Playwright project) và gắn findingKey/fixRoute
+ * theo qaFindingCatalog; số đếm trong `health` tính lại theo danh sách đã gộp. `scanId` chỉ tăng
+ * khi có lần quét mới, không tăng khi trả từ cache.
+ */
+function getQaSummary(root, options = {}) {
+  const summary = computeQaSummary(root, options);
+  if (!summary || summary.scanId) return summary;
+
+  summary.findings = enrichFindings(summary.findings);
+  summary.scanId = ++scanCounter;
+  if (summary.health) {
+    summary.health.blockers = countBySeverity(summary.findings, 'blocker');
+    summary.health.majors = countBySeverity(summary.findings, 'major');
+    summary.health.minors = countBySeverity(summary.findings, 'minor');
+    summary.health.totalFindings = summary.findings.length;
+  }
+  findingsIndexByRoot.set(root, {
+    scanId: summary.scanId,
+    byKey: new Map(summary.findings.map((f) => [f.findingKey, f])),
+  });
+  return summary;
+}
+
+/** Chỉ mục finding của lần quét gần nhất cho `root`, hoặc null nếu server chưa quét lần nào. */
+function getFindingsIndex(root) {
+  return findingsIndexByRoot.get(root) || null;
+}
+
+/**
+ * Tính báo cáo tổng quan thô (chưa gộp trùng), có cache 60s.
  * Hỗ trợ Soft Fallback: nếu vệ tinh chưa có tools/qa, tự động tổng hợp từ getTrace(root),
  * không để sập route HTTP.
  */
-function getQaSummary(root, options = {}) {
+function computeQaSummary(root, options = {}) {
   const force = Boolean(options && options.force);
   if (
     !force &&
@@ -1127,6 +1167,7 @@ module.exports = {
   isAnswered,
   FALLBACK_DIRS,
   getQaSummary,
+  getFindingsIndex,
   invalidateQaSummaryCache,
   runQaFix,
   getScaffoldMeta,

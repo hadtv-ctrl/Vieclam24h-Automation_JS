@@ -42,7 +42,8 @@ async function handleFixtureRoutes(request, response, url, context = {}) {
       const result = createCustomFixture({ ...body, rootDir: root });
       sendJson(response, 201, result);
     } catch (error) {
-      sendJson(response, 400, { error: error.message });
+      const statusCode = error.statusCode || 400;
+      sendJson(response, statusCode, { error: error.message, code: error.code });
     }
     return true;
   }
@@ -50,7 +51,7 @@ async function handleFixtureRoutes(request, response, url, context = {}) {
   if (request.method === 'GET' && url.pathname.startsWith('/api/fixtures/')) {
     try {
       const fixtureName = decodeURIComponent(url.pathname.slice('/api/fixtures/'.length));
-      if (!fixtureName || fixtureName === 'validate') {
+      if (!fixtureName || fixtureName === 'validate' || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(fixtureName)) {
         sendJson(response, 400, { error: 'Tên fixture không hợp lệ.' });
         return true;
       }
@@ -69,6 +70,10 @@ async function handleFixtureRoutes(request, response, url, context = {}) {
   if (request.method === 'PUT' && url.pathname.startsWith('/api/fixtures/')) {
     try {
       const fixtureName = decodeURIComponent(url.pathname.slice('/api/fixtures/'.length));
+      if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(fixtureName)) {
+        sendJson(response, 400, { error: 'Tên fixture không hợp lệ.' });
+        return true;
+      }
       const body = await parseBody(request);
       const result = updateCustomFixture({
         name: fixtureName,
@@ -88,8 +93,8 @@ async function handleFixtureRoutes(request, response, url, context = {}) {
     try {
       const body = request.method === 'POST' ? await parseBody(request) : {};
       const fixtureName = body.name || decodeURIComponent(url.pathname.slice('/api/fixtures/delete/'.length));
-      if (!fixtureName) {
-        sendJson(response, 400, { error: 'Thiếu tên fixture cần xóa.' });
+      if (!fixtureName || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(fixtureName)) {
+        sendJson(response, 400, { error: 'Tên fixture không hợp lệ hoặc bị thiếu.' });
         return true;
       }
       const result = deleteCustomFixture(fixtureName, root, body.expectedRevision);
@@ -104,6 +109,10 @@ async function handleFixtureRoutes(request, response, url, context = {}) {
   if (request.method === 'DELETE' && url.pathname.startsWith('/api/fixtures/')) {
     try {
       const fixtureName = decodeURIComponent(url.pathname.slice('/api/fixtures/'.length));
+      if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(fixtureName)) {
+        sendJson(response, 400, { error: 'Tên fixture không hợp lệ.' });
+        return true;
+      }
       const body = await parseBody(request).catch(() => ({}));
       const result = deleteCustomFixture(fixtureName, root, body.expectedRevision);
       sendJson(response, 200, result);

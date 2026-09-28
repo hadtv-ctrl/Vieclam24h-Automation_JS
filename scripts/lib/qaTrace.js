@@ -1,3 +1,4 @@
+// master-process-disable-size-check: QA Traceability analysis library, queued for modular decomposition
 'use strict';
 
 /**

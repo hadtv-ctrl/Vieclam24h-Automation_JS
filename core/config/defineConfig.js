@@ -87,6 +87,7 @@ function defineQaConfig(customConfig = {}) {
   let workerHtmlReporterPath = path.resolve(__dirname, '../reporters/workerHtmlReporter.js');
 
   const baseConfig = {
+    globalTeardown: require.resolve('../../tests/setup/global.teardown.js'),
     outputDir: path.join('test-results', reportDate, platformDir, scriptFolder),
     metadata: { runId },
     timeout: testTimeout,

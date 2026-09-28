@@ -19,7 +19,7 @@ export class LegacyAdapter {
 
     // 1. Intercept .view-tab clicks to synchronize FeatureRegistry and EventBus
     document.addEventListener('click', (event) => {
-      const tab = event.target.closest('.view-tab');
+      const tab = event.target.closest('.view-tab, [data-view]');
       if (!tab) return;
 
       const targetView = tab.getAttribute('data-view');

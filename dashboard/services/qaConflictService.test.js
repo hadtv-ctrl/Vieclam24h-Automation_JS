@@ -6,17 +6,18 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const { spawnSync } = require('node:child_process');
 
 const {
   parseConflictDetail,
   getConflictState,
   getConflictContext,
   resolveConflict,
-  arbitrateWithAi,
+  arbitrateConflict,
   escalateConflictToDecision,
   rewriteAcRun,
   rewriteDocText,
-  parseAiVerdict,
+  heuristicVerdict,
 } = require('./qaConflictService');
 const { getTrace } = require('./qaService');
 
@@ -225,14 +226,14 @@ test('getConflictContext: trả test block, dòng tài liệu và định nghĩa
   } finally { cleanup(root); }
 });
 
-test('arbitrateWithAi (heuristic): AC không có trong requirements => sửa spec', async () => {
+test('arbitrateConflict: AC không có trong requirements => sửa spec', () => {
   const root = makeRepo({
     'requirements/REQ-001.md': REQ,
     'test-cases/REQ-001.md': table(['| REQ-001 | AC-003 | TC-011 | Yes | P1 |']),
     'tests/login.spec.js': "test('TC-011 @AC-009', async () => { expect(1).toBe(1); });\n",
   });
   try {
-    const res = await arbitrateWithAi({ root, tcId: 'TC-011', specFile: 'tests/login.spec.js' });
+    const res = arbitrateConflict({ root, tcId: 'TC-011', specFile: 'tests/login.spec.js' });
     assert.equal(res.engine, 'heuristic');
     assert.equal(res.recommendation, 'sync_spec_to_doc');
     assert.ok(res.confidence >= 85);
@@ -240,24 +241,60 @@ test('arbitrateWithAi (heuristic): AC không có trong requirements => sửa spe
   } finally { cleanup(root); }
 });
 
-test('arbitrateWithAi: không còn xung đột => 409', async () => {
+test('arbitrateConflict: không còn xung đột => 409', () => {
   const root = makeRepo({
     'test-cases/REQ-001.md': table(['| REQ-001 | AC-002 | TC-011 | Yes | P1 |']),
     'tests/login.spec.js': "test('TC-011 @AC-002', async () => { expect(1).toBe(1); });\n",
   });
   try {
-    await assert.rejects(arbitrateWithAi({ root, tcId: 'TC-011', specFile: 'tests/login.spec.js' }), (e) => e.status === 409);
+    assert.throws(() => arbitrateConflict({ root, tcId: 'TC-011', specFile: 'tests/login.spec.js' }), (e) => e.status === 409);
   } finally { cleanup(root); }
 });
 
-test('parseAiVerdict: chuẩn hóa và từ chối đầu ra AI sai hợp đồng', () => {
-  assert.deepEqual(
-    parseAiVerdict('```json\n{"recommendation":"sync_spec_to_doc","confidence":"88%","reason":"Assertion kiểm tra redirect."}\n```'),
-    { recommendation: 'sync_spec_to_doc', confidence: 88, reason: 'Assertion kiểm tra redirect.' },
-  );
-  assert.throws(() => parseAiVerdict('{"recommendation":"delete_all","confidence":90,"reason":"x"}'));
-  assert.throws(() => parseAiVerdict('{"recommendation":"sync_doc_to_spec","confidence":90,"reason":""}'));
-  assert.throws(() => parseAiVerdict('không phải json'));
+test('heuristicVerdict: khi hai phía đều có căn cứ, bên sửa sau quyết định chiều đồng bộ', () => {
+  const ctx = {
+    acDefinitions: { 'AC-001': {}, 'AC-002': {} },
+    specOnly: ['AC-002'], docOnly: ['AC-001'],
+    specAcs: ['AC-002'], docAcs: ['AC-001'],
+    blocks: [{ hasAssertion: true }],
+  };
+  const day = 24 * 3600 * 1000;
+  const specNewer = heuristicVerdict(ctx, { spec: 10 * day, doc: 2 * day });
+  assert.equal(specNewer.recommendation, 'sync_doc_to_spec');
+  assert.equal(specNewer.confidence, 75);
+  assert.match(specNewer.reason, /Spec được sửa sau tài liệu/);
+
+  const docNewer = heuristicVerdict(ctx, { spec: 2 * day, doc: 10 * day });
+  assert.equal(docNewer.recommendation, 'sync_spec_to_doc');
+  assert.match(docNewer.reason, /Tài liệu được sửa sau spec/);
+
+  const unknown = heuristicVerdict(ctx, { spec: null, doc: 5 * day });
+  assert.equal(unknown.confidence, 60, 'thiếu mốc thời gian thì không đoán');
+  // Luật cấu trúc mạnh hơn tín hiệu thời gian.
+  const noAssert = heuristicVerdict({ ...ctx, blocks: [{ hasAssertion: false }] }, { spec: 10 * day, doc: 2 * day });
+  assert.equal(noAssert.recommendation, 'sync_spec_to_doc');
+});
+
+test('arbitrateConflict: đọc giờ commit thật của git để biết bên nào sửa sau', () => {
+  const root = makeRepo({
+    'requirements/REQ-001.md': REQ,
+    'test-cases/REQ-001.md': table(['| REQ-001 | AC-001 | TC-011 | Yes | P1 |']),
+    'tests/login.spec.js': "test('TC-011 @AC-002', async () => { expect(1).toBe(1); });\n",
+  });
+  const git = (args, date) => spawnSync('git', ['-c', 'user.email=qa@example.com', '-c', 'user.name=qa', ...args], {
+    cwd: root, windowsHide: true, env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
+  });
+  try {
+    git(['init', '-q']);
+    git(['add', 'requirements', 'test-cases'], '2026-01-01T00:00:00Z');
+    git(['commit', '-q', '-m', 'docs'], '2026-01-01T00:00:00Z');
+    git(['add', 'tests'], '2026-03-01T00:00:00Z');
+    git(['commit', '-q', '-m', 'spec'], '2026-03-01T00:00:00Z');
+    const res = arbitrateConflict({ root, tcId: 'TC-011', specFile: 'tests/login.spec.js' });
+    assert.equal(res.recommendation, 'sync_doc_to_spec');
+    assert.equal(res.confidence, 75);
+    assert.match(res.reason, /spec 2026-03-01, tài liệu 2026-01-01/);
+  } finally { cleanup(root); }
 });
 
 test('escalate: ghi vào sổ theo cấu hình, gắn source, không trùng, không khớp nhầm mã TC dài hơn', () => {

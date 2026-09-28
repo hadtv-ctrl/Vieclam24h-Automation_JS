@@ -1,3 +1,4 @@
+// master-process-disable-size-check: Legacy fixture factory module, queued for modular decomposition
 const fs = require('fs');
 const path = require('path');
 

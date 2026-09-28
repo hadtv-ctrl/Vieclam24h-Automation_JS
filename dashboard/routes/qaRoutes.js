@@ -31,16 +31,13 @@ const {
   scaffoldFromAnalysis,
 } = require('../services/qaRequirementAnalyzerService');
 const {
-  analyzeFindingFix,
-  applyFindingFix,
-} = require('../services/qaFindingFixerService');
-const {
   getConflictContext,
   resolveConflict,
-  arbitrateWithAi,
+  arbitrateConflict,
   escalateConflictToDecision,
 } = require('../services/qaConflictService');
-const { sendJson, parseBody } = require('./routeUtils');
+const { withWriteLock } = require('../services/qaBatchSessionStore');
+const { sendJson, parseBody, abortSignalFor } = require('./routeUtils');
 
 const MAX_BODY_BYTES = 1_048_576;
 
@@ -59,8 +56,12 @@ async function handleQaRoutes(request, response, url, context = {}) {
 
   if (request.method === 'POST' && url.pathname === '/api/qa/fix') {
     try {
-      const body = await parseBody(request);
-      sendJson(response, 200, runQaFix(root, body || {}));
+      const body = (await parseBody(request)) || {};
+      // Chạy thật thì ghi test-cases/: chung write lock với batch fixer (PLAN-18, INV-7).
+      const result = body.dryRun
+        ? runQaFix(root, body)
+        : await withWriteLock(root, async () => runQaFix(root, body));
+      sendJson(response, 200, result);
     } catch (error) {
       const status = Number.isInteger(error.status) ? error.status : 400;
       sendJson(response, status, {
@@ -82,7 +83,12 @@ async function handleQaRoutes(request, response, url, context = {}) {
   if (request.method === 'POST' && url.pathname === '/api/qa/scaffold/extract') {
     try {
       const body = await parseBody(request);
-      const result = await extractScaffoldFromRaw(root, body || {});
+      const signal = abortSignalFor(request, response);
+      let clientConfig = body.clientConfig || null;
+      if (!clientConfig && request.headers['x-ai-config']) {
+        try { clientConfig = JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8')); } catch {}
+      }
+      const result = await extractScaffoldFromRaw(root, { ...(body || {}), ...(clientConfig || {}), signal });
       sendJson(response, 200, result);
     } catch (error) {
       const status = Number.isInteger(error.status) ? error.status : 400;
@@ -204,11 +210,17 @@ async function handleQaRoutes(request, response, url, context = {}) {
   if (request.method === 'POST' && url.pathname === '/api/qa/infer-testcases') {
     try {
       const body = await parseBody(request);
+      const signal = abortSignalFor(request, response);
+      let clientConfig = body.clientConfig || null;
+      if (!clientConfig && request.headers['x-ai-config']) {
+        try { clientConfig = JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8')); } catch {}
+      }
       const result = await inferTestCases({
         root,
         reqPath: body.reqPath,
         mode: body.mode || 'heuristic',
-        clientConfig: body.clientConfig || null,
+        clientConfig,
+        signal,
       });
       sendJson(response, 200, result);
     } catch (error) {
@@ -268,6 +280,7 @@ async function handleQaRoutes(request, response, url, context = {}) {
   if (request.method === 'POST' && url.pathname === '/api/qa/analyze-requirement') {
     try {
       const body = await parseBody(request, 256 * 1024);
+      const signal = abortSignalFor(request, response);
       let clientConfig = body.clientConfig || null;
       if (!clientConfig && request.headers['x-ai-config']) {
         try { clientConfig = JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8')); } catch {}
@@ -275,9 +288,10 @@ async function handleQaRoutes(request, response, url, context = {}) {
       const result = await analyzeRequirement({
         root,
         rawText: body.rawText,
-        mode: body.mode || 'ai',
+        mode: body.mode === 'ai' ? 'ai' : 'heuristic',
         scanExisting: body.scanExisting !== false,
         clientConfig,
+        signal,
       });
       sendJson(response, 200, result);
     } catch (error) {
@@ -297,48 +311,7 @@ async function handleQaRoutes(request, response, url, context = {}) {
         title: body.title,
         domain: body.domain || 'general',
         analysisResult: body.analysisResult,
-      });
-      sendJson(response, 200, result);
-    } catch (error) {
-      const status = Number.isInteger(error.status) ? error.status : 400;
-      sendJson(response, status, {
-        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
-      });
-    }
-    return true;
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/qa/finding/ai-analyze-fix') {
-    try {
-      const body = await parseBody(request, 256 * 1024);
-      let clientConfig = body.clientConfig || null;
-      if (!clientConfig && request.headers['x-ai-config']) {
-        try { clientConfig = JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8')); } catch {}
-      }
-      const result = await analyzeFindingFix({
-        root,
-        finding: body.finding,
-        clientConfig,
-      });
-      sendJson(response, 200, result);
-    } catch (error) {
-      const status = Number.isInteger(error.status) ? error.status : 400;
-      sendJson(response, status, {
-        error: error instanceof SyntaxError ? 'JSON không hợp lệ.' : error.message,
-      });
-    }
-    return true;
-  }
-
-  if (request.method === 'POST' && url.pathname === '/api/qa/finding/apply-fix') {
-    try {
-      const body = await parseBody(request, 512 * 1024);
-      const result = applyFindingFix(root, {
-        targetFile: body.targetFile,
-        patchType: body.patchType,
-        originalSnippet: body.originalSnippet,
-        fixedSnippet: body.fixedSnippet,
-        fullContent: body.fullContent,
+        source: body.source || body.jiraKey || body.analysisResult?.source
       });
       sendJson(response, 200, result);
     } catch (error) {
@@ -388,16 +361,7 @@ async function handleQaRoutes(request, response, url, context = {}) {
   if (request.method === 'POST' && url.pathname === '/api/qa/conflict/arbitrate') {
     try {
       const body = await parseBody(request, 64 * 1024);
-      let clientConfig = body.clientConfig || null;
-      if (!clientConfig && request.headers['x-ai-config']) {
-        try { clientConfig = JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8')); } catch {}
-      }
-      sendJson(response, 200, await arbitrateWithAi({
-        root,
-        tcId: body.tcId,
-        specFile: body.specFile,
-        clientConfig,
-      }));
+      sendJson(response, 200, arbitrateConflict({ root, tcId: body.tcId, specFile: body.specFile }));
     } catch (error) {
       sendConflictError(error);
     }

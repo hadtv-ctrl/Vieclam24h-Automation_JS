@@ -48,9 +48,40 @@ function safeChildPath(base, requestedPath) {
   return resolved === base || resolved.startsWith(`${base}${path.sep}`) ? resolved : null;
 }
 
+/**
+ * Returns an AbortSignal that triggers when the client terminates connection prematurely.
+ */
+function abortSignalFor(request, response) {
+  const controller = new AbortController();
+  const cleanup = () => {
+    if (response && typeof response.removeListener === 'function') {
+      response.removeListener('close', onClose);
+    }
+    if (request && typeof request.removeListener === 'function') {
+      request.removeListener('close', onClose);
+    }
+  };
+
+  const onClose = () => {
+    if ((!response || !response.writableEnded) && !controller.signal.aborted) {
+      controller.abort();
+    }
+    cleanup();
+  };
+
+  if (response && typeof response.once === 'function') {
+    response.once('close', onClose);
+  }
+  if (request && typeof request.once === 'function') {
+    request.once('close', onClose);
+  }
+  return controller.signal;
+}
+
 module.exports = {
   sendJson,
   sendError,
   parseBody,
   safeChildPath,
+  abortSignalFor,
 };

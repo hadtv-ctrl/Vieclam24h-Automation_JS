@@ -66,7 +66,8 @@ class CleanupRegistry {
             }),
           ]);
           passedCount++;
-        } catch (err) {
+        } catch (rawErr) {
+          const err = (rawErr instanceof Error) ? rawErr : new Error(String(rawErr));
           err.label = task.label;
           err.resourceId = task.resourceId;
           errors.push(err);
@@ -91,7 +92,7 @@ class CleanupRegistry {
 /**
  * Fixture cleanupQueue dùng cho baseTest
  */
-const cleanupQueueFixture = async ({}, use) => {
+const cleanupQueueFixture = async ({}, use, testInfo) => {
   const registry = new CleanupRegistry();
 
   /**
@@ -109,13 +110,14 @@ const cleanupQueueFixture = async ({}, use) => {
     testFailed = true;
     throw testErr;
   } finally {
+    const isActuallyFailed = testFailed || Boolean(testInfo?.status && testInfo.status !== 'passed');
     const errors = await registry.runAll();
     if (errors.length > 0) {
       const errorDetails = errors
         .map((e) => `[${e.label || 'cleanup_task'}${e.resourceId ? ` (ID: ${e.resourceId})` : ''}]: ${e.message}`)
         .join('; ');
 
-      if (!testFailed) {
+      if (!isActuallyFailed) {
         // Test chính PASS nhưng cleanup FAIL -> đánh dấu test FAIL để tránh rò rỉ dữ liệu
         throw new TeardownFailureError(
           `[CleanupQueue Teardown Failure] Kịch bản chính thành công nhưng dọn dẹp thất bại (${errors.length} lỗi): ${errorDetails}`,

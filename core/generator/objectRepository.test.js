@@ -372,4 +372,67 @@ test('validateCustomFixtureSource, getFixtureByName, and updateCustomFixture wit
   }
 });
 
+test('R01 & R03: Object Repository blocks path traversal and duplicate fixture creation', () => {
+  const tmpDir = path.join(process.cwd(), '.tmp', 'test_fixture_security');
+  fs.mkdirSync(tmpDir, { recursive: true });
+
+  try {
+    // 1. R01: Chặn path traversal trong getFixtureByName
+    assert.equal(getFixtureByName('../../outside', tmpDir), null);
+    assert.equal(getFixtureByName('..\\..\\outside', tmpDir), null);
+
+    // 2. R01: Chặn path traversal trong create/update/delete
+    assert.throws(
+      () => createCustomFixture({ name: '../../outside', rootDir: tmpDir }),
+      /Tên fixture không hợp lệ/
+    );
+    assert.throws(
+      () => updateCustomFixture({ name: '../../outside', sourceCode: 'const x = 1;', rootDir: tmpDir }),
+      /Tên fixture không hợp lệ|tên không hợp lệ/
+    );
+    assert.throws(
+      () => deleteCustomFixture('../../outside', tmpDir),
+      /không hợp lệ/
+    );
+
+    // 3. Tạo fixture hợp lệ lần 1
+    const res1 = createCustomFixture({
+      name: 'uniqueFixture',
+      rawCode: 'const uniqueFixture = async ({}, use) => { await use(); }; module.exports = { uniqueFixture };',
+      rootDir: tmpDir,
+    });
+    assert.equal(res1.success, true);
+
+    // 4. R03: Tạo lại cùng tên lần 2 phải bị ném lỗi CONFLICT (409)
+    assert.throws(
+      () => createCustomFixture({
+        name: 'uniqueFixture',
+        rawCode: 'const uniqueFixture = async ({}, use) => { await use(); }; module.exports = { uniqueFixture };',
+        rootDir: tmpDir,
+      }),
+      (err) => {
+        assert.equal(err.code, 'CONFLICT');
+        assert.equal(err.statusCode, 409);
+        assert.match(err.message, /đã tồn tại/);
+        return true;
+      }
+    );
+
+    // 5. R04: Template cleanup_api tạo mã kiểm tra HTTP status
+    const cleanupRes = createCustomFixture({
+      name: 'cleanupApiFixture',
+      template: 'cleanup_api',
+      config: { url: '/api/items/:id', method: 'DELETE' },
+      rootDir: tmpDir,
+    });
+    assert.equal(cleanupRes.success, true);
+    const cleanupFile = path.join(tmpDir, cleanupRes.relativePath);
+    const cleanupCode = fs.readFileSync(cleanupFile, 'utf8');
+    assert.ok(cleanupCode.includes('!res.ok()'), 'Mã sinh ra phải kiểm tra !res.ok()');
+    assert.ok(cleanupCode.includes('API teardown thất bại với mã lỗi HTTP'), 'Mã sinh ra phải ném lỗi khi HTTP status không thành công');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 
