@@ -3,7 +3,7 @@ const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 const { JobApplyPage } = require('../../../pages/desktop/JobApplyPage');
 const usersData = require('../../../data/users.json');
 
-test.describe('Feature: Ứng tuyển việc làm - Nộp hồ sơ hàng loạt @auth @applyjob @desktop @e2e @REQ-003', () => {
+test.describe('Ứng tuyển việc làm - Bulk Apply @auth @applyjob @desktop @e2e @REQ-003', () => {
   let newPage;
   let jobApplyPage;
 
@@ -11,7 +11,7 @@ test.describe('Feature: Ứng tuyển việc làm - Nộp hồ sơ hàng loạt 
     if (newPage) await newPage.close().catch(() => null);
   });
 
-  test('TC-044 - AC-010: Kiểm thử luồng nộp hồ sơ hàng loạt (Bulk Apply) kèm các điều kiện biên', async ({
+  test('TC-044 - AC-010: Nộp hồ sơ hàng loạt Bulk Apply', async ({
     page,
     authenticatedUser,
     pages,

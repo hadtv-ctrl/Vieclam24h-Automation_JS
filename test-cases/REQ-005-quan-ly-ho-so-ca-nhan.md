@@ -10,8 +10,8 @@
 | TC-020 | AC-018 | Thêm đủ bảy mục nội dung hồ sơ trên mobile web | P2 | Có | tests/e2e/mobile-web/setting_user_profile-bdd.mobile.spec.js |
 | TC-021 | AC-019 | Tải lên và chuyển đổi CV tại trang Hồ sơ trên desktop | P1 | Có | tests/e2e/desktop/upload_cv_profile-bdd.spec.js |
 | TC-022 | AC-019 | Tải lên và chuyển đổi CV tại trang Hồ sơ trên mobile web | P1 | Có | tests/e2e/mobile-web/upload_cv_profile-bdd.mobile.spec.js |
-| TC-046 | AC-015 AC-016 AC-019 | Kiểm thử tính hoàn thiện hồ sơ, logic chuyển đổi CV (ghi đè/thêm mới) và tính đồng bộ hai chiều với Onboarding tiêu chí tìm việc | P2 | Có | tests/e2e/desktop/kiem-thu-tinh-hoan-thien-ho-so-logic-chuyen-doi-cv-va-dong-b.spec.js |
-| TC-047 | AC-017 | Kiểm thử chu trình xác minh bảo mật (OTP Email / SĐT) khi kích hoạt tính năng Cho phép nhà tuyển dụng tìm kiếm hồ sơ | P2 | Có | tests/e2e/desktop/kiem-thu-chu-trinh-xac-minh-bao-mat-otp-email-sdt-khi-kich-h.spec.js |
+| TC-046 | AC-015 AC-016 AC-019 | Hoàn thiện hồ sơ và chuyển đổi CV | P2 | Có | tests/e2e/desktop/hoan-thien-ho-so-chuyen-doi-cv.spec.js |
+| TC-047 | AC-017 | Xác minh OTP khi bật tìm kiếm hồ sơ | P2 | Có | tests/e2e/desktop/xac-minh-otp-tim-kiem-ho-so.spec.js |
 
 
 ## Chi tiết

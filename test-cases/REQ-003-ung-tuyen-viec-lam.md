@@ -12,7 +12,7 @@
 | TC-037 | AC-011 | Kiểm tra trạng thái việc làm đã nộp (Nộp lại hồ sơ hoặc Đã ứng tuyển) | P0 | Có | tests/e2e/desktop/kiem-tra-trang-thai-viec-lam-da-ung-tuyen.spec.js |
 | TC-042 | AC-008 AC-009 | Kiểm thử chu trình xác thực OTP và điều kiện hoàn thiện hồ sơ khi nộp ứng tuyển (tài khoản chưa/đã xác thực OTP, hủy bỏ OTP, nộp bằng CV file vs Hồ sơ trực tuyến) | P2 | Có | tests/e2e/desktop/kiem-thu-chu-trinh-xac-thuc-otp-va-dieu-kien-hoan-thien-ho-so.spec.js |
 | TC-043 | AC-011 | Kiểm thử quy tắc kiểm soát tần suất nộp lại hồ sơ cho cùng một công việc (chặn nộp lại trong ngày, cho phép sang ngày mới và kiểm thử điểm biên thời gian) | P2 | Có | tests/e2e/desktop/kiem-thu-quy-tac-kiem-soat-tan-suat-nop-lai-ho-so-cho-cung-mot-cong-viec.spec.js |
-| TC-044 | AC-010 | Kiểm thử luồng nộp hồ sơ hàng loạt (Bulk Apply) kèm các điều kiện biên (chọn/bỏ chọn danh sách gợi ý, kiểm tra việc làm đã nộp và trạng thái xác thực tài khoản) | P2 | Có | tests/e2e/desktop/kiem-thu-luong-nop-ho-so-hang-loat-bulk-apply-kem-cac-dieu-kien-bien.spec.js |
+| TC-044 | AC-010 | Nộp hồ sơ hàng loạt (Bulk Apply) kèm các điều kiện biên | P2 | Có | tests/e2e/desktop/nop-ho-so-hang-loat-bulk-apply.spec.js |
 
 
 ## Chi tiết
@@ -125,7 +125,7 @@
 
 - **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Xử lý danh sách
 - **Automation:** Có
-- **Spec:** `tests/e2e/desktop/kiem-thu-luong-nop-ho-so-hang-loat-bulk-apply-kem-cac-dieu-kien-bien.spec.js`
+- **Spec:** `tests/e2e/desktop/nop-ho-so-hang-loat-bulk-apply.spec.js`
 - **Tiền điều kiện:** Vừa ứng tuyển thành công 1 việc làm, popup gợi ý danh sách việc làm tương tự (5 công việc) hiển thị.
 - **Dữ liệu kiểm thử:** Danh sách 5 việc làm tương tự, trong đó có 1 việc làm đã được nộp trong ngày.
 > *Ghi chú nghiệp vụ:* Kịch bản hợp nhất từ các kiểm thử nộp hàng loạt trước đây theo quyết định Q-2, Q-3, Q-4. Kiểm tra việc chọn tất cả, bỏ chọn tất cả, lọc trừ các việc làm đã nộp trong ngày và kích hoạt OTP nếu tài khoản chưa xác thực.

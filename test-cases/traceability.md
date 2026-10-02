@@ -70,10 +70,10 @@ AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của RE
 | TC-041 | REQ-002 | AC-005 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-luong-bo-qua-onboarding-skip-flow-va-duy-tri-trang.spec.js |
 | TC-042 | REQ-003 | AC-008 AC-009 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-chu-trinh-xac-thuc-otp-va-dieu-kien-hoan-thien-ho-so.spec.js |
 | TC-043 | REQ-003 | AC-011 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-quy-tac-kiem-soat-tan-suat-nop-lai-ho-so-cho-cung-mot-cong-viec.spec.js |
-| TC-044 | REQ-003 | AC-010 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-luong-nop-ho-so-hang-loat-bulk-apply-kem-cac-dieu-kien-bien.spec.js |
-| TC-045 | REQ-004 | AC-012 AC-013 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-luong-bien-xac-thuc-khi-ung-tuyen-nhanh-khong-can-cv.spec.js |
-| TC-046 | REQ-005 | AC-015 AC-016 AC-019 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-tinh-hoan-thien-ho-so-logic-chuyen-doi-cv-va-dong-b.spec.js |
-| TC-047 | REQ-005 | AC-017 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-chu-trinh-xac-minh-bao-mat-otp-email-sdt-khi-kich-h.spec.js |
+| TC-044 | REQ-003 | AC-010 | Desktop | P2 | Có | tests/e2e/desktop/nop-ho-so-hang-loat-bulk-apply.spec.js |
+| TC-045 | REQ-004 | AC-012 AC-013 | Desktop | P2 | Có | tests/e2e/desktop/ung-tuyen-nhanh-nocv-otp.spec.js |
+| TC-046 | REQ-005 | AC-015 AC-016 AC-019 | Desktop | P2 | Có | tests/e2e/desktop/hoan-thien-ho-so-chuyen-doi-cv.spec.js |
+| TC-047 | REQ-005 | AC-017 | Desktop | P2 | Có | tests/e2e/desktop/xac-minh-otp-tim-kiem-ho-so.spec.js |
 | TC-048 | REQ-006 | AC-020 AC-021 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-tuong-tac-tro-ly-ai-hoan-thien-ho-so.spec.js |
 | TC-049 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-hien-thi-va-dieu-huong-phan-trang-danh-sach-viec-la.spec.js |
 | TC-050 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-quan-ly-vong-doi-va-tinh-toan-ven-phien-hoi-thoai-c.spec.js |

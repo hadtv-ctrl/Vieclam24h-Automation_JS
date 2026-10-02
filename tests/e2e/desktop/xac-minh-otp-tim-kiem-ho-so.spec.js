@@ -1,8 +1,8 @@
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
-test.describe('Feature: Quản lý hồ sơ cá nhân - Chu trình xác minh bảo mật OTP khi bật tìm kiếm hồ sơ @auth @profile @desktop @e2e @REQ-005', () => {
-  test('TC-047 - AC-017: Kiểm thử chu trình xác minh bảo mật (OTP Email / SĐT) khi kích hoạt tính năng Cho phép tìm kiếm hồ sơ', async ({
+test.describe('Quản lý hồ sơ - Xác minh OTP tìm kiếm hồ sơ @auth @profile @desktop @e2e @REQ-005', () => {
+  test('TC-047 - AC-017: Xác minh OTP khi bật tìm kiếm hồ sơ', async ({
     page,
     authenticatedUser,
     pages,

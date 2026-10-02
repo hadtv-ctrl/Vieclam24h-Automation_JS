@@ -9,7 +9,7 @@
 | TC-015 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên desktop | P0 | Có | tests/e2e/desktop/guest_apply_job_noCV_with_otp.spec.js |
 | TC-016 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên mobile web | P0 | Có | tests/e2e/mobile-web/guest_apply_job_noCV_with_otp.mobile.spec.js |
 | TC-038 | AC-013 | Khách vãng lai ứng tuyển với số điện thoại đã có tài khoản | P0 | Có | tests/e2e/desktop/khach-vang-lai-ung-tuyen-sdt-da-ton-tai.spec.js |
-| TC-045 | AC-012 AC-013 | Kiểm thử luồng biên & xác thực khi ứng tuyển nhanh không cần CV (thành viên chưa xác thực OTP, validation trường bắt buộc hồ sơ rút gọn, khách vãng lai và xử lý form chấp thuận consent) | P2 | Có | tests/e2e/desktop/kiem-thu-luong-bien-xac-thuc-khi-ung-tuyen-nhanh-khong-can-cv.spec.js |
+| TC-045 | AC-012 AC-013 | Ứng tuyển nhanh không cần CV và xác thực OTP | P2 | Có | tests/e2e/desktop/ung-tuyen-nhanh-nocv-otp.spec.js |
 
 
 ## Chi tiết
@@ -68,7 +68,7 @@
 
 - **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Luồng kiểm thử liên hoàn
 - **Automation:** Có
-- **Spec:** `tests/e2e/desktop/kiem-thu-luong-bien-xac-thuc-khi-ung-tuyen-nhanh-khong-can-cv.spec.js`
+- **Spec:** `tests/e2e/desktop/ung-tuyen-nhanh-nocv-otp.spec.js`
 - **Tiền điều kiện:** Người dùng mở bài đăng tuyển dụng hỗ trợ nộp nhanh không cần CV (hồ sơ rút gọn).
 - **Dữ liệu kiểm thử:**
   - Khách vãng lai với SĐT mới: `0912345678`, SĐT đã có tài khoản: `0909888777`
