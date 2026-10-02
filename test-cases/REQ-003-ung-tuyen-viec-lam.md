@@ -10,21 +10,21 @@
 | TC-012 | AC-009 AC-010 AC-011 | Ứng tuyển bằng hồ sơ trực tuyến trên mobile web | P1 | Có | tests/e2e/mobile-web/apply_job_with_profile_flow-bdd.mobile.spec.js |
 | TC-036 | AC-008 | Tải lên file CV sai định dạng hoặc quá dung lượng | P1 | Có | tests/e2e/desktop/tai-len-cv-sai-dinh-dang.spec.js |
 | TC-037 | AC-011 | Kiểm tra trạng thái việc làm đã nộp (Nộp lại hồ sơ hoặc Đã ứng tuyển) | P0 | Có | tests/e2e/desktop/kiem-tra-trang-thai-viec-lam-da-ung-tuyen.spec.js |
-| TC-038 | AC-008 | Ứng tuyển công việc với tài khoản chưa xác thực số điện thoại (Yêu cầu xác thực OTP) | P0 | candidate | - |
-| TC-039 | AC-008 | Ứng tuyển thất bại khi nhập sai mã OTP xác thực số điện thoại | P1 | candidate | - |
-| TC-040 | AC-008 | Ứng tuyển trực tiếp thành công không cần OTP với tài khoản đã xác thực số điện thoại | P1 | candidate | - |
-| TC-041 | AC-011 | Chặn ứng tuyển lại cùng một việc làm trong cùng một ngày | P0 | candidate | - |
-| TC-042 | AC-011 | Cho phép ứng tuyển lại cùng một việc làm sang ngày khác (Khác ngày nộp trước) | P1 | candidate | - |
-| TC-043 | AC-010 | Nộp hồ sơ hàng loạt (Bulk apply) cho tất cả danh sách việc làm tương tự | P1 | candidate | - |
-| TC-044 | AC-009 | Ứng tuyển bằng Hồ sơ của tôi khi chưa có CV file nhưng đã hoàn tất thông tin hồ sơ và ghi chú | P1 | candidate | - |
-| TC-045 | AC-009 | Chặn ứng tuyển bằng Hồ sơ trực tuyến khi chưa hoàn thành các thông tin ghi chú bắt buộc | P1 | candidate | - |
-| TC-046 | AC-008 | Kiểm thử hành vi theo quyết định: Trong bảy mục của hồ sơ trực tuyến, mục nào bắt buộc để nộp được? — | P2 | candidate | - |
-| TC-047 | AC-010 | Nộp hàng loạt (Bulk apply) các việc làm tương tự khi tài khoản chưa xác thực số điện thoại | P1 | candidate | - |
-| TC-048 | AC-010 | Kiểm tra xử lý danh sách Bulk Apply khi chứa việc làm đã ứng tuyển trong ngày | P1 | candidate | - |
-| TC-049 | AC-008 | Hủy bỏ modal xác thực OTP trong quá trình ứng tuyển công việc | P2 | candidate | - |
-| TC-050 | AC-011 | Ứng tuyển lại cùng 1 công việc qua ranh giới nửa đêm (Midnight boundary: 23:59 ngày N sang 00:01 ngày N+1) | P2 | candidate | - |
-| TC-051 | AC-008 | Ứng tuyển thành công bằng file CV tải lên khi tất cả 7 mục trong Hồ sơ trực tuyến để trống | P1 | candidate | - |
-| TC-052 | AC-010 | Thực hiện Bulk Apply khi bỏ chọn tất cả các việc làm trong danh sách gợi ý việc làm tương tự | P2 | candidate | - |
+| TC-051 | AC-008 | Ứng tuyển công việc với tài khoản chưa xác thực số điện thoại (Yêu cầu xác thực OTP) | P2 | candidate | - |
+| TC-052 | AC-008 | Ứng tuyển thất bại khi nhập sai mã OTP xác thực số điện thoại | P2 | candidate | - |
+| TC-053 | AC-008 | Ứng tuyển trực tiếp thành công không cần OTP với tài khoản đã xác thực số điện thoại | P2 | candidate | - |
+| TC-054 | AC-011 | Chặn ứng tuyển lại cùng một việc làm trong cùng một ngày | P2 | candidate | - |
+| TC-055 | AC-011 | Cho phép ứng tuyển lại cùng một việc làm sang ngày khác (Khác ngày nộp trước) | P2 | candidate | - |
+| TC-056 | AC-010 | Nộp hồ sơ hàng loạt (Bulk apply) cho tất cả danh sách việc làm tương tự | P2 | candidate | - |
+| TC-057 | AC-009 | Ứng tuyển bằng Hồ sơ của tôi khi chưa có CV file nhưng đã hoàn tất thông tin hồ sơ và ghi chú | P2 | candidate | - |
+| TC-058 | AC-009 | Chặn ứng tuyển bằng Hồ sơ trực tuyến khi chưa hoàn thành các thông tin ghi chú bắt buộc | P2 | candidate | - |
+| TC-059 | AC-008 | Kiểm thử hành vi theo quyết định: Trong bảy mục của hồ sơ trực tuyến, mục nào bắt buộc để nộp được? — | P2 | candidate | - |
+| TC-060 | AC-010 | Nộp hàng loạt (Bulk apply) các việc làm tương tự khi tài khoản chưa xác thực số điện thoại | P2 | candidate | - |
+| TC-061 | AC-010 | Kiểm tra xử lý danh sách Bulk Apply khi chứa việc làm đã ứng tuyển trong ngày | P2 | candidate | - |
+| TC-062 | AC-008 | Hủy bỏ modal xác thực OTP trong quá trình ứng tuyển công việc | P2 | candidate | - |
+| TC-063 | AC-011 | Ứng tuyển lại cùng 1 công việc qua ranh giới nửa đêm (Midnight boundary: 23:59 ngày N sang 00:01 ngày N+1) | P2 | candidate | - |
+| TC-064 | AC-008 | Ứng tuyển thành công bằng file CV tải lên khi tất cả 7 mục trong Hồ sơ trực tuyến để trống | P2 | candidate | - |
+| TC-065 | AC-010 | Thực hiện Bulk Apply khi bỏ chọn tất cả các việc làm trong danh sách gợi ý việc làm tương tự | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -93,7 +93,7 @@
 | 2 | Kiểm tra nút ứng tuyển | Nút hiển thị trạng thái "Đã ứng tuyển" hoặc cho phép "Nộp lại hồ sơ" thay vì nút ứng tuyển lần đầu thông thường |
 
 
-### TC-038 — Ứng tuyển công việc với tài khoản chưa xác thực số điện thoại (Yêu cầu xác thực OTP)
+### TC-051 — Ứng tuyển công việc với tài khoản chưa xác thực số điện thoại (Yêu cầu xác thực OTP)
 
 - **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -107,7 +107,7 @@
 | 2 | Nhập mã OTP hợp lệ '123456' và nhấn 'Xác nhận'. | Hệ thống xác thực SĐT thành công, hoàn tất quá trình ứng tuyển và hiển thị thông báo ứng tuyển thành công. |
 
 
-### TC-039 — Ứng tuyển thất bại khi nhập sai mã OTP xác thực số điện thoại
+### TC-052 — Ứng tuyển thất bại khi nhập sai mã OTP xác thực số điện thoại
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -121,7 +121,7 @@
 | 2 | Nhập mã OTP sai '000000' và nhấn 'Xác nhận'. | Hệ thống hiển thị thông báo mã OTP không hợp lệ, ứng tuyển không thành công. |
 
 
-### TC-040 — Ứng tuyển trực tiếp thành công không cần OTP với tài khoản đã xác thực số điện thoại
+### TC-053 — Ứng tuyển trực tiếp thành công không cần OTP với tài khoản đã xác thực số điện thoại
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -134,7 +134,7 @@
 | 1 | Vào chi tiết JOB_101, tải CV/chọn CV và nhấn 'Ứng tuyển ngay'. | Hệ thống không hiển thị popup OTP, nộp hồ sơ thành công ngay lập tức. |
 
 
-### TC-041 — Chặn ứng tuyển lại cùng một việc làm trong cùng một ngày
+### TC-054 — Chặn ứng tuyển lại cùng một việc làm trong cùng một ngày
 
 - **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -148,7 +148,7 @@
 | 2 | Cố tình bấm nút ứng tuyển lại (nếu có). | Hệ thống chặn thao tác và thông báo: Mỗi ngày chỉ được ứng tuyển 1 lần cho công việc này. |
 
 
-### TC-042 — Cho phép ứng tuyển lại cùng một việc làm sang ngày khác (Khác ngày nộp trước)
+### TC-055 — Cho phép ứng tuyển lại cùng một việc làm sang ngày khác (Khác ngày nộp trước)
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -162,7 +162,7 @@
 | 2 | Thực hiện nộp hồ sơ ứng tuyển. | Ứng tuyển thành công và ghi nhận lượt ứng tuyển mới cho ngày hôm nay. |
 
 
-### TC-043 — Nộp hồ sơ hàng loạt (Bulk apply) cho tất cả danh sách việc làm tương tự
+### TC-056 — Nộp hồ sơ hàng loạt (Bulk apply) cho tất cả danh sách việc làm tương tự
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -176,7 +176,7 @@
 | 2 | Nhấn nút 'Nộp ứng tuyển hàng loạt'. | Hệ thống xử lý nộp thành công hồ sơ đến tất cả 5 công việc đã chọn và cập nhật danh sách đã ứng tuyển. |
 
 
-### TC-044 — Ứng tuyển bằng Hồ sơ của tôi khi chưa có CV file nhưng đã hoàn tất thông tin hồ sơ và ghi chú
+### TC-057 — Ứng tuyển bằng Hồ sơ của tôi khi chưa có CV file nhưng đã hoàn tất thông tin hồ sơ và ghi chú
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -190,7 +190,7 @@
 | 2 | Nhấn 'Ứng tuyển'. | Hệ thống ghi nhận đơn ứng tuyển thành công mà không yêu cầu bắt buộc đính kèm file CV. |
 
 
-### TC-045 — Chặn ứng tuyển bằng Hồ sơ trực tuyến khi chưa hoàn thành các thông tin ghi chú bắt buộc
+### TC-058 — Chặn ứng tuyển bằng Hồ sơ trực tuyến khi chưa hoàn thành các thông tin ghi chú bắt buộc
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -203,7 +203,7 @@
 | 1 | Chọn nộp bằng Hồ sơ trực tuyến và nhấn 'Ứng tuyển'. | Hệ thống báo lỗi/cảnh báo yêu cầu hoàn thiện đầy đủ các thông tin ghi chú bắt buộc trước khi nộp. |
 
 
-### TC-046 — Kiểm thử hành vi theo quyết định: Trong bảy mục của hồ sơ trực tuyến, mục nào bắt buộc để nộp được? —
+### TC-059 — Kiểm thử hành vi theo quyết định: Trong bảy mục của hồ sơ trực tuyến, mục nào bắt buộc để nộp được? —
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -216,7 +216,7 @@
 | 1 | Thực hiện thao tác với điều kiện: chỉ cần có CV - tức hồ sơ trực tuyến, hoặc có thể ứng tuyển bằng các thông tin trong Hồ sơ của tôi v | Hệ thống phản hồi đúng theo quyết định đã chốt |
 
 
-### TC-047 — Nộp hàng loạt (Bulk apply) các việc làm tương tự khi tài khoản chưa xác thực số điện thoại
+### TC-060 — Nộp hàng loạt (Bulk apply) các việc làm tương tự khi tài khoản chưa xác thực số điện thoại
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -231,7 +231,7 @@
 | 3 | Nhập mã OTP hợp lệ được gửi về SĐT và nhấn 'Xác nhận'. | Số điện thoại được xác thực thành công, hệ thống tiến hành nộp hồ sơ hàng loạt cho các việc làm đã chọn và báo kết quả ứng tuyển thành công. |
 
 
-### TC-048 — Kiểm tra xử lý danh sách Bulk Apply khi chứa việc làm đã ứng tuyển trong ngày
+### TC-061 — Kiểm tra xử lý danh sách Bulk Apply khi chứa việc làm đã ứng tuyển trong ngày
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -245,7 +245,7 @@
 | 2 | Nhấn nút 'Nộp hồ sơ hàng loạt'. | Hệ thống chỉ nộp thành công cho Job C, hiển thị thông báo chi tiết: Job C ứng tuyển thành công, Job A bị bỏ qua do đã nộp trong ngày. |
 
 
-### TC-049 — Hủy bỏ modal xác thực OTP trong quá trình ứng tuyển công việc
+### TC-062 — Hủy bỏ modal xác thực OTP trong quá trình ứng tuyển công việc
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -259,7 +259,7 @@
 | 2 | Truy cập trang 'Danh sách việc làm đã ứng tuyển'. | Công việc JOB-TEST-01 KHÔNG xuất hiện trong danh sách đã ứng tuyển. |
 
 
-### TC-050 — Ứng tuyển lại cùng 1 công việc qua ranh giới nửa đêm (Midnight boundary: 23:59 ngày N sang 00:01 ngày N+1)
+### TC-063 — Ứng tuyển lại cùng 1 công việc qua ranh giới nửa đêm (Midnight boundary: 23:59 ngày N sang 00:01 ngày N+1)
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -274,7 +274,7 @@
 | 3 | Chờ đến 00:01 ngày 16/10 và nhấn ứng tuyển lại công việc JOB-BOUNDARY. | Hệ thống cho phép nộp hồ sơ thành công lần 2 vì đã chuyển sang ngày mới. |
 
 
-### TC-051 — Ứng tuyển thành công bằng file CV tải lên khi tất cả 7 mục trong Hồ sơ trực tuyến để trống
+### TC-064 — Ứng tuyển thành công bằng file CV tải lên khi tất cả 7 mục trong Hồ sơ trực tuyến để trống
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -288,7 +288,7 @@
 | 2 | Chọn phương thức ứng tuyển bằng file CV 'Developer_Resume.pdf' và nhấn 'Gửi hồ sơ'. | Hệ thống xử lý ứng tuyển thành công mà không yêu cầu bổ sung 7 mục hồ sơ trực tuyến. |
 
 
-### TC-052 — Thực hiện Bulk Apply khi bỏ chọn tất cả các việc làm trong danh sách gợi ý việc làm tương tự
+### TC-065 — Thực hiện Bulk Apply khi bỏ chọn tất cả các việc làm trong danh sách gợi ý việc làm tương tự
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate

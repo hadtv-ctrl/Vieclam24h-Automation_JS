@@ -9,10 +9,10 @@
 | TC-015 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên desktop | P0 | Có | tests/e2e/desktop/guest_apply_job_noCV_with_otp.spec.js |
 | TC-016 | AC-013 AC-014 | Khách vãng lai ứng tuyển và tạo tài khoản bằng OTP trên mobile web | P0 | Có | tests/e2e/mobile-web/guest_apply_job_noCV_with_otp.mobile.spec.js |
 | TC-038 | AC-013 | Khách vãng lai ứng tuyển với số điện thoại đã có tài khoản | P0 | Có | tests/e2e/desktop/khach-vang-lai-ung-tuyen-sdt-da-ton-tai.spec.js |
-| TC-039 | AC-012 | Thành viên đã đăng nhập nhưng số điện thoại chưa xác thực phải thực hiện xác thực OTP khi ứng tuyển | P0 | candidate | - |
-| TC-040 | AC-013 | Khách vãng lai từ chối Consent Form sau khi xác thực OTP thành công khi tạo tài khoản ngầm | P1 | candidate | - |
-| TC-041 | AC-012 | Kiểm tra lỗi validation khi bỏ trống trường bắt buộc trên popup hồ sơ rút gọn do nhà tuyển dụng cấu hình động | P1 | candidate | - |
-| TC-042 | AC-013 | Khách vãng lai nhập số điện thoại đã tồn tại nhưng nhập sai mã OTP đăng nhập | P2 | candidate | - |
+| TC-066 | AC-012 | Thành viên đã đăng nhập nhưng số điện thoại chưa xác thực phải thực hiện xác thực OTP khi ứng tuyển | P2 | candidate | - |
+| TC-067 | AC-013 | Khách vãng lai từ chối Consent Form sau khi xác thực OTP thành công khi tạo tài khoản ngầm | P2 | candidate | - |
+| TC-068 | AC-012 | Kiểm tra lỗi validation khi bỏ trống trường bắt buộc trên popup hồ sơ rút gọn do nhà tuyển dụng cấu hình động | P2 | candidate | - |
+| TC-069 | AC-013 | Khách vãng lai nhập số điện thoại đã tồn tại nhưng nhập sai mã OTP đăng nhập | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -66,7 +66,7 @@
 | Bỏ dở luồng rồi quay lại | AC-012 | Khó ổn định khi automation, cân nhắc kiểm thủ công | P3 |
 
 
-### TC-039 — Thành viên đã đăng nhập nhưng số điện thoại chưa xác thực phải thực hiện xác thực OTP khi ứng tuyển
+### TC-066 — Thành viên đã đăng nhập nhưng số điện thoại chưa xác thực phải thực hiện xác thực OTP khi ứng tuyển
 
 - **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -81,7 +81,7 @@
 | 3 | Nhập mã OTP chính xác (123456) và xác nhận | Hệ thống xác thực thành công SĐT, cập nhật trạng thái SĐT đã xác thực cho tài khoản và gửi đơn ứng tuyển thành công. |
 
 
-### TC-040 — Khách vãng lai từ chối Consent Form sau khi xác thực OTP thành công khi tạo tài khoản ngầm
+### TC-067 — Khách vãng lai từ chối Consent Form sau khi xác thực OTP thành công khi tạo tài khoản ngầm
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -96,7 +96,7 @@
 | 3 | Nhấn nút 'Từ chối' hoặc tắt màn hình Consent Form | Hệ thống không hoàn tất nộp đơn ứng tuyển, hiển thị thông báo yêu cầu đồng ý điều khoản để tiếp tục ứng tuyển. |
 
 
-### TC-041 — Kiểm tra lỗi validation khi bỏ trống trường bắt buộc trên popup hồ sơ rút gọn do nhà tuyển dụng cấu hình động
+### TC-068 — Kiểm tra lỗi validation khi bỏ trống trường bắt buộc trên popup hồ sơ rút gọn do nhà tuyển dụng cấu hình động
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -110,7 +110,7 @@
 | 2 | Nhập Họ tên, SĐT và để trống trường Email, Kinh nghiệm, sau đó nhấn 'Nộp ứng tuyển' | Hệ thống chặn không cho gửi đơn, hiển thị thông báo lỗi bắt buộc nhập tại ô Email và Kinh nghiệm. |
 
 
-### TC-042 — Khách vãng lai nhập số điện thoại đã tồn tại nhưng nhập sai mã OTP đăng nhập
+### TC-069 — Khách vãng lai nhập số điện thoại đã tồn tại nhưng nhập sai mã OTP đăng nhập
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate

@@ -8,10 +8,10 @@
 | TC-008 | AC-005 AC-006 AC-007 | Hoàn tất năm bước onboarding trên mobile web | P1 | Có | tests/e2e/mobile-web/onboarding-bdd.mobile.spec.js |
 | TC-031 | AC-005 | Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định) | P2 | Có | tests/e2e/desktop/xac-nhan-thanh-cong-khi-bo-trong-truong-tuy-chon-truong-tuy-.spec.js |
 | TC-035 | AC-005 | Kiểm tra đóng modal onboarding giữa chừng và kiểm tra trạng thái trang chủ | P1 | Có | tests/e2e/desktop/dong-modal-onboarding-giua-chung.spec.js |
-| TC-036 | AC-005 | Kiểm tra tính năng Bỏ qua (Skip) onboarding ngay từ Bước 1 | P1 | candidate | - |
-| TC-037 | AC-005 | Kiểm tra không hiển thị lại modal onboarding khi đăng nhập lại sau khi đã chọn Bỏ qua | P2 | candidate | - |
-| TC-038 | AC-007 | Kiểm tra sự đồng bộ dữ liệu tiêu chí khai báo từ Onboarding sang trang Tiêu chí tìm việc (REQ-005) | P0 | candidate | - |
-| TC-039 | AC-006 | Kiểm tra đồng bộ dữ liệu dở dang sang Tiêu chí tìm việc (REQ-005) khi thoát/bỏ qua giữa chừng | P2 | candidate | - |
+| TC-047 | AC-005 | Kiểm tra tính năng Bỏ qua (Skip) onboarding ngay từ Bước 1 | P2 | candidate | - |
+| TC-048 | AC-005 | Kiểm tra không hiển thị lại modal onboarding khi đăng nhập lại sau khi đã chọn Bỏ qua | P2 | candidate | - |
+| TC-049 | AC-007 | Kiểm tra sự đồng bộ dữ liệu tiêu chí khai báo từ Onboarding sang trang Tiêu chí tìm việc (REQ-005) | P2 | candidate | - |
+| TC-050 | AC-006 | Kiểm tra đồng bộ dữ liệu dở dang sang Tiêu chí tìm việc (REQ-005) khi thoát/bỏ qua giữa chừng | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -71,9 +71,9 @@
 | 2 | Kiểm tra giao diện trang chủ | Nội dung trang chủ hiển thị đầy đủ, không còn overlay chặn tương tác |
 
 
-### TC-036 — Kiểm tra tính năng Bỏ qua (Skip) onboarding ngay từ Bước 1
+### TC-047 — Kiểm tra tính năng Bỏ qua (Skip) onboarding ngay từ Bước 1
 
-- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
 - **Tiền điều kiện:** Tài khoản người dùng mới tạo chưa từng thực hiện onboarding, đăng nhập thành công vào hệ thống.
 - **Dữ liệu kiểm thử:** N/A
@@ -85,7 +85,7 @@
 | 2 | Nhấn nút 'Bỏ qua' (Skip) trên modal onboarding. | Modal onboarding đóng lại ngay lập tức, người dùng được điều hướng tới màn hình trang chủ bình thường mà không bắt buộc nhập thêm thông tin. |
 
 
-### TC-037 — Kiểm tra không hiển thị lại modal onboarding khi đăng nhập lại sau khi đã chọn Bỏ qua
+### TC-048 — Kiểm tra không hiển thị lại modal onboarding khi đăng nhập lại sau khi đã chọn Bỏ qua
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -99,9 +99,9 @@
 | 2 | Nhập thông tin tài khoản và thực hiện Đăng nhập lại. | Đăng nhập thành công vào trang chủ, modal onboarding KHÔNG tự động hiển thị lại. |
 
 
-### TC-038 — Kiểm tra sự đồng bộ dữ liệu tiêu chí khai báo từ Onboarding sang trang Tiêu chí tìm việc (REQ-005)
+### TC-049 — Kiểm tra sự đồng bộ dữ liệu tiêu chí khai báo từ Onboarding sang trang Tiêu chí tìm việc (REQ-005)
 
-- **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
 - **Tiền điều kiện:** Tài khoản người dùng mới chưa có dữ liệu tiêu chí tìm việc.
 - **Dữ liệu kiểm thử:** Ngành nghề: IT/Phần mềm, Địa điểm: Hà Nội, Mức lương mong muốn: 2,000 USD, Vị trí: Senior QA Automation
@@ -113,7 +113,7 @@
 | 2 | Điều hướng tới màn hình 'Tiêu chí tìm việc' (REQ-005). | Tất cả các trường thông tin (Ngành nghề, Địa điểm, Mức lương, Vị trí) hiển thị chính xác 100% dữ liệu đã khai báo trong quá trình Onboarding. |
 
 
-### TC-039 — Kiểm tra đồng bộ dữ liệu dở dang sang Tiêu chí tìm việc (REQ-005) khi thoát/bỏ qua giữa chừng
+### TC-050 — Kiểm tra đồng bộ dữ liệu dở dang sang Tiêu chí tìm việc (REQ-005) khi thoát/bỏ qua giữa chừng
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate

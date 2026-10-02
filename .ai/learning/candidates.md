@@ -166,4 +166,35 @@
   2. Tuyệt đối không dùng `.or()` giữa hai phần tử dự kiến đều hiển thị trong các câu lệnh `expect(...).toBeVisible()`.
   3. Kịch bản audit trực quan yêu cầu mỗi thao tác có 1 ảnh: gọi `capture()` tường minh ở từng bước test, loại bỏ các capture nội bộ trùng lặp trong Page Object.
 
+### [LEARN-010] Cấp Phát Định Danh Test Case Toàn Cục & Chuẩn Hóa Ưu Tiên Cho Candidate Test Case
+- **Nguồn trích xuất:** BUGFIX-MA-TC-TRUNG-CANDIDATES
+- **Role quan sát:** Senior Automation QA Engineer & Platform Engineer
+- **Quan sát (Observation):**
+  1. Khi sinh test case tự động (qua Heuristics / AI / Rà soát Open Questions), nếu chỉ quét ID trong phạm vi từng file `REQ-xxx.md`, các mã `TC-xxx` sẽ bị cấp phát trùng lặp giữa các requirement khác nhau, kích hoạt lỗi nghiêm trọng `ma-tc-trung`.
+  2. Các test case mới được suy luận khi còn ở trạng thái `Candidate` nếu được gán ưu tiên `P0` hoặc `P1` sẽ kích hoạt cảnh báo chất lượng `p0-p1-con-dang-candidate` (do quy chuẩn QA yêu cầu P0/P1 phải được automation ngay).
+- **Bằng chứng (Evidence):** `dashboard/services/qaInferenceService.js`, `test-cases/*.md`, `tools/qa/lib/commands.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Luôn quét toàn bộ thư mục `test-cases/*.md` để lấy `max(existingTcIds)` toàn cục trước khi cấp phát mã `TC-xxx` mới.
+  2. Bổ sung cơ chế deduplication trước khi ghi đĩa để tránh nhân đôi dòng khi người dùng bấm thêm nhiều lần.
+  3. Mọi test case ở dạng `Candidate` chưa có script automation cần được mặc định ưu tiên `P2` để phân tách rõ ràng với các kịch bản cốt lõi đã có mã kiểm thử tự động.
+
+### [LEARN-011] Chuẩn Hóa Định Danh Spec Traceability và Kiểm Tra Assertion Trực Tiếp Trong Thân Test
+- **Nguồn trích xuất:** BUGFIX-SPEC-TRACE-AND-ASSERTION
+- **Role quan sát:** Senior Automation QA Engineer & Platform Engineer
+- **Quan sát (Observation):**
+  1. Nếu tiêu đề test không tuân thủ định dạng chuẩn `TC-xxx - AC-yyy: <Mô tả>` hoặc block describe thiếu tag `@REQ-xxx`, bộ quét tĩnh QA sẽ không thể liên kết script với ma trận truy vết và kích hoạt lỗi `test-khong-co-ma-tc` / `test-thieu-tag-req`.
+  2. Khi toàn bộ assertion chỉ nằm ẩn bên trong các phương thức của Page Object Model (POM), bộ quét tĩnh kiểm toán mã nguồn sẽ đo được `assertionCount = 0` và kích hoạt cảnh báo `spec-thieu-assertion` (nguy cơ test rỗng / thiếu kiểm chứng nghiệp vụ).
+- **Bằng chứng (Evidence):** `tests/e2e/desktop/job_search_by_cities-bdd.spec.js`, `tests/e2e/desktop/job_search_filter_detail-bdd.spec.js`, `test-cases/traceability.md`, `tools/qa/lib/sources.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Mọi kịch bản E2E spec bắt buộc đặt tiêu đề theo cấu trúc `TC-xxx - AC-yyy: <Mô tả>` và describe phải chứa tag `@REQ-xxx` khớp với requirement.
+  2. Đồng bộ mã `TC-xxx` vào cả file `test-cases/REQ-xxx.md` (bảng truy vết + chi tiết) và `test-cases/traceability.md`.
+  3. Luôn đặt ít nhất 1-2 lệnh `await expect(...)` trực tiếp trong các bước kiểm chứng nghiệp vụ (`Given`/`When`/`Then`) của file spec để vừa vượt qua QA audit tĩnh, vừa minh bạch kết quả mong đợi của test.
 

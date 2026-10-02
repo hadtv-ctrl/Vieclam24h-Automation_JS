@@ -427,11 +427,21 @@ async function inferTestCases({ root, reqPath, mode = 'heuristic', clientConfig 
   const existingTcIds = [];
   const existingTcTitles = [];
 
+  const tcDir = path.resolve(root, 'test-cases');
+  if (fs.existsSync(tcDir)) {
+    const tcFiles = fs.readdirSync(tcDir).filter((f) => f.endsWith('.md'));
+    for (const f of tcFiles) {
+      try {
+        const content = fs.readFileSync(path.join(tcDir, f), 'utf8');
+        for (const match of content.matchAll(RE_TC)) {
+          existingTcIds.push(match[0].toUpperCase());
+        }
+      } catch {}
+    }
+  }
+
   if (tcFile.exists) {
     const tcContent = fs.readFileSync(tcFile.absPath, 'utf8');
-    for (const match of tcContent.matchAll(RE_TC)) {
-      existingTcIds.push(match[0].toUpperCase());
-    }
     const lines = tcContent.split(/\r?\n/);
     for (const line of lines) {
       if (line.includes('TC-')) {
@@ -478,7 +488,11 @@ async function inferTestCases({ root, reqPath, mode = 'heuristic', clientConfig 
  * Ghi an toàn các Test Cases mới vào file test-cases/REQ-xxx.md
  */
 function buildTestCaseDocument(currentContent, cleanReqId, testCases = []) {
-  let lines = String(currentContent || '').split(/\r?\n/);
+  const existingDocText = String(currentContent || '');
+  const filteredCases = testCases.filter((tc) => !tc.suggestedId || !existingDocText.includes(tc.suggestedId));
+  if (!filteredCases.length) return existingDocText;
+
+  let lines = existingDocText.split(/\r?\n/);
 
   // 1. Tìm vị trí bảng Traceability
   let tableHeaderIdx = lines.findIndex((l) => /\|\s*(?:Test\s*case|Requirement)\s*\|/i.test(l));
@@ -497,7 +511,7 @@ function buildTestCaseDocument(currentContent, cleanReqId, testCases = []) {
       tableEndIdx += 1;
     }
 
-    const newTableRows = testCases.map((tc) => {
+    const newTableRows = filteredCases.map((tc) => {
       const p = tc.priority || 'P2';
       const ac = tc.acId || '-';
       const title = (tc.title || '').replace(/\|/g, '-').trim();
@@ -513,7 +527,7 @@ function buildTestCaseDocument(currentContent, cleanReqId, testCases = []) {
   }
 
   // 2. Thêm các khối chi tiết Test Case vào cuối file
-  const detailBlocks = testCases.map((tc) => {
+  const detailBlocks = filteredCases.map((tc) => {
     const auto = tc.automation || (tc.spec && tc.spec !== '-' ? 'Yes' : 'Candidate');
     const stepsTable = (tc.steps && tc.steps.length)
       ? tc.steps.map((s, idx) => `| ${s.step || idx + 1} | ${(s.action || '').replace(/\|/g, '-')} | ${(s.expected || '').replace(/\|/g, '-')} |`).join('\n')

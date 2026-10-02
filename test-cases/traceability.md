@@ -17,7 +17,7 @@ Sinh lại bằng máy:
 | REQ-004 | Ứng tuyển việc không cần CV | 3 | 5 | 5 |
 | REQ-005 | Quản lý hồ sơ cá nhân | 5 | 6 | 6 |
 | REQ-006 | Trợ lý AI hoàn thiện hồ sơ | 2 | 2 | 2 |
-| REQ-007 | Tìm kiếm việc làm qua trợ lý Chop AI chatbot | 1 | 1 | 1 |
+| REQ-007 | Tìm kiếm việc làm qua trợ lý Chop AI chatbot | 1 | 3 | 3 |
 
 Ghi chú: REQ-001 có 15 test case trên 14 file spec vì file spec API chứa hai test case.
 AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của REQ-004, vì danh sách việc làm đã
@@ -66,6 +66,8 @@ AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của RE
 | TC-037 | REQ-003 | AC-011 | Desktop | P0 | Có | tests/e2e/desktop/kiem-tra-trang-thai-viec-lam-da-ung-tuyen.spec.js |
 | TC-038 | REQ-004 | AC-013 | Desktop | P0 | Có | tests/e2e/desktop/khach-vang-lai-ung-tuyen-sdt-da-ton-tai.spec.js |
 | TC-039 | REQ-001 | AC-002 | Desktop | P2 | Có | tests/e2e/desktop/gui-lai-ma-otp-dang-ky.spec.js |
+| TC-093 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/job_search_by_cities-bdd.spec.js |
+| TC-094 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/job_search_filter_detail-bdd.spec.js |
 
 ## Chất lượng bằng chứng của từng test case
 
@@ -74,7 +76,7 @@ cấp, đọc từ chính spec.
 
 | Mức | Nghĩa | Test case |
 |---|---|---|
-| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-039 (toàn bộ 39 test case) |
+| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-039, TC-093, TC-094 |
 
 ### Quan hệ với cảnh báo của công cụ
 

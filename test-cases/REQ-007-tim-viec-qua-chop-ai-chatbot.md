@@ -5,19 +5,21 @@
 | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
 |---|---|---|---|---|---|
 | TC-025 | AC-022 | Người dùng tìm kiếm, lọc và xem việc làm qua Chop AI chatbot trên desktop | P1 | Có | tests/e2e/desktop/chop_chatbot_job_search-bdd.spec.js |
-| TC-026 | AC-022 | Kiểm tra phân trang danh sách việc làm trong Job Drawer khi Chatbot trả về nhiều kết quả | P1 | candidate | - |
-| TC-027 | AC-022 | Kiểm tra trạng thái nút điều hướng phân trang ở điểm biên (Trang đầu và Trang cuối) | P2 | candidate | - |
-| TC-028 | AC-022 | Khôi phục thành công phiên hội thoại và dữ liệu khi người dùng quay lại trong vòng 24 giờ | P0 | candidate | - |
-| TC-029 | AC-022 | Khởi tạo phiên hội thoại mới khi người dùng quay lại sau 24 giờ | P1 | candidate | - |
-| TC-030 | AC-022 | Kiểm tra khôi phục phiên hội thoại chatbot ở điểm biên thời gian 23 giờ 59 phút | P1 | candidate | - |
-| TC-031 | AC-022 | Kiểm tra xử lý hệ thống khi người dùng xóa cache/storage trình duyệt và quay lại trong vòng 24 giờ | P2 | candidate | - |
-| TC-032 | AC-022 | Kiểm tra hiển thị Job Drawer khi kết quả việc làm trả về nhỏ hơn hoặc bằng số lượng phần tử trên 1 trang | P2 | candidate | - |
-| TC-033 | AC-022 | Kiểm tra khả năng xử lý và hiệu năng phân trang Job Drawer khi Chatbot trả về số lượng rất lớn (500+ việc làm) | P2 | candidate | - |
-| TC-034 | AC-022 | Kiểm tra tính toàn vẹn ngữ cảnh của Active Target và Maturity Score khi khôi phục phiên dưới 24 giờ | P1 | candidate | - |
-| TC-035 | AC-022 | Kiểm tra khôi phục phiên hội thoại chatbot ở điểm biên thời gian chính xác 24 giờ | P1 | candidate | - |
-| TC-036 | AC-022 | Kiểm tra hiển thị Job Drawer khi Chatbot không trả về kết quả việc làm nào (0 việc làm) | P2 | candidate | - |
-| TC-037 | AC-022 | Kiểm tra đồng bộ ngữ cảnh phiên chatbot trên nhiều tab trình duyệt khi quay lại dưới 24 giờ | P2 | candidate | - |
-| TC-038 | AC-022 | Kiểm tra duy trì trạng thái phân trang Job Drawer khi chuyển đổi qua lại giữa các tin nhắn chatbot trong cùng phiên khôi phục | P2 | candidate | - |
+| TC-093 | AC-022 | Tìm kiếm việc làm lần lượt theo tỉnh thành và quận huyện trọng điểm | P2 | Có | tests/e2e/desktop/job_search_by_cities-bdd.spec.js |
+| TC-094 | AC-022 | Tìm kiếm việc làm từ trang chủ, áp dụng bộ lọc và xem chi tiết tin tuyển dụng | P2 | Có | tests/e2e/desktop/job_search_filter_detail-bdd.spec.js |
+| TC-080 | AC-022 | Kiểm tra phân trang danh sách việc làm trong Job Drawer khi Chatbot trả về nhiều kết quả | P2 | candidate | - |
+| TC-081 | AC-022 | Kiểm tra trạng thái nút điều hướng phân trang ở điểm biên (Trang đầu và Trang cuối) | P2 | candidate | - |
+| TC-082 | AC-022 | Khôi phục thành công phiên hội thoại và dữ liệu khi người dùng quay lại trong vòng 24 giờ | P2 | candidate | - |
+| TC-083 | AC-022 | Khởi tạo phiên hội thoại mới khi người dùng quay lại sau 24 giờ | P2 | candidate | - |
+| TC-084 | AC-022 | Kiểm tra khôi phục phiên hội thoại chatbot ở điểm biên thời gian 23 giờ 59 phút | P2 | candidate | - |
+| TC-085 | AC-022 | Kiểm tra xử lý hệ thống khi người dùng xóa cache/storage trình duyệt và quay lại trong vòng 24 giờ | P2 | candidate | - |
+| TC-086 | AC-022 | Kiểm tra hiển thị Job Drawer khi kết quả việc làm trả về nhỏ hơn hoặc bằng số lượng phần tử trên 1 trang | P2 | candidate | - |
+| TC-087 | AC-022 | Kiểm tra khả năng xử lý và hiệu năng phân trang Job Drawer khi Chatbot trả về số lượng rất lớn (500+ việc làm) | P2 | candidate | - |
+| TC-088 | AC-022 | Kiểm tra tính toàn vẹn ngữ cảnh của Active Target và Maturity Score khi khôi phục phiên dưới 24 giờ | P2 | candidate | - |
+| TC-089 | AC-022 | Kiểm tra khôi phục phiên hội thoại chatbot ở điểm biên thời gian chính xác 24 giờ | P2 | candidate | - |
+| TC-090 | AC-022 | Kiểm tra hiển thị Job Drawer khi Chatbot không trả về kết quả việc làm nào (0 việc làm) | P2 | candidate | - |
+| TC-091 | AC-022 | Kiểm tra đồng bộ ngữ cảnh phiên chatbot trên nhiều tab trình duyệt khi quay lại dưới 24 giờ | P2 | candidate | - |
+| TC-092 | AC-022 | Kiểm tra duy trì trạng thái phân trang Job Drawer khi chuyển đổi qua lại giữa các tin nhắn chatbot trong cùng phiên khôi phục | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -42,6 +44,31 @@
   - Điều hướng quay về trang chủ thành công — Có assertion kiểm chứng.
 - **Đánh giá**: Kịch bản kiểm thử bao phủ toàn diện luồng tương tác với trợ lý ảo Chop AI từ nhập liệu, trắc nghiệm đến quản lý bộ lọc đa chiều.
 
+### TC-093 — Tìm kiếm việc làm lần lượt theo tỉnh thành và quận huyện trọng điểm
+
+- **Precondition**: người dùng mở trang tìm kiếm việc làm, đã đóng các modal popup/guest prompt.
+- **Các bước**:
+  1. Truy cập trang chủ và điều hướng đến trang tìm kiếm việc làm.
+  2. Lần lượt chọn tỉnh thành và quận huyện đại diện (Hà Nội - Cầu Giấy, TP.HCM - Quận 1, Đà Nẵng - Hải Châu, Bình Dương - Thủ Dầu Một, Hải Phòng - Ngô Quyền, Cần Thơ - Ninh Kiều).
+  3. Bấm Tìm kiếm và xác nhận kết quả lọc được áp dụng.
+  4. Mở xem chi tiết một tin tuyển dụng.
+- **Expected result thực tế kiểm chứng**:
+  - URL trang tìm kiếm tải đúng và bộ lọc địa điểm được áp dụng.
+  - Trang chi tiết việc làm mở thành công và hiển thị tiêu đề tin tuyển dụng.
+
+### TC-094 — Tìm kiếm việc làm từ trang chủ, áp dụng bộ lọc và xem chi tiết tin tuyển dụng
+
+- **Precondition**: người dùng truy cập trang chủ và đóng các popup cản trở.
+- **Các bước**:
+  1. Chọn ngành nghề 'Bán sỉ - Bán lẻ' để điều hướng sang trang tìm kiếm việc làm.
+  2. Lọc theo tỉnh thành 'TP.HCM' và bấm Tìm kiếm.
+  3. Tuần tự áp dụng 8 bộ lọc ngang (Tuyển nhanh, Việc không cần CV, Kinh nghiệm, Mức lương, Cấp bậc, Trình độ, Loại công việc, Giới tính) và xóa lọc sau mỗi lần.
+  4. Mở xem chi tiết một tin tuyển dụng.
+- **Expected result thực tế kiểm chứng**:
+  - Trang chủ và logo hiển thị đầy đủ trước khi chọn ngành nghề.
+  - URL trang tìm kiếm việc làm tải chính xác và các bộ lọc cập nhật danh sách việc làm.
+  - Trang chi tiết việc làm mở thành công và hiển thị tiêu đề tin tuyển dụng.
+
 ## Ứng viên automation cho REQ-007
 
 | Test case đề xuất | AC liên quan | Vì sao đáng automation | Ưu tiên |
@@ -51,7 +78,7 @@
 | Tự động phục hồi phiên chat khi mất kết nối | AC-022 | Đảm bảo trải nghiệm liền mạch của người dùng | P3 |
 
 
-### TC-026 — Kiểm tra phân trang danh sách việc làm trong Job Drawer khi Chatbot trả về nhiều kết quả
+### TC-080 — Kiểm tra phân trang danh sách việc làm trong Job Drawer khi Chatbot trả về nhiều kết quả
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -66,7 +93,7 @@
 | 3 | Nhấp vào nút quay lại trang trước (Previous Page). | Job Drawer quay lại hiển thị danh sách 10 việc làm đầu tiên của Trang 1. |
 
 
-### TC-027 — Kiểm tra trạng thái nút điều hướng phân trang ở điểm biên (Trang đầu và Trang cuối)
+### TC-081 — Kiểm tra trạng thái nút điều hướng phân trang ở điểm biên (Trang đầu và Trang cuối)
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -80,7 +107,7 @@
 | 2 | Nhấp nút 'Trang tiếp' để chuyển sang Trang 2. | Job Drawer hiển thị 2 việc làm còn lại. Nút 'Trang tiếp' chuyển sang trạng thái Disabled, nút 'Trang trước' ở trạng thái Enabled. |
 
 
-### TC-028 — Khôi phục thành công phiên hội thoại và dữ liệu khi người dùng quay lại trong vòng 24 giờ
+### TC-082 — Khôi phục thành công phiên hội thoại và dữ liệu khi người dùng quay lại trong vòng 24 giờ
 
 - **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -95,7 +122,7 @@
 | 3 | Mở cửa sổ Chatbot Chop AI. | Phiên hội thoại cũ được tự động khôi phục (Resume): Lịch sử chat (Chat History) hiển thị đầy đủ, mục tiêu hoạt động (Active Target = 'Senior QA Automation') và điểm độ trưởng thành (Maturity Score = 80%) được giữ nguyên chính xác. |
 
 
-### TC-029 — Khởi tạo phiên hội thoại mới khi người dùng quay lại sau 24 giờ
+### TC-083 — Khởi tạo phiên hội thoại mới khi người dùng quay lại sau 24 giờ
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -108,7 +135,7 @@
 | 1 | Người dùng đăng nhập và mở cửa sổ Chatbot Chop AI sau 25 giờ kể từ lần tương tác gần nhất. | Hệ thống không resume phiên hội thoại cũ. Cửa sổ chatbot mở ra một phiên hội thoại mới sạch hoàn toàn, các thông số Active Target và Maturity Score được đặt lại về trạng thái mặc định/khởi tạo ban đầu. |
 
 
-### TC-030 — Kiểm tra khôi phục phiên hội thoại chatbot ở điểm biên thời gian 23 giờ 59 phút
+### TC-084 — Kiểm tra khôi phục phiên hội thoại chatbot ở điểm biên thời gian 23 giờ 59 phút
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -123,7 +150,7 @@
 | 3 | Mở lại cửa sổ Chatbot. | Khôi phục thành công toàn bộ Chat History, Active Target và Maturity Score của phiên làm việc trước đó. |
 
 
-### TC-031 — Kiểm tra xử lý hệ thống khi người dùng xóa cache/storage trình duyệt và quay lại trong vòng 24 giờ
+### TC-085 — Kiểm tra xử lý hệ thống khi người dùng xóa cache/storage trình duyệt và quay lại trong vòng 24 giờ
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -137,7 +164,7 @@
 | 2 | Tải lại trang và mở cửa sổ Chatbot. | Hệ thống không phát sinh lỗi giao diện (UI crash), tự động tạo phiên làm việc mới (New Session) sạch sẽ. |
 
 
-### TC-032 — Kiểm tra hiển thị Job Drawer khi kết quả việc làm trả về nhỏ hơn hoặc bằng số lượng phần tử trên 1 trang
+### TC-086 — Kiểm tra hiển thị Job Drawer khi kết quả việc làm trả về nhỏ hơn hoặc bằng số lượng phần tử trên 1 trang
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -151,7 +178,7 @@
 | 2 | Kiểm tra bộ phân trang phía dưới Job Drawer. | Thanh phân trang ẩn đi hoặc hiển thị 1/1 trang, các nút điều hướng Next/Previous ở trạng thái disabled. |
 
 
-### TC-033 — Kiểm tra khả năng xử lý và hiệu năng phân trang Job Drawer khi Chatbot trả về số lượng rất lớn (500+ việc làm)
+### TC-087 — Kiểm tra khả năng xử lý và hiệu năng phân trang Job Drawer khi Chatbot trả về số lượng rất lớn (500+ việc làm)
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -166,7 +193,7 @@
 | 3 | Chuyển nhanh đến trang bất kỳ (ví dụ trang 50) và bấm Next liên tục. | Giao diện cập nhật danh sách việc làm trang tương ứng nhanh chóng, không bị vỡ layout hay đơ trình duyệt. |
 
 
-### TC-034 — Kiểm tra tính toàn vẹn ngữ cảnh của Active Target và Maturity Score khi khôi phục phiên dưới 24 giờ
+### TC-088 — Kiểm tra tính toàn vẹn ngữ cảnh của Active Target và Maturity Score khi khôi phục phiên dưới 24 giờ
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -180,7 +207,7 @@
 | 2 | Gửi tin nhắn: 'Hãy gợi ý việc làm phù hợp với mục tiêu hiện tại của tôi'. | Chatbot đưa ra gợi ý việc làm chính xác dựa trên Active Target ('Senior QA Automation') và Maturity Score (75%) đã lưu, không hỏi lại mục tiêu nghề nghiệp của người dùng. |
 
 
-### TC-035 — Kiểm tra khôi phục phiên hội thoại chatbot ở điểm biên thời gian chính xác 24 giờ
+### TC-089 — Kiểm tra khôi phục phiên hội thoại chatbot ở điểm biên thời gian chính xác 24 giờ
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -195,7 +222,7 @@
 | 3 | Người dùng truy cập lại ứng dụng và mở lại Chop AI chatbot. | Hệ thống xác định phiên đã hết hạn (> 24h hoặc = 24h), tự động xóa lịch sử cũ và khởi tạo phiên hội thoại mới sạch hoàn toàn. |
 
 
-### TC-036 — Kiểm tra hiển thị Job Drawer khi Chatbot không trả về kết quả việc làm nào (0 việc làm)
+### TC-090 — Kiểm tra hiển thị Job Drawer khi Chatbot không trả về kết quả việc làm nào (0 việc làm)
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -209,7 +236,7 @@
 | 2 | Mở hoặc quan sát trạng thái của Job Drawer. | Job Drawer hiển thị trạng thái trống (Empty state), không hiển thị thanh phân trang (pagination) và hiển thị thông báo gợi ý điều chỉnh tiêu chí tìm kiếm. |
 
 
-### TC-037 — Kiểm tra đồng bộ ngữ cảnh phiên chatbot trên nhiều tab trình duyệt khi quay lại dưới 24 giờ
+### TC-091 — Kiểm tra đồng bộ ngữ cảnh phiên chatbot trên nhiều tab trình duyệt khi quay lại dưới 24 giờ
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -224,7 +251,7 @@
 | 3 | Gửi câu hỏi mới ở Tab A và chuyển sang Tab B kiểm tra. | Dữ liệu tin nhắn mới và ngữ cảnh hội thoại được đồng bộ nhất quán giữa hai tab. |
 
 
-### TC-038 — Kiểm tra duy trì trạng thái phân trang Job Drawer khi chuyển đổi qua lại giữa các tin nhắn chatbot trong cùng phiên khôi phục
+### TC-092 — Kiểm tra duy trì trạng thái phân trang Job Drawer khi chuyển đổi qua lại giữa các tin nhắn chatbot trong cùng phiên khôi phục
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate

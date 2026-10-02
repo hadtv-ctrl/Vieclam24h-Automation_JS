@@ -10,12 +10,12 @@
 | TC-020 | AC-018 | Thêm đủ bảy mục nội dung hồ sơ trên mobile web | P2 | Có | tests/e2e/mobile-web/setting_user_profile-bdd.mobile.spec.js |
 | TC-021 | AC-019 | Tải lên và chuyển đổi CV tại trang Hồ sơ trên desktop | P1 | Có | tests/e2e/desktop/upload_cv_profile-bdd.spec.js |
 | TC-022 | AC-019 | Tải lên và chuyển đổi CV tại trang Hồ sơ trên mobile web | P1 | Có | tests/e2e/mobile-web/upload_cv_profile-bdd.mobile.spec.js |
-| TC-023 | AC-017 | Xác minh OTP qua Email khi bật tìm kiếm hồ sơ đối với tài khoản chưa xác thực Email | P0 | candidate | - |
-| TC-024 | AC-017 | Xác minh OTP qua SĐT với mã mặc định 1111 trên môi trường QC/STG khi bật tìm kiếm hồ sơ | P0 | candidate | - |
-| TC-025 | AC-016 | Kiểm tra tính đồng bộ hai chiều của tiêu chí tìm việc giữa trang Hồ sơ và Onboarding (REQ-002) | P1 | candidate | - |
-| TC-026 | AC-019 | Chuyển đổi CV khi hồ sơ đã có sẵn dữ liệu: Ghi đè trường đã có và thêm mới trường chưa có | P1 | candidate | - |
-| TC-027 | AC-015 | Xác nhận hồ sơ hoàn thiện khi CHỈ điền duy nhất mục bắt buộc 'Thông tin cá nhân' | P0 | candidate | - |
-| TC-028 | AC-015 | Kiểm tra hồ sơ CHƯA hoàn thiện khi điền 6 mục khác nhưng bỏ trống mục 'Thông tin cá nhân' | P1 | candidate | - |
+| TC-070 | AC-017 | Xác minh OTP qua Email khi bật tìm kiếm hồ sơ đối với tài khoản chưa xác thực Email | P2 | candidate | - |
+| TC-071 | AC-017 | Xác minh OTP qua SĐT với mã mặc định 1111 trên môi trường QC/STG khi bật tìm kiếm hồ sơ | P2 | candidate | - |
+| TC-072 | AC-016 | Kiểm tra tính đồng bộ hai chiều của tiêu chí tìm việc giữa trang Hồ sơ và Onboarding (REQ-002) | P2 | candidate | - |
+| TC-073 | AC-019 | Chuyển đổi CV khi hồ sơ đã có sẵn dữ liệu: Ghi đè trường đã có và thêm mới trường chưa có | P2 | candidate | - |
+| TC-074 | AC-015 | Xác nhận hồ sơ hoàn thiện khi CHỈ điền duy nhất mục bắt buộc 'Thông tin cá nhân' | P2 | candidate | - |
+| TC-075 | AC-015 | Kiểm tra hồ sơ CHƯA hoàn thiện khi điền 6 mục khác nhưng bỏ trống mục 'Thông tin cá nhân' | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -65,7 +65,7 @@
 | Bỏ trống trường bắt buộc trong từng mục hồ sơ | AC-018 | Cần chốt trường bắt buộc trước khi automation | P2 |
 
 
-### TC-023 — Xác minh OTP qua Email khi bật tìm kiếm hồ sơ đối với tài khoản chưa xác thực Email
+### TC-070 — Xác minh OTP qua Email khi bật tìm kiếm hồ sơ đối với tài khoản chưa xác thực Email
 
 - **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -80,7 +80,7 @@
 | 3 | Kiểm tra hòm thư Email, lấy mã OTP thực tế vừa nhận và nhập vào ô xác minh. | Xác minh thành công, công tắc 'Cho phép tìm kiếm hồ sơ' được chuyển sang trạng thái Bật. |
 
 
-### TC-024 — Xác minh OTP qua SĐT với mã mặc định 1111 trên môi trường QC/STG khi bật tìm kiếm hồ sơ
+### TC-071 — Xác minh OTP qua SĐT với mã mặc định 1111 trên môi trường QC/STG khi bật tìm kiếm hồ sơ
 
 - **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -94,7 +94,7 @@
 | 2 | Nhập mã OTP là '1111' và nhấn Xác nhận. | Hệ thống chấp nhận mã OTP '1111', xác minh thành công và kích hoạt trạng thái tìm kiếm hồ sơ. |
 
 
-### TC-025 — Kiểm tra tính đồng bộ hai chiều của tiêu chí tìm việc giữa trang Hồ sơ và Onboarding (REQ-002)
+### TC-072 — Kiểm tra tính đồng bộ hai chiều của tiêu chí tìm việc giữa trang Hồ sơ và Onboarding (REQ-002)
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -108,7 +108,7 @@
 | 2 | Kiểm tra lại dữ liệu tiêu chí tìm việc trên các màn hình liên quan đến luồng Onboarding/Gợi ý việc làm. | Dữ liệu tiêu chí tìm việc tại Onboarding được cập nhật đồng nhất thành Tiêu chí B. |
 
 
-### TC-026 — Chuyển đổi CV khi hồ sơ đã có sẵn dữ liệu: Ghi đè trường đã có và thêm mới trường chưa có
+### TC-073 — Chuyển đổi CV khi hồ sơ đã có sẵn dữ liệu: Ghi đè trường đã có và thêm mới trường chưa có
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -123,7 +123,7 @@
 | 3 | Kiểm tra mục Kinh nghiệm làm việc trong hồ sơ. | Mục Kinh nghiệm làm việc được thêm mới với thông tin 'Công ty X - 2 năm'. |
 
 
-### TC-027 — Xác nhận hồ sơ hoàn thiện khi CHỈ điền duy nhất mục bắt buộc 'Thông tin cá nhân'
+### TC-074 — Xác nhận hồ sơ hoàn thiện khi CHỈ điền duy nhất mục bắt buộc 'Thông tin cá nhân'
 
 - **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -137,7 +137,7 @@
 | 2 | Kiểm tra trạng thái hoàn thiện của hồ sơ và khả năng bật tìm kiếm hồ sơ. | Trạng thái hồ sơ được công nhận là 'Hoàn thiện', người dùng có thể thực hiện bật tính năng tìm kiếm hồ sơ. |
 
 
-### TC-028 — Kiểm tra hồ sơ CHƯA hoàn thiện khi điền 6 mục khác nhưng bỏ trống mục 'Thông tin cá nhân'
+### TC-075 — Kiểm tra hồ sơ CHƯA hoàn thiện khi điền 6 mục khác nhưng bỏ trống mục 'Thông tin cá nhân'
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate

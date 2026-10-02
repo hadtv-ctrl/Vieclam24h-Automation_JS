@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/baseTest');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 const { JobDetailPage } = require('../../../pages/desktop/JobDetailPage');
 
-test.describe('Feature: Tìm kiếm, lọc việc làm và xem chi tiết công việc @regression @desktop @e2e @search', () => {
+test.describe('Feature: Tìm kiếm, lọc việc làm và xem chi tiết công việc @regression @desktop @e2e @search @REQ-007', () => {
   let jobDetailPageTab = null;
 
   test.afterEach(async () => {
@@ -14,7 +14,7 @@ test.describe('Feature: Tìm kiếm, lọc việc làm và xem chi tiết công 
     }
   });
 
-  test('TC-SEARCH-001: Tìm kiếm việc làm từ trang chủ, áp dụng bộ lọc và xem chi tiết tin tuyển dụng', async ({
+  test('TC-094 - AC-022: Tìm kiếm việc làm từ trang chủ, áp dụng bộ lọc và xem chi tiết tin tuyển dụng', async ({
     page,
     pages,
   }, testInfo) => {
@@ -44,6 +44,7 @@ test.describe('Feature: Tìm kiếm, lọc việc làm và xem chi tiết công 
       });
       await homePage.closeAllPopupsIfVisible();
       await homePage.expectHomepageVisible();
+      await expect(homePage.logo).toBeVisible({ timeout: 15000 });
 
       // Chụp đúng 1 ảnh duy nhất sau khi đã đóng sạch tất cả popup và trang chủ sẵn sàng
       await homePage.capture('01_homepage_ready_popups_closed');
@@ -54,6 +55,7 @@ test.describe('Feature: Tìm kiếm, lọc việc làm và xem chi tiết công 
       // Thao tác 2: Bấm chọn danh mục Bán sỉ - Bán lẻ và chuyển sang danh sách tìm kiếm việc làm
       await homePage.selectJobCategory('Bán sỉ - Bán lẻ');
       await jobSearchPage.expectJobSearchPageVisible();
+      await expect(page).toHaveURL(/tim-kiem-viec-lam/i);
       await jobSearchPage.capture('02_category_ban_si_ban_le_selected');
     });
 
@@ -129,6 +131,7 @@ test.describe('Feature: Tìm kiếm, lọc việc làm và xem chi tiết công 
       jobDetailPageTab = await jobSearchPage.clickJobByTitle();
       const jobDetailPage = new JobDetailPage(jobDetailPageTab, 'job_search_regression');
       await jobDetailPage.verifyJobDetailPageLoaded();
+      await expect(jobDetailPage.jobTitleHeading).toBeVisible({ timeout: 15000 });
       await jobDetailPage.capture('12_job_detail_page_verified');
     });
   });

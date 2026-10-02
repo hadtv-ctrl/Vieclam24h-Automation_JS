@@ -6,10 +6,10 @@
 |---|---|---|---|---|---|
 | TC-023 | AC-020 AC-021 | Viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI trên desktop | P2 | Có | tests/e2e/desktop/profile_ai_writing-bdd.spec.js |
 | TC-024 | AC-020 AC-021 | Viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI trên mobile web | P2 | Có | tests/e2e/mobile-web/profile_ai_writing-bdd.mobile.spec.js |
-| TC-025 | AC-020 | Hiển thị popup thông báo lỗi khi dịch vụ AI gặp sự cố hoặc phản hồi thất bại | P1 | candidate | - |
-| TC-026 | AC-020 | Chuyển đổi lần lượt qua cả 3 giọng văn hỗ trợ để viết lại giới thiệu bản thân | P1 | candidate | - |
-| TC-027 | AC-020 | Từ chối/Hủy bỏ nội dung AI vừa sinh ra để giữ nguyên đoạn giới thiệu gốc | P2 | candidate | - |
-| TC-028 | AC-021 | Tạo mô tả kinh nghiệm bằng AI khi để trống và áp dụng trực tiếp vào hồ sơ mà không qua kiểm duyệt | P1 | candidate | - |
+| TC-076 | AC-020 | Hiển thị popup thông báo lỗi khi dịch vụ AI gặp sự cố hoặc phản hồi thất bại | P2 | candidate | - |
+| TC-077 | AC-020 | Chuyển đổi lần lượt qua cả 3 giọng văn hỗ trợ để viết lại giới thiệu bản thân | P2 | candidate | - |
+| TC-078 | AC-020 | Từ chối/Hủy bỏ nội dung AI vừa sinh ra để giữ nguyên đoạn giới thiệu gốc | P2 | candidate | - |
+| TC-079 | AC-021 | Tạo mô tả kinh nghiệm bằng AI khi để trống và áp dụng trực tiếp vào hồ sơ mà không qua kiểm duyệt | P2 | candidate | - |
 
 ## Chi tiết
 
@@ -37,7 +37,7 @@
 | Chất lượng và độ phù hợp của nội dung AI sinh ra | AC-021 | **Không nên automation**: kết quả không xác định, thuộc kiểm thử thủ công có người đọc | manual |
 
 
-### TC-025 — Hiển thị popup thông báo lỗi khi dịch vụ AI gặp sự cố hoặc phản hồi thất bại
+### TC-076 — Hiển thị popup thông báo lỗi khi dịch vụ AI gặp sự cố hoặc phản hồi thất bại
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -52,7 +52,7 @@
 | 3 | Đóng popup báo lỗi. | Popup đóng lại, nội dung giới thiệu ban đầu của người dùng được giữ nguyên vẹn. |
 
 
-### TC-026 — Chuyển đổi lần lượt qua cả 3 giọng văn hỗ trợ để viết lại giới thiệu bản thân
+### TC-077 — Chuyển đổi lần lượt qua cả 3 giọng văn hỗ trợ để viết lại giới thiệu bản thân
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -67,7 +67,7 @@
 | 3 | Chọn Giọng văn 3 và yêu cầu viết lại. | AI cập nhật nội dung gợi ý theo phong cách của Giọng văn 3. |
 
 
-### TC-027 — Từ chối/Hủy bỏ nội dung AI vừa sinh ra để giữ nguyên đoạn giới thiệu gốc
+### TC-078 — Từ chối/Hủy bỏ nội dung AI vừa sinh ra để giữ nguyên đoạn giới thiệu gốc
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate
@@ -81,7 +81,7 @@
 | 2 | Nhấn nút 'Hủy' / 'Không sử dụng'. | Giao diện AI xem trước đóng lại. Đoạn văn giới thiệu gốc giữ nguyên, không bị ghi đè. |
 
 
-### TC-028 — Tạo mô tả kinh nghiệm bằng AI khi để trống và áp dụng trực tiếp vào hồ sơ mà không qua kiểm duyệt
+### TC-079 — Tạo mô tả kinh nghiệm bằng AI khi để trống và áp dụng trực tiếp vào hồ sơ mà không qua kiểm duyệt
 
 - **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
 - **Automation:** Candidate

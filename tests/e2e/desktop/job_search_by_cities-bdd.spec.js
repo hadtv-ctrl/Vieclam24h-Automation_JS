@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/baseTest');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 const { JobDetailPage } = require('../../../pages/desktop/JobDetailPage');
 
-test.describe('Feature: Tìm kiếm việc làm theo từng tỉnh thành trọng điểm @regression @desktop @e2e @search @cities', () => {
+test.describe('Feature: Tìm kiếm việc làm theo từng tỉnh thành trọng điểm @regression @desktop @e2e @search @cities @REQ-007', () => {
   let jobDetailPageTab = null;
 
   test.afterEach(async () => {
@@ -12,7 +12,7 @@ test.describe('Feature: Tìm kiếm việc làm theo từng tỉnh thành trọn
     }
   });
 
-  test('TC-SEARCH-CITY-001: Tìm kiếm việc làm lần lượt theo tỉnh thành và quận huyện trọng điểm', async ({
+  test('TC-093 - AC-022: Tìm kiếm việc làm lần lượt theo tỉnh thành và quận huyện trọng điểm', async ({
     page,
     pages,
   }, testInfo) => {
@@ -58,6 +58,7 @@ test.describe('Feature: Tìm kiếm việc làm theo từng tỉnh thành trọn
       await jobSearchPage.open();
       await jobSearchPage.closeAllPopupsIfVisible();
       await jobSearchPage.expectJobSearchPageVisible();
+      await expect(page).toHaveURL(/tim-kiem-viec-lam/i);
       await jobSearchPage.capture('01_job_search_page_ready');
     });
 
@@ -105,6 +106,7 @@ test.describe('Feature: Tìm kiếm việc làm theo từng tỉnh thành trọn
       jobDetailPageTab = await jobSearchPage.clickJobByTitle();
       const jobDetailPage = new JobDetailPage(jobDetailPageTab, 'job_search_cities_regression');
       await jobDetailPage.verifyJobDetailPageLoaded();
+      await expect(jobDetailPage.jobTitleHeading).toBeVisible({ timeout: 15000 });
       await jobDetailPage.capture(`${stepIndex}_job_detail_page_verified`);
     });
   });
