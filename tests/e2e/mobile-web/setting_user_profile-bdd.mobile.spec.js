@@ -1,7 +1,7 @@
 const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const applyData = require('../../../data/userProfileData.json');
 
-test.describe('Mobile Feature: Cập nhật chi tiết hồ sơ cá nhân trên Mobile Web @profile @mobile @e2e @REQ-005', () => {
+test.describe('Mobile Feature: Cập nhật chi tiết hồ sơ cá nhân trên Mobile Web @auth @profile @mobile @e2e @REQ-005', () => {
   test('TC-020 - AC-018 Thêm đủ bảy mục nội dung hồ sơ cá nhân trên mobile web', async ({
     authenticatedUser,
     homePage,

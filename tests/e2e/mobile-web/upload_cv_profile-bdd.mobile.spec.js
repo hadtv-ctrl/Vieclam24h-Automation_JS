@@ -1,6 +1,6 @@
 const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 
-test.describe('Mobile Feature: Tải lên và chuyển đổi CV tại Hồ sơ của tôi trên Mobile Web @profile @mobile @e2e @REQ-005', () => {
+test.describe('Mobile Feature: Tải lên và chuyển đổi CV tại Hồ sơ của tôi trên Mobile Web @auth @profile @mobile @e2e @REQ-005', () => {
   test('TC-022 - AC-019 Tải lên và chuyển đổi CV tại trang Hồ sơ của tôi trên mobile web', async ({ authenticatedUser, userProfilePage }) => {
     test.setTimeout(180000);
 

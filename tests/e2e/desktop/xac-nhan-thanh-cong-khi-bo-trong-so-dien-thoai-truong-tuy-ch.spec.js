@@ -3,7 +3,7 @@ const userData = require('../../../data/users.json');
 const { generateRandomEmail } = require('../../../core/utils/commonUtils');
 const { LoginPopup } = require('../../../pages/desktop/LoginPopup');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc @register @desktop @e2e @REQ-001', () => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc @guest @no-auth @register @desktop @e2e @REQ-001', () => {
   test('TC-026 - AC-001 Xác nhận thành công khi bỏ trống số điện thoại (trường tùy chọn theo quyết định)', async ({ page, pages }, testInfo) => {
     const homePage = pages.homePage;
     const loginPopup = new LoginPopup(page);

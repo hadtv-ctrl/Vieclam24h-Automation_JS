@@ -195,6 +195,9 @@
 - **Trạng thái:** PENDING
 - **Nguyên tắc rút ra:**
   1. Mọi kịch bản E2E spec bắt buộc đặt tiêu đề theo cấu trúc `TC-xxx - AC-yyy: <Mô tả>` và describe phải chứa tag `@REQ-xxx` khớp với requirement.
+  2. Đồng bộ mã `TC-xxx` vào cả file `test-cases/REQ-xxx.md` (bảng truy vết + chi tiết) và `test-cases/traceability.md`.
+  3. Luôn đặt ít nhất 1-2 lệnh `await expect(...)` trực tiếp trong các bước kiểm chứng nghiệp vụ (`Given`/`When`/`Then`) của file spec để vừa vượt qua QA audit tĩnh, vừa minh bạch kết quả mong đợi của test.
+
 ### [LEARN-012] Hợp Nhất Kịch Bản Kiểm Thử Tránh Phân Mảnh & Hỗ Trợ Đa AC
 - **Nguồn trích xuất:** QA-CONSOLIDATE-CANDIDATES
 - **Role quan sát:** Senior QA Architect & Platform Engineer
@@ -211,3 +214,23 @@
   1. Hợp nhất các kiểm thử biên vi mô thành các Composite E2E Scenarios (giảm ~80% phân mảnh, kiểm thử chuỗi liên hoàn).
   2. Tránh ghi mã `TC-xxx` dạng số hiệu trong phần ghi chú văn bản để không làm nhiễu bộ quét tĩnh.
   3. Chuẩn hóa hàm lọc tiêu đề `cleanCandidateTitle` với regex `(?:AC-\d{3}\s*)+`.
+
+### [LEARN-013] Tự Động Hóa Chatbot Trợ Lý AI Trên Môi Trường QC Thực Tế, Infinite Scroll & Vòng Đời Phiên
+- **Nguồn trích xuất:** TASK-CHATBOT-LIVE-QC-VERIFICATION (TC-049 & TC-050)
+- **Role quan sát:** Senior Automation QA Engineer (Gate 4)
+- **Quan sát (Observation):**
+  1. Tuyệt đối không dùng synthetic mock HTML (`page.route` trả về HTML giả) khi viết automation test cho chatbot. Chatbot thực tế trên web QC chạy Next.js SPA tại URL `https://seeker.vl24hv2.qc.sieuviet-team.com/chop-tro-ly-ai.html`, tương tác với API backend `apigw/api/v1/chatbot/chats` và API Job Drawer `employer/fe/job/get-job-list`.
+  2. Mô hình phân trang của Job Drawer trên QC là Infinite Scroll container (`.overflow-y-auto.overscroll-contain.no-scrollbar`), tự động query `page=2`, `page=3` khi người dùng cuộn xuống đáy danh sách chứ không dùng nút chuyển trang số truyền thống (`Trang 1 / 10`, `Next`, `Prev`).
+  3. Quản lý vòng đời phiên: Chatbot trên web QC lưu session theo tab in-memory. Khi reload trang, session reset về lời chào ban đầu (`Chào [Tên]! Mình là Chớp. Bạn cần hỗ trợ gì?`). Khi xóa hoàn toàn cookie/storage, truy cập yêu cầu đăng nhập ứng viên qua login popup (`Người tìm việc - Đăng nhập hoặc Đăng ký`), cần cơ chế re-authenticate để kiểm thử tính an toàn không crash của phiên mới.
+  4. Tuân thủ `npm run check:framework`: không gọi direct locator trong file spec và không dùng `page.waitForTimeout` trong Page Object Model, thay bằng `page.waitForResponse` hoặc `waitForLoadState` / `waitForVisible`.
+- **Bằng chứng (Evidence):** `pages/desktop/ChopChatbotPage.js`, `tests/e2e/desktop/kiem-thu-hien-thi-va-dieu-huong-phan-trang-danh-sach-viec-la.spec.js`, `tests/e2e/desktop/kiem-thu-quan-ly-vong-doi-va-tinh-toan-ven-phien-hoi-thoai-c.spec.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Toàn bộ kịch bản kiểm thử Chatbot phải chạy trực tiếp trên môi trường QC live với API thực, không dùng mock route HTML.
+  2. Kiểm thử phân trang danh sách việc làm dạng drawer sử dụng hành vi cuộn container (`scrollTop = scrollHeight`) và lắng nghe sự kiện mạng `waitForResponse('get-job-list')`.
+  3. Kiểm thử vòng đời phiên và xóa storage phải kết hợp tái xác thực (`loginIfVisible`) để xác nhận hệ thống khởi tạo lại phiên làm việc an toàn, không bị treo hoặc vỡ giao diện.
+  4. Đảm bảo toàn bộ tương tác và assertion qua Page Object Model, tuân thủ 100% rào chắn `npm run check:framework`.
+

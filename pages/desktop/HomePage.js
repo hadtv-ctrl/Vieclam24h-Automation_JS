@@ -230,6 +230,36 @@ class HomePage extends BasePage {
     await this.actions.waitForVisible(immediateJobsSection, { timeout: 20000 });
     return immediateJobsSection;
   }
+
+  async logout() {
+    if (await this.accountMenuButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await this.clickElement(this.accountMenuButton);
+      const logoutBtn = this.page.getByRole('button', { name: /đăng xuất/i })
+        .or(this.page.getByRole('link', { name: /đăng xuất/i }))
+        .or(this.page.locator('text=/đăng xuất/i'))
+        .first();
+      if (await logoutBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await this.actions.click(logoutBtn);
+        const confirmLogoutBtn = this.page.getByRole('button', { name: /đồng ý|xác nhận|đăng xuất/i }).filter({ hasNot: logoutBtn }).first();
+        if (await confirmLogoutBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await this.actions.click(confirmLogoutBtn);
+        }
+      } else {
+        await this.page.context().clearCookies();
+        await this.page.evaluate(() => {
+          try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
+        });
+        await this.navigate('/');
+      }
+    } else {
+      await this.page.context().clearCookies();
+      await this.page.evaluate(() => {
+        try { localStorage.clear(); sessionStorage.clear(); } catch (_) {}
+      });
+      await this.navigate('/');
+    }
+    await this.page.waitForLoadState('domcontentloaded');
+  }
 }
 
 module.exports = { HomePage };

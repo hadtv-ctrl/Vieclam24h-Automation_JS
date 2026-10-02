@@ -19,7 +19,7 @@
 | TC-033 | AC-002 | Kiểm tra thất bại khi nhập sai mã OTP xác thực | P0 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-nhap-sai-ma-otp-xac-thuc.spec.js |
 | TC-034 | AC-001 | Kiểm tra báo lỗi khi nhập email sai định dạng | P1 | Có | tests/e2e/desktop/kiem-tra-bao-loi-khi-nhap-email-sai-dinh-dang.spec.js |
 | TC-039 | AC-002 | Bấm gửi lại mã OTP khi đăng ký bằng số điện thoại | P2 | Có | tests/e2e/desktop/gui-lai-ma-otp-dang-ky.spec.js |
-| TC-040 | AC-001 AC-002 | Kiểm thử chuỗi giá trị biên, tính hợp lệ dữ liệu và xác thực đăng ký tài khoản (SĐT tùy chọn/sai định dạng/đã tồn tại, mật khẩu chuẩn biên 8 ký tự, OTP môi trường test) | P2 | candidate | - |
+| TC-040 | AC-001 AC-002 | Kiểm thử chuỗi giá trị biên, tính hợp lệ dữ liệu và xác thực đăng ký tài khoản (SĐT tùy chọn/sai định dạng/đã tồn tại, mật khẩu chuẩn biên 8 ký tự, OTP môi trường test) | P2 | Có | tests/e2e/desktop/kiem-thu-chuoi-gia-tri-bien-tinh-hop-le-du-lieu-va-xac-thuc.spec.js |
 
 
 ## Chi tiết
@@ -212,7 +212,8 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 ### TC-040 — Kiểm thử chuỗi giá trị biên, tính hợp lệ dữ liệu và xác thực đăng ký tài khoản
 
 - **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Luồng kiểm thử liên hoàn
-- **Automation:** Candidate
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/kiem-thu-chuoi-gia-tri-bien-tinh-hop-le-du-lieu-va-xac-thuc.spec.js`
 - **Tiền điều kiện:** Chưa đăng nhập, đang ở trang chủ hoặc popup Đăng ký tài khoản.
 - **Dữ liệu kiểm thử:**
   - SĐT sai định dạng: `0912abcXYZ`

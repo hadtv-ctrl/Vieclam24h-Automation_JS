@@ -1,7 +1,7 @@
 const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const onboardingData = require('../../../data/onboardingData.json');
 
-test.describe('Mobile Feature: Cập nhật thông tin Onboarding sau khi đăng nhập trên Mobile Web @onboarding @mobile @e2e @REQ-002', () => {
+test.describe('Mobile Feature: Cập nhật thông tin Onboarding sau khi đăng nhập trên Mobile Web @auth @onboarding @mobile @e2e @REQ-002', () => {
   test('TC-008 - AC-006 Hoàn tất năm bước onboarding tiêu chí tìm việc trên mobile web', async ({
     authenticatedUser,
     onboardingPopup,

@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/mobileWebTest');
 const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
 
-test.describe('Mobile Feature: Ứng tuyển việc làm bằng CV trên Mobile Web @applyjob @mobile @e2e @REQ-003', () => {
+test.describe('Mobile Feature: Ứng tuyển việc làm bằng CV trên Mobile Web @auth @applyjob @mobile @e2e @REQ-003', () => {
   let jobApplyPage;
   let newPage;
 

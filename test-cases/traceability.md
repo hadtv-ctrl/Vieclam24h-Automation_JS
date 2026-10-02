@@ -11,13 +11,13 @@ Sinh lại bằng máy:
 
 | Requirement | Chủ đề | Số AC | Số TC | Số spec |
 |---|---|---|---|---|
-| REQ-001 | Đăng ký tài khoản người tìm việc | 4 | 15 | 14 |
-| REQ-002 | Onboarding tiêu chí tìm việc | 3 | 4 | 4 |
-| REQ-003 | Ứng tuyển bằng CV hoặc hồ sơ trực tuyến | 4 | 6 | 6 |
-| REQ-004 | Ứng tuyển việc không cần CV | 3 | 5 | 5 |
-| REQ-005 | Quản lý hồ sơ cá nhân | 5 | 6 | 6 |
-| REQ-006 | Trợ lý AI hoàn thiện hồ sơ | 2 | 2 | 2 |
-| REQ-007 | Tìm kiếm việc làm qua trợ lý Chop AI chatbot | 1 | 3 | 3 |
+| REQ-001 | Đăng ký tài khoản người tìm việc | 4 | 16 | 15 |
+| REQ-002 | Onboarding tiêu chí tìm việc | 3 | 5 | 5 |
+| REQ-003 | Ứng tuyển bằng CV hoặc hồ sơ trực tuyến | 4 | 9 | 9 |
+| REQ-004 | Ứng tuyển việc không cần CV | 3 | 6 | 6 |
+| REQ-005 | Quản lý hồ sơ cá nhân | 5 | 8 | 8 |
+| REQ-006 | Trợ lý AI hoàn thiện hồ sơ | 2 | 3 | 3 |
+| REQ-007 | Tìm kiếm việc làm qua trợ lý Chop AI chatbot | 1 | 5 | 5 |
 
 Ghi chú: REQ-001 có 15 test case trên 14 file spec vì file spec API chứa hai test case.
 AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của REQ-004, vì danh sách việc làm đã
@@ -66,6 +66,17 @@ AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của RE
 | TC-037 | REQ-003 | AC-011 | Desktop | P0 | Có | tests/e2e/desktop/kiem-tra-trang-thai-viec-lam-da-ung-tuyen.spec.js |
 | TC-038 | REQ-004 | AC-013 | Desktop | P0 | Có | tests/e2e/desktop/khach-vang-lai-ung-tuyen-sdt-da-ton-tai.spec.js |
 | TC-039 | REQ-001 | AC-002 | Desktop | P2 | Có | tests/e2e/desktop/gui-lai-ma-otp-dang-ky.spec.js |
+| TC-040 | REQ-001 | AC-001 AC-002 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-chuoi-gia-tri-bien-tinh-hop-le-du-lieu-va-xac-thuc.spec.js |
+| TC-041 | REQ-002 | AC-005 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-luong-bo-qua-onboarding-skip-flow-va-duy-tri-trang.spec.js |
+| TC-042 | REQ-003 | AC-008 AC-009 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-chu-trinh-xac-thuc-otp-va-dieu-kien-hoan-thien-ho-so.spec.js |
+| TC-043 | REQ-003 | AC-011 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-quy-tac-kiem-soat-tan-suat-nop-lai-ho-so-cho-cung-mot-cong-viec.spec.js |
+| TC-044 | REQ-003 | AC-010 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-luong-nop-ho-so-hang-loat-bulk-apply-kem-cac-dieu-kien-bien.spec.js |
+| TC-045 | REQ-004 | AC-012 AC-013 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-luong-bien-xac-thuc-khi-ung-tuyen-nhanh-khong-can-cv.spec.js |
+| TC-046 | REQ-005 | AC-015 AC-016 AC-019 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-tinh-hoan-thien-ho-so-logic-chuyen-doi-cv-va-dong-b.spec.js |
+| TC-047 | REQ-005 | AC-017 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-chu-trinh-xac-minh-bao-mat-otp-email-sdt-khi-kich-h.spec.js |
+| TC-048 | REQ-006 | AC-020 AC-021 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-tuong-tac-tro-ly-ai-hoan-thien-ho-so.spec.js |
+| TC-049 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-hien-thi-va-dieu-huong-phan-trang-danh-sach-viec-la.spec.js |
+| TC-050 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-quan-ly-vong-doi-va-tinh-toan-ven-phien-hoi-thoai-c.spec.js |
 | TC-093 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/job_search_by_cities-bdd.spec.js |
 | TC-094 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/job_search_filter_detail-bdd.spec.js |
 
@@ -76,7 +87,7 @@ cấp, đọc từ chính spec.
 
 | Mức | Nghĩa | Test case |
 |---|---|---|
-| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-039, TC-093, TC-094 |
+| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-050, TC-093, TC-094 |
 
 ### Quan hệ với cảnh báo của công cụ
 

@@ -4,7 +4,7 @@ const usersData = require('../../../data/users.json');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 const { JobApplyNoCVPage } = require('../../../pages/desktop/JobApplyNoCVPage');
 
-test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @applyjob @desktop @e2e @REQ-004', () => {
+test.describe('Feature: Hoàn thành profile mini và ứng tuyển job không cần CV @auth @applyjob @desktop @e2e @REQ-004', () => {
 
   test('TC-013 - AC-012 Thành viên ứng tuyển việc không cần CV bằng hồ sơ rút gọn', async ({
     page,

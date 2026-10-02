@@ -3,7 +3,7 @@ const userData = require('../../../data/users.json');
 const { generateRandomEmail } = require('../../../core/utils/commonUtils');
 const { LoginPopup } = require('../../../pages/desktop/LoginPopup');
 
-test.describe('Feature: Kiểm tra điều kiện mật khẩu khi đăng ký @register @desktop @e2e @REQ-001', () => {
+test.describe('Feature: Kiểm tra điều kiện mật khẩu khi đăng ký @guest @no-auth @register @desktop @e2e @REQ-001', () => {
   test('TC-029 - AC-001 Kiểm tra thất bại khi mật khẩu chỉ chứa chữ số (thiếu chữ cái)', async ({ page, pages }, testInfo) => {
     const homePage = pages.homePage;
     const loginPopup = new LoginPopup(page);

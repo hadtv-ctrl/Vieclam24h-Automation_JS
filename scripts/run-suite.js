@@ -4,8 +4,18 @@ const { getDashboardConfig } = require('../core/config/dashboardConfig');
 const { assertNotFrozen } = require('../core/utils/circuitBreaker');
 
 const suiteName = process.argv[2] ? process.argv[2].trim() : '';
-const env = process.argv[3] ? process.argv[3].trim() : 'dev';
-const explicitSpec = process.argv[4] ? process.argv[4].trim() : '';
+
+let env = 'qc';
+let explicitSpec = '';
+const rawArgs = process.argv.slice(3);
+for (const raw of rawArgs) {
+  const lower = raw.trim().toLowerCase();
+  if (['qc', 'stg', 'prod', 'staging', 'production'].includes(lower)) {
+    env = lower === 'staging' ? 'stg' : (lower === 'production' ? 'prod' : lower);
+  } else if (!raw.startsWith('--') && !explicitSpec) {
+    explicitSpec = raw.trim();
+  }
+}
 
 // 1. Kiểm tra Circuit Breaker theo Tiêu Chuẩn Thẩm Định 04 (§10.3)
 assertNotFrozen({
@@ -163,6 +173,10 @@ if (suiteName.toLowerCase() === 'check') {
     args.push('--grep', '@smoke');
   } else if (s === 'regression') {
     args.push('--grep-invert', '@smoke');
+  } else if (s === 'auth' || s === 'authenticated') {
+    args.push('--grep', '@auth');
+  } else if (s === 'guest' || s === 'no-auth' || s === 'unauth') {
+    args.push('--grep', '@guest');
   } else if (s === 'applyjob' || s === 'apply-job') {
     args.push('--grep', '@applyjob');
   } else if (s === 'profile') {
@@ -188,6 +202,11 @@ const envVars = {
 if (suite?.viewport) {
   envVars.PW_VIEWPORT_WIDTH = String(suite.viewport.width || 1920);
   envVars.PW_VIEWPORT_HEIGHT = String(suite.viewport.height || 1080);
+}
+
+const extraCliFlags = process.argv.slice(3).filter((arg) => arg.startsWith('--'));
+if (extraCliFlags.length > 0) {
+  args.push(...extraCliFlags);
 }
 
 const playwrightCli = require.resolve('@playwright/test/cli');

@@ -341,6 +341,95 @@
         "regression-api"
       ],
       "workers": 2
+    },
+    "auth-all": {
+      "label": "🔐 Toàn Bộ Kịch Bản Cần Đăng Nhập (@auth)",
+      "description": "Suite cha chạy toàn bộ các kịch bản kiểm thử yêu cầu đăng nhập trước trên Desktop và Mobile.",
+      "type": "composite",
+      "suites": [
+        "auth-desktop",
+        "auth-mobile"
+      ],
+      "workers": 2
+    },
+    "auth-desktop": {
+      "label": "🖥️ Desktop Cần Đăng Nhập (@auth)",
+      "description": "Các kịch bản kiểm thử yêu cầu đăng nhập trên Desktop Chrome (Profile, Onboarding, Ứng tuyển thành viên, Chatbot).",
+      "type": "single",
+      "platform": "desktop",
+      "project": "Desktop Regression Tests",
+      "device": "",
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@auth",
+      "workers": 2
+    },
+    "auth-mobile": {
+      "label": "📱 Mobile Web Cần Đăng Nhập (@auth)",
+      "description": "Các kịch bản kiểm thử yêu cầu đăng nhập trên Mobile Web (Pixel 7).",
+      "type": "single",
+      "platform": "mobile",
+      "project": "Mobile Chrome Regression Tests",
+      "device": "",
+      "viewport": {
+        "preset": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@auth",
+      "workers": 2
+    },
+    "guest-all": {
+      "label": "🌐 Toàn Bộ Kịch Bản Không Cần Đăng Nhập (@guest)",
+      "description": "Suite cha chạy toàn bộ các kịch bản kiểm thử không cần đăng nhập (Đăng ký, Tìm việc công khai, Ứng tuyển vãng lai) trên Desktop, Mobile và API.",
+      "type": "composite",
+      "suites": [
+        "guest-desktop",
+        "guest-mobile",
+        "regression-api"
+      ],
+      "workers": 2
+    },
+    "guest-desktop": {
+      "label": "🖥️ Desktop Không Cần Đăng Nhập (@guest)",
+      "description": "Các kịch bản kiểm thử dành cho khách vãng lai và đăng ký tài khoản trên Desktop Chrome.",
+      "type": "single",
+      "platform": "desktop",
+      "project": "all",
+      "device": "",
+      "viewport": {
+        "preset": "1920x1080",
+        "width": 1920,
+        "height": 1080
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@guest",
+      "workers": 2
+    },
+    "guest-mobile": {
+      "label": "📱 Mobile Web Không Cần Đăng Nhập (@guest)",
+      "description": "Các kịch bản kiểm thử dành cho khách vãng lai và đăng ký tài khoản trên Mobile Web (Pixel 7).",
+      "type": "single",
+      "platform": "mobile",
+      "project": "all",
+      "device": "",
+      "viewport": {
+        "preset": "390x844",
+        "width": 390,
+        "height": 844
+      },
+      "spec": "all",
+      "specs": "all",
+      "grep": "@guest",
+      "workers": 2
     }
   },
   "discord": {

@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|
 | TC-023 | AC-020 AC-021 | Viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI trên desktop | P2 | Có | tests/e2e/desktop/profile_ai_writing-bdd.spec.js |
 | TC-024 | AC-020 AC-021 | Viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI trên mobile web | P2 | Có | tests/e2e/mobile-web/profile_ai_writing-bdd.mobile.spec.js |
-| TC-048 | AC-020 AC-021 | Kiểm thử tương tác trợ lý AI hoàn thiện hồ sơ (chuyển đổi giọng văn, áp dụng/từ chối nội dung, tạo mô tả từ trường trống và xử lý sự cố lỗi) | P2 | candidate | - |
+| TC-048 | AC-020 AC-021 | Kiểm thử tương tác trợ lý AI hoàn thiện hồ sơ (chuyển đổi giọng văn, áp dụng/từ chối nội dung, tạo mô tả từ trường trống và xử lý sự cố lỗi) | P2 | Có | tests/e2e/desktop/kiem-thu-tuong-tac-tro-ly-ai-hoan-thien-ho-so.spec.js |
 
 
 ## Chi tiết
@@ -38,7 +38,7 @@
 ### TC-048 — Kiểm thử tương tác trợ lý AI hoàn thiện hồ sơ
 
 - **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Luồng kiểm thử liên hoàn / Xử lý ngoại lệ
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Người dùng đã đăng nhập, đang ở trang chỉnh sửa Hồ sơ của tôi (mục Giới thiệu bản thân và Kinh nghiệm làm việc).
 - **Dữ liệu kiểm thử:**
   - Đoạn giới thiệu gốc: 'Tôi là chuyên viên kiểm thử phần mềm với 5 năm kinh nghiệm.'

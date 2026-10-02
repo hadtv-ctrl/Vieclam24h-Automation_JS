@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/baseTest');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 const { JobDetailPage } = require('../../../pages/desktop/JobDetailPage');
 
-test.describe('Feature: Tìm kiếm, lọc việc làm và xem chi tiết công việc @regression @desktop @e2e @search @REQ-007', () => {
+test.describe('Feature: Tìm kiếm, lọc việc làm và xem chi tiết công việc @guest @no-auth @regression @desktop @e2e @search @REQ-007', () => {
   let jobDetailPageTab = null;
 
   test.afterEach(async () => {

@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/baseTest');
 const onboardingData = require('../../../data/onboardingData.json');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
-test.describe('Feature: Onboarding tiêu chí tìm việc @onboarding @desktop @e2e @REQ-002', () => {
+test.describe('Feature: Onboarding tiêu chí tìm việc @auth @onboarding @desktop @e2e @REQ-002', () => {
   test('TC-031 - AC-005 Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định)', async ({ page, authenticatedUser }, testInfo) => {
     const onboardingPopup = new OnboardingPopup(page);
     test.setTimeout(240000);

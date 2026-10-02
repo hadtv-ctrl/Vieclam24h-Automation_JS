@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/baseTest');
 const { generateRandomVNPhone } = require('../../../core/utils/commonUtils');
 const { LoginPopup } = require('../../../pages/desktop/LoginPopup');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại @register @desktop @e2e @REQ-001', () => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại @guest @no-auth @register @desktop @e2e @REQ-001', () => {
   test('TC-039 - AC-002 Bấm gửi lại mã OTP khi đăng ký bằng số điện thoại', async ({ page, pages }, testInfo) => {
     const homePage = pages.homePage;
     const loginPopup = new LoginPopup(page);

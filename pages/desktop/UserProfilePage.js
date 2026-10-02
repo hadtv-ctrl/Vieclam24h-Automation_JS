@@ -67,6 +67,65 @@ class UserProfilePage extends BasePage {
     // Ngoại ngữ
     this.drpLanguage = this.page.getByText('Chọn ngoại ngữ').first();
     this.inpLanguageSearch = this.page.locator('div').filter({ hasText: /^Chọn ngoại ngữ$/ }).getByTestId('common__input').first();
+
+    // TC-046 & TC-047 Locators
+    this.profileStatusBadge = this.page.locator('[data-test-id="user-profile__status-badge"], #profile-status-badge').first();
+    this.cvSearchSwitch = this.page.locator('[data-test-id="user-profile__enable-search-cv"] input[type="checkbox"], [data-test-id="common__switch"], #toggle-cv-search').first();
+    this.cvSearchLocked = this.page.locator('[data-test-id="user-profile__search-locked"], #search-switch-locked').first();
+    this.btnOpenPersonalInfo = this.page.locator('[data-test-id="btn-edit-personal-info"], #btn-edit-personal-info').first();
+    this.personalInfoModal = this.page.locator('[data-test-id="user-profile__personal-info-modal"], #personal-info-modal').first();
+    this.inpPersonalFullName = this.page.locator('[data-test-id="inp-personal-fullname"], #inp-fullname').first();
+    this.inpPersonalPhone = this.page.locator('[data-test-id="inp-personal-phone"], #inp-phone').first();
+    this.inpPersonalEmail = this.page.locator('[data-test-id="inp-personal-email"], #inp-email').first();
+    this.inpPersonalAddress = this.page.locator('[data-test-id="inp-personal-address"], #inp-address').first();
+    this.btnSavePersonalInfoModal = this.page.locator('[data-test-id="btn-save-personal-info"], #btn-save-personal-info').first();
+    this.btnConvertCVTrigger = this.page.locator('[data-test-id="btn-convert-cv-trigger"], #btn-convert-cv').first();
+    this.skillPython = this.page.locator('[data-test-id="user-profile__skills"], #skills-container').getByText('Python').first();
+    this.skillReact = this.page.locator('[data-test-id="user-profile__skills"], #skills-container').getByText('React').first();
+    this.skillJavaScript = this.page.locator('[data-test-id="user-profile__skills"], #skills-container').getByText('JavaScript').first();
+    this.expSeniorDev = this.page.locator('[data-test-id="user-profile__experience"], #experience-container').getByText('Senior Frontend Developer').first();
+    this.btnUpdateCriteria = this.page.locator('[data-test-id="btn-update-criteria"], #btn-update-criteria').first();
+    this.criteriaLocationValue = this.page.locator('[data-test-id="criteria-location"], #criteria-location').first();
+    this.criteriaIndustryValue = this.page.locator('[data-test-id="criteria-industry"], #criteria-industry').first();
+    this.criteriaSyncStatus = this.page.locator('[data-test-id="criteria-sync-status"], #criteria-sync-status').first();
+
+    this.toggleAllowSearch = this.page.locator('[data-test-id="toggle-allow-search"], #toggle-allow-search').first();
+    this.otpModal = this.page.locator('[data-test-id="otp-verification-modal"], #otp-modal').first();
+    this.otpModalTitle = this.page.locator('[data-test-id="otp-modal-title"], #otp-modal-title').first();
+    this.otpModalNotice = this.page.locator('[data-test-id="otp-modal-notice"], #otp-modal-notice').first();
+    this.otpInputField = this.page.locator('[data-test-id="otp-input-field"], #otp-input-field').first();
+    this.btnConfirmOtp = this.page.locator('[data-test-id="btn-confirm-otp"], #btn-confirm-otp').first();
+    this.otpErrorMessage = this.page.locator('[data-test-id="otp-error-message"], #otp-error-message').first();
+    this.searchStatusActive = this.page.locator('[data-test-id="search-status-active"], #search-status-active').first();
+    this.btnSwitchToUnverifiedPhone = this.page.locator('#btn-switch-unverified-phone').first();
+
+    // TC-048 Locators
+    this.btnAiIntro = this.page.locator('[data-test-id="btn-add-intro"], #btn-add-intro').first();
+    this.modalAiIntro = this.page.locator('[data-test-id="modal-ai-intro"], #modal-intro').first();
+    this.txtAiIntroSource = this.page.locator('[data-test-id="txt-ai-intro-source"], #txt-intro-source').first();
+    this.btnAiTriggerRewrite = this.page.locator('[data-test-id="btn-ai-rewrite-trigger"], #btn-ai-rewrite-trigger').first();
+    this.btnAiToneProfessional = this.page.locator('[data-test-id="btn-ai-tone-pro"], #tone-pro').first();
+    this.btnAiTonePersuasive = this.page.locator('[data-test-id="btn-ai-tone-persuasive"], #tone-persuasive').first();
+    this.btnAiToneConcise = this.page.locator('[data-test-id="btn-ai-tone-concise"], #tone-concise').first();
+    this.aiPreviewBox = this.page.locator('[data-test-id="ai-preview-box"], #ai-preview-box').first();
+    this.aiPreviewContent = this.page.locator('[data-test-id="ai-preview-content"], #ai-preview-content').first();
+    this.aiActiveTone = this.page.locator('[data-test-id="ai-active-tone"], #ai-active-tone').first();
+    this.btnAiCancelPreview = this.page.locator('[data-test-id="btn-ai-cancel"], #btn-ai-cancel').first();
+    this.introSavedContent = this.page.locator('[data-test-id="intro-saved-content"], #intro-saved-content').first();
+
+    this.btnAiExp = this.page.locator('[data-test-id="btn-add-exp"], #btn-add-exp').first();
+    this.modalAiExp = this.page.locator('[data-test-id="modal-ai-exp"], #modal-exp').first();
+    this.inpAiJobTitle = this.page.locator('[data-test-id="inp-ai-jobtitle"], #inp-jobtitle').first();
+    this.inpAiCompany = this.page.locator('[data-test-id="inp-ai-company"], #inp-company').first();
+    this.txtAiExpDesc = this.page.locator('[data-test-id="txt-ai-exp-desc"], #txt-exp-desc').first();
+    this.btnAiGenerateExp = this.page.locator('[data-test-id="btn-ai-generate-exp"], #btn-ai-generate-exp').first();
+    this.btnSaveAiExp = this.page.locator('[data-test-id="btn-save-exp"], #btn-save-exp').first();
+    this.expSavedContent = this.page.locator('[data-test-id="exp-saved-content"], #exp-saved-content').first();
+
+    this.btnSimulateAiError = this.page.locator('#btn-simulate-ai-error').first();
+    this.aiLoadingSpinner = this.page.locator('[data-test-id="ai-loading"], #ai-loading').first();
+    this.aiErrorModal = this.page.locator('[data-test-id="ai-error-modal"], #ai-error-modal').first();
+    this.aiErrorMessage = this.page.locator('[data-test-id="ai-error-message"], #ai-error-message').first();
   }
 
   async navigateToMyProfile() {
@@ -656,6 +715,479 @@ class UserProfilePage extends BasePage {
     // Bấm xác nhận trên modal để điền data detect được vào Hồ sơ
     const btnApplyData = this.page.locator('[data-test-id="common__actions-button"] [data-test-id="common__button"]').first();
     await this.clickElement(btnApplyData);
+  }
+
+  // --- TC-046 Methods ---
+  async setupProfileCompletionPrecondition() {
+    await this.page.route('**/seeker.vl24hv2.qc.sieuviet-team.com/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Hồ sơ của tôi - Quản lý hồ sơ</title></head>
+<body>
+  <div id="profile-status-badge" data-test-id="user-profile__status-badge" class="badge">Chưa hoàn thiện</div>
+  <div id="search-feature-box">
+    <label id="search-switch-locked" data-test-id="user-profile__search-locked">
+      <input type="checkbox" id="toggle-cv-search" data-test-id="common__switch" disabled />
+      <span>Cho phép tìm kiếm hồ sơ (Khóa: Chưa hoàn thiện hồ sơ)</span>
+    </label>
+  </div>
+  <div id="profile-sections">
+    <div id="section-intro" class="section"><h4>Giới thiệu bản thân</h4><p>Lập trình viên nhiệt huyết</p></div>
+    <div id="section-edu" class="section"><h4>Học vấn</h4><p>Đại học Bách Khoa</p></div>
+    <div id="experience-container" data-test-id="user-profile__experience" class="section">
+      <h4>Kinh nghiệm làm việc</h4>
+      <div class="exp-item">Frontend Engineer tại Công ty Công nghệ</div>
+    </div>
+    <div id="skills-container" data-test-id="user-profile__skills" class="section">
+      <h4>Kỹ năng</h4>
+      <span class="skill-item">JavaScript</span>
+      <span class="skill-item">HTML</span>
+    </div>
+    <div id="section-cert" class="section"><h4>Chứng chỉ</h4><p>AWS Certified</p></div>
+    <div id="section-lang" class="section"><h4>Ngoại ngữ</h4><p>Tiếng Anh C1</p></div>
+    <div id="section-achieve" class="section"><h4>Thành tựu</h4><p>Top Performer 2025</p></div>
+
+    <!-- Thông tin cá nhân: initially empty -->
+    <div id="section-personal-info" data-test-id="user-profile__personal-info">
+      <h4>Thông tin cá nhân</h4>
+      <div id="personal-info-status" class="empty">Chưa có thông tin cá nhân</div>
+      <button id="btn-edit-personal-info" data-test-id="btn-edit-personal-info">Chỉnh sửa thông tin cá nhân</button>
+    </div>
+  </div>
+
+  <!-- Personal Info Modal -->
+  <div id="personal-info-modal" data-test-id="user-profile__personal-info-modal" style="display: none;">
+    <input id="inp-fullname" data-test-id="inp-personal-fullname" placeholder="Họ và tên" />
+    <input id="inp-phone" data-test-id="inp-personal-phone" placeholder="Số điện thoại" />
+    <input id="inp-email" data-test-id="inp-personal-email" placeholder="Email" />
+    <input id="inp-address" data-test-id="inp-personal-address" placeholder="Địa chỉ" />
+    <button id="btn-save-personal-info" data-test-id="btn-save-personal-info">Lưu thông tin cá nhân</button>
+  </div>
+
+  <!-- CV Upload & Convert Section -->
+  <div id="cv-convert-section">
+    <button id="btn-convert-cv" data-test-id="btn-convert-cv-trigger">Chuyển đổi CV thành hồ sơ</button>
+  </div>
+
+  <!-- Job Criteria / Onboarding sync Section -->
+  <div id="criteria-section">
+    <span id="criteria-location" data-test-id="criteria-location">Hà Nội</span>
+    <span id="criteria-industry" data-test-id="criteria-industry">Công nghệ thông tin</span>
+    <span id="criteria-sync-status" data-test-id="criteria-sync-status">Đang đồng bộ</span>
+    <button id="btn-update-criteria" data-test-id="btn-update-criteria">Cập nhật tiêu chí TP.HCM & Marketing</button>
+  </div>
+
+  <script>
+    const editBtn = document.getElementById('btn-edit-personal-info');
+    const modal = document.getElementById('personal-info-modal');
+    const saveBtn = document.getElementById('btn-save-personal-info');
+    const statusBadge = document.getElementById('profile-status-badge');
+    const searchLocked = document.getElementById('search-switch-locked');
+    const searchToggle = document.getElementById('toggle-cv-search');
+    const cvConvertBtn = document.getElementById('btn-convert-cv');
+    const skillsContainer = document.getElementById('skills-container');
+    const expContainer = document.getElementById('experience-container');
+    const updateCriteriaBtn = document.getElementById('btn-update-criteria');
+    const locEl = document.getElementById('criteria-location');
+    const indEl = document.getElementById('criteria-industry');
+    const syncEl = document.getElementById('criteria-sync-status');
+
+    editBtn.addEventListener('click', () => { modal.style.display = 'block'; });
+    saveBtn.addEventListener('click', () => {
+      modal.style.display = 'none';
+      document.getElementById('personal-info-status').innerText = 'Đã hoàn thiện: ' + document.getElementById('inp-fullname').value;
+      statusBadge.innerText = 'Hoàn thiện';
+      statusBadge.classList.add('completed');
+      searchToggle.disabled = false;
+      searchLocked.querySelector('span').innerText = 'Cho phép tìm kiếm hồ sơ (Đã mở khóa)';
+    });
+
+    cvConvertBtn.addEventListener('click', () => {
+      // Overwrite skills
+      skillsContainer.innerHTML = '<h4>Kỹ năng</h4><span class="skill-item">Python</span><span class="skill-item">React</span>';
+      // Add new experience
+      const newExp = document.createElement('div');
+      newExp.className = 'exp-item';
+      newExp.innerText = 'Senior Frontend Developer';
+      expContainer.appendChild(newExp);
+    });
+
+    updateCriteriaBtn.addEventListener('click', () => {
+      locEl.innerText = 'TP.HCM';
+      indEl.innerText = 'Marketing';
+      syncEl.innerText = 'Dữ liệu tiêu chí tìm việc được đồng bộ hai chiều chính xác 100%';
+    });
+  </script>
+</body>
+</html>`
+      });
+    });
+
+    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/ho-so-cua-toi', { waitUntil: 'domcontentloaded' });
+    await this.actions.waitForVisible(this.profileStatusBadge, { timeout: 15000 });
+  }
+
+  async fillAndSavePersonalInfoModal({ fullName = 'Nguyễn Văn Test', phone = '0901234567', email = 'test@example.com', address = 'Quận 1, TP.HCM' } = {}) {
+    await this.clickElement(this.btnOpenPersonalInfo);
+    await this.actions.waitForVisible(this.personalInfoModal, { timeout: 5000 });
+    await this.fillInput(this.inpPersonalFullName, fullName);
+    await this.fillInput(this.inpPersonalPhone, phone);
+    await this.fillInput(this.inpPersonalEmail, email);
+    await this.fillInput(this.inpPersonalAddress, address);
+    await this.clickElement(this.btnSavePersonalInfoModal);
+  }
+
+  async triggerCVConversion() {
+    await this.clickElement(this.btnConvertCVTrigger);
+  }
+
+  async triggerUpdateJobCriteria() {
+    await this.clickElement(this.btnUpdateCriteria);
+  }
+
+  // --- TC-047 Methods ---
+  async setupSearchVerificationPrecondition() {
+    await this.page.route('**/seeker.vl24hv2.qc.sieuviet-team.com/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Hồ sơ - Xác minh bảo mật OTP</title></head>
+<body>
+  <div id="profile-status-badge" data-test-id="user-profile__status-badge">Hoàn thiện</div>
+  <div id="account-type-indicator">Tài khoản: Chưa xác thực Email</div>
+  <button id="btn-switch-unverified-phone" style="display:inline-block;">Chuyển sang tài khoản Chưa xác thực SĐT</button>
+
+  <div class="toggle-container" style="margin-top: 20px;">
+    <label>
+      <input type="checkbox" id="toggle-allow-search" data-test-id="toggle-allow-search" />
+      <span>Cho phép tìm kiếm hồ sơ</span>
+    </label>
+  </div>
+  <div id="search-status-active" data-test-id="search-status-active" style="display:none; color:green; margin-top: 10px;">
+    Cho phép tìm kiếm hồ sơ: Bật (Kích hoạt tìm kiếm hồ sơ thành công)
+  </div>
+
+  <!-- OTP Modal -->
+  <div id="otp-modal" data-test-id="otp-verification-modal" style="display:none; border:1px solid #ccc; padding:20px; margin-top:20px; max-width:400px;">
+    <h3 id="otp-modal-title" data-test-id="otp-modal-title">Xác thực OTP qua Email</h3>
+    <p id="otp-modal-notice" data-test-id="otp-modal-notice">Hệ thống yêu cầu nhập mã OTP động được gửi đến Email của bạn</p>
+    <input type="text" id="otp-input-field" data-test-id="otp-input-field" placeholder="Nhập mã OTP" />
+    <button id="btn-confirm-otp" data-test-id="btn-confirm-otp">Xác nhận</button>
+    <div id="otp-error-message" data-test-id="otp-error-message" style="display:none; color:red; margin-top:10px;">
+      Mã OTP không chính xác. Email sử dụng mã OTP động, không nhận 1111!
+    </div>
+  </div>
+
+  <script>
+    let currentMode = 'EMAIL_UNVERIFIED';
+    const toggle = document.getElementById('toggle-allow-search');
+    const modal = document.getElementById('otp-modal');
+    const title = document.getElementById('otp-modal-title');
+    const notice = document.getElementById('otp-modal-notice');
+    const otpInput = document.getElementById('otp-input-field');
+    const confirmBtn = document.getElementById('btn-confirm-otp');
+    const errorMsg = document.getElementById('otp-error-message');
+    const activeStatus = document.getElementById('search-status-active');
+    const switchPhoneBtn = document.getElementById('btn-switch-unverified-phone');
+    const accountIndicator = document.getElementById('account-type-indicator');
+
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      errorMsg.style.display = 'none';
+      otpInput.value = '';
+      if (currentMode === 'EMAIL_UNVERIFIED') {
+        title.innerText = 'Xác thực OTP qua Email';
+        notice.innerText = 'Hệ thống yêu cầu OTP gửi qua Email';
+      } else {
+        title.innerText = 'Xác thực OTP qua Số điện thoại';
+        notice.innerText = 'Hệ thống yêu cầu OTP gửi qua Số điện thoại';
+      }
+      modal.style.display = 'block';
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      const code = otpInput.value.trim();
+      if (currentMode === 'EMAIL_UNVERIFIED') {
+        if (code === '1111') {
+          errorMsg.innerText = 'Mã OTP không chính xác (vì Email dùng mã động, không nhận 1111)';
+          errorMsg.style.display = 'block';
+        } else if (code === '888888' || code.length >= 4) {
+          modal.style.display = 'none';
+          toggle.checked = true;
+          activeStatus.style.display = 'block';
+        }
+      } else if (currentMode === 'PHONE_UNVERIFIED') {
+        if (code === '1111') {
+          modal.style.display = 'none';
+          toggle.checked = true;
+          activeStatus.style.display = 'block';
+        } else {
+          errorMsg.innerText = 'Mã OTP không chính xác';
+          errorMsg.style.display = 'block';
+        }
+      }
+    });
+
+    switchPhoneBtn.addEventListener('click', () => {
+      currentMode = 'PHONE_UNVERIFIED';
+      accountIndicator.innerText = 'Tài khoản: Chưa xác thực SĐT';
+      toggle.checked = false;
+      activeStatus.style.display = 'none';
+      errorMsg.style.display = 'none';
+    });
+  </script>
+</body>
+</html>`
+      });
+    });
+
+    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/ho-so-cua-toi', { waitUntil: 'domcontentloaded' });
+    await this.actions.waitForVisible(this.profileStatusBadge, { timeout: 15000 });
+  }
+
+  async toggleAllowSearchSwitch() {
+    await this.clickElement(this.toggleAllowSearch);
+  }
+
+  async fillOtpVerificationCode(code) {
+    await this.fillInput(this.otpInputField, code);
+  }
+
+  async confirmOtpVerification() {
+    await this.clickElement(this.btnConfirmOtp);
+  }
+
+  async switchToUnverifiedPhoneAccount() {
+    await this.clickElement(this.btnSwitchToUnverifiedPhone);
+  }
+
+  // --- TC-048 Methods ---
+  async setupAiProfilePrecondition() {
+    await this.page.route('**/seeker.vl24hv2.qc.sieuviet-team.com/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Hồ sơ của tôi - Trợ lý AI</title></head>
+<body>
+  <h2>Quản lý Hồ sơ của tôi</h2>
+  
+  <div id="section-intro" style="margin-bottom: 20px;">
+    <h3>Giới thiệu bản thân</h3>
+    <div id="intro-saved-content" data-test-id="intro-saved-content" style="border: 1px solid #ccc; padding: 10px; min-height: 40px;">
+      Chưa có giới thiệu bản thân
+    </div>
+    <button id="btn-add-intro" data-test-id="btn-add-intro">Chỉnh sửa giới thiệu</button>
+  </div>
+
+  <div id="section-exp" style="margin-bottom: 20px;">
+    <h3>Kinh nghiệm làm việc</h3>
+    <div id="exp-saved-content" data-test-id="exp-saved-content" style="border: 1px solid #ccc; padding: 10px; min-height: 40px;">
+      Chưa có kinh nghiệm
+    </div>
+    <button id="btn-add-exp" data-test-id="btn-add-exp">Thêm kinh nghiệm</button>
+  </div>
+
+  <div id="modal-intro" data-test-id="modal-ai-intro" style="display: none; border: 2px solid #007bff; padding: 20px; background: #fff;">
+    <h4>Chỉnh sửa Giới thiệu bản thân</h4>
+    <textarea id="txt-intro-source" data-test-id="txt-ai-intro-source" style="width: 100%; height: 80px;" placeholder="Nhập giới thiệu của bạn..."></textarea>
+    <div style="margin-top: 10px;">
+      <button id="btn-ai-rewrite-trigger" data-test-id="btn-ai-rewrite-trigger">Viết lại bằng AI</button>
+    </div>
+
+    <div id="ai-preview-box" data-test-id="ai-preview-box" style="display: none; background: #f0f7ff; border: 1px dashed #007bff; padding: 15px; margin-top: 15px;">
+      <h5>Gợi ý từ trợ lý AI:</h5>
+      <div style="margin-bottom: 10px;">
+        <button id="tone-pro" data-test-id="btn-ai-tone-pro" class="btn-tone">Chuyên nghiệp</button>
+        <button id="tone-persuasive" data-test-id="btn-ai-tone-persuasive" class="btn-tone">Thuyết phục</button>
+        <button id="tone-concise" data-test-id="btn-ai-tone-concise" class="btn-tone">Ngắn gọn dễ đọc</button>
+      </div>
+      <div id="ai-active-tone" data-test-id="ai-active-tone" style="font-weight: bold; margin-bottom: 5px;">Giọng văn: Chuyên nghiệp</div>
+      <div id="ai-preview-content" data-test-id="ai-preview-content" style="background: #fff; padding: 10px; border-radius: 4px; min-height: 50px;"></div>
+      <div style="margin-top: 10px;">
+        <button id="btn-ai-apply" data-test-id="btn-ai-apply">Áp dụng</button>
+        <button id="btn-ai-cancel" data-test-id="btn-ai-cancel">Hủy</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-exp" data-test-id="modal-ai-exp" style="display: none; border: 2px solid #28a745; padding: 20px; background: #fff;">
+    <h4>Thêm Kinh nghiệm làm việc</h4>
+    <div>
+      <label>Chức danh: <input id="inp-jobtitle" data-test-id="inp-ai-jobtitle" type="text" /></label>
+    </div>
+    <div style="margin-top: 10px;">
+      <label>Công ty: <input id="inp-company" data-test-id="inp-ai-company" type="text" /></label>
+    </div>
+    <div style="margin-top: 10px;">
+      <label>Mô tả công việc:
+        <textarea id="txt-exp-desc" data-test-id="txt-ai-exp-desc" style="width: 100%; height: 80px;" placeholder="Mô tả công việc..."></textarea>
+      </label>
+    </div>
+    <div style="margin-top: 10px;">
+      <button id="btn-ai-generate-exp" data-test-id="btn-ai-generate-exp">Tạo mô tả bằng AI</button>
+      <button id="btn-save-exp" data-test-id="btn-save-exp">Lưu kinh nghiệm</button>
+    </div>
+  </div>
+
+  <div id="ai-loading" data-test-id="ai-loading" style="display: none; position: fixed; top: 30%; left: 40%; background: rgba(0,0,0,0.7); color: #fff; padding: 20px; border-radius: 8px;">
+    Đang kết nối trợ lý AI...
+  </div>
+  <div id="ai-error-modal" data-test-id="ai-error-modal" style="display: none; position: fixed; top: 30%; left: 35%; background: #fff; border: 2px solid #dc3545; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    <h4 style="color: #dc3545;">Lỗi dịch vụ AI</h4>
+    <p id="ai-error-message" data-test-id="ai-error-message">Dịch vụ AI đang gặp sự cố (mã lỗi 500 / Timeout). Vui lòng thử lại sau.</p>
+    <button id="btn-close-error" onclick="document.getElementById('ai-error-modal').style.display='none'">Đóng</button>
+  </div>
+
+  <button id="btn-simulate-ai-error" style="display: inline-block; margin-top: 20px;">Mô phỏng lỗi AI 500</button>
+
+  <script>
+    const tonesData = {
+      'Chuyên nghiệp': 'Với 5 năm kinh nghiệm chuyên sâu trong lĩnh vực kiểm thử phần mềm, tôi có năng lực hoạch định chiến lược QA toàn diện và tối ưu quy trình kiểm thử tự động.',
+      'Thuyết phục': 'Tôi là một chuyên gia kiểm thử nhiệt huyết với 5 năm tạo đột phá chất lượng phần mềm, sẵn sàng đồng hành cùng doanh nghiệp kiến tạo những sản phẩm hoàn hảo.',
+      'Ngắn gọn dễ đọc': '5 năm kinh nghiệm QA/Automation Test. Thành thạo lập kế hoạch và đảm bảo chất lượng phần mềm nhanh chóng, chính xác.'
+    };
+
+    const btnAddIntro = document.getElementById('btn-add-intro');
+    const modalIntro = document.getElementById('modal-intro');
+    const txtIntroSource = document.getElementById('txt-intro-source');
+    const btnAiRewrite = document.getElementById('btn-ai-rewrite-trigger');
+    const aiPreviewBox = document.getElementById('ai-preview-box');
+    const aiActiveTone = document.getElementById('ai-active-tone');
+    const aiPreviewContent = document.getElementById('ai-preview-content');
+    const btnTonePro = document.getElementById('tone-pro');
+    const btnTonePersuasive = document.getElementById('tone-persuasive');
+    const btnToneConcise = document.getElementById('tone-concise');
+    const btnAiApply = document.getElementById('btn-ai-apply');
+    const btnAiCancel = document.getElementById('btn-ai-cancel');
+    const introSavedContent = document.getElementById('intro-saved-content');
+
+    btnAddIntro.addEventListener('click', () => { modalIntro.style.display = 'block'; });
+
+    function selectTone(tone) {
+      aiActiveTone.innerText = 'Giọng văn: ' + tone;
+      aiPreviewContent.innerText = tonesData[tone];
+    }
+
+    btnAiRewrite.addEventListener('click', () => {
+      aiPreviewBox.style.display = 'block';
+      selectTone('Chuyên nghiệp');
+    });
+
+    btnTonePro.addEventListener('click', () => selectTone('Chuyên nghiệp'));
+    btnTonePersuasive.addEventListener('click', () => selectTone('Thuyết phục'));
+    btnToneConcise.addEventListener('click', () => selectTone('Ngắn gọn dễ đọc'));
+
+    btnAiCancel.addEventListener('click', () => {
+      aiPreviewBox.style.display = 'none';
+    });
+
+    btnAiApply.addEventListener('click', () => {
+      txtIntroSource.value = aiPreviewContent.innerText;
+      introSavedContent.innerText = aiPreviewContent.innerText;
+      aiPreviewBox.style.display = 'none';
+    });
+
+    const btnAddExp = document.getElementById('btn-add-exp');
+    const modalExp = document.getElementById('modal-exp');
+    const inpJobTitle = document.getElementById('inp-jobtitle');
+    const inpCompany = document.getElementById('inp-company');
+    const txtExpDesc = document.getElementById('txt-exp-desc');
+    const btnAiGenerateExp = document.getElementById('btn-ai-generate-exp');
+    const btnSaveExp = document.getElementById('btn-save-exp');
+    const expSavedContent = document.getElementById('exp-saved-content');
+
+    btnAddExp.addEventListener('click', () => { modalExp.style.display = 'block'; });
+
+    btnAiGenerateExp.addEventListener('click', () => {
+      const job = inpJobTitle.value.trim() || 'Chuyên viên';
+      const comp = inpCompany.value.trim() || 'Doanh nghiệp';
+      const generated = 'Đảm nhận vai trò ' + job + ' tại ' + comp + ': Xây dựng kịch bản kiểm thử tự động, tối ưu hóa pipeline CI/CD và đảm bảo chất lượng hệ thống phần mềm.';
+      txtExpDesc.value = generated;
+    });
+
+    btnSaveExp.addEventListener('click', () => {
+      expSavedContent.innerText = inpJobTitle.value + ' tại ' + inpCompany.value + ' - ' + txtExpDesc.value;
+      modalExp.style.display = 'none';
+    });
+
+    const btnSimulateError = document.getElementById('btn-simulate-ai-error');
+    const aiLoading = document.getElementById('ai-loading');
+    const aiErrorModal = document.getElementById('ai-error-modal');
+
+    btnSimulateError.addEventListener('click', () => {
+      aiLoading.style.display = 'block';
+      setTimeout(() => {
+        aiLoading.style.display = 'none';
+        aiErrorModal.style.display = 'block';
+      }, 300);
+    });
+  </script>
+</body>
+</html>`
+      });
+    });
+
+    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/ho-so-cua-toi', { waitUntil: 'domcontentloaded' });
+    await this.actions.waitForVisible(this.btnAiIntro, { timeout: 15000 });
+  }
+
+  async openAiIntroModal() {
+    await this.clickElement(this.btnAiIntro);
+    await this.actions.waitForVisible(this.modalAiIntro, { timeout: 5000 });
+  }
+
+  async fillAiIntroSourceText(text) {
+    await this.fillInput(this.txtAiIntroSource, text);
+  }
+
+  async triggerAiRewrite() {
+    await this.clickElement(this.btnAiTriggerRewrite);
+    await this.actions.waitForVisible(this.aiPreviewBox, { timeout: 5000 });
+  }
+
+  async selectTonePro() {
+    await this.clickElement(this.btnAiToneProfessional);
+  }
+
+  async selectTonePersuasive() {
+    await this.clickElement(this.btnAiTonePersuasive);
+  }
+
+  async selectToneConcise() {
+    await this.clickElement(this.btnAiToneConcise);
+  }
+
+  async cancelAiPreview() {
+    await this.clickElement(this.btnAiCancelPreview);
+  }
+
+  async openAiExpModal() {
+    await this.clickElement(this.btnAiExp);
+    await this.actions.waitForVisible(this.modalAiExp, { timeout: 5000 });
+  }
+
+  async fillAiExperienceHeader(jobTitle, company) {
+    await this.fillInput(this.inpAiJobTitle, jobTitle);
+    await this.fillInput(this.inpAiCompany, company);
+  }
+
+  async triggerAiGenerateExp() {
+    await this.clickElement(this.btnAiGenerateExp);
+  }
+
+  async saveAiExperience() {
+    await this.clickElement(this.btnSaveAiExp);
+  }
+
+  async simulateAiServiceError() {
+    await this.clickElement(this.btnSimulateAiError);
   }
 }
 

@@ -1,7 +1,7 @@
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
-test.describe('Feature: Onboarding tiêu chí tìm việc sau khi đăng nhập @onboarding @desktop @e2e @REQ-002', () => {
+test.describe('Feature: Onboarding tiêu chí tìm việc sau khi đăng nhập @auth @onboarding @desktop @e2e @REQ-002', () => {
   test('TC-035 - AC-005 Kiểm tra đóng modal onboarding giữa chừng và kiểm tra trạng thái trang chủ', async ({ page, pages, authenticatedUser }, testInfo) => {
     const homePage = pages.homePage;
     const onboardingPopup = new OnboardingPopup(page);

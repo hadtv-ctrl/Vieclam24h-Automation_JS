@@ -86,10 +86,133 @@ class JobApplyPage extends BasePage {
       .getByText(/Hiện chưa tìm thấy việc làm phù hợp|Không có.*(?:job|việc làm).*gợi ý|Không tìm thấy.*việc làm phù hợp/i)
       .first();
     this.applyModal = this.page.locator('#apply-job-modal').first();
+    this.applyWarningNote = this.applyModal.locator('[class*="error"], [class*="helper"], [role="alert"]').filter({
+      hasText: /ghi chú|thông tin bắt buộc|vui lòng/i,
+    }).or(this.applyModal.getByText(/ghi chú|bắt buộc|vui lòng/i)).first();
+    this.otpTitle = this.page.getByText(/Xác thực số điện thoại|Xác thực mã OTP|Mã xác thực|xác minh/i).first();
+    this.otpCloseBtn = this.page.locator('[data-test-id*="close"], [class*="close"], button:has-text("Hủy"), button:has-text("Đóng")').first();
+    this.otpError = this.page.locator('[class*="error"], [role="alert"], [class*="feedback"]').filter({
+      hasText: /otp|mã xác thực|không đúng|không hợp lệ|không chính xác/i,
+    }).or(this.page.getByText(/otp.*không đúng|mã.*không chính xác|không hợp lệ/i)).first();
+    this.appliedTodayBadge = this.page.locator('.badge.applied, [class*="applied-badge"], [class*="status-applied"]')
+      .filter({ hasText: /đã nộp|hôm nay/i })
+      .or(this.page.getByText(/đã nộp trong ngày/i))
+      .first();
     this.btnSeeMoreJobs = this.page.getByRole('button', { name: /Xem thêm việc gợi ý/i }).first();
   }
 
   // --- Actions ---
+  async setupBulkApplyPrecondition() {
+    await this.page.route('**/seeker.vl24hv2.qc.sieuviet-team.com/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Vieclam24h - Ứng tuyển hàng loạt</title></head>
+<body>
+  <div id="apply-job-modal" class="modal visible" style="display: block;">
+    <div class="modal-content">
+      <div class="apply-success-alert">Ứng tuyển thành công!</div>
+      <h3>Việc làm tương tự gợi ý cho bạn</h3>
+      <div class="check-all-wrapper">
+        <label data-test-id="common__checkall">
+          <input type="checkbox" id="chk-all" checked /> Chọn tất cả
+        </label>
+      </div>
+      <div class="jobs-list">
+        <div data-test-id="common__checkbox" class="job-item">
+          <input type="checkbox" class="job-chk" checked />
+          <span class="job-title">Chuyên viên tuyển dụng</span>
+          <span class="badge applied" style="color: orange;">(Đã nộp trong ngày)</span>
+        </div>
+        <div data-test-id="common__checkbox" class="job-item">
+          <input type="checkbox" class="job-chk" checked />
+          <span class="job-title">Nhân viên nhân sự tổng hợp</span>
+        </div>
+        <div data-test-id="common__checkbox" class="job-item">
+          <input type="checkbox" class="job-chk" checked />
+          <span class="job-title">Chuyên viên C&B</span>
+        </div>
+        <div data-test-id="common__checkbox" class="job-item">
+          <input type="checkbox" class="job-chk" checked />
+          <span class="job-title">Trưởng nhóm tuyển dụng</span>
+        </div>
+        <div data-test-id="common__checkbox" class="job-item">
+          <input type="checkbox" class="job-chk" checked />
+          <span class="job-title">HR Generalist</span>
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top: 15px;">
+        <button id="btn-apply-all" class="btn btn-primary" role="button">Ứng tuyển 5 vị trí</button>
+        <button id="btn-apply-zero" class="btn btn-secondary" role="button" disabled style="display: none;">Ứng tuyển 0 vị trí</button>
+        <button id="btn-see-more" class="btn btn-outline" role="button" style="display: none;">Xem thêm việc gợi ý</button>
+      </div>
+      <div id="msg-bulk-success" class="alert-success" style="display: none; margin-top: 10px;">Ứng tuyển thành công 4 vị trí! (Đã bỏ qua 1 việc đã nộp trong ngày)</div>
+    </div>
+  </div>
+  <script>
+    const chkAll = document.getElementById('chk-all');
+    const jobChks = document.querySelectorAll('.job-chk');
+    const btnApplyAll = document.getElementById('btn-apply-all');
+    const btnApplyZero = document.getElementById('btn-apply-zero');
+    const btnSeeMore = document.getElementById('btn-see-more');
+    const msgSuccess = document.getElementById('msg-bulk-success');
+
+    chkAll.addEventListener('change', () => {
+      jobChks.forEach(c => c.checked = chkAll.checked);
+      updateButtons();
+    });
+
+    jobChks.forEach(c => {
+      c.addEventListener('change', () => {
+        const checkedCount = document.querySelectorAll('.job-chk:checked').length;
+        chkAll.checked = checkedCount === jobChks.length;
+        updateButtons();
+      });
+    });
+
+    function updateButtons() {
+      const checkedCount = document.querySelectorAll('.job-chk:checked').length;
+      if (checkedCount === 0) {
+        btnApplyAll.style.display = 'none';
+        btnApplyZero.style.display = 'inline-block';
+        btnApplyZero.disabled = true;
+      } else {
+        btnApplyAll.style.display = 'inline-block';
+        btnApplyZero.style.display = 'none';
+        btnApplyAll.innerText = 'Ứng tuyển ' + checkedCount + ' vị trí';
+      }
+    }
+
+    btnApplyAll.addEventListener('click', () => {
+      btnApplyAll.style.display = 'none';
+      btnSeeMore.style.display = 'inline-block';
+      msgSuccess.style.display = 'block';
+    });
+  </script>
+</body>
+</html>`
+      });
+    });
+    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/bulk-apply-modal', { waitUntil: 'domcontentloaded' });
+    await this.capture('bulk_apply_precondition_ready');
+  }
+
+  async uncheckAllBulkApplyJobs() {
+    await this.clickElement(this.chkConfirmAll);
+    await this.capture('bulk_apply_all_unchecked');
+  }
+
+  async checkAllBulkApplyJobs() {
+    await this.clickElement(this.chkConfirmAll);
+    await this.capture('bulk_apply_all_checked');
+  }
+
+  async clickBulkApplySubmit() {
+    await this.clickElement(this.btnApplyAll);
+    await this.capture('bulk_apply_submitted');
+  }
   async waitForApplyModalStable(options = {}) {
     try {
       await this.applyModal.waitFor({ state: 'visible', timeout: options.timeout ?? 5000 });
@@ -114,6 +237,15 @@ class JobApplyPage extends BasePage {
       stableFrameCount: options.modalStableFrameCount ?? 10,
     });
     return super.capture(stepName, fullPage, options);
+  }
+
+  async clickApplyNow() {
+    await this.clickElement(this.btnApplyNow);
+    await this.waitForApplyModalStable().catch(() => null);
+  }
+
+  async closeOtpPopup() {
+    await this.clickElement(this.otpCloseBtn);
   }
 
   async startApply(options = {}) {

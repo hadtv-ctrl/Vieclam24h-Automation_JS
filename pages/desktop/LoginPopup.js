@@ -48,7 +48,7 @@ class LoginPopup extends BasePage {
       '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
     ).filter({
       hasText: /số điện thoại/i,
-    }).first();
+    }).or(page.getByText(/số điện thoại.*(?:không hợp lệ|đã tồn tại|chưa đúng|không đúng)/i)).first();
 
     this.passwordError = page.locator(
       '[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]'
@@ -214,6 +214,12 @@ class LoginPopup extends BasePage {
 
   async clearPassword() {
     await this.passwordInput.fill('');
+  }
+
+  async clearPhone() {
+    if (await this.phoneInput.isVisible()) {
+      await this.phoneInput.fill('');
+    }
   }
 
   async clearRegisterPhone() {

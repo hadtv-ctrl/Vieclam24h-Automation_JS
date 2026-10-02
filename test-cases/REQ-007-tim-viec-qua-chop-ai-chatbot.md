@@ -7,8 +7,8 @@
 | TC-025 | AC-022 | Người dùng tìm kiếm, lọc và xem việc làm qua Chop AI chatbot trên desktop | P1 | Có | tests/e2e/desktop/chop_chatbot_job_search-bdd.spec.js |
 | TC-093 | AC-022 | Tìm kiếm việc làm lần lượt theo tỉnh thành và quận huyện trọng điểm | P2 | Có | tests/e2e/desktop/job_search_by_cities-bdd.spec.js |
 | TC-094 | AC-022 | Tìm kiếm việc làm từ trang chủ, áp dụng bộ lọc và xem chi tiết tin tuyển dụng | P2 | Có | tests/e2e/desktop/job_search_filter_detail-bdd.spec.js |
-| TC-049 | AC-022 | Kiểm thử hiển thị và điều hướng phân trang danh sách việc làm trong Job Drawer của Chatbot (các trường hợp 0 kết quả, 1 trang, nhiều trang, nút biên trang đầu/cuối và tải danh sách lớn) | P2 | candidate | - |
-| TC-050 | AC-022 | Kiểm thử quản lý vòng đời và tính toàn vẹn phiên hội thoại Chatbot (khôi phục ngữ cảnh < 24 giờ, hết hạn sau 24 giờ, các mốc thời gian biên, xóa cache/storage và đồng bộ đa tab) | P2 | candidate | - |
+| TC-049 | AC-022 | Kiểm thử hiển thị và điều hướng phân trang danh sách việc làm trong Job Drawer của Chatbot (các trường hợp 0 kết quả, 1 trang, nhiều trang, nút biên trang đầu/cuối và tải danh sách lớn) | P2 | Có | tests/e2e/desktop/kiem-thu-hien-thi-va-dieu-huong-phan-trang-danh-sach-viec-la.spec.js |
+| TC-050 | AC-022 | Kiểm thử quản lý vòng đời và tính toàn vẹn phiên hội thoại Chatbot (khôi phục ngữ cảnh < 24 giờ, hết hạn sau 24 giờ, các mốc thời gian biên, xóa cache/storage và đồng bộ đa tab) | P2 | Có | tests/e2e/desktop/kiem-thu-quan-ly-vong-doi-va-tinh-toan-ven-phien-hoi-thoai-c.spec.js |
 
 
 ## Chi tiết
@@ -71,7 +71,7 @@
 ### TC-049 — Kiểm thử hiển thị và điều hướng phân trang danh sách việc làm trong Job Drawer của Chatbot
 
 - **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Luồng kiểm thử liên hoàn
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Người dùng đã đăng nhập và đang mở cửa sổ Chatbot Chop AI.
 - **Dữ liệu kiểm thử:**
   - Tìm kiếm không có việc: từ khóa `xyz123nonexistentjob` (0 kết quả)
@@ -93,7 +93,7 @@
 ### TC-050 — Kiểm thử quản lý vòng đời và tính toàn vẹn phiên hội thoại Chatbot
 
 - **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Quản lý vòng đời / Temporal boundary / Multi-tab
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Người dùng đã có tương tác với Chatbot, thiết lập Active Target và Maturity Score.
 - **Dữ liệu kiểm thử:**
   - Ngữ cảnh phiên: Active Target = 'Senior QA Automation', Maturity Score = 80%

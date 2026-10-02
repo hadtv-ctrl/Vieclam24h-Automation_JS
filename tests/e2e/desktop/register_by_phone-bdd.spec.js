@@ -4,7 +4,7 @@ const { generateRandomVNPhone, generateRandomEmail } = require('../../../core/ut
 const { LoginPopup } = require('../../../pages/desktop/LoginPopup');
 const { PopupConsent } = require('../../../pages/desktop/PopupConsent');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại @register @smoke @smoke-desktop @desktop @e2e @REQ-001', () => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc bằng Số điện thoại @guest @no-auth @register @smoke @smoke-desktop @desktop @e2e @REQ-001', () => {
   test('TC-003 - AC-002 Đăng ký tài khoản bằng số điện thoại kèm xác minh OTP', async ({ page, pages }, testInfo) => {
     const homePage = pages.homePage;
     const loginPopup = new LoginPopup(page);

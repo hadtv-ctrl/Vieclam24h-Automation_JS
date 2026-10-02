@@ -44,6 +44,14 @@ class ChopChatbotPage extends BasePage {
 
     // Job detail modal
     this.jobDetailCloseBtn = page.locator('[data-test-id="common__close-button"]');
+
+    // Real Chop AI Job Drawer Locators
+    this.jobDrawerTitle = this.page.getByText(/Công việc gợi ý cho bạn/i).first();
+    this.drawerCloseBtn = this.page.locator('[data-test-id="common__close-button"]').first();
+    this.drawerContainer = this.page.locator('.overflow-y-auto.overscroll-contain.no-scrollbar').first();
+    this.drawerJobCards = this.page.locator('.overflow-y-auto.overscroll-contain.no-scrollbar').locator('> div > div');
+    this.drawerTotalJobsBanner = this.page.getByText(/Chớp đã tìm được \d+ công việc/i).first();
+    this.botGuidanceFallback = this.page.getByText(/Chào bạn, mình là Chớp|Bạn đang tìm kiếm công việc thuộc lĩnh vực nào/i).first();
   }
 
   /**
@@ -189,7 +197,9 @@ class ChopChatbotPage extends BasePage {
   }
 
   async confirmFilter() {
-    const doneBtn = this.page.getByRole('button', { name: 'Hoàn tất' }).last();
+    const doneBtn = this.page.getByRole('button', { name: 'Hoàn tất' })
+      .or(this.page.getByRole('button', { name: 'Áp dụng' }))
+      .last();
     await this.actions.waitForVisible(doneBtn, { timeout: 10000 });
     await doneBtn.click();
   }
@@ -267,6 +277,109 @@ class ChopChatbotPage extends BasePage {
     const chip = this.experienceFilterTrigger.last();
     await expect(chip).toBeVisible({ timeout: 10000 });
     await expect(chip).toContainText(expDisplay);
+  }
+
+  // --- REAL CHATBOT TC-049 & TC-050 METHODS ---
+  async navigateToChatbot() {
+    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/chop-tro-ly-ai.html', { waitUntil: 'domcontentloaded' });
+  }
+
+  async setupRealChatbotPrecondition(user) {
+    await this.navigateToChatbot();
+    await this.loginIfVisible(user);
+    await this.dismissIntroIfVisible();
+    await this.actions.waitForVisible(this.chatInput, { timeout: 15000 });
+  }
+
+  async sendChatbotQuery(query) {
+    await this.actions.waitForVisible(this.chatInput, { timeout: 15000 });
+    await this.chatInput.click();
+    await this.chatInput.fill(query);
+    await this.sendBtn.last().click();
+  }
+
+  async expectFallbackGuidanceVisible() {
+    const fallback = this.page.getByText(/Chào bạn, mình là Chớp|Bạn đang tìm kiếm công việc thuộc lĩnh vực nào/i).first();
+    await expect(fallback).toBeVisible({ timeout: 20000 });
+  }
+
+  async expectJobDrawerHidden() {
+    await expect(this.jobDrawerTitle).toBeHidden();
+  }
+
+  async openJobDrawer() {
+    const btn = this.page.getByRole('button', { name: /Có \d+ công việc phù hợp/i }).last();
+    await this.actions.waitForVisible(btn, { timeout: 35000 });
+    await btn.click();
+    await expect(this.jobDrawerTitle).toBeVisible({ timeout: 20000 });
+  }
+
+  async closeJobDrawer() {
+    await this.actions.waitForVisible(this.drawerCloseBtn, { timeout: 10000 });
+    await this.drawerCloseBtn.click();
+    await expect(this.jobDrawerTitle).toBeHidden({ timeout: 10000 });
+  }
+
+  async reopenJobDrawer() {
+    const btn = this.page.getByRole('button', { name: /Có \d+ công việc phù hợp/i }).first();
+    await this.actions.waitForVisible(btn, { timeout: 15000 });
+    await btn.click();
+    await expect(this.jobDrawerTitle).toBeVisible({ timeout: 20000 });
+  }
+
+  async scrollDrawerToLoadMore() {
+    const responsePromise = this.page.waitForResponse(
+      (res) => res.url().includes('get-job-list') && res.status() === 200,
+      { timeout: 10000 }
+    ).catch(() => null);
+    await this.page.evaluate(() => {
+      const el = document.querySelector('.overflow-y-auto.overscroll-contain.no-scrollbar');
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+    await responsePromise;
+  }
+
+  async getDrawerItemsCount() {
+    return await this.drawerJobCards.count();
+  }
+
+  // --- TC-050 Methods ---
+  async reloadChatbot() {
+    await this.page.reload({ waitUntil: 'domcontentloaded' });
+    await this.actions.waitForVisible(this.chatInput, { timeout: 20000 });
+  }
+
+  async expectGreetingVisible() {
+    const welcomeMsg = this.page.getByText(/Chào .* Mình là Chớp/i).first();
+    await expect(welcomeMsg).toBeVisible({ timeout: 15000 });
+  }
+
+  async expectChatHistoryContains(text) {
+    const el = this.page.getByText(text, { exact: false }).first();
+    await expect(el).toBeVisible({ timeout: 20000 });
+  }
+
+  async openSecondTabChatbot() {
+    const context = this.page.context();
+    const tabB = await context.newPage();
+    const chatbotB = new ChopChatbotPage(tabB, this.featureName);
+    await chatbotB.navigateToChatbot();
+    await chatbotB.dismissIntroIfVisible();
+    return chatbotB;
+  }
+
+  async clearStorageAndCookies(user = null) {
+    await this.page.context().clearCookies();
+    await this.page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+    await this.page.reload({ waitUntil: 'domcontentloaded' });
+    if (user) {
+      await this.loginIfVisible(user);
+    }
+    await this.dismissIntroIfVisible();
+    await this.actions.waitForVisible(this.chatInput, { timeout: 20000 });
   }
 }
 

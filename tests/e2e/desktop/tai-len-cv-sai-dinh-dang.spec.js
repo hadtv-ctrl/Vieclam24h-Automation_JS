@@ -4,7 +4,7 @@ const usersData = require('../../../data/users.json');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 const { JobApplyPage } = require('../../../pages/desktop/JobApplyPage');
 
-test.describe('Feature: Ứng tuyển việc làm @applyjob @desktop @e2e @REQ-003', () => {
+test.describe('Feature: Ứng tuyển việc làm @auth @applyjob @desktop @e2e @REQ-003', () => {
   let jobApplyPage;
   let newPage;
 

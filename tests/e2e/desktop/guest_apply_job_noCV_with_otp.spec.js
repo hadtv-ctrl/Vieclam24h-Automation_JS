@@ -6,7 +6,7 @@ const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 const { JobApplyNoCVPage } = require('../../../pages/desktop/JobApplyNoCVPage');
 const { PopupConsent } = require('../../../pages/desktop/PopupConsent');
 
-test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @applyjob @desktop @e2e @REQ-004', () => {
+test.describe('Feature: Guest ứng tuyển việc không cần CV bằng OTP @guest @no-auth @applyjob @desktop @e2e @REQ-004', () => {
   test('TC-015 - AC-013 Khách vãng lai ứng tuyển việc không cần CV và tạo tài khoản bằng OTP', async ({
     page,
     pages,

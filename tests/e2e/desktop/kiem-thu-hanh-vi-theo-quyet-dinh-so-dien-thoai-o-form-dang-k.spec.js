@@ -3,7 +3,7 @@ const userData = require('../../../data/users.json');
 const { generateRandomEmail } = require('../../../core/utils/commonUtils');
 const { LoginPopup } = require('../../../pages/desktop/LoginPopup');
 
-test.describe('Feature: Quy tắc nghiệp vụ trường định danh đăng ký @register @desktop @e2e @REQ-001', () => {
+test.describe('Feature: Quy tắc nghiệp vụ trường định danh đăng ký @guest @no-auth @register @desktop @e2e @REQ-001', () => {
   test('TC-030 - AC-001 Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec', async ({ page, pages }, testInfo) => {
     const homePage = pages.homePage;
     const loginPopup = new LoginPopup(page);

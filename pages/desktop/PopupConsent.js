@@ -10,6 +10,10 @@ class PopupConsent extends BasePage {
 
     this.popupTitle = page.getByText('Đồng ý cho phép xử lý dữ liệu cá nhân');
     this.agreeBtn = page.getByRole('button', { name: 'Đồng ý' });
+    this.rejectBtn = page.getByRole('button', { name: /Từ chối|Không đồng ý|Đóng/i }).first();
+    this.consentWarning = page.locator('#consent-warning, [class*="consent"] [class*="alert"], [class*="consent"] [class*="error"], [class*="consent-warning"]')
+      .or(page.getByText(/yêu cầu đồng ý điều khoản|chấp thuận dữ liệu|đồng ý điều khoản dữ liệu|đồng ý.*để tiếp tục/i))
+      .first();
   }
 
   async agreeIfVisible() {
@@ -22,6 +26,12 @@ class PopupConsent extends BasePage {
         console.log('Popup Consent không xuất hiện, bỏ qua bước này.');
       }
     }
+  }
+
+  async reject() {
+    await this.actions.waitForVisible(this.rejectBtn, { timeout: 15000 });
+    await this.actions.click(this.rejectBtn);
+    await this.capture('popup_consent_rejected');
   }
 
   async agree() {

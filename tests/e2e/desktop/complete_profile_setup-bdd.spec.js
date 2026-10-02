@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/baseTest');
 const profileData = require('../../../data/userProfileData.json');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
-test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu chí tìm việc và CV @profile @desktop @e2e @REQ-005', () => {
+test.describe('Feature: Hoàn thành hồ sơ với thông tin cá nhân, tiêu chí tìm việc và CV @auth @profile @desktop @e2e @REQ-005', () => {
 
   test('TC-017 - AC-015 Hoàn thiện hồ sơ với thông tin cá nhân, tiêu chí tìm việc và CV', async ({
     page,

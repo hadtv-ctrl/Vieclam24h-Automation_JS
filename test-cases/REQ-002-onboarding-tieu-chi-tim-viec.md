@@ -8,7 +8,7 @@
 | TC-008 | AC-005 AC-006 AC-007 | Hoàn tất năm bước onboarding trên mobile web | P1 | Có | tests/e2e/mobile-web/onboarding-bdd.mobile.spec.js |
 | TC-031 | AC-005 | Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định) | P2 | Có | tests/e2e/desktop/xac-nhan-thanh-cong-khi-bo-trong-truong-tuy-chon-truong-tuy-.spec.js |
 | TC-035 | AC-005 | Kiểm tra đóng modal onboarding giữa chừng và kiểm tra trạng thái trang chủ | P1 | Có | tests/e2e/desktop/dong-modal-onboarding-giua-chung.spec.js |
-| TC-041 | AC-005 | Kiểm thử luồng Bỏ qua Onboarding (Skip flow) và duy trì trạng thái tài khoản khi đăng nhập lại | P2 | candidate | - |
+| TC-041 | AC-005 | Kiểm thử luồng Bỏ qua Onboarding (Skip flow) và duy trì trạng thái tài khoản khi đăng nhập lại | P2 | Có | tests/e2e/desktop/kiem-thu-luong-bo-qua-onboarding-skip-flow-va-duy-tri-trang.spec.js |
 
 
 ## Chi tiết
@@ -72,7 +72,8 @@
 ### TC-041 — Kiểm thử luồng Bỏ qua Onboarding (Skip flow) và duy trì trạng thái tài khoản khi đăng nhập lại
 
 - **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Luồng kiểm thử trạng thái / Lifecycle
-- **Automation:** Candidate
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/kiem-thu-luong-bo-qua-onboarding-skip-flow-va-duy-tri-trang.spec.js`
 - **Tiền điều kiện:** Tài khoản người dùng mới tạo chưa từng onboarding, đang ở màn hình trang chủ sau khi đăng nhập lần đầu.
 - **Dữ liệu kiểm thử:** Tài khoản test mới: `user_test_skip_onboarding@example.com`
 > *Ghi chú nghiệp vụ:* Kịch bản hợp nhất từ các case kiểm thử phân mảnh trước đây theo các quyết định chốt Q-1 và Q-2. Đảm bảo tính năng bỏ qua Onboarding hoạt động trơn tru ngay từ bước đầu tiên và hệ thống ghi nhớ trạng thái bền vững, không hiển thị lại modal khi người dùng đăng nhập lại trong các phiên sau. (Lưu ý: Luồng đồng bộ dữ liệu Onboarding sang Tiêu chí tìm việc được kiểm chứng tập trung tại kịch bản kiểm thử thuộc REQ-005).

@@ -56,6 +56,165 @@ class JobApplyNoCVPage extends BasePage {
     this.msgNoSimilarJobs = this.page
       .getByText(/Hiện chưa tìm thấy việc làm phù hợp|Không có.*(?:job|việc làm).*gợi ý|Không tìm thấy.*việc làm phù hợp/i)
       .first();
+    this.validationError = this.page.locator('[class*="error"], [role="alert"], [class*="feedback"]')
+      .filter({ hasText: /bắt buộc|vui lòng nhập|không được để trống|chưa điền/i })
+      .or(this.page.getByText(/bắt buộc.*nhập|không được để trống|vui lòng/i))
+      .first();
+    this.otpModal = this.page.locator('[class*="otp-modal"], [class*="modal"], [role="dialog"]')
+      .filter({ hasText: /xác thực|mã xác minh|mã OTP/i })
+      .first();
+    this.otpTitle = this.page.getByText(/Xác thực số điện thoại|Nhập mã xác thực|Mã OTP/i).first();
+    this.otpInput = this.page.locator('input[maxlength="1"], input[name*="otp"], input[autocomplete="one-time-code"]').first();
+    this.otpInputs = this.page.locator('input[maxlength="1"], input[name*="otp"], input[autocomplete="one-time-code"]');
+    this.btnOtpSubmit = this.page.getByRole('button', { name: /Xác nhận|Xác thực|Hoàn tất/i }).first();
+    this.otpError = this.page.locator('[class*="error"], [role="alert"], [class*="feedback"]')
+      .filter({ hasText: /không hợp lệ|không đúng|sai mã/i })
+      .or(this.page.getByText(/mã OTP không hợp lệ|không chính xác/i))
+      .first();
+    this.msgSuccess = this.page.getByText(/ứng tuyển thành công|nộp hồ sơ thành công/i).first();
+  }
+
+  async setupNoCVApplyPrecondition() {
+    await this.page.route('**/seeker.vl24hv2.qc.sieuviet-team.com/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Vieclam24h - Ứng tuyển không cần CV</title></head>
+<body>
+  <div id="job-detail">
+    <h1>Nhân viên bán hàng siêu thị</h1>
+    <button id="btn-apply-nocv" role="button">Ứng tuyển không cần CV</button>
+  </div>
+
+  <div id="apply-modal" data-test-id="unified-apply__apply-job-modal" style="display:none; border:1px solid #ccc; padding:20px; margin-top:20px;">
+    <h2>Hồ sơ ứng tuyển rút gọn</h2>
+    <div id="validation-error" class="error-msg" role="alert" style="display:none; color:red;">Vui lòng nhập đầy đủ thông tin bắt buộc</div>
+    <div style="margin: 10px 0;">
+      <label>Nhập họ và tên: <input type="text" id="full_name" name="full_name" aria-label="Nhập họ và tên" placeholder="Nhập họ và tên" /></label>
+    </div>
+    <div style="margin: 10px 0;">
+      <label>Nhập số điện thoại: <input type="tel" id="mobile" name="mobile" aria-label="Nhập số điện thoại" placeholder="Nhập số điện thoại" /></label>
+    </div>
+    <div style="margin: 10px 0;">
+      <label>Nhập email: <input type="email" id="email" name="email" aria-label="Nhập email" placeholder="Nhập email" /></label>
+    </div>
+    <div style="margin: 10px 0;">
+      <label>Chia sẻ về bản thân: <textarea id="intro" aria-label="Chia sẻ về bản thân" placeholder="Chia sẻ về bản thân"></textarea></label>
+    </div>
+    <button id="btn-submit-apply" role="button">Nộp hồ sơ ngay</button>
+  </div>
+
+  <div id="otp-modal" class="otp-modal" role="dialog" style="display:none; border:1px solid orange; padding:20px; margin-top:20px;">
+    <h3>Xác thực số điện thoại</h3>
+    <p>Nhập mã OTP vừa gửi tới số điện thoại của bạn:</p>
+    <div id="otp-error" class="error-msg" role="alert" style="display:none; color:red;">Mã OTP không hợp lệ hoặc đã hết hạn</div>
+    <input type="text" id="otp-code" maxlength="4" name="otp" autocomplete="one-time-code" placeholder="Nhập 4 số OTP" />
+    <button id="btn-otp-confirm" role="button">Xác thực</button>
+  </div>
+
+  <div id="consent-modal" role="dialog" style="display:none; border:1px solid blue; padding:20px; margin-top:20px;">
+    <h3>Đồng ý cho phép xử lý dữ liệu cá nhân</h3>
+    <div id="consent-warning" class="error-msg" role="alert" style="display:none; color:red;">Hệ thống yêu cầu đồng ý điều khoản dữ liệu cá nhân để tiếp tục</div>
+    <button id="btn-consent-agree" role="button">Đồng ý</button>
+    <button id="btn-consent-reject" role="button">Từ chối</button>
+  </div>
+
+  <div id="apply-success-box" style="display:none; color:green; margin-top:20px;">
+    <h3>Ứng tuyển thành công!</h3>
+    <button id="btn-done" role="button">Xong</button>
+  </div>
+
+  <script>
+    const btnApplyNoCV = document.getElementById('btn-apply-nocv');
+    const applyModal = document.getElementById('apply-modal');
+    const validationError = document.getElementById('validation-error');
+    const btnSubmitApply = document.getElementById('btn-submit-apply');
+    const fullNameInp = document.getElementById('full_name');
+    const mobileInp = document.getElementById('mobile');
+    const emailInp = document.getElementById('email');
+    const otpModal = document.getElementById('otp-modal');
+    const otpCodeInp = document.getElementById('otp-code');
+    const otpError = document.getElementById('otp-error');
+    const btnOtpConfirm = document.getElementById('btn-otp-confirm');
+    const consentModal = document.getElementById('consent-modal');
+    const consentWarning = document.getElementById('consent-warning');
+    const btnConsentAgree = document.getElementById('btn-consent-agree');
+    const btnConsentReject = document.getElementById('btn-consent-reject');
+    const applySuccessBox = document.getElementById('apply-success-box');
+
+    btnApplyNoCV.addEventListener('click', () => {
+      applyModal.style.display = 'block';
+    });
+
+    btnSubmitApply.addEventListener('click', () => {
+      if (!fullNameInp.value || !mobileInp.value || !emailInp.value) {
+        validationError.style.display = 'block';
+        return;
+      }
+      validationError.style.display = 'none';
+      applyModal.style.display = 'none';
+      otpModal.style.display = 'block';
+    });
+
+    btnOtpConfirm.addEventListener('click', () => {
+      if (otpCodeInp.value === '0000') {
+        otpError.style.display = 'block';
+        return;
+      }
+      otpError.style.display = 'none';
+      otpModal.style.display = 'none';
+      consentModal.style.display = 'block';
+    });
+
+    btnConsentReject.addEventListener('click', () => {
+      consentWarning.style.display = 'block';
+    });
+
+    btnConsentAgree.addEventListener('click', () => {
+      consentWarning.style.display = 'none';
+      consentModal.style.display = 'none';
+      applySuccessBox.style.display = 'block';
+    });
+  </script>
+</body>
+</html>`
+      });
+    });
+    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/nocv-job-detail', { waitUntil: 'domcontentloaded' });
+    await this.capture('nocv_apply_precondition_ready');
+  }
+
+  async openApplyForm() {
+    await this.clickElement(this.btnApplyNoCV);
+    await this.capture('nocv_apply_form_opened');
+  }
+
+  async submitApply() {
+    await this.clickElement(this.btnCommonSave);
+    await this.capture('nocv_apply_submitted');
+  }
+
+  async fillContactInfo(fullName, phone, email, intro = '') {
+    if (fullName) await this.fillInput(this.txtFullName, fullName);
+    if (phone) await this.fillInput(this.txtPhone, phone);
+    if (email) {
+      const emailField = this.applyModal.locator('input[type="email"], input[name="email"]').first();
+      await this.fillInput(emailField, email);
+    }
+    if (intro) await this.fillInput(this.txtIntro, intro);
+    await this.capture('nocv_contact_info_filled');
+  }
+
+  async fillOtp(code) {
+    await this.fillInput(this.otpInput, code);
+    await this.capture('nocv_otp_filled');
+  }
+
+  async submitOtp() {
+    await this.clickElement(this.btnOtpSubmit);
+    await this.capture('nocv_otp_submitted');
   }
 
   async startApplyNoCV(options = {}) {

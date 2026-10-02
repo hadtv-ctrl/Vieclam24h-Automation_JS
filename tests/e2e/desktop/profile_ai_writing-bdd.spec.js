@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/baseTest');
 const aiProfileData = require('../../../data/aiProfileData.json');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
-test.describe('Feature: Dùng trợ lý AI để hoàn thiện hồ sơ @profile @ai @desktop @e2e @REQ-006', () => {
+test.describe('Feature: Dùng trợ lý AI để hoàn thiện hồ sơ @auth @profile @ai @desktop @e2e @REQ-006', () => {
   test('TC-023 - AC-020 Viết lại giới thiệu và tạo mô tả kinh nghiệm bằng AI', async ({
     page,
     authenticatedUser,

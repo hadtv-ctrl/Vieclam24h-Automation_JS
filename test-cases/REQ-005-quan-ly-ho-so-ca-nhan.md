@@ -10,8 +10,8 @@
 | TC-020 | AC-018 | Thêm đủ bảy mục nội dung hồ sơ trên mobile web | P2 | Có | tests/e2e/mobile-web/setting_user_profile-bdd.mobile.spec.js |
 | TC-021 | AC-019 | Tải lên và chuyển đổi CV tại trang Hồ sơ trên desktop | P1 | Có | tests/e2e/desktop/upload_cv_profile-bdd.spec.js |
 | TC-022 | AC-019 | Tải lên và chuyển đổi CV tại trang Hồ sơ trên mobile web | P1 | Có | tests/e2e/mobile-web/upload_cv_profile-bdd.mobile.spec.js |
-| TC-046 | AC-015 AC-016 AC-019 | Kiểm thử tính hoàn thiện hồ sơ, logic chuyển đổi CV (ghi đè/thêm mới) và tính đồng bộ hai chiều với Onboarding tiêu chí tìm việc | P2 | candidate | - |
-| TC-047 | AC-017 | Kiểm thử chu trình xác minh bảo mật (OTP Email / SĐT) khi kích hoạt tính năng Cho phép nhà tuyển dụng tìm kiếm hồ sơ | P2 | candidate | - |
+| TC-046 | AC-015 AC-016 AC-019 | Kiểm thử tính hoàn thiện hồ sơ, logic chuyển đổi CV (ghi đè/thêm mới) và tính đồng bộ hai chiều với Onboarding tiêu chí tìm việc | P2 | Có | tests/e2e/desktop/kiem-thu-tinh-hoan-thien-ho-so-logic-chuyen-doi-cv-va-dong-b.spec.js |
+| TC-047 | AC-017 | Kiểm thử chu trình xác minh bảo mật (OTP Email / SĐT) khi kích hoạt tính năng Cho phép nhà tuyển dụng tìm kiếm hồ sơ | P2 | Có | tests/e2e/desktop/kiem-thu-chu-trinh-xac-minh-bao-mat-otp-email-sdt-khi-kich-h.spec.js |
 
 
 ## Chi tiết
@@ -65,7 +65,7 @@
 ### TC-046 — Kiểm thử tính hoàn thiện hồ sơ, logic chuyển đổi CV và đồng bộ hai chiều với Onboarding
 
 - **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Luồng kiểm thử liên hoàn
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Người dùng đã đăng nhập, đang ở trang Hồ sơ của tôi.
 - **Dữ liệu kiểm thử:**
   - Mục Thông tin cá nhân đầy đủ: Họ tên, Ngày sinh, Giới tính, Địa chỉ, Email, SĐT
@@ -85,7 +85,7 @@
 ### TC-047 — Kiểm thử chu trình xác minh bảo mật (OTP Email / SĐT) khi kích hoạt tính năng Cho phép tìm kiếm hồ sơ
 
 - **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Ràng buộc bảo mật / Xác thực OTP
-- **Automation:** Candidate
+- **Automation:** Có
 - **Tiền điều kiện:** Hồ sơ người dùng đã đạt trạng thái hoàn thiện.
 - **Dữ liệu kiểm thử:**
   - Tài khoản chưa xác thực Email: mã OTP động từ email (mã sai: 1111)

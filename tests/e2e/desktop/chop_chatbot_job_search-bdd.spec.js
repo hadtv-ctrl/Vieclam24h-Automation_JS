@@ -3,7 +3,7 @@ const chatbotData = require('../../../data/chopChatbotData.json');
 const { ChopChatbotPage } = require('../../../pages/desktop/ChopChatbotPage');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
-test.describe('Feature: Người dùng tìm việc qua Chop AI chatbot @chatbot @desktop @e2e @REQ-007', () => {
+test.describe('Feature: Người dùng tìm việc qua Chop AI chatbot @auth @chatbot @desktop @e2e @REQ-007', () => {
   test.setTimeout(240000);
 
   test('TC-025 - AC-022 Người dùng tìm kiếm, lọc và xem việc làm qua Chop AI chatbot thành công', async ({

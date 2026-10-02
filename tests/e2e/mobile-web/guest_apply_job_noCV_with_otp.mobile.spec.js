@@ -3,7 +3,7 @@ const applyData = require('../../../data/applyJobData.json');
 const usersData = require('../../../data/users.json');
 const { generateRandomVNPhone } = require('../../../core/utils/commonUtils');
 
-test.describe('Mobile Feature: Guest ứng tuyển việc không cần CV bằng OTP trên Mobile Web @applyjob @mobile @e2e @REQ-004', () => {
+test.describe('Mobile Feature: Guest ứng tuyển việc không cần CV bằng OTP trên Mobile Web @guest @no-auth @applyjob @mobile @e2e @REQ-004', () => {
   let newJobPage;
 
   test.afterEach(async () => {

@@ -16,7 +16,9 @@ class OnboardingPopup extends BasePage {
       hasText: /Bạn đang tìm việc ở khu vực nào\?|Bạn đang quan tâm đến ngành nghề nào\?|Bạn đang muốn tìm công việc gì\?/i,
     }).first();
     this.closeBtn = page.locator('#common__modal [data-test-id="common__close-button"], [data-test-id="common__form-modal"] [data-test-id="common__close-button"], [role="dialog"] [data-test-id="common__close-button"]').first();
-    this.skipBtn = this.modal.locator('button:has-text("Bỏ qua"), button:has-text("Để sau"), [data-test-id*="skip"]').first();
+    this.skipBtn = this.modal.locator('button:has-text("Bỏ qua"), button:has-text("Để sau"), [data-test-id*="skip"]')
+      .or(page.getByRole('button', { name: /bỏ qua|để sau/i }))
+      .first();
     this.overlayLoading = page.locator('.overlay-loading'); // Thêm locator cho overlay loading
 
     this.step1Title = this.modal.getByText('Bạn đang tìm việc ở khu vực nào?');
@@ -75,6 +77,13 @@ class OnboardingPopup extends BasePage {
 
   async clickClose() {
     return this.clickElement(this.closeBtn);
+  }
+
+  async clickSkip() {
+    if (await this.skipBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      return this.clickElement(this.skipBtn);
+    }
+    return this.clickClose();
   }
 
   async skipOrClose() {

@@ -2,7 +2,7 @@ const { test, expect } = require('../../../core/fixtures/baseTest');
 const userData = require('../../../data/users.json');
 const { LoginPopup } = require('../../../pages/desktop/LoginPopup');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc @register @desktop @e2e @REQ-001', () => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc @guest @no-auth @register @desktop @e2e @REQ-001', () => {
   test('TC-032 - AC-001 Kiểm tra xử lý khi đăng ký bằng email đã tồn tại', async ({ page, pages }, testInfo) => {
     const homePage = pages.homePage;
     const loginPopup = new LoginPopup(page);

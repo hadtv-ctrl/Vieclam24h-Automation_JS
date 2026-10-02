@@ -1,7 +1,7 @@
 const { test, expect } = require('../../../core/fixtures/baseTest');
 const { OnboardingPopup } = require('../../../pages/desktop/OnboardingPopup');
 
-test.describe('Feature: Ứng tuyển việc làm @applyjob @desktop @e2e @REQ-003', () => {
+test.describe('Feature: Ứng tuyển việc làm @auth @applyjob @desktop @e2e @REQ-003', () => {
   test('TC-037 - AC-011 Kiểm tra trạng thái việc làm đã nộp (Nộp lại hồ sơ hoặc Đã ứng tuyển)', async ({
     page,
     authenticatedUser,

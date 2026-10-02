@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { generateRandomVNPhone, generateRandomEmail } = require('../../core/utils/commonUtils');
 const { RegistrationApiHelper } = require('../../core/utils/registrationApiHelper');
 
-test.describe('Feature: Đăng ký tài khoản người tìm việc qua API @api @register @REQ-001', () => {
+test.describe('Feature: Đăng ký tài khoản người tìm việc qua API @guest @no-auth @api @register @REQ-001', () => {
   test('TC-005 - AC-003 API đăng ký trả về status 200 và cấp token với payload động', async ({ request }, testInfo) => {
     const apiHelper = new RegistrationApiHelper(request);
     const email = generateRandomEmail();
