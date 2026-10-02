@@ -16,7 +16,7 @@ class JobSearchPage extends BasePage {
       .locator('a[href*=".html?open_from="], a[href*="id200"], a:has(h3), [data-job-id]')
       .filter({ hasNotText: /\u0110\u00e3 \u1ee9ng tuy\u1ec3n|B\u1ea1n v\u1eeba \u1ee9ng tuy\u1ec3n/i })
       .first();
-    this.jobSearchResultTitle = page.getByRole('heading', { level: 1, name: /việc làm/i });
+    this.jobSearchResultTitle = page.getByRole('heading', { level: 1 }).first();
     this.jobCheckboxes = page.locator('.job-item-checkbox'); // Giả định selector cho checkbox
     this.bulkApplyBtn = page.getByRole('button', { name: 'Ứng tuyển hàng loạt' });
     this.confirmBulkApplyBtn = page.locator('.bulk-apply-modal').getByRole('button', { name: 'Xác nhận' }); // Giả định selector
@@ -112,13 +112,22 @@ class JobSearchPage extends BasePage {
   }
 
   /**
-   * Xác nhận bộ lọc tỉnh thành đã được áp dụng
+   * Xác nhận bộ lọc tỉnh thành (và tùy chọn quận/huyện) đã được áp dụng
    * @param {string} cityName Tên tỉnh thành (ví dụ: 'TP.HCM')
+   * @param {string} [districtName] Tên quận/huyện nếu có (ví dụ: 'Quận 1')
    */
-  async expectCityFilterApplied(cityName = 'TP.HCM') {
+  async expectCityFilterApplied(cityName = 'TP.HCM', districtName = null) {
     await this.page.waitForLoadState('domcontentloaded');
-    await expect(this.locTheoTinhThanhInput).toHaveValue(cityName, { timeout: 15000 });
-    await expect(this.jobSearchResultTitle).toContainText(cityName, { timeout: 15000 });
+    if (districtName) {
+      await expect(this.locTheoTinhThanhInput).toHaveValue(
+        new RegExp(`${cityName}.*${districtName}|${districtName}.*${cityName}`, 'i'),
+        { timeout: 15000 }
+      );
+      await expect(this.jobSearchResultTitle).toContainText(districtName, { timeout: 15000 });
+    } else {
+      await expect(this.locTheoTinhThanhInput).toHaveValue(cityName, { timeout: 15000 });
+      await expect(this.jobSearchResultTitle).toContainText(cityName, { timeout: 15000 });
+    }
   }
 
   /**
@@ -189,8 +198,9 @@ class JobSearchPage extends BasePage {
       await this.actions.click(arrowBtn);
       const districtBtn = this.cityDropdownContainer
         .locator('button')
-        .filter({ hasText: new RegExp(`^${districtName}`, 'i') })
+        .filter({ hasText: new RegExp(`^${districtName}$`, 'i') })
         .first();
+      await districtBtn.waitFor({ state: 'visible', timeout: 5000 });
       await districtBtn.scrollIntoViewIfNeeded({ timeout: 5000 });
       await this.actions.click(districtBtn);
     } else {

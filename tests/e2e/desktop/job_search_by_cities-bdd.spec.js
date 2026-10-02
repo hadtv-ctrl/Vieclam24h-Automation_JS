@@ -12,24 +12,33 @@ test.describe('Feature: Tìm kiếm việc làm theo từng tỉnh thành trọn
     }
   });
 
-  test('TC-SEARCH-CITY-001: Tìm kiếm việc làm lần lượt theo các tỉnh thành trọng điểm Bắc - Trung - Nam', async ({
+  test('TC-SEARCH-CITY-001: Tìm kiếm việc làm lần lượt theo tỉnh thành và quận huyện trọng điểm', async ({
     page,
     pages,
   }, testInfo) => {
     test.slow();
-    test.setTimeout(240000);
+    test.setTimeout(360000);
 
     const homePage = pages.homePage;
     const jobSearchPage = pages.jobSearchPage;
     const onboardingPopup = new OnboardingPopup(page);
 
-    // Danh sách các tỉnh thành trọng điểm đại diện 3 miền Bắc - Trung - Nam
-    const TARGET_CITIES = ['Hà Nội', 'TP.HCM', 'Đà Nẵng', 'Bình Dương', 'Hải Phòng', 'Cần Thơ'];
+    // Danh sách các tỉnh thành trọng điểm kèm 1 quận/huyện đại diện
+    const TARGET_LOCATIONS = [
+      { city: 'Hà Nội', district: 'Cầu Giấy' },
+      { city: 'TP.HCM', district: 'Quận 1' },
+      { city: 'Đà Nẵng', district: 'Hải Châu' },
+      { city: 'Bình Dương', district: 'Thủ Dầu Một' },
+      { city: 'Hải Phòng', district: 'Ngô Quyền' },
+      { city: 'Cần Thơ', district: 'Ninh Kiều' },
+    ];
 
     testInfo.annotations.push({
       type: 'Description',
-      description: `Kịch bản kiểm thử tìm kiếm việc làm chọn từng tỉnh thành trong danh sách trọng điểm (${TARGET_CITIES.join(', ')}). Sau mỗi lần chọn tỉnh thành, script bấm Tìm kiếm, xác minh danh sách việc làm và tiêu đề cập nhật theo tỉnh thành, sau đó chụp ảnh bằng chứng.`,
+      description: `Kịch bản kiểm thử tìm kiếm việc làm tại khung search: lần lượt chọn tỉnh thành -> bấm Tìm kiếm, sau đó mở rộng mũi tên quận/huyện -> chọn 1 quận huyện tương ứng -> bấm Tìm kiếm cho các địa bàn trọng điểm (${TARGET_LOCATIONS.map(l => `${l.city} - ${l.district}`).join(', ')}).`,
     });
+
+    let stepCount = 1;
 
     // ── Given: Tiền điều kiện ─────────────────────────────────────────
     await test.step('Given Tiền điều kiện: Người dùng truy cập trang chủ và điều hướng đến trang tìm kiếm việc làm', async () => {
@@ -52,36 +61,51 @@ test.describe('Feature: Tìm kiếm việc làm theo từng tỉnh thành trọn
       await jobSearchPage.capture('01_job_search_page_ready');
     });
 
-    // ── When: Lần lượt chọn từng tỉnh thành và bấm Tìm kiếm ───────────
-    for (let i = 0; i < TARGET_CITIES.length; i++) {
-      const cityName = TARGET_CITIES[i];
-      const stepIndex = String(i + 2).padStart(2, '0');
-      const safeCityKey = cityName
+    // ── When & And: Lần lượt chọn tỉnh thành -> Tìm kiếm, chọn quận huyện -> Tìm kiếm ──
+    for (const loc of TARGET_LOCATIONS) {
+      const safeCityKey = loc.city
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]/gi, '_');
 
-      await test.step(`When Người dùng chọn tỉnh thành "${cityName}" và bấm Tìm kiếm`, async () => {
-        // Mở dropdown tỉnh thành, chọn tỉnh/thành phố và bấm Tìm kiếm
+      const safeDistrictKey = loc.district
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/gi, '_');
+
+      // 1. Chọn tỉnh thành -> Bấm Tìm kiếm
+      await test.step(`When Người dùng chọn tỉnh thành "${loc.city}" và bấm Tìm kiếm`, async () => {
+        stepCount++;
+        const stepIndex = String(stepCount).padStart(2, '0');
         await jobSearchPage.openCityDropdown();
-        await jobSearchPage.selectCityOption(cityName);
+        await jobSearchPage.selectCityOption(loc.city);
         await jobSearchPage.clickSearch();
-
-        // Xác nhận bộ lọc đã áp dụng đúng tỉnh thành và danh sách việc làm đã cập nhật
-        await jobSearchPage.expectCityFilterApplied(cityName);
-
-        // Chụp ảnh bằng chứng sau khi danh sách việc làm của tỉnh thành đã hiển thị
+        await jobSearchPage.expectCityFilterApplied(loc.city);
         await jobSearchPage.capture(`${stepIndex}_city_${safeCityKey}_searched`);
+      });
+
+      // 2. Chọn tỉnh thành + chọn quận huyện qua mũi tên > -> Bấm Tìm kiếm
+      await test.step(`And Người dùng mở rộng quận/huyện của "${loc.city}", chọn "${loc.district}" và bấm Tìm kiếm`, async () => {
+        stepCount++;
+        const stepIndex = String(stepCount).padStart(2, '0');
+        await jobSearchPage.openCityDropdown();
+        await jobSearchPage.selectCityOption(loc.city, loc.district);
+        await jobSearchPage.clickSearch();
+        await jobSearchPage.expectCityFilterApplied(loc.city, loc.district);
+        await jobSearchPage.capture(`${stepIndex}_city_${safeCityKey}_district_${safeDistrictKey}_searched`);
       });
     }
 
     // ── Then: Xem chi tiết một công việc từ kết quả tìm kiếm ──────────
     await test.step('Then Người dùng chọn xem một tin tuyển dụng và mở trang chi tiết công việc thành công', async () => {
+      stepCount++;
+      const stepIndex = String(stepCount).padStart(2, '0');
       jobDetailPageTab = await jobSearchPage.clickJobByTitle();
       const jobDetailPage = new JobDetailPage(jobDetailPageTab, 'job_search_cities_regression');
       await jobDetailPage.verifyJobDetailPageLoaded();
-      await jobDetailPage.capture('08_job_detail_page_verified');
+      await jobDetailPage.capture(`${stepIndex}_job_detail_page_verified`);
     });
   });
 });
