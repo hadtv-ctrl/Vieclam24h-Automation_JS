@@ -29,6 +29,9 @@ export function filterFindings(findings, filter, newKeys = new Set()) {
 
 function actionsFor(finding) {
   const detail = { action: 'detail', label: 'Chi tiết', icon: 'ph-info' };
+  if (finding.kind === 'spec-khong-truy-vet') {
+    return [{ action: 'smartLink', label: '✦ Phân loại REQ', icon: 'ph-sparkle', primary: true }, detail];
+  }
   if (isSelectable(finding)) return [{ action: 'fix', label: 'Sửa lỗi', icon: 'ph-wrench', primary: true }, detail];
   if (finding.fixRoute === 'scaffold') return [{ action: 'scaffold', label: 'Tạo requirement', icon: 'ph-file-plus', primary: true }, detail];
   if (finding.fixRoute === 'autofix') return [{ action: 'autofix', label: 'Chuẩn hoá traceability', icon: 'ph-lightning', primary: true }, detail];

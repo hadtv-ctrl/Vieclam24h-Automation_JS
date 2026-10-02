@@ -477,6 +477,66 @@ async function inferTestCases({ root, reqPath, mode = 'heuristic', clientConfig 
 /**
  * Ghi an toàn các Test Cases mới vào file test-cases/REQ-xxx.md
  */
+function buildTestCaseDocument(currentContent, cleanReqId, testCases = []) {
+  let lines = String(currentContent || '').split(/\r?\n/);
+
+  // 1. Tìm vị trí bảng Traceability
+  let tableHeaderIdx = lines.findIndex((l) => /\|\s*(?:Test\s*case|Requirement)\s*\|/i.test(l));
+  let isTableStyle1 = true; // | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
+
+  if (tableHeaderIdx !== -1) {
+    if (/\|\s*Requirement\s*\|/i.test(lines[tableHeaderIdx])) {
+      isTableStyle1 = false; // | Requirement | Acceptance criterion | Test case | Automation | Spec | Priority |
+    }
+
+    let tableEndIdx = tableHeaderIdx + 1;
+    if (lines[tableEndIdx] && /^\s*\|[\s:|-]+\|\s*$/.test(lines[tableEndIdx])) {
+      tableEndIdx += 1;
+    }
+    while (tableEndIdx < lines.length && /^\s*\|.*\|\s*$/.test(lines[tableEndIdx])) {
+      tableEndIdx += 1;
+    }
+
+    const newTableRows = testCases.map((tc) => {
+      const p = tc.priority || 'P2';
+      const ac = tc.acId || '-';
+      const title = (tc.title || '').replace(/\|/g, '-').trim();
+      const spec = tc.spec || '-';
+      const auto = tc.automation || (spec && spec !== '-' ? 'Yes' : 'candidate');
+      if (isTableStyle1) {
+        return `| ${tc.suggestedId} | ${ac} | ${title} | ${p} | ${auto} | ${spec} |`;
+      }
+      return `| ${cleanReqId} | ${ac} | ${tc.suggestedId} | ${auto} | ${spec} | ${p} |`;
+    });
+
+    lines.splice(tableEndIdx, 0, ...newTableRows);
+  }
+
+  // 2. Thêm các khối chi tiết Test Case vào cuối file
+  const detailBlocks = testCases.map((tc) => {
+    const auto = tc.automation || (tc.spec && tc.spec !== '-' ? 'Yes' : 'Candidate');
+    const stepsTable = (tc.steps && tc.steps.length)
+      ? tc.steps.map((s, idx) => `| ${s.step || idx + 1} | ${(s.action || '').replace(/\|/g, '-')} | ${(s.expected || '').replace(/\|/g, '-')} |`).join('\n')
+      : `| 1 | Thực hiện kiểm thử ${tc.title} | Phản hồi đúng nghiệp vụ |`;
+
+    return `\n### ${tc.suggestedId} — ${tc.title}\n\n` +
+      `- **Loại:** Chức năng | **Ưu tiên:** ${tc.priority || 'P2'} | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt\n` +
+      `- **Automation:** ${auto}\n` +
+      `- **Tiền điều kiện:** ${tc.precondition || 'Môi trường sẵn sàng'}\n` +
+      `- **Dữ liệu kiểm thử:** ${tc.testData || 'Mặc định'}\n` +
+      (tc.rationale ? `> *Ghi chú nghiệp vụ:* ${tc.rationale}\n\n` : '\n') +
+      `| Bước | Thao tác | Kết quả mong đợi |\n` +
+      `|---|---|---|\n` +
+      `${stepsTable}\n`;
+  });
+
+  lines.push(...detailBlocks);
+  return lines.join('\n');
+}
+
+/**
+ * Ghi an toàn các Test Cases mới vào file test-cases/REQ-xxx.md
+ */
 function appendTestCasesToDocument(root, { reqId, tcPath, testCases = [] }) {
   if (!Array.isArray(testCases) || !testCases.length) {
     throw Object.assign(new Error('Danh sách test cases cần thêm không được rỗng.'), { status: 400 });
@@ -495,60 +555,7 @@ function appendTestCasesToDocument(root, { reqId, tcPath, testCases = [] }) {
     currentContent = `# Test Cases: ${cleanReqId}\n\nRequirement: \`requirements/${cleanReqId}.md\`\n\n## Bảng truy vết\n\n| Test case | AC | Mô tả | Ưu tiên | Automation | Spec |\n|---|---|---|---|---|---|\n\n## Test cases\n\n`;
   }
 
-  let lines = currentContent.split(/\r?\n/);
-
-  // 1. Tìm vị trí bảng Traceability
-  let tableHeaderIdx = lines.findIndex((l) => /\|\s*(?:Test\s*case|Requirement)\s*\|/i.test(l));
-  let isTableStyle1 = true; // | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
-
-  if (tableHeaderIdx !== -1) {
-    if (/\|\s*Requirement\s*\|/i.test(lines[tableHeaderIdx])) {
-      isTableStyle1 = false; // | Requirement | Acceptance criterion | Test case | Automation | Spec | Priority |
-    }
-
-    // Tìm dòng cuối cùng của bảng
-    let tableEndIdx = tableHeaderIdx + 1;
-    if (lines[tableEndIdx] && /^\s*\|[\s:|-]+\|\s*$/.test(lines[tableEndIdx])) {
-      tableEndIdx += 1;
-    }
-    while (tableEndIdx < lines.length && /^\s*\|.*\|\s*$/.test(lines[tableEndIdx])) {
-      tableEndIdx += 1;
-    }
-
-    // Tạo các dòng mới cho bảng
-    const newTableRows = testCases.map((tc) => {
-      const p = tc.priority || 'P2';
-      const ac = tc.acId || '-';
-      const title = (tc.title || '').replace(/\|/g, '-').trim();
-      if (isTableStyle1) {
-        return `| ${tc.suggestedId} | ${ac} | ${title} | ${p} | candidate | - |`;
-      }
-      return `| ${cleanReqId} | ${ac} | ${tc.suggestedId} | candidate | - | ${p} |`;
-    });
-
-    lines.splice(tableEndIdx, 0, ...newTableRows);
-  }
-
-  // 2. Thêm các khối chi tiết Test Case vào cuối file
-  const detailBlocks = testCases.map((tc) => {
-    const stepsTable = (tc.steps && tc.steps.length)
-      ? tc.steps.map((s, idx) => `| ${s.step || idx + 1} | ${(s.action || '').replace(/\|/g, '-')} | ${(s.expected || '').replace(/\|/g, '-')} |`).join('\n')
-      : `| 1 | Thực hiện kiểm thử ${tc.title} | Phản hồi đúng nghiệp vụ |`;
-
-    return `\n### ${tc.suggestedId} — ${tc.title}\n\n` +
-      `- **Loại:** Chức năng | **Ưu tiên:** ${tc.priority || 'P2'} | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt\n` +
-      `- **Automation:** Candidate\n` +
-      `- **Tiền điều kiện:** ${tc.precondition || 'Môi trường sẵn sàng'}\n` +
-      `- **Dữ liệu kiểm thử:** ${tc.testData || 'Mặc định'}\n` +
-      (tc.rationale ? `> *Ghi chú nghiệp vụ:* ${tc.rationale}\n\n` : '\n') +
-      `| Bước | Thao tác | Kết quả mong đợi |\n` +
-      `|---|---|---|\n` +
-      `${stepsTable}\n`;
-  });
-
-  lines.push(...detailBlocks);
-
-  const updatedContent = lines.join('\n');
+  const updatedContent = buildTestCaseDocument(currentContent, cleanReqId, testCases);
   fs.writeFileSync(tcFileInfo.absPath, updatedContent, 'utf8');
 
   return {
@@ -1242,4 +1249,5 @@ module.exports = {
   extractHeuristicFromSpecText,
   extractScaffoldFromRaw,
   synthesizeScaffoldContents,
+  buildTestCaseDocument,
 };

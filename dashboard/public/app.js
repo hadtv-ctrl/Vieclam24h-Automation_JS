@@ -11615,6 +11615,9 @@ function selectProjectScript(script, doScroll = false) {
     specBadge.style.display = 'inline-flex';
   }
   if (specRevert) specRevert.style.display = 'none';
+  if (typeof window.updateSmartLinkButton === 'function') {
+    window.updateSmartLinkButton(script.relativePath, script.specCode || '');
+  }
 
   // Đồng bộ sang Visual Step Builder để tester có thể sửa trực tiếp nếu muốn
   if ($('#builder-feature-name')) $('#builder-feature-name').value = script.featureName || '';
@@ -14789,6 +14792,33 @@ function initVisualBuilderControls() {
     if (code) {
       navigator.clipboard.writeText(code);
       notify('Đã sao chép mã BDD Spec vào bộ nhớ tạm!');
+    }
+  });
+
+  // Smart Trace Linker Button & Shortcut (Alt+Shift+L)
+  const smartLinkBtn = document.getElementById('qa-btn-smart-link-spec');
+  smartLinkBtn?.addEventListener('click', () => {
+    const editor = document.getElementById('script-spec-editor');
+    const pathBadge = document.getElementById('script-banner-file');
+    const codeTitle = document.getElementById('script-code-title');
+    let specPath = window.__currentSpecPath || currentSelectedScript?.relativePath || pathBadge?.textContent.trim() || codeTitle?.textContent.trim() || '';
+    if (specPath) {
+      specPath = specPath.replace(/\\/g, '/');
+      if (!specPath.startsWith('tests/')) specPath = `tests/e2e/desktop/${specPath}`;
+    }
+    const specContent = editor ? editor.value : (currentSelectedScript?.specCode || '');
+    if (typeof window.openSmartLinkerForSpec === 'function') {
+      window.openSmartLinkerForSpec(specPath, specContent);
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey && e.shiftKey && (e.key === 'L' || e.key === 'l')) {
+      const btn = document.getElementById('qa-btn-smart-link-spec');
+      if (btn && btn.style.display !== 'none' && !btn.disabled) {
+        e.preventDefault();
+        btn.click();
+      }
     }
   });
 

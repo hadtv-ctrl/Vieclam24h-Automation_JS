@@ -17,6 +17,7 @@ import { ProcessStudioHelper } from './processStudioHelper.js';
 import { ReqAnalyzerHelper } from './reqAnalyzerHelper.js';
 import { BatchController } from './batch/batchController.js';
 import { ConflictStudioHelper } from './conflictStudioHelper.js';
+import { openSmartLinkerForSpec, updateSmartLinkButton } from './smartLinkerHelper.js';
 
 const PRIORITY_ORDER = { P0: 0, P1: 1, P2: 2, P3: 3 };
 // Chỉ 4 lớp ưu tiên này có rule trong qa.css. Ghép chuỗi tự do sẽ sinh ra lớp chết
@@ -130,6 +131,10 @@ export class QaSlice {
     // Smart Action Bar
     on(root.querySelector('#qa-btn-autofix'), 'click', () => this.openAutoFixModal());
     on(root.querySelector('#qa-btn-scaffold'), 'click', () => this.openScaffoldModal());
+
+    const onSmartLinkApplied = () => this.reload(true);
+    window.addEventListener('qa:smart-link:applied', onSmartLinkApplied);
+    this._disposers.push(() => window.removeEventListener('qa:smart-link:applied', onSmartLinkApplied));
 
     // Auto-Fix Modal Events
     const fixModal = root.querySelector('#qa-fix-modal');

@@ -125,6 +125,11 @@ thuần, phụ thuộc bên thứ ba không kiểm soát được, chạy một 
 
 Chỉ **đề xuất**. Không tự viết thêm script ngoài phạm vi được yêu cầu.
 
+**c. Đồng bộ ngược kịch bản mới tự động (Reverse Sync qua Studio).** Khi bổ sung các kịch bản test mới (`test()`) vào file spec đã gắn tag `@REQ-xxx`, có thể sử dụng tính năng **✦ Đồng bộ kịch bản vào REQ** trên Toolbar của Code Editor Studio (hoặc phím tắt `Alt+Shift+L`):
+- Hệ thống tự động trích xuất các test case mới chưa có trong tài liệu, tính mã `AC-yyy` và `TC-zzz` tiếp theo dựa trên số lớn nhất hiện có.
+- Tự động append tiêu chí kiểm thử và test case vào `requirements/REQ-xxx.md` & `test-cases/REQ-xxx.md` một cách nguyên tử mà không làm mất hay trùng lặp kịch bản cũ.
+- Nhận diện test theo tiêu đề chuẩn hóa (bỏ dấu, lowercase, bỏ tag) hoặc mã `TC-zzz`; cảnh báo nếu test mang mã cũ nhưng đã bị đổi tên (không tự xóa kịch bản cũ).
+
 ## 4. Kiến trúc bắt buộc
 
 - E2E test đặt tại `tests/e2e/` và có hậu tố `.spec.js`.

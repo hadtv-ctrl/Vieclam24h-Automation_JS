@@ -171,7 +171,12 @@ export class BatchController {
     else if (action === 'detail' && finding) this.detail.open(finding);
     else if (action === 'scaffold') this.slice.openScaffoldModal();
     else if (action === 'autofix') this.slice.openAutoFixModal();
-    else if (action === 'openDoc') {
+    else if (action === 'smartLink' && finding) {
+      const specPath = String(finding.where || finding.id || '').split(',')[0].replace(/:\d+.*$/, '').trim();
+      if (typeof window.openSmartLinkerForSpec === 'function') {
+        window.openSmartLinkerForSpec(specPath);
+      }
+    } else if (action === 'openDoc') {
       const first = String((finding && finding.where) || '').split(',')[0].replace(/\s*\(.*$/, '').trim();
       this.slice.switchTab('docs');
       this.slice.openDocument(target || fileOf(first));

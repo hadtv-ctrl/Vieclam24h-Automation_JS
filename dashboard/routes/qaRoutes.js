@@ -37,6 +37,10 @@ const {
   escalateConflictToDecision,
 } = require('../services/qaConflictService');
 const { withWriteLock } = require('../services/qaBatchSessionStore');
+const {
+  analyzeSmartLink,
+  applySmartLink,
+} = require('../services/smartTraceLinkerService');
 const { sendJson, parseBody, abortSignalFor } = require('./routeUtils');
 
 const MAX_BODY_BYTES = 1_048_576;
@@ -378,6 +382,36 @@ async function handleQaRoutes(request, response, url, context = {}) {
       }));
     } catch (error) {
       sendConflictError(error);
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/smart-link') {
+    try {
+      const body = await parseBody(request, MAX_BODY_BYTES);
+      const result = await analyzeSmartLink(root, body || {});
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 500;
+      sendJson(response, status, {
+        error: error.message,
+        code: error.code || 'SMART_LINK_FAILED',
+      });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/qa/smart-link/apply') {
+    try {
+      const body = await parseBody(request, MAX_BODY_BYTES);
+      const result = await applySmartLink(root, body || {});
+      sendJson(response, 200, result);
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 500;
+      sendJson(response, status, {
+        error: error.message,
+        code: error.code || 'APPLY_FAILED',
+      });
     }
     return true;
   }
