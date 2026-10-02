@@ -241,19 +241,48 @@ class BasePage {
     }
   }
 
-  async capture(stepName, fullPage = null, options = {}) {
-    // Chờ mạng cơ bản ổn định (không bắt buộc, catch lỗi timeout để không gián đoạn)
-    await this.page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => null);
+  /**
+   * Đảm bảo toàn bộ tài nguyên, mạng và khung giao diện đã load xong hoàn toàn và ổn định.
+   */
+  async waitForPageReady(options = {}) {
+    const {
+      waitForNetworkIdle = true,
+      waitForVisualLoading = true,
+      waitForStability = true,
+      visualLoadingTimeout = 15000,
+      stabilityTimeout = 5000,
+    } = options;
 
-    // Chờ các Skeleton loaders (nếu có) biến mất khỏi DOM
-    await this.page.waitForFunction(
-      () => !document.querySelector('[class*="skeleton"], [class*="Skeleton"], [class*="animate-pulse"], [class*="loading-block"]'),
-      null,
-      { timeout: 15000 }
-    ).catch(() => null);
-    
-    // Chờ giao diện (body) hết các hiệu ứng chuyển động/animation (ví dụ như Skeleton loader dùng animation)
-    await this.waitForElementStable(this.page.locator('body'), { timeout: 5000 }).catch(() => null);
+    try {
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+    } catch (_) {}
+
+    try {
+      await this.page.waitForLoadState('load', { timeout: 10000 });
+    } catch (_) {}
+
+    if (waitForNetworkIdle) {
+      try {
+        await this.page.waitForLoadState('networkidle', { timeout: 4000 });
+      } catch (_) {}
+    }
+
+    if (waitForVisualLoading) {
+      await this.page.waitForFunction(
+        () => !document.querySelector('[class*="skeleton"], [class*="Skeleton"], [class*="animate-pulse"], [class*="loading-block"], [class*="overlay-loading"], [role="progressbar"], [aria-busy="true"]'),
+        null,
+        { timeout: visualLoadingTimeout }
+      ).catch(() => null);
+    }
+
+    if (waitForStability && this.screenshotHelper) {
+      await this.screenshotHelper.waitForPageStable({ maxWaitMs: stabilityTimeout, stableFrameCount: 5 });
+    }
+  }
+
+  async capture(stepName, fullPage = null, options = {}) {
+    // Chờ trang load xong hoàn toàn trước khi chụp
+    await this.waitForPageReady(options);
 
     return this._capture(stepName, '', fullPage, options);
   }

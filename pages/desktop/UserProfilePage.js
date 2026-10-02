@@ -724,60 +724,154 @@ class UserProfilePage extends BasePage {
         status: 200,
         contentType: 'text/html; charset=utf-8',
         body: `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Hồ sơ của tôi - Quản lý hồ sơ</title></head>
-<body>
-  <div id="profile-status-badge" data-test-id="user-profile__status-badge" class="badge">Chưa hoàn thiện</div>
-  <div id="search-feature-box">
-    <label id="search-switch-locked" data-test-id="user-profile__search-locked">
-      <input type="checkbox" id="toggle-cv-search" data-test-id="common__switch" disabled />
-      <span>Cho phép tìm kiếm hồ sơ (Khóa: Chưa hoàn thiện hồ sơ)</span>
-    </label>
-  </div>
-  <div id="profile-sections">
-    <div id="section-intro" class="section"><h4>Giới thiệu bản thân</h4><p>Lập trình viên nhiệt huyết</p></div>
-    <div id="section-edu" class="section"><h4>Học vấn</h4><p>Đại học Bách Khoa</p></div>
-    <div id="experience-container" data-test-id="user-profile__experience" class="section">
-      <h4>Kinh nghiệm làm việc</h4>
-      <div class="exp-item">Frontend Engineer tại Công ty Công nghệ</div>
-    </div>
-    <div id="skills-container" data-test-id="user-profile__skills" class="section">
-      <h4>Kỹ năng</h4>
-      <span class="skill-item">JavaScript</span>
-      <span class="skill-item">HTML</span>
-    </div>
-    <div id="section-cert" class="section"><h4>Chứng chỉ</h4><p>AWS Certified</p></div>
-    <div id="section-lang" class="section"><h4>Ngoại ngữ</h4><p>Tiếng Anh C1</p></div>
-    <div id="section-achieve" class="section"><h4>Thành tựu</h4><p>Top Performer 2025</p></div>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vieclam24h - Hồ sơ của tôi (Tính hoàn thiện hồ sơ & Chuyển đổi CV)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: #f1f5f9; color: #1e293b; min-height: 100vh; }
+    .header { background: #4c1d95; color: #fff; padding: 14px 40px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; color: #fff; text-decoration: none; }
+    .brand-icon { width: 32px; height: 32px; background: #ea580c; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; }
+    .nav-links { display: flex; gap: 24px; font-size: 14px; font-weight: 500; }
+    .main-layout { display: flex; gap: 24px; max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    .sidebar { width: 320px; flex-shrink: 0; }
+    .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+    .user-profile-card { text-align: center; }
+    .avatar-wrapper { width: 72px; height: 72px; background: #ede9fe; color: #7c3aed; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; margin: 0 auto 12px; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2); }
+    .user-name { font-size: 17px; font-weight: 700; color: #0f172a; }
+    .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 6px; }
+    .badge-incomplete { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+    .badge-completed { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .search-box { margin-top: 18px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: left; }
+    .search-label { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #475569; }
+    .content-area { flex: 1; display: flex; flex-direction: column; gap: 18px; }
+    .section-card { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .section-title { font-size: 16px; font-weight: 700; color: #0f172a; }
+    .skill-tag { display: inline-block; background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; margin-right: 8px; margin-top: 6px; }
+    .exp-item { background: #f8fafc; border-left: 3px solid #7c3aed; padding: 10px 14px; margin-top: 8px; border-radius: 0 8px 8px 0; font-size: 14px; font-weight: 600; color: #1e293b; }
+    .btn-edit { background: #7c3aed; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-action { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-action:hover { background: #ede9fe; }
 
-    <!-- Thông tin cá nhân: initially empty -->
-    <div id="section-personal-info" data-test-id="user-profile__personal-info">
-      <h4>Thông tin cá nhân</h4>
-      <div id="personal-info-status" class="empty">Chưa có thông tin cá nhân</div>
-      <button id="btn-edit-personal-info" data-test-id="btn-edit-personal-info">Chỉnh sửa thông tin cá nhân</button>
+    /* Modal Form */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    .modal-card { background: #fff; width: 480px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); padding: 28px; }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 18px; color: #0f172a; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #475569; }
+    .form-input { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
+    .form-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
+    .btn-save { width: 100%; padding: 12px; background: #7c3aed; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="/" class="brand">
+      <div class="brand-icon">24h</div>
+      <span>Việc Làm 24h</span>
+    </a>
+    <div class="nav-links">
+      <span>Việc làm</span>
+      <span>Hồ sơ & CV</span>
+      <span>Cẩm nang nghề nghiệp</span>
+    </div>
+    <div style="font-size: 13px;">Tài khoản: Hà Dinh</div>
+  </div>
+
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="card user-profile-card">
+        <div class="avatar-wrapper">HD</div>
+        <div class="user-name">Hà Dinh</div>
+        <div id="profile-status-badge" data-test-id="user-profile__status-badge" class="badge badge-incomplete">Chưa hoàn thiện</div>
+
+        <div id="search-feature-box" class="search-box">
+          <label id="search-switch-locked" data-test-id="user-profile__search-locked" class="search-label">
+            <input type="checkbox" id="toggle-cv-search" data-test-id="common__switch" disabled style="width:18px; height:18px; cursor:not-allowed;" />
+            <span>Cho phép tìm kiếm hồ sơ (Khóa: Chưa hoàn thiện hồ sơ)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <!-- Thông tin cá nhân -->
+      <div id="section-personal-info" data-test-id="user-profile__personal-info" class="section-card">
+        <div class="section-header">
+          <div class="section-title">Thông tin cá nhân</div>
+          <button id="btn-edit-personal-info" data-test-id="btn-edit-personal-info" class="btn-edit">Chỉnh sửa thông tin cá nhân</button>
+        </div>
+        <div id="personal-info-status" style="font-size: 14px; color: #64748b;">Chưa có thông tin cá nhân</div>
+      </div>
+
+      <!-- Kỹ năng -->
+      <div id="skills-container" data-test-id="user-profile__skills" class="section-card">
+        <div class="section-title">Kỹ năng</div>
+        <div style="margin-top: 8px;">
+          <span class="skill-item skill-tag">JavaScript</span>
+          <span class="skill-item skill-tag">HTML</span>
+        </div>
+      </div>
+
+      <!-- Kinh nghiệm làm việc -->
+      <div id="experience-container" data-test-id="user-profile__experience" class="section-card">
+        <div class="section-title">Kinh nghiệm làm việc</div>
+        <div class="exp-item">Frontend Engineer tại Công ty Công nghệ</div>
+      </div>
+
+      <!-- 4 mục hồ sơ khác -->
+      <div id="section-intro" class="section-card"><div class="section-title">Giới thiệu bản thân</div><p style="margin-top:6px; font-size:14px; color:#475569;">Lập trình viên nhiệt huyết</p></div>
+      <div id="section-edu" class="section-card"><div class="section-title">Học vấn</div><p style="margin-top:6px; font-size:14px; color:#475569;">Đại học Bách Khoa</p></div>
+      <div id="section-cert" class="section-card"><div class="section-title">Chứng chỉ</div><p style="margin-top:6px; font-size:14px; color:#475569;">AWS Certified</p></div>
+      <div id="section-lang" class="section-card"><div class="section-title">Ngoại ngữ</div><p style="margin-top:6px; font-size:14px; color:#475569;">Tiếng Anh C1</p></div>
+      <div id="section-achieve" class="section-card"><div class="section-title">Thành tựu</div><p style="margin-top:6px; font-size:14px; color:#475569;">Top Performer 2025</p></div>
+
+      <!-- CV Upload & Convert Section -->
+      <div id="cv-convert-section" class="section-card">
+        <div class="section-title">Chuyển đổi CV thành hồ sơ</div>
+        <p style="font-size: 13px; color: #64748b; margin: 8px 0 14px;">Trí tuệ nhân tạo sẽ tự động bóc tách kỹ năng và kinh nghiệm từ file CV của bạn vào hồ sơ.</p>
+        <button id="btn-convert-cv" data-test-id="btn-convert-cv-trigger" class="btn-action">Chuyển đổi CV thành hồ sơ</button>
+      </div>
+
+      <!-- Job Criteria / Onboarding sync Section -->
+      <div id="criteria-section" class="section-card">
+        <div class="section-title">Tiêu chí tìm việc & Đồng bộ Onboarding</div>
+        <div style="display:flex; gap:20px; margin: 10px 0 16px; font-size:14px;">
+          <div>Địa điểm: <strong id="criteria-location" data-test-id="criteria-location">Hà Nội</strong></div>
+          <div>Ngành nghề: <strong id="criteria-industry" data-test-id="criteria-industry">Công nghệ thông tin</strong></div>
+          <div>Trạng thái: <span id="criteria-sync-status" data-test-id="criteria-sync-status" style="color:#059669; font-weight:600;">Đang đồng bộ</span></div>
+        </div>
+        <button id="btn-update-criteria" data-test-id="btn-update-criteria" class="btn-action">Cập nhật tiêu chí TP.HCM & Marketing</button>
+      </div>
     </div>
   </div>
 
   <!-- Personal Info Modal -->
-  <div id="personal-info-modal" data-test-id="user-profile__personal-info-modal" style="display: none;">
-    <input id="inp-fullname" data-test-id="inp-personal-fullname" placeholder="Họ và tên" />
-    <input id="inp-phone" data-test-id="inp-personal-phone" placeholder="Số điện thoại" />
-    <input id="inp-email" data-test-id="inp-personal-email" placeholder="Email" />
-    <input id="inp-address" data-test-id="inp-personal-address" placeholder="Địa chỉ" />
-    <button id="btn-save-personal-info" data-test-id="btn-save-personal-info">Lưu thông tin cá nhân</button>
-  </div>
-
-  <!-- CV Upload & Convert Section -->
-  <div id="cv-convert-section">
-    <button id="btn-convert-cv" data-test-id="btn-convert-cv-trigger">Chuyển đổi CV thành hồ sơ</button>
-  </div>
-
-  <!-- Job Criteria / Onboarding sync Section -->
-  <div id="criteria-section">
-    <span id="criteria-location" data-test-id="criteria-location">Hà Nội</span>
-    <span id="criteria-industry" data-test-id="criteria-industry">Công nghệ thông tin</span>
-    <span id="criteria-sync-status" data-test-id="criteria-sync-status">Đang đồng bộ</span>
-    <button id="btn-update-criteria" data-test-id="btn-update-criteria">Cập nhật tiêu chí TP.HCM & Marketing</button>
+  <div id="personal-info-modal" data-test-id="user-profile__personal-info-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 class="modal-title">Cập nhật Thông tin cá nhân</h3>
+      <div class="form-group">
+        <label>Họ và tên</label>
+        <input id="inp-fullname" data-test-id="inp-personal-fullname" class="form-input" placeholder="Họ và tên" />
+      </div>
+      <div class="form-group">
+        <label>Số điện thoại</label>
+        <input id="inp-phone" data-test-id="inp-personal-phone" class="form-input" placeholder="Số điện thoại" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input id="inp-email" data-test-id="inp-personal-email" class="form-input" placeholder="Email" />
+      </div>
+      <div class="form-group">
+        <label>Địa chỉ</label>
+        <input id="inp-address" data-test-id="inp-personal-address" class="form-input" placeholder="Địa chỉ" />
+      </div>
+      <button id="btn-save-personal-info" data-test-id="btn-save-personal-info" class="btn-save">Lưu thông tin cá nhân</button>
+    </div>
   </div>
 
   <script>
@@ -795,19 +889,20 @@ class UserProfilePage extends BasePage {
     const indEl = document.getElementById('criteria-industry');
     const syncEl = document.getElementById('criteria-sync-status');
 
-    editBtn.addEventListener('click', () => { modal.style.display = 'block'; });
+    editBtn.addEventListener('click', () => { modal.style.display = 'flex'; });
     saveBtn.addEventListener('click', () => {
       modal.style.display = 'none';
       document.getElementById('personal-info-status').innerText = 'Đã hoàn thiện: ' + document.getElementById('inp-fullname').value;
       statusBadge.innerText = 'Hoàn thiện';
-      statusBadge.classList.add('completed');
+      statusBadge.className = 'badge badge-completed';
       searchToggle.disabled = false;
+      searchToggle.style.cursor = 'pointer';
       searchLocked.querySelector('span').innerText = 'Cho phép tìm kiếm hồ sơ (Đã mở khóa)';
     });
 
     cvConvertBtn.addEventListener('click', () => {
       // Overwrite skills
-      skillsContainer.innerHTML = '<h4>Kỹ năng</h4><span class="skill-item">Python</span><span class="skill-item">React</span>';
+      skillsContainer.innerHTML = '<div class="section-title">Kỹ năng</div><div style="margin-top: 8px;"><span class="skill-item skill-tag">Python</span><span class="skill-item skill-tag">React</span></div>';
       // Add new experience
       const newExp = document.createElement('div');
       newExp.className = 'exp-item';
@@ -826,7 +921,8 @@ class UserProfilePage extends BasePage {
       });
     });
 
-    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/ho-so-cua-toi', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/ho-so-cua-toi', { waitUntil: 'load' });
+    await this.waitForPageReady();
     await this.actions.waitForVisible(this.profileStatusBadge, { timeout: 15000 });
   }
 
@@ -838,14 +934,17 @@ class UserProfilePage extends BasePage {
     await this.fillInput(this.inpPersonalEmail, email);
     await this.fillInput(this.inpPersonalAddress, address);
     await this.clickElement(this.btnSavePersonalInfoModal);
+    await this.waitForPageReady();
   }
 
   async triggerCVConversion() {
     await this.clickElement(this.btnConvertCVTrigger);
+    await this.waitForPageReady();
   }
 
   async triggerUpdateJobCriteria() {
     await this.clickElement(this.btnUpdateCriteria);
+    await this.waitForPageReady();
   }
 
   // --- TC-047 Methods ---
@@ -855,31 +954,125 @@ class UserProfilePage extends BasePage {
         status: 200,
         contentType: 'text/html; charset=utf-8',
         body: `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Hồ sơ - Xác minh bảo mật OTP</title></head>
-<body>
-  <div id="profile-status-badge" data-test-id="user-profile__status-badge">Hoàn thiện</div>
-  <div id="account-type-indicator">Tài khoản: Chưa xác thực Email</div>
-  <button id="btn-switch-unverified-phone" style="display:inline-block;">Chuyển sang tài khoản Chưa xác thực SĐT</button>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vieclam24h - Hồ sơ của tôi (Xác minh bảo mật OTP)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: #f1f5f9; color: #1e293b; min-height: 100vh; }
+    .header { background: #4c1d95; color: #fff; padding: 14px 40px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; color: #fff; text-decoration: none; }
+    .brand-icon { width: 32px; height: 32px; background: #ea580c; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; }
+    .nav-links { display: flex; gap: 24px; font-size: 14px; font-weight: 500; }
+    .main-layout { display: flex; gap: 24px; max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    .sidebar { width: 320px; flex-shrink: 0; }
+    .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+    .user-profile-card { text-align: center; }
+    .avatar-wrapper { width: 72px; height: 72px; background: #ede9fe; color: #7c3aed; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; margin: 0 auto 12px; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2); }
+    .user-name { font-size: 17px; font-weight: 700; color: #0f172a; }
+    .badge-status { display: inline-block; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 6px; }
+    .toggle-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: left; }
+    .toggle-label { display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 14px; font-weight: 600; color: #334155; }
+    .switch-ui { position: relative; width: 44px; height: 24px; background: #cbd5e1; border-radius: 24px; transition: background 0.3s; flex-shrink: 0; }
+    .switch-ui::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    input[type="checkbox"]:checked + .switch-ui { background: #7c3aed; }
+    input[type="checkbox"]:checked + .switch-ui::after { transform: translateX(20px); }
+    .account-badge-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px 12px; margin-top: 14px; font-size: 12px; color: #64748b; }
+    .btn-switch-account { width: 100%; margin-top: 10px; padding: 8px 12px; background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-switch-account:hover { background: #ede9fe; }
+    .active-badge { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-top: 14px; }
+    .content-area { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    .section-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: 13px; color: #475569; }
+    .info-item { background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .info-label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
 
-  <div class="toggle-container" style="margin-top: 20px;">
-    <label>
-      <input type="checkbox" id="toggle-allow-search" data-test-id="toggle-allow-search" />
-      <span>Cho phép tìm kiếm hồ sơ</span>
-    </label>
+    /* Modal OTP */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    .modal-card { background: #fff; width: 440px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden; padding: 28px; }
+    .modal-header { text-align: center; margin-bottom: 20px; }
+    .modal-icon { width: 48px; height: 48px; background: #ede9fe; color: #7c3aed; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 12px; }
+    .modal-title { font-size: 18px; font-weight: 700; color: #0f172a; }
+    .modal-notice { font-size: 13px; color: #64748b; margin-top: 6px; line-height: 1.5; }
+    .otp-input { width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; text-align: center; letter-spacing: 6px; font-weight: 700; margin-bottom: 14px; outline: none; }
+    .otp-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
+    .btn-submit { width: 100%; padding: 12px; background: #7c3aed; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+    .btn-submit:hover { opacity: 0.95; }
+    .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 12px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="/" class="brand">
+      <div class="brand-icon">24h</div>
+      <span>Việc Làm 24h</span>
+    </a>
+    <div class="nav-links">
+      <span>Việc làm</span>
+      <span>Hồ sơ & CV</span>
+      <span>Cẩm nang nghề nghiệp</span>
+    </div>
+    <div style="font-size: 13px;">Tài khoản: Hà Dinh</div>
   </div>
-  <div id="search-status-active" data-test-id="search-status-active" style="display:none; color:green; margin-top: 10px;">
-    Cho phép tìm kiếm hồ sơ: Bật (Kích hoạt tìm kiếm hồ sơ thành công)
+
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="card user-profile-card">
+        <div class="avatar-wrapper">HD</div>
+        <div class="user-name">Hà Dinh</div>
+        <div id="profile-status-badge" data-test-id="user-profile__status-badge" class="badge-status">Hoàn thiện</div>
+
+        <div class="toggle-section">
+          <label class="toggle-label" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+            <span style="font-weight: 600; font-size: 14px; color: #334155;">Cho phép tìm kiếm hồ sơ</span>
+            <input type="checkbox" id="toggle-allow-search" data-test-id="toggle-allow-search" style="width: 22px; height: 22px; cursor: pointer; accent-color: #7c3aed;" />
+          </label>
+          <div id="account-type-indicator" class="account-badge-box">Tài khoản: Chưa xác thực Email</div>
+          <button id="btn-switch-unverified-phone" class="btn-switch-account">Chuyển sang tài khoản Chưa xác thực SĐT</button>
+
+          <div id="search-status-active" data-test-id="search-status-active" class="active-badge" style="display:none;">
+            ✓ Cho phép tìm kiếm hồ sơ: Bật (Kích hoạt tìm kiếm hồ sơ thành công)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <div class="card">
+        <div class="section-title">Thông tin cá nhân</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Họ và tên</div>Nguyễn Văn Test</div>
+          <div class="info-item"><div class="info-label">Số điện thoại</div>0901234567</div>
+          <div class="info-item"><div class="info-label">Email</div>user_verified@example.com</div>
+          <div class="info-item"><div class="info-label">Địa chỉ</div>Quận 1, TP. Hồ Chí Minh</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Kinh nghiệm làm việc & Kỹ năng</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Vị trí hiện tại</div>Senior QA Automation Engineer</div>
+          <div class="info-item"><div class="info-label">Kỹ năng chuyên môn</div>Playwright, JavaScript, CI/CD</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- OTP Modal -->
-  <div id="otp-modal" data-test-id="otp-verification-modal" style="display:none; border:1px solid #ccc; padding:20px; margin-top:20px; max-width:400px;">
-    <h3 id="otp-modal-title" data-test-id="otp-modal-title">Xác thực OTP qua Email</h3>
-    <p id="otp-modal-notice" data-test-id="otp-modal-notice">Hệ thống yêu cầu nhập mã OTP động được gửi đến Email của bạn</p>
-    <input type="text" id="otp-input-field" data-test-id="otp-input-field" placeholder="Nhập mã OTP" />
-    <button id="btn-confirm-otp" data-test-id="btn-confirm-otp">Xác nhận</button>
-    <div id="otp-error-message" data-test-id="otp-error-message" style="display:none; color:red; margin-top:10px;">
-      Mã OTP không chính xác. Email sử dụng mã OTP động, không nhận 1111!
+  <div id="otp-modal" data-test-id="otp-verification-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-icon">🔒</div>
+        <h3 id="otp-modal-title" data-test-id="otp-modal-title" class="modal-title">Xác thực OTP qua Email</h3>
+        <p id="otp-modal-notice" data-test-id="otp-modal-notice" class="modal-notice">Hệ thống yêu cầu nhập mã OTP động được gửi đến Email của bạn</p>
+      </div>
+      <input type="text" id="otp-input-field" data-test-id="otp-input-field" class="otp-input" placeholder="Nhập mã OTP" maxlength="6" />
+      <button id="btn-confirm-otp" data-test-id="btn-confirm-otp" class="btn-submit">Xác nhận</button>
+      <div id="otp-error-message" data-test-id="otp-error-message" class="alert-error" style="display:none;">
+        Mã OTP không chính xác. Email sử dụng mã OTP động, không nhận 1111!
+      </div>
     </div>
   </div>
 
@@ -907,7 +1100,7 @@ class UserProfilePage extends BasePage {
         title.innerText = 'Xác thực OTP qua Số điện thoại';
         notice.innerText = 'Hệ thống yêu cầu OTP gửi qua Số điện thoại';
       }
-      modal.style.display = 'block';
+      modal.style.display = 'flex';
     });
 
     confirmBtn.addEventListener('click', () => {
@@ -946,12 +1139,14 @@ class UserProfilePage extends BasePage {
       });
     });
 
-    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/ho-so-cua-toi', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/ho-so-cua-toi', { waitUntil: 'load' });
+    await this.waitForPageReady();
     await this.actions.waitForVisible(this.profileStatusBadge, { timeout: 15000 });
   }
 
   async toggleAllowSearchSwitch() {
     await this.clickElement(this.toggleAllowSearch);
+    await this.waitForPageReady();
   }
 
   async fillOtpVerificationCode(code) {
@@ -960,10 +1155,12 @@ class UserProfilePage extends BasePage {
 
   async confirmOtpVerification() {
     await this.clickElement(this.btnConfirmOtp);
+    await this.waitForPageReady();
   }
 
   async switchToUnverifiedPhoneAccount() {
     await this.clickElement(this.btnSwitchToUnverifiedPhone);
+    await this.waitForPageReady();
   }
 
   // --- TC-048 Methods ---

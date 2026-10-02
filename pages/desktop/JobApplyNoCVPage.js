@@ -80,50 +80,137 @@ class JobApplyNoCVPage extends BasePage {
         status: 200,
         contentType: 'text/html; charset=utf-8',
         body: `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Vieclam24h - Ứng tuyển không cần CV</title></head>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vieclam24h - Nhân viên bán hàng siêu thị (Ứng tuyển không cần CV)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: #f1f5f9; color: #1e293b; min-height: 100vh; }
+    .header { background: #4c1d95; color: #fff; padding: 14px 40px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; color: #fff; text-decoration: none; }
+    .brand-icon { width: 32px; height: 32px; background: #ea580c; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; }
+    .nav-links { display: flex; gap: 24px; font-size: 14px; font-weight: 500; }
+    .btn-login-nav { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; }
+    
+    .job-container { max-width: 960px; margin: 30px auto; padding: 0 20px; }
+    .job-card { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .job-badge { display: inline-block; background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+    .job-title { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .job-company { font-size: 15px; color: #64748b; margin-bottom: 16px; }
+    .job-meta { display: flex; gap: 24px; font-size: 14px; color: #475569; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9; }
+    .meta-highlight { color: #059669; font-weight: 700; }
+    .btn-apply-nocv { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: #fff; border: none; padding: 14px 28px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3); transition: all 0.2s; }
+    .btn-apply-nocv:hover { opacity: 0.95; transform: translateY(-1px); }
+
+    /* Modals with Backdrop */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    .modal-box { background: #fff; width: 520px; max-width: 95vw; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); overflow: hidden; }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; font-size: 18px; font-weight: 700; color: #0f172a; }
+    .modal-body { padding: 24px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .form-input { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
+    .form-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
+    .btn-submit { width: 100%; padding: 12px; background: #7c3aed; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; margin-bottom: 14px; }
+    .alert-success-box { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 24px; text-align: center; }
+    .btn-consent { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
+    .btn-agree { background: #7c3aed; color: #fff; }
+    .btn-reject { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+  </style>
+</head>
 <body>
-  <div id="job-detail">
-    <h1>Nhân viên bán hàng siêu thị</h1>
-    <button id="btn-apply-nocv" role="button">Ứng tuyển không cần CV</button>
+  <div class="header">
+    <a href="/" class="brand">
+      <div class="brand-icon">24h</div>
+      <span>Việc Làm 24h</span>
+    </a>
+    <div class="nav-links">
+      <span>Tìm việc làm</span>
+      <span>Cẩm nang nghề nghiệp</span>
+    </div>
+    <div class="btn-login-nav">Đăng nhập / Đăng ký</div>
   </div>
 
-  <div id="apply-modal" data-test-id="unified-apply__apply-job-modal" style="display:none; border:1px solid #ccc; padding:20px; margin-top:20px;">
-    <h2>Hồ sơ ứng tuyển rút gọn</h2>
-    <div id="validation-error" class="error-msg" role="alert" style="display:none; color:red;">Vui lòng nhập đầy đủ thông tin bắt buộc</div>
-    <div style="margin: 10px 0;">
-      <label>Nhập họ và tên: <input type="text" id="full_name" name="full_name" aria-label="Nhập họ và tên" placeholder="Nhập họ và tên" /></label>
+  <div class="job-container">
+    <div id="job-detail" class="job-card">
+      <div class="job-badge">Việc không cần CV (Mới)</div>
+      <h1 class="job-title">Nhân viên bán hàng siêu thị</h1>
+      <div class="job-company">Hệ thống Siêu thị Bán lẻ Toàn quốc</div>
+      <div class="job-meta">
+        <div>Mức lương: <span class="meta-highlight">8 - 12 triệu</span></div>
+        <div>Địa điểm: <span>TP. Hồ Chí Minh</span></div>
+        <div>Kinh nghiệm: <span>Không yêu cầu</span></div>
+      </div>
+      <button id="btn-apply-nocv" role="button" class="btn-apply-nocv">Ứng tuyển không cần CV</button>
     </div>
-    <div style="margin: 10px 0;">
-      <label>Nhập số điện thoại: <input type="tel" id="mobile" name="mobile" aria-label="Nhập số điện thoại" placeholder="Nhập số điện thoại" /></label>
-    </div>
-    <div style="margin: 10px 0;">
-      <label>Nhập email: <input type="email" id="email" name="email" aria-label="Nhập email" placeholder="Nhập email" /></label>
-    </div>
-    <div style="margin: 10px 0;">
-      <label>Chia sẻ về bản thân: <textarea id="intro" aria-label="Chia sẻ về bản thân" placeholder="Chia sẻ về bản thân"></textarea></label>
-    </div>
-    <button id="btn-submit-apply" role="button">Nộp hồ sơ ngay</button>
   </div>
 
-  <div id="otp-modal" class="otp-modal" role="dialog" style="display:none; border:1px solid orange; padding:20px; margin-top:20px;">
-    <h3>Xác thực số điện thoại</h3>
-    <p>Nhập mã OTP vừa gửi tới số điện thoại của bạn:</p>
-    <div id="otp-error" class="error-msg" role="alert" style="display:none; color:red;">Mã OTP không hợp lệ hoặc đã hết hạn</div>
-    <input type="text" id="otp-code" maxlength="4" name="otp" autocomplete="one-time-code" placeholder="Nhập 4 số OTP" />
-    <button id="btn-otp-confirm" role="button">Xác thực</button>
+  <!-- Form Ứng tuyển rút gọn -->
+  <div id="apply-modal" data-test-id="unified-apply__apply-job-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">Hồ sơ ứng tuyển rút gọn</div>
+      <div class="modal-body">
+        <div id="validation-error" class="alert-error error-msg" role="alert" style="display:none;">
+          Vui lòng nhập đầy đủ thông tin bắt buộc
+        </div>
+        <div class="form-group">
+          <label>Nhập họ và tên: <input type="text" id="full_name" name="full_name" class="form-input" aria-label="Nhập họ và tên" placeholder="Nhập họ và tên" /></label>
+        </div>
+        <div class="form-group">
+          <label>Nhập số điện thoại: <input type="tel" id="mobile" name="mobile" class="form-input" aria-label="Nhập số điện thoại" placeholder="Nhập số điện thoại" /></label>
+        </div>
+        <div class="form-group">
+          <label>Nhập email: <input type="email" id="email" name="email" class="form-input" aria-label="Nhập email" placeholder="Nhập email" /></label>
+        </div>
+        <div class="form-group">
+          <label>Chia sẻ về bản thân: <textarea id="intro" class="form-input" style="height:70px;" aria-label="Chia sẻ về bản thân" placeholder="Chia sẻ về bản thân"></textarea></label>
+        </div>
+        <button id="btn-submit-apply" role="button" class="btn-submit">Nộp hồ sơ ngay</button>
+      </div>
+    </div>
   </div>
 
-  <div id="consent-modal" role="dialog" style="display:none; border:1px solid blue; padding:20px; margin-top:20px;">
-    <h3>Đồng ý cho phép xử lý dữ liệu cá nhân</h3>
-    <div id="consent-warning" class="error-msg" role="alert" style="display:none; color:red;">Hệ thống yêu cầu đồng ý điều khoản dữ liệu cá nhân để tiếp tục</div>
-    <button id="btn-consent-agree" role="button">Đồng ý</button>
-    <button id="btn-consent-reject" role="button">Từ chối</button>
+  <!-- OTP Modal -->
+  <div id="otp-modal" class="modal-backdrop otp-modal" role="dialog">
+    <div class="modal-box" style="width: 420px; text-align: center;">
+      <div class="modal-header">Xác thực số điện thoại</div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 14px;">Nhập mã OTP vừa gửi tới số điện thoại của bạn:</p>
+        <div id="otp-error" class="alert-error error-msg" role="alert" style="display:none;">Mã OTP không hợp lệ hoặc đã hết hạn</div>
+        <input type="text" id="otp-code" class="form-input" maxlength="4" name="otp" autocomplete="one-time-code" placeholder="Nhập 4 số OTP" style="text-align: center; letter-spacing: 6px; font-size: 18px; font-weight: 700; margin-bottom: 14px;" />
+        <button id="btn-otp-confirm" role="button" class="btn-submit">Xác thực</button>
+      </div>
+    </div>
   </div>
 
-  <div id="apply-success-box" style="display:none; color:green; margin-top:20px;">
-    <h3>Ứng tuyển thành công!</h3>
-    <button id="btn-done" role="button">Xong</button>
+  <!-- Consent Modal -->
+  <div id="consent-modal" class="modal-backdrop" role="dialog">
+    <div class="modal-box" style="width: 480px;">
+      <div class="modal-header">Đồng ý cho phép xử lý dữ liệu cá nhân</div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 14px;">
+          Theo Nghị định 13/2023/NĐ-CP, Việc Làm 24h cần sự đồng ý của bạn để xử lý thông tin cá nhân và chuyển hồ sơ tới nhà tuyển dụng.
+        </p>
+        <div id="consent-warning" class="alert-error error-msg" role="alert" style="display:none;">Hệ thống yêu cầu đồng ý điều khoản dữ liệu cá nhân để tiếp tục</div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button id="btn-consent-reject" role="button" class="btn-consent btn-reject">Từ chối</button>
+          <button id="btn-consent-agree" role="button" class="btn-consent btn-agree">Đồng ý</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div id="apply-success-box" class="modal-backdrop">
+    <div class="modal-box" style="width: 440px; text-align: center; padding: 32px 24px;">
+      <div style="font-size: 40px; color: #059669; margin-bottom: 12px;">✓</div>
+      <h3 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Ứng tuyển thành công!</h3>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Hồ sơ của bạn đã được chuyển đến nhà tuyển dụng an toàn.</p>
+      <button id="btn-done" role="button" class="btn-submit" style="width: auto; padding: 10px 32px; display: inline-block;">Xong</button>
+    </div>
   </div>
 
   <script>
@@ -145,7 +232,7 @@ class JobApplyNoCVPage extends BasePage {
     const applySuccessBox = document.getElementById('apply-success-box');
 
     btnApplyNoCV.addEventListener('click', () => {
-      applyModal.style.display = 'block';
+      applyModal.style.display = 'flex';
     });
 
     btnSubmitApply.addEventListener('click', () => {
@@ -155,7 +242,7 @@ class JobApplyNoCVPage extends BasePage {
       }
       validationError.style.display = 'none';
       applyModal.style.display = 'none';
-      otpModal.style.display = 'block';
+      otpModal.style.display = 'flex';
     });
 
     btnOtpConfirm.addEventListener('click', () => {
@@ -165,7 +252,7 @@ class JobApplyNoCVPage extends BasePage {
       }
       otpError.style.display = 'none';
       otpModal.style.display = 'none';
-      consentModal.style.display = 'block';
+      consentModal.style.display = 'flex';
     });
 
     btnConsentReject.addEventListener('click', () => {
@@ -175,25 +262,26 @@ class JobApplyNoCVPage extends BasePage {
     btnConsentAgree.addEventListener('click', () => {
       consentWarning.style.display = 'none';
       consentModal.style.display = 'none';
-      applySuccessBox.style.display = 'block';
+      applySuccessBox.style.display = 'flex';
     });
   </script>
 </body>
 </html>`
       });
     });
-    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/nocv-job-detail', { waitUntil: 'domcontentloaded' });
-    await this.capture('nocv_apply_precondition_ready');
+    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/nocv-job-detail', { waitUntil: 'load' });
+    await this.waitForPageReady();
+    await this.actions.waitForVisible(this.btnApplyNoCV, { timeout: 15000 });
   }
 
   async openApplyForm() {
     await this.clickElement(this.btnApplyNoCV);
-    await this.capture('nocv_apply_form_opened');
+    await this.waitForPageReady();
   }
 
   async submitApply() {
     await this.clickElement(this.btnCommonSave);
-    await this.capture('nocv_apply_submitted');
+    await this.waitForPageReady();
   }
 
   async fillContactInfo(fullName, phone, email, intro = '') {
@@ -204,17 +292,16 @@ class JobApplyNoCVPage extends BasePage {
       await this.fillInput(emailField, email);
     }
     if (intro) await this.fillInput(this.txtIntro, intro);
-    await this.capture('nocv_contact_info_filled');
+    await this.waitForPageReady();
   }
 
   async fillOtp(code) {
     await this.fillInput(this.otpInput, code);
-    await this.capture('nocv_otp_filled');
   }
 
   async submitOtp() {
     await this.clickElement(this.btnOtpSubmit);
-    await this.capture('nocv_otp_submitted');
+    await this.waitForPageReady();
   }
 
   async startApplyNoCV(options = {}) {
