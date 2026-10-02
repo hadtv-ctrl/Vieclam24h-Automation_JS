@@ -21,6 +21,17 @@ class HomePage extends BasePage {
     this.findJobSubMenuBtn = page.getByRole('button', { name: 'Tìm việc làm' });
     this.noCVJobLink = page.getByRole('link', { name: 'Việc không cần CV' });
     this.lotteJobLink = page.getByRole('link', { name: 'Nhân Viên Bán Hàng - Lotte' });
+    this.banSiBanLeCategoryLink = page.getByRole('heading', { name: /Bán sỉ - Bán lẻ/i }).getByRole('link').first();
+  }
+
+  async selectJobCategory(categoryName = 'Bán sỉ - Bán lẻ') {
+    const catLink = this.page.getByRole('heading', { name: new RegExp(categoryName, 'i') }).getByRole('link').first();
+    if (await catLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await this.actions.click(catLink);
+    } else {
+      await this.openJobSearch();
+    }
+    await this.capture(`selected_category_${categoryName.toLowerCase().replace(/[^a-z0-9]/g, '')}`);
   }
 
   async clickNoCVJobLink() {

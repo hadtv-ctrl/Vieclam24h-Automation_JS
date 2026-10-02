@@ -22,6 +22,12 @@ class JobSearchPage extends BasePage {
 
     // Chop AI chatbot entry point
     this.chopIntroBtn = page.getByRole('img', { name: 'Chop Introduction' });
+
+    // Bộ lọc việc làm & tìm kiếm
+    this.locTheoTinhThanhInput = page.getByRole('textbox', { name: 'Lọc theo tỉnh thành' });
+    this.timKiemBtn = page.getByRole('button', { name: 'Tìm kiếm' });
+    this.xoaLocBtn = page.getByText('Xoá lọc');
+    this.filterDropdownTrigger = page.locator('.select-search-custom__input, [data-test-id*="filter"]').first();
   }
 
   async navigate() {
@@ -106,6 +112,88 @@ class JobSearchPage extends BasePage {
 
   async expectBulkApplySuccessMessageVisible() {
     await expect(this.bulkApplySuccessMsg).toBeVisible({ timeout: 15000 });
+  }
+
+  /**
+   * Lọc việc làm theo tỉnh thành
+   * @param {string} [cityName] Tên tỉnh thành (ví dụ: 'TP.HCM', 'Hà Nội')
+   */
+  async filterByCity(cityName = 'TP.HCM') {
+    if (await this.locTheoTinhThanhInput.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await this.actions.click(this.locTheoTinhThanhInput);
+      const cityBtn = this.page.getByRole('button', { name: cityName }).first();
+      if (await cityBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await this.actions.click(cityBtn);
+      }
+      if (await this.timKiemBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await this.actions.click(this.timKiemBtn);
+      }
+    }
+    await this.capture(`filtered_by_city_${cityName.toLowerCase().replace(/[^a-z0-9]/g, '')}`);
+  }
+
+  /**
+   * Lọc việc làm theo kinh nghiệm
+   * @param {string} [expLabel] Nhãn kinh nghiệm (ví dụ: '1 năm')
+   */
+  async filterByExperience(expLabel = '1 năm') {
+    const trigger = this.page.getByRole('textbox').nth(2).or(this.filterDropdownTrigger);
+    if (await trigger.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await this.actions.click(trigger);
+      const expBtn = this.page.getByRole('button', { name: expLabel, exact: true }).first();
+      if (await expBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await this.actions.click(expBtn);
+      }
+    }
+    await this.capture(`filtered_by_exp_${expLabel.replace(/[^a-z0-9]/gi, '')}`);
+  }
+
+  /**
+   * Lọc việc làm theo mức lương
+   * @param {string} [salaryLabel] Nhãn mức lương (ví dụ: '- 15 triệu')
+   */
+  async filterBySalary(salaryLabel = '- 15 triệu') {
+    const trigger = this.page.getByRole('textbox').nth(2).or(this.filterDropdownTrigger);
+    if (await trigger.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await this.actions.click(trigger);
+      const salBtn = this.page.getByRole('button', { name: salaryLabel }).first();
+      if (await salBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await this.actions.click(salBtn);
+      }
+    }
+    await this.capture('filtered_by_salary');
+  }
+
+  /**
+   * Xóa tất cả bộ lọc đã chọn
+   */
+  async clearFilters() {
+    if (await this.xoaLocBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await this.actions.click(this.xoaLocBtn);
+      await this.capture('filters_cleared');
+    }
+  }
+
+  /**
+   * Click vào một tin tuyển dụng theo tiêu đề hoặc tin đầu tiên
+   * Hỗ trợ tự động bắt popup tab mới nếu link có target="_blank"
+   * @param {string} [title] Tiêu đề công việc
+   * @returns {Promise<import('@playwright/test').Page>} Page đối tượng (tab hiện tại hoặc tab mới)
+   */
+  async clickJobByTitle(title) {
+    const jobLink = title
+      ? this.page.getByRole('link', { name: new RegExp(title, 'i') }).first()
+      : this.firstJobLink;
+
+    const popupPromise = this.page.waitForEvent('popup', { timeout: 7000 }).catch(() => null);
+    await this.actions.click(jobLink);
+    const newTab = await popupPromise;
+    if (newTab) {
+      await newTab.waitForLoadState('domcontentloaded');
+      return newTab;
+    }
+    await this.page.waitForLoadState('domcontentloaded');
+    return this.page;
   }
 }
 

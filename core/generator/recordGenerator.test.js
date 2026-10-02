@@ -46,3 +46,43 @@ test('recordTransformer generates POM and Spec with assertions', () => {
   assert.ok(result.specDraft.content.includes('Feature: User Login @record @e2e'));
   assert.ok(result.specDraft.content.includes('await loginPage.loginWithPhone()'));
 });
+
+test('generateLocatorName prevents identifier starting with numbers', () => {
+  const { generateLocatorName } = require('./namingUtils');
+
+  assert.equal(generateLocatorName("page.getByRole('link', { name: '2', exact: true })"), 'link2');
+  assert.equal(generateLocatorName("page.getByRole('link', { name: '3', exact: true })"), 'link3');
+  assert.equal(generateLocatorName("page.getByRole('button', { name: '1 năm', exact: true })"), 'btn1Nam');
+  assert.equal(generateLocatorName("page.getByRole('button', { name: '- 15 triệu' })"), 'btn15Trieu');
+  assert.equal(generateLocatorName("page.getByText('100% bảo mật')"), 'text100BaoMat');
+});
+
+test('transformToPomAndSpec produces syntactically valid JavaScript with numeric locators', () => {
+  const sampleScript = `
+    test('Job search pagination and filters', async ({ page }) => {
+      await page.goto('https://vieclam24h.vn/');
+      await page.getByRole('link', { name: '2', exact: true }).click();
+      await page.getByRole('button', { name: '1 năm', exact: true }).click();
+      await page.getByRole('button', { name: '- 15 triệu' }).click();
+    });
+  `;
+
+  const parsed = parsePlaywrightScript(sampleScript);
+  const result = transformToPomAndSpec({
+    platform: 'desktop',
+    actions: parsed.actions,
+    pageClassName: 'ChopChatbotPage',
+    methodName: 'performRecordedActions',
+  });
+
+  // Verify that the generated Page Object code is valid JavaScript syntax
+  assert.doesNotThrow(() => {
+    new Function(result.pomDraft.content);
+  });
+  assert.doesNotThrow(() => {
+    new Function(result.specDraft.content);
+  });
+  assert.ok(result.pomDraft.content.includes('this.link2 = page.getByRole'));
+  assert.ok(result.pomDraft.content.includes('this.btn1Nam = page.getByRole'));
+  assert.ok(result.pomDraft.content.includes('this.btn15Trieu = page.getByRole'));
+});
