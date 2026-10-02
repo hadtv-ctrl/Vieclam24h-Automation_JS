@@ -758,7 +758,7 @@ test.describe('Đổi mật khẩu @account', () => {
 
           <div>
             <label for="qa-delete-confirm-input" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--muted);">
-              Để chống bấm nhầm, vui lòng nhập chính xác mã <span id="qa-delete-confirm-hint" class="qa-mono" style="color: var(--danger, #ef4444); font-weight: 700;">REQ-xxx</span>:
+              Để chống bấm nhầm, vui lòng nhập chính xác mã <span id="qa-delete-confirm-hint" class="qa-mono" style="color: var(--danger); font-weight: 700;">REQ-xxx</span>:
             </label>
             <input type="text" id="qa-delete-confirm-input" class="input-sm qa-mono" placeholder="Nhập đúng mã REQ..." style="width: 100%;">
           </div>
@@ -766,7 +766,7 @@ test.describe('Đổi mật khẩu @account', () => {
 
         <div class="app-modal-footer" style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-2);">
           <button type="button" class="btn-secondary-sm" id="qa-delete-cancel-btn">Hủy bỏ</button>
-          <button type="button" class="btn-danger-sm" id="qa-delete-submit-btn" disabled style="background: var(--danger, #ef4444); color: #fff; border: none; padding: 7px 16px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: not-allowed; display: flex; align-items: center; gap: 6px; opacity: 0.5;">
+          <button type="button" class="btn-danger-sm" id="qa-delete-submit-btn" disabled style="background: var(--danger); color: #fff; border: none; padding: 7px 16px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: not-allowed; display: flex; align-items: center; gap: 6px; opacity: 0.5;">
             <i class="ph-bold ph-trash"></i> <span>Xác nhận xóa vĩnh viễn</span>
           </button>
         </div>
@@ -848,7 +848,7 @@ test.describe('Đổi mật khẩu @account', () => {
                 <button type="button" class="btn-secondary-sm" id="qa-req-btn-generate-spec" style="color: #6366f1; border-color: rgba(99, 102, 241, 0.4);" title="Sinh Playwright spec (.spec.js) từ test case đang hiển thị, hoặc từ AC nếu chưa có test case (QA-2)">
                   <i class="ph-bold ph-code"></i> Sinh Spec
                 </button>
-                <button type="button" class="btn-primary-sm" id="qa-req-analyzer-btn-submit" style="background: var(--primary); border-color: var(--primary);">
+                <button type="button" class="btn-primary-sm" id="qa-req-analyzer-btn-submit" style="background: var(--accent); border-color: var(--accent);">
                   <i class="ph-bold ph-play"></i> Bắt đầu Phân tích
                 </button>
               </div>
@@ -857,7 +857,7 @@ test.describe('Đổi mật khẩu @account', () => {
 
           <!-- 2. LOADING STATE -->
           <div id="qa-req-analyzer-loading" style="display: none; padding: 48px 20px; text-align: center;">
-            <div class="spinner" style="margin: 0 auto 14px; width: 32px; height: 32px; border: 3px solid var(--line); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <div class="spinner" style="margin: 0 auto 14px; width: 32px; height: 32px; border: 3px solid var(--line); border-top-color: var(--line); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
             <p style="font-size: 13.5px; font-weight: 600; color: var(--text); margin: 0 0 6px;">Đang phân tích Requirement &amp; Lập Ma Trận Tác Động QA...</p>
             <p style="font-size: 12px; color: var(--muted); margin: 0;">Đối chiếu logic, suy luận ca kiểm thử biên (BVA), rà soát test cases có sẵn và xây dựng bộ câu hỏi phản biện.</p>
           </div>
@@ -885,7 +885,7 @@ test.describe('Đổi mật khẩu @account', () => {
               <div style="background: var(--surface-2); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
                 <div>
                   <small style="display: block; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase;">Câu Hỏi Phản Biện QA</small>
-                  <strong style="font-size: 18px; color: var(--primary);" id="qa-req-stat-qa">0</strong>
+                  <strong style="font-size: 18px; color: var(--accent);" id="qa-req-stat-qa">0</strong>
                 </div>
                 <button type="button" class="btn-secondary-sm" id="qa-req-analyzer-btn-reinput" title="Nhập lại hoặc bổ sung requirement" style="font-size: 11.5px; padding: 4px 8px;">
                   <i class="ph-bold ph-pencil-simple"></i> Sửa lại
@@ -894,13 +894,13 @@ test.describe('Đổi mật khẩu @account', () => {
             </div>
 
             <!-- Fallback / Error notice if any -->
-            <div id="qa-req-fallback-alert" style="display: none; padding: 8px 12px; background: var(--warning-subtle, rgba(245, 158, 11, 0.1)); border: 1px solid var(--warning); border-radius: 6px; font-size: 12px; color: var(--warning);">
+            <div id="qa-req-fallback-alert" style="display: none; padding: 8px 12px; background: var(--warning-subtle); border: 1px solid var(--line); border-radius: 6px; font-size: 12px; color: var(--warning);">
               <i class="ph-bold ph-warning"></i> <span id="qa-req-fallback-text"></span>
             </div>
 
             <!-- Results Subnav Tabs -->
             <div class="qa-req-tabs" style="display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 2px;">
-              <button type="button" class="qa-req-tab active" data-tab="tc" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid var(--primary); color: var(--text); cursor: pointer;">
+              <button type="button" class="qa-req-tab active" data-tab="tc" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid var(--accent); color: var(--text); cursor: pointer;">
                 <i class="ph-bold ph-list-checks"></i> Test Cases Đề Xuất (<span id="qa-req-tab-tc-count">0</span>)
               </button>
               <button type="button" class="qa-req-tab" data-tab="impact" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;">

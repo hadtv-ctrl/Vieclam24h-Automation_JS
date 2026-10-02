@@ -269,7 +269,7 @@ export class QaSlice {
     if (!modal || !content) return;
 
     try { modal.showModal(); } catch (_) { modal.setAttribute('open', ''); }
-    content.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--muted);"><div class="spinner" style="margin: 0 auto 10px; width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite;"></div><p style="margin: 0; font-size: 13px;">Đang tổng hợp số liệu kiểm thử và phân tích bản tin sẵn sàng phát hành...</p></div>';
+    content.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--muted);"><div class="spinner" style="margin: 0 auto 10px; width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--line); border-radius: 50%; animation: spin 0.8s linear infinite;"></div><p style="margin: 0; font-size: 13px;">Đang tổng hợp số liệu kiểm thử và phân tích bản tin sẵn sàng phát hành...</p></div>';
 
     const closeModal = () => {
       try { modal.close(); } catch (_) { modal.removeAttribute('open'); }
@@ -2315,7 +2315,8 @@ export class QaSlice {
       return;
     }
 
-    this.draftText = res.text || '';
+    const disclaimer = '# Lưu ý: Bản thảo KHÔNG được lưu lại (tự sinh từ tài liệu hiện tại).\n\n';
+    this.draftText = disclaimer + (res.text || '');
     body.textContent = this.draftText;
     if (meta) {
       const missing = (res.missing || []).length ? ` · không có trong tài liệu: ${res.missing.join(', ')}` : '';

@@ -10,14 +10,18 @@ class JobDetailPage extends BasePage {
     super(page, specName);
 
     // Tiêu đề việc làm
-    this.jobTitleHeading = page.getByRole('heading', { level: 1 }).or(page.locator('.job-detail__title')).first();
+    this.jobTitleHeading = page.getByRole('heading', { level: 1 })
+      .or(page.locator('h1, .job-detail__title, [class*="job-title" i], [class*="job_title" i]'))
+      .first();
 
     // Thông tin công ty & mức lương
     this.companyName = page.locator('.job-detail__company, [data-test-id="company-name"]').first();
     this.salaryInfo = page.locator('.job-detail__salary, [data-test-id="job-salary"]').first();
 
     // Nút hành động
-    this.btnApplyNow = page.getByRole('button', { name: /Ứng tuyển ngay|Nộp lại hồ sơ/i }).first();
+    this.btnApplyNow = page.getByRole('button', { name: /Ứng tuyển ngay|Nộp lại hồ sơ/i })
+      .or(page.locator('button:has-text("Ứng tuyển")'))
+      .first();
     this.btnSaveJob = page.getByRole('button', { name: /Lưu việc làm|Lưu tin/i }).first();
   }
 
@@ -26,8 +30,8 @@ class JobDetailPage extends BasePage {
    */
   async verifyJobDetailPageLoaded() {
     await this.page.waitForLoadState('domcontentloaded');
-    await expect(this.btnApplyNow.or(this.jobTitleHeading)).toBeVisible({ timeout: 15000 });
-    await this.capture('job_detail_page_loaded');
+    await expect(this.jobTitleHeading).toBeVisible({ timeout: 15000 });
+    await expect(this.btnApplyNow).toBeVisible({ timeout: 15000 });
   }
 
   /**

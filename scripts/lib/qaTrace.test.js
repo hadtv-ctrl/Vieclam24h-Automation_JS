@@ -5,7 +5,7 @@ const os = require('os');
 const path = require('path');
 
 const {
-  buildTraceReport, rankAutomationCandidates, stripCodeBlocks, assessChangeSet,
+  buildTraceReport, rankAutomationCandidates, stripCodeBlocks, assessChangeSet, isHubRepo,
 } = require('./qaTrace');
 
 function makeRepo(files) {
@@ -376,3 +376,30 @@ test('spec đã bị xoá khỏi cây thư mục thì bỏ qua, không nổ', ()
     assert.doesNotThrow(() => assessChangeSet(r, ['tests/e2e/da-xoa.spec.js']));
   });
 });
+
+test('isHubRepo: nhận diện chính xác repo Hub qua package.json', () => {
+  withRepo({ 'package.json': JSON.stringify({ name: '@hadinhkms/qa-automation-engine' }) }, (root) => {
+    assert.equal(isHubRepo(root), true);
+  });
+  withRepo({ 'package.json': JSON.stringify({ name: 'satellite-project' }) }, (root) => {
+    assert.equal(isHubRepo(root), false);
+  });
+  withRepo({}, (root) => {
+    assert.equal(isHubRepo(root), false);
+  });
+});
+
+test('Hub mode: bỏ qua tests/dashboard/** và thư mục ẩn, báo 0 finding major', () => {
+  withRepo({
+    'package.json': JSON.stringify({ name: '@hadinhkms/qa-automation-engine' }),
+    '.tmp-workspace/hidden.spec.js': SPEC_OK,
+    'tests/dashboard/studio.spec.js': SPEC_OK,
+    'tests/e2e/sample.spec.js': SPEC_OK,
+  }, (root) => {
+    const r = buildTraceReport({ root });
+    assert.equal(r.isHub, true);
+    assert.equal(r.counts.specs, 1, 'chỉ đếm tests/e2e/sample.spec.js, bỏ qua tests/dashboard và .tmp');
+    assert.equal(majors(r).length, 0, 'Hub mode không dựng cờ major');
+  });
+});
+

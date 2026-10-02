@@ -1,6 +1,5 @@
 const { defineConfig, devices } = require('@playwright/test');
 const path = require('path');
-const fs = require('fs');
 const { randomBytes } = require('crypto');
 const envConfig = require('./env');
 const { getDashboardConfig } = require('./dashboardConfig');
@@ -87,11 +86,8 @@ function defineQaConfig(customConfig = {}) {
   let htmlSummaryReporterPath = path.resolve(__dirname, '../reporters/htmlSummaryReporter.js');
   let workerHtmlReporterPath = path.resolve(__dirname, '../reporters/workerHtmlReporter.js');
 
-  const teardownPath = path.resolve(__dirname, '../../tests/setup/global.teardown.js');
-  const hasGlobalTeardown = fs.existsSync(teardownPath);
-
   const baseConfig = {
-    ...(hasGlobalTeardown ? { globalTeardown: teardownPath } : {}),
+    globalTeardown: require.resolve('../../tests/setup/global.teardown.js'),
     outputDir: path.join('test-results', reportDate, platformDir, scriptFolder),
     metadata: { runId },
     timeout: testTimeout,

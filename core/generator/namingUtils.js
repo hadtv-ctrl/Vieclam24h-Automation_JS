@@ -38,22 +38,6 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 }
 
-function makeValidIdentifier(name) {
-  if (!name) return 'targetElement';
-  if (/^[0-9]/.test(name)) {
-    if (name.endsWith('Btn')) return `btn${name.slice(0, -3)}`;
-    if (name.endsWith('Link')) return `link${name.slice(0, -4)}`;
-    if (name.endsWith('Input')) return `input${name.slice(0, -5)}`;
-    if (name.endsWith('Checkbox')) return `checkbox${name.slice(0, -8)}`;
-    if (name.endsWith('Select')) return `select${name.slice(0, -6)}`;
-    if (name.endsWith('Dialog')) return `dialog${name.slice(0, -6)}`;
-    if (name.endsWith('Heading')) return `heading${name.slice(0, -7)}`;
-    if (name.endsWith('Text')) return `text${name.slice(0, -4)}`;
-    return `item${capitalize(name)}`;
-  }
-  return name;
-}
-
 /**
  * Trích xuất tên biến locator gợi ý từ Playwright locator string
  * Ví dụ: page.getByRole('button', { name: 'Đăng nhập' }) -> loginBtn
@@ -67,43 +51,41 @@ function generateLocatorName(locatorStr) {
     const role = roleMatch[1].toLowerCase();
     const name = (roleMatch[2] || roleMatch[3] || '').trim();
     const cleanName = sanitizeToIdentifier(name);
-    let varName = '';
-    if (role === 'button') varName = cleanName ? `${cleanName}Btn` : 'submitBtn';
-    else if (role === 'link') varName = cleanName ? `${cleanName}Link` : 'navLink';
-    else if (role === 'textbox') varName = cleanName ? `${cleanName}Input` : 'inputField';
-    else if (role === 'checkbox') varName = cleanName ? `${cleanName}Checkbox` : 'checkbox';
-    else if (role === 'combobox') varName = cleanName ? `${cleanName}Select` : 'dropdownSelect';
-    else if (role === 'dialog') varName = cleanName ? `${cleanName}Dialog` : 'modalDialog';
-    else varName = cleanName ? `${cleanName}${capitalize(role)}` : role;
-    return makeValidIdentifier(varName);
+    if (role === 'button') return cleanName ? `${cleanName}Btn` : 'submitBtn';
+    if (role === 'link') return cleanName ? `${cleanName}Link` : 'navLink';
+    if (role === 'textbox') return cleanName ? `${cleanName}Input` : 'inputField';
+    if (role === 'checkbox') return cleanName ? `${cleanName}Checkbox` : 'checkbox';
+    if (role === 'combobox') return cleanName ? `${cleanName}Select` : 'dropdownSelect';
+    if (role === 'dialog') return cleanName ? `${cleanName}Dialog` : 'modalDialog';
+    return cleanName ? `${cleanName}${capitalize(role)}` : role;
   }
 
   // 2. getByLabel('...')
   const labelMatch = locatorStr.match(/getByLabel\(\s*['"`]([^'"`]+)['"`]/i);
   if (labelMatch) {
     const cleanName = sanitizeToIdentifier(labelMatch[1]);
-    return makeValidIdentifier(cleanName ? `${cleanName}Input` : 'inputField');
+    return cleanName ? `${cleanName}Input` : 'inputField';
   }
 
   // 3. getByPlaceholder('...')
   const placeholderMatch = locatorStr.match(/getByPlaceholder\(\s*['"`]([^'"`]+)['"`]/i);
   if (placeholderMatch) {
     const cleanName = sanitizeToIdentifier(placeholderMatch[1]);
-    return makeValidIdentifier(cleanName ? `${cleanName}Input` : 'inputField');
+    return cleanName ? `${cleanName}Input` : 'inputField';
   }
 
   // 4. getByTestId('...')
   const testIdMatch = locatorStr.match(/getByTestId\(\s*['"`]([^'"`]+)['"`]/i);
   if (testIdMatch) {
     const cleanName = sanitizeToIdentifier(testIdMatch[1]);
-    return makeValidIdentifier(cleanName || 'testElement');
+    return cleanName || 'testElement';
   }
 
   // 5. getByText('...')
   const textMatch = locatorStr.match(/getByText\(\s*['"`]([^'"`]+)['"`]/i);
   if (textMatch) {
     const cleanName = sanitizeToIdentifier(textMatch[1]);
-    return makeValidIdentifier(cleanName ? `${cleanName}Text` : 'textElement');
+    return cleanName ? `${cleanName}Text` : 'textElement';
   }
 
   // 6. locator('#id' / '.class' / 'input[name="..."]')
@@ -113,7 +95,7 @@ function generateLocatorName(locatorStr) {
       .replace(/^[#.\[\]]+/g, '')
       .replace(/[^a-zA-Z0-9_-]/g, '');
     const cleanName = sanitizeToIdentifier(sel);
-    return makeValidIdentifier(cleanName || 'customElement');
+    return cleanName || 'customElement';
   }
 
   return 'targetElement';
@@ -155,7 +137,6 @@ function analyzeLocatorWarnings(locatorStr) {
 module.exports = {
   sanitizeToIdentifier,
   capitalize,
-  makeValidIdentifier,
   generateLocatorName,
   analyzeLocatorWarnings,
 };

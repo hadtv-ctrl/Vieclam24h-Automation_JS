@@ -84,15 +84,28 @@ const KIND_LABEL = {
   'dinh-danh-khong-ton-tai': 'Tham chiếu tới định danh không tồn tại',
 };
 
+function isHubRepo(root) {
+  try {
+    const pkg = path.join(root, 'package.json');
+    return fs.existsSync(pkg) && JSON.parse(fs.readFileSync(pkg, 'utf8')).name === '@hadinhkms/qa-automation-engine';
+  } catch { return false; }
+}
+
 function listFiles(root, relativeDir, filter) {
   const absolute = path.join(root, relativeDir);
   if (!fs.existsSync(absolute)) return [];
+  const hub = isHubRepo(root);
   const out = [];
   const walk = (dir) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory() && entry.name.startsWith('.')) continue;
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (entry.isFile() && filter(entry.name)) out.push(full);
+      const relToRoot = path.relative(root, full).split(path.sep).join('/');
+      if (entry.isDirectory()) {
+        if (!hub || (!relToRoot.startsWith('tests/dashboard') && relToRoot !== 'tests/dashboard')) walk(full);
+      } else if (entry.isFile() && filter(entry.name)) {
+        out.push(full);
+      }
     }
   };
   walk(absolute);
@@ -333,15 +346,16 @@ function parseSpecs(root, dir) {
  */
 function buildTraceReport({ root = process.cwd(), dirs = {} } = {}) {
   const d = { ...DEFAULT_DIRS, ...dirs };
-
-  const hasRequirements = fs.existsSync(path.join(root, d.requirements));
-  const hasTestCases = fs.existsSync(path.join(root, d.testCases));
+  const isHub = isHubRepo(root);
 
   const reqParse = parseRequirements(root, d.requirements);
   const tcParse = parseTestCases(root, d.testCases);
   const { requirements } = reqParse;
   const { testCases } = tcParse;
   const { specs } = parseSpecs(root, d.specs);
+
+  const hasRequirements = !isHub && fs.existsSync(path.join(root, d.requirements)) && reqParse.files.length > 0;
+  const hasTestCases = !isHub && fs.existsSync(path.join(root, d.testCases)) && tcParse.files.length > 0;
 
   const allAcs = new Set();
   for (const req of requirements.values()) req.acs.forEach((ac) => allAcs.add(ac));
@@ -497,6 +511,7 @@ function buildTraceReport({ root = process.cwd(), dirs = {} } = {}) {
 
   return {
     root,
+    isHub,
     dirs: d,
     hasRequirements,
     hasTestCases,
@@ -569,6 +584,7 @@ function rankAutomationCandidates(report, limit = 7) {
 }
 
 module.exports = {
+  isHubRepo,
   DEFAULT_DIRS,
   KIND_LABEL,
   buildTraceReport,

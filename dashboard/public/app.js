@@ -8069,6 +8069,16 @@ document.querySelectorAll('.view-tab').forEach((button) => button.addEventListen
   if (typeof restoreAllSidebarStates === 'function') {
     restoreAllSidebarStates();
   }
+  if (window.__STUDIO_CORE__?.templateLoader) {
+    const tl = window.__STUDIO_CORE__.templateLoader;
+    if (tl.hasTemplate(button.dataset.view) && !tl.isLoaded(button.dataset.view)) {
+      try {
+        await tl.loadViewTemplate(button.dataset.view);
+      } catch (err) {
+        console.warn(`[ViewTab] templateLoader error for ${button.dataset.view}:`, err);
+      }
+    }
+  }
   if (button.dataset.view === 'resources-view') await openExplorer();
   if (button.dataset.view === 'docs-view') await openDocsView();
   if (button.dataset.view === 'page-manager-view') await openPageManager();

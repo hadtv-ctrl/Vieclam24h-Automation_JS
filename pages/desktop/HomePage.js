@@ -25,13 +25,17 @@ class HomePage extends BasePage {
   }
 
   async selectJobCategory(categoryName = 'Bán sỉ - Bán lẻ') {
+    await this.closeAllPopupsIfVisible();
     const catLink = this.page.getByRole('heading', { name: new RegExp(categoryName, 'i') }).getByRole('link').first();
     if (await catLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await this.actions.click(catLink);
+      await Promise.all([
+        this.page.waitForURL(/\/tim-kiem-viec-lam-nhanh|category|\/viec-lam/i, { timeout: 30000 }).catch(() => null),
+        this.actions.click(catLink),
+      ]);
     } else {
       await this.openJobSearch();
     }
-    await this.capture(`selected_category_${categoryName.toLowerCase().replace(/[^a-z0-9]/g, '')}`);
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   async clickNoCVJobLink() {
@@ -59,6 +63,8 @@ class HomePage extends BasePage {
   }
 
   async closeBlockingModalIfVisible() {
+    await this.closeAllPopupsIfVisible();
+
     if (await this.privacyConsentAgreeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await this.actions.click(this.privacyConsentAgreeBtn, { force: true });
       await this.privacyConsentAgreeBtn.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => null);

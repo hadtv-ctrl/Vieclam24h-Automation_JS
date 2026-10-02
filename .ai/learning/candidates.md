@@ -149,3 +149,21 @@
   3. Tránh ghép `.or()` giữa container trigger và span con bên trong; chỉ cần định danh container trigger bằng `[data-test-id="..."]`.
   4. Chuẩn hóa bộ ảnh chụp bằng chứng (Evidence) gồm 25 bước rõ ràng đánh số thứ tự tự động qua `ScreenshotHelper`, minh chứng trực quan cho từng hành vi người dùng và phản hồi của hệ thống.
 
+### [LEARN-009] Dập Tắt Popup Banner Chiến Dịch Đa Tầng, Tránh Strict Mode Khi Kiểm Tra Trang Tải Xong & Tiêu Chuẩn Capture Từng Thao Tác
+- **Nguồn trích xuất:** TASK-JOB-SEARCH-FILTER-DETAIL-REGRESSION-BDD
+- **Role quan sát:** Senior Automation QA Engineer (Gate 4)
+- **Quan sát (Observation):**
+  1. Popup banner chiến dịch trên trang chủ ("Việc vững vàng, đón xuân SANG" qua ReactModalPortal) xuất hiện trễ và chặn tương tác (pointer intercept). Nếu chỉ bấm Escape mà không click nút `.svicon-close` và dọn lớp che thì body vẫn bị dính `ReactModal__Body--open`. Cần kết hợp cả `page.addLocatorHandler` (phản ứng tự động) lẫn `closeAllPopupsIfVisible()` (chủ động trước từng bước tương tác).
+  2. Khi kiểm tra trang chi tiết tải xong, việc dùng `await expect(btnApplyNow.or(jobTitleHeading)).toBeVisible()` gây lỗi Playwright Strict Mode Violation vì cả hai phần tử đều đang hiển thị đồng thời (match 2 elements thay vì 1). Phải tách riêng từng assertion rõ ràng.
+  3. Để đáp ứng yêu cầu audit QA mỗi thao tác một ảnh, nên tách việc chụp ảnh (`capture`) ra khỏi hàm tiện ích Page Object nội bộ và đưa trực tiếp vào tầng kịch bản test (`.spec.js`) với tên bước đánh số thứ tự tuần tự để tránh chụp trùng lặp và lãng phí thời gian chờ mạng.
+- **Bằng chứng (Evidence):** `pages/BasePage.js`, `pages/desktop/JobDetailPage.js`, `pages/desktop/JobSearchPage.js`, `tests/e2e/desktop/job_search_filter_detail-bdd.spec.js`, `evidence/26-10-02/desktop/job_search_filter_detail-bdd/`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Xử lý popup chặn tương tác bằng cơ chế song hành: `addLocatorHandler` cho các sự kiện bất đồng bộ và kiểm tra chủ động trước các tương tác mở rộng bộ lọc.
+  2. Tuyệt đối không dùng `.or()` giữa hai phần tử dự kiến đều hiển thị trong các câu lệnh `expect(...).toBeVisible()`.
+  3. Kịch bản audit trực quan yêu cầu mỗi thao tác có 1 ảnh: gọi `capture()` tường minh ở từng bước test, loại bỏ các capture nội bộ trùng lặp trong Page Object.
+
+

@@ -72,10 +72,19 @@ export class TemplateLoader {
     await loadPromise;
   }
 
-  preloadAll() {
-    return Promise.all(
-      Object.keys(this._viewMap).map((id) => this.loadViewTemplate(id).catch(() => {}))
-    );
+  async preloadAll() {
+    const promises = Object.entries(this._viewMap).map(async ([viewId, templateName]) => {
+      try {
+        if (!this._cache.has(templateName)) {
+          const res = await fetch(`/templates/${templateName}.html?v=5.6`);
+          if (res.ok) {
+            const html = await res.text();
+            this._cache.set(templateName, html);
+          }
+        }
+      } catch (_) {}
+    });
+    return Promise.all(promises);
   }
 
   clearCache() {

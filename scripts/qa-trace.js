@@ -53,6 +53,11 @@ function printSummary(report) {
 }
 
 function printBootstrapHint(report) {
+  if (report.isHub) {
+    console.log(`\n${colors.green}Chế độ Hub Engine (@hadinhkms/qa-automation-engine): bỏ qua tài liệu nghiệp vụ vệ tinh và test nội bộ.${colors.reset}`);
+    console.log(`${colors.dim}  Kiểm tra cú pháp ${report.counts.specs} sample spec mẫu hợp lệ.${colors.reset}`);
+    return;
+  }
   console.log(`\n${colors.yellow}Repo chưa có ${report.dirs.requirements}/ và ${report.dirs.testCases}/.${colors.reset}`);
   console.log(`${colors.dim}  Đây là trạng thái mặc định khi dự án bắt đầu từ script. Lối vào:`);
   console.log(`  1. Dựng ngược tài liệu từ chính spec đang có — xem AI_PROMPTS.md mục 3.4.`);
