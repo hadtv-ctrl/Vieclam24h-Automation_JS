@@ -195,6 +195,19 @@
 - **Trạng thái:** PENDING
 - **Nguyên tắc rút ra:**
   1. Mọi kịch bản E2E spec bắt buộc đặt tiêu đề theo cấu trúc `TC-xxx - AC-yyy: <Mô tả>` và describe phải chứa tag `@REQ-xxx` khớp với requirement.
-  2. Đồng bộ mã `TC-xxx` vào cả file `test-cases/REQ-xxx.md` (bảng truy vết + chi tiết) và `test-cases/traceability.md`.
-  3. Luôn đặt ít nhất 1-2 lệnh `await expect(...)` trực tiếp trong các bước kiểm chứng nghiệp vụ (`Given`/`When`/`Then`) của file spec để vừa vượt qua QA audit tĩnh, vừa minh bạch kết quả mong đợi của test.
-
+### [LEARN-012] Hợp Nhất Kịch Bản Kiểm Thử Tránh Phân Mảnh & Hỗ Trợ Đa AC
+- **Nguồn trích xuất:** QA-CONSOLIDATE-CANDIDATES
+- **Role quan sát:** Senior QA Architect & Platform Engineer
+- **Quan sát (Observation):**
+  1. Việc chia nhỏ mỗi nhánh kiểm thử biên/validation thành một test case candidate riêng lẻ khiến danh sách ứng viên automation phình to (50+ candidate), gây phân mảnh và khó bảo trì; trong khi các AC cốt lõi đều đã có spec tự động phủ 100%.
+  2. `qaTrace.js` quét regex `TC-\d{3}` trên mọi dòng text trong file markdown, do đó nhắc lại mã TC cũ trong ghi chú sẽ bị nhận diện nhầm thành test case đang hoạt động.
+  3. Khi một kịch bản tích hợp bao quát nhiều AC (ví dụ `AC-001 AC-002`), regex làm sạch tiêu đề cần hỗ trợ match cụm đa AC để lấy đúng mô tả thay vì lấy nhầm chuỗi mã AC.
+- **Bằng chứng (Evidence):** `test-cases/REQ-*.md`, `dashboard/services/qaService.js`, `scripts/lib/qaTrace.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Hợp nhất các kiểm thử biên vi mô thành các Composite E2E Scenarios (giảm ~80% phân mảnh, kiểm thử chuỗi liên hoàn).
+  2. Tránh ghi mã `TC-xxx` dạng số hiệu trong phần ghi chú văn bản để không làm nhiễu bộ quét tĩnh.
+  3. Chuẩn hóa hàm lọc tiêu đề `cleanCandidateTitle` với regex `(?:AC-\d{3}\s*)+`.

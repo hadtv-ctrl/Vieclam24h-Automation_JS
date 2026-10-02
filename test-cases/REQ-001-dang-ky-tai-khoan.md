@@ -19,13 +19,8 @@
 | TC-033 | AC-002 | Kiểm tra thất bại khi nhập sai mã OTP xác thực | P0 | Có | tests/e2e/desktop/kiem-tra-that-bai-khi-nhap-sai-ma-otp-xac-thuc.spec.js |
 | TC-034 | AC-001 | Kiểm tra báo lỗi khi nhập email sai định dạng | P1 | Có | tests/e2e/desktop/kiem-tra-bao-loi-khi-nhap-email-sai-dinh-dang.spec.js |
 | TC-039 | AC-002 | Bấm gửi lại mã OTP khi đăng ký bằng số điện thoại | P2 | Có | tests/e2e/desktop/gui-lai-ma-otp-dang-ky.spec.js |
-| TC-040 | AC-002 | Đăng ký thành công bằng số điện thoại khi bỏ trống trường Email (trường tùy chọn) | P2 | candidate | - |
-| TC-041 | AC-001 | Đăng ký thành công với mật khẩu đạt giá trị biên tối thiểu (Đúng 8 ký tự gồm ít nhất 1 chữ và 1 số) | P2 | candidate | - |
-| TC-042 | AC-002 | Kiểm tra xử lý báo lỗi khi đăng ký bằng số điện thoại đã tồn tại | P2 | candidate | - |
-| TC-043 | AC-002 | Xác thực OTP thành công bằng mã cố định '1111' trên môi trường Test | P2 | candidate | - |
-| TC-044 | AC-002 | Kiểm tra báo lỗi khi nhập số điện thoại sai định dạng | P2 | candidate | - |
-| TC-045 | AC-003 | API Đăng ký trả về lỗi 400 Bad Request khi mật khẩu không tuân thủ quy định Q-2 | P2 | candidate | - |
-| TC-046 | AC-001 | Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec | P2 | candidate | - |
+| TC-040 | AC-001 AC-002 | Kiểm thử chuỗi giá trị biên, tính hợp lệ dữ liệu và xác thực đăng ký tài khoản (SĐT tùy chọn/sai định dạng/đã tồn tại, mật khẩu chuẩn biên 8 ký tự, OTP môi trường test) | P2 | candidate | - |
+
 
 ## Chi tiết
 
@@ -214,94 +209,23 @@ Các test case dưới đây **chưa được viết thành tài liệu chính t
 
 
 
-### TC-040 — Đăng ký thành công bằng số điện thoại khi bỏ trống trường Email (trường tùy chọn)
+### TC-040 — Kiểm thử chuỗi giá trị biên, tính hợp lệ dữ liệu và xác thực đăng ký tài khoản
 
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Luồng kiểm thử liên hoàn
 - **Automation:** Candidate
-- **Tiền điều kiện:** Số điện thoại chưa tồn tại trong hệ thống. Đang ở giao diện Đăng ký bằng số điện thoại.
-- **Dữ liệu kiểm thử:** Phone: 0912345678, Email: [Bỏ trống], Password: Password123, OTP: 1111
-> *Ghi chú nghiệp vụ:* Theo Q-1 vừa chốt: Khi đăng ký bằng số điện thoại thì Email là trường không bắt buộc. Cần kiểm tra luồng hoàn tất thành công mà không nhập email.
+- **Tiền điều kiện:** Chưa đăng nhập, đang ở trang chủ hoặc popup Đăng ký tài khoản.
+- **Dữ liệu kiểm thử:**
+  - SĐT sai định dạng: `0912abcXYZ`
+  - SĐT đã tồn tại: `0988888888`
+  - SĐT mới hợp lệ: `0912345678`
+  - Mật khẩu chuẩn biên 8 ký tự: `a1234567` (1 chữ, 7 số)
+  - Mã OTP môi trường test: `1111`
+> *Ghi chú nghiệp vụ:* Kịch bản tích hợp hợp nhất từ các kiểm thử biên đơn lẻ trước đây. Kiểm tra toàn diện từ validation trường bắt buộc/tùy chọn (Q-1), kiểm tra biên mật khẩu (Q-2) đến xác thực mã OTP cố định (Q-4).
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
-| 1 | Nhập số điện thoại hợp lệ và mật khẩu hợp lệ (đủ 8 ký tự, có chữ và số), để trống ô Email. | Hệ thống chấp nhận thông tin và chuyển sang màn hình nhập mã OTP. |
-| 2 | Nhập mã OTP '1111' và xác nhận. | Đăng ký tài khoản thành công, người dùng được đăng nhập vào hệ thống. |
+| 1 | Mở form đăng ký, nhập số điện thoại sai định dạng `0912abcXYZ` | Hệ thống báo lỗi 'Số điện thoại không hợp lệ', vô hiệu hóa nút gửi |
+| 2 | Nhập số điện thoại đã tồn tại trong hệ thống `0988888888` và mật khẩu hợp lệ | Hệ thống thông báo lỗi tài khoản đã tồn tại, chặn chuyển sang bước OTP |
+| 3 | Nhập số điện thoại mới, để trống trường Email (trường tùy chọn) và nhập mật khẩu đạt biên 8 ký tự `a1234567` | Form chấp nhận dữ liệu hợp lệ, không báo lỗi và chuyển sang màn hình nhập OTP |
+| 4 | Nhập mã OTP '1111' trên môi trường test và xác nhận | Hoàn tất tạo tài khoản thành công, người dùng được cấp phiên đăng nhập |
 
-
-### TC-041 — Đăng ký thành công với mật khẩu đạt giá trị biên tối thiểu (Đúng 8 ký tự gồm ít nhất 1 chữ và 1 số)
-
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** Email chưa tồn tại trong hệ thống.
-- **Dữ liệu kiểm thử:** Email: user_bva8@example.com, Password: 'a1234567' (đúng 8 ký tự, 1 chữ 'a', 7 số)
-> *Ghi chú nghiệp vụ:* Phân tích giá trị biên (BVA) cho Q-2: Mật khẩu tối thiểu 8 ký tự (chứa 1 chữ + 1 số). TC-027 đã test 7 ký tự (fail), cần test biên 8 ký tự (pass).
-
-| Bước | Thao tác | Kết quả mong đợi |
-|---|---|---|
-| 1 | Nhập email chưa tồn tại và mật khẩu 'a1234567'. | Hệ thống không báo lỗi validate mật khẩu. |
-| 2 | Nhấn nút 'Đăng ký'. | Đăng ký tài khoản thành công và nhận token xác thực. |
-
-
-### TC-042 — Kiểm tra xử lý báo lỗi khi đăng ký bằng số điện thoại đã tồn tại
-
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** Số điện thoại '0988888888' đã được tạo tài khoản trước đó.
-- **Dữ liệu kiểm thử:** Phone: 0988888888, Password: Password123
-> *Ghi chú nghiệp vụ:* Đảm bảo tính duy nhất của số điện thoại trên hệ thống (Negative test cho AC-002, tương tự TC-032 cho email).
-
-| Bước | Thao tác | Kết quả mong đợi |
-|---|---|---|
-| 1 | Nhập số điện thoại '0988888888' và mật khẩu hợp lệ. | Hệ thống hiển thị thông báo lỗi 'Số điện thoại đã được đăng ký' (hoặc tương đương) và không chuyển sang bước OTP. |
-
-
-### TC-043 — Xác thực OTP thành công bằng mã cố định '1111' trên môi trường Test
-
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** Đã nhập số điện thoại chưa tồn tại và đang ở màn hình nhập mã OTP.
-- **Dữ liệu kiểm thử:** OTP: 1111
-> *Ghi chú nghiệp vụ:* Theo Q-4 vừa chốt: Mã '1111' là mã OTP cố định dùng cho xác thực đăng ký/đăng nhập bằng số điện thoại trên môi trường test.
-
-| Bước | Thao tác | Kết quả mong đợi |
-|---|---|---|
-| 1 | Nhập mã OTP '1111' vào các ô nhập liệu OTP. | Hệ thống chấp nhận mã OTP, hoàn tất đăng ký và cấp token. |
-
-
-### TC-044 — Kiểm tra báo lỗi khi nhập số điện thoại sai định dạng
-
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** Đang ở giao diện Đăng ký bằng số điện thoại.
-- **Dữ liệu kiểm thử:** Phone: '0912abcXYZ' hoặc '123'
-> *Ghi chú nghiệp vụ:* Negative test validate định dạng số điện thoại (chứa ký tự chữ, quá ngắn hoặc chứa ký tự đặc biệt).
-
-| Bước | Thao tác | Kết quả mong đợi |
-|---|---|---|
-| 1 | Nhập số điện thoại sai định dạng '0912abcXYZ'. | Hiển thị thông báo lỗi 'Số điện thoại không hợp lệ' dưới ô nhập liệu và vô hiệu hóa nút Đăng ký. |
-
-
-### TC-045 — API Đăng ký trả về lỗi 400 Bad Request khi mật khẩu không tuân thủ quy định Q-2
-
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** API Đăng ký sẵn sàng nhận request.
-- **Dữ liệu kiểm thử:** Payload: { email: 'api_test@example.com', password: 'onlyletters' }
-> *Ghi chú nghiệp vụ:* Validate phía Backend/API cho quy tắc mật khẩu theo Q-2 (tối thiểu 8 ký tự, có chữ và số).
-
-| Bước | Thao tác | Kết quả mong đợi |
-|---|---|---|
-| 1 | Gửi request POST tới endpoint đăng ký với mật khẩu chỉ có chữ 'onlyletters'. | API trả về HTTP Status Code 400 Bad Request kèm thông điệp lỗi quy định mật khẩu không hợp lệ. |
-
-
-### TC-046 — Kiểm thử hành vi theo quyết định: Số điện thoại ở form đăng ký bằng email là bắt buộc hay tùy chọn? Spec
-
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** Môi trường sẵn sàng cho kịch bản
-- **Dữ liệu kiểm thử:** Dữ liệu theo nghiệp vụ đã chốt
-> *Ghi chú nghiệp vụ:* Quyết định chốt từ Q-1: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắt buộc
-
-| Bước | Thao tác | Kết quả mong đợi |
-|---|---|---|
-| 1 | Thực hiện thao tác với điều kiện: khi đăng kí bằng email thì số điện thoại không bắt buộc và khi đăng kí bằng phone thì email không bắ | Hệ thống phản hồi đúng theo quyết định đã chốt |

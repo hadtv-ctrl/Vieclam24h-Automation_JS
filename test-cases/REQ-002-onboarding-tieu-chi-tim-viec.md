@@ -8,10 +8,8 @@
 | TC-008 | AC-005 AC-006 AC-007 | Hoàn tất năm bước onboarding trên mobile web | P1 | Có | tests/e2e/mobile-web/onboarding-bdd.mobile.spec.js |
 | TC-031 | AC-005 | Xác nhận thành công khi bỏ trống trường tùy chọn (trường tùy chọn theo quyết định) | P2 | Có | tests/e2e/desktop/xac-nhan-thanh-cong-khi-bo-trong-truong-tuy-chon-truong-tuy-.spec.js |
 | TC-035 | AC-005 | Kiểm tra đóng modal onboarding giữa chừng và kiểm tra trạng thái trang chủ | P1 | Có | tests/e2e/desktop/dong-modal-onboarding-giua-chung.spec.js |
-| TC-047 | AC-005 | Kiểm tra tính năng Bỏ qua (Skip) onboarding ngay từ Bước 1 | P2 | candidate | - |
-| TC-048 | AC-005 | Kiểm tra không hiển thị lại modal onboarding khi đăng nhập lại sau khi đã chọn Bỏ qua | P2 | candidate | - |
-| TC-049 | AC-007 | Kiểm tra sự đồng bộ dữ liệu tiêu chí khai báo từ Onboarding sang trang Tiêu chí tìm việc (REQ-005) | P2 | candidate | - |
-| TC-050 | AC-006 | Kiểm tra đồng bộ dữ liệu dở dang sang Tiêu chí tìm việc (REQ-005) khi thoát/bỏ qua giữa chừng | P2 | candidate | - |
+| TC-041 | AC-005 | Kiểm thử luồng Bỏ qua Onboarding (Skip flow) và duy trì trạng thái tài khoản khi đăng nhập lại | P2 | candidate | - |
+
 
 ## Chi tiết
 
@@ -71,58 +69,18 @@
 | 2 | Kiểm tra giao diện trang chủ | Nội dung trang chủ hiển thị đầy đủ, không còn overlay chặn tương tác |
 
 
-### TC-047 — Kiểm tra tính năng Bỏ qua (Skip) onboarding ngay từ Bước 1
+### TC-041 — Kiểm thử luồng Bỏ qua Onboarding (Skip flow) và duy trì trạng thái tài khoản khi đăng nhập lại
 
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Loại:** Chức năng / Tích hợp | **Ưu tiên:** P2 | **Kỹ thuật:** Luồng kiểm thử trạng thái / Lifecycle
 - **Automation:** Candidate
-- **Tiền điều kiện:** Tài khoản người dùng mới tạo chưa từng thực hiện onboarding, đăng nhập thành công vào hệ thống.
-- **Dữ liệu kiểm thử:** N/A
-> *Ghi chú nghiệp vụ:* Quyết định Q-1 và Q-2 xác nhận onboarding là không bắt buộc và người dùng có quyền bỏ qua ngay từ đầu.
+- **Tiền điều kiện:** Tài khoản người dùng mới tạo chưa từng onboarding, đang ở màn hình trang chủ sau khi đăng nhập lần đầu.
+- **Dữ liệu kiểm thử:** Tài khoản test mới: `user_test_skip_onboarding@example.com`
+> *Ghi chú nghiệp vụ:* Kịch bản hợp nhất từ các case kiểm thử phân mảnh trước đây theo các quyết định chốt Q-1 và Q-2. Đảm bảo tính năng bỏ qua Onboarding hoạt động trơn tru ngay từ bước đầu tiên và hệ thống ghi nhớ trạng thái bền vững, không hiển thị lại modal khi người dùng đăng nhập lại trong các phiên sau. (Lưu ý: Luồng đồng bộ dữ liệu Onboarding sang Tiêu chí tìm việc được kiểm chứng tập trung tại kịch bản kiểm thử thuộc REQ-005).
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
-| 1 | Đăng nhập vào hệ thống lần đầu tiên. | Modal onboarding hiển thị ngay lập tức tại Bước 1 cùng với nút 'Bỏ qua'. |
-| 2 | Nhấn nút 'Bỏ qua' (Skip) trên modal onboarding. | Modal onboarding đóng lại ngay lập tức, người dùng được điều hướng tới màn hình trang chủ bình thường mà không bắt buộc nhập thêm thông tin. |
+| 1 | Đăng nhập tài khoản mới vào hệ thống | Modal Onboarding hiển thị tại Bước 1 kèm nút 'Bỏ qua' (Skip) |
+| 2 | Nhấn nút 'Bỏ qua' (Skip) trên modal Onboarding | Modal đóng lại ngay lập tức, overlay biến mất, người dùng truy cập trang chủ bình thường |
+| 3 | Thực hiện Đăng xuất khỏi hệ thống | Đăng xuất thành công, chuyển hướng về trang Đăng nhập |
+| 4 | Đăng nhập lại với tài khoản vừa thao tác | Đăng nhập thành công vào trang chủ, modal Onboarding KHÔNG tự động hiển thị lại |
 
-
-### TC-048 — Kiểm tra không hiển thị lại modal onboarding khi đăng nhập lại sau khi đã chọn Bỏ qua
-
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** Tài khoản vừa thực hiện Bỏ qua onboarding thành công ở lần đăng nhập trước.
-- **Dữ liệu kiểm thử:** Tài khoản test: user_skipped_onboarding@example.com
-> *Ghi chú nghiệp vụ:* Đảm bảo sau khi người dùng thực hiện bỏ qua onboarding (theo Q-1, Q-2), hệ thống ghi nhận trạng thái và không làm phiền ở các lần đăng nhập tiếp theo.
-
-| Bước | Thao tác | Kết quả mong đợi |
-|---|---|---|
-| 1 | Thực hiện Đăng xuất khỏi tài khoản. | Đăng xuất thành công, giao diện chuyển về trang Đăng nhập. |
-| 2 | Nhập thông tin tài khoản và thực hiện Đăng nhập lại. | Đăng nhập thành công vào trang chủ, modal onboarding KHÔNG tự động hiển thị lại. |
-
-
-### TC-049 — Kiểm tra sự đồng bộ dữ liệu tiêu chí khai báo từ Onboarding sang trang Tiêu chí tìm việc (REQ-005)
-
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** Tài khoản người dùng mới chưa có dữ liệu tiêu chí tìm việc.
-- **Dữ liệu kiểm thử:** Ngành nghề: IT/Phần mềm, Địa điểm: Hà Nội, Mức lương mong muốn: 2,000 USD, Vị trí: Senior QA Automation
-> *Ghi chú nghiệp vụ:* Q-3 chốt dữ liệu khai báo ở onboarding và tiêu chí tìm việc là cùng 1 tập dữ liệu, hoàn tất onboarding phải cập nhật đúng sang REQ-005.
-
-| Bước | Thao tác | Kết quả mong đợi |
-|---|---|---|
-| 1 | Đăng nhập và thực hiện hoàn tất cả 5 bước Onboarding với dữ liệu trong testData. | Hoàn tất bước 5, modal onboarding đóng lại thành công. |
-| 2 | Điều hướng tới màn hình 'Tiêu chí tìm việc' (REQ-005). | Tất cả các trường thông tin (Ngành nghề, Địa điểm, Mức lương, Vị trí) hiển thị chính xác 100% dữ liệu đã khai báo trong quá trình Onboarding. |
-
-
-### TC-050 — Kiểm tra đồng bộ dữ liệu dở dang sang Tiêu chí tìm việc (REQ-005) khi thoát/bỏ qua giữa chừng
-
-- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** Tài khoản mới bắt đầu quy trình Onboarding.
-- **Dữ liệu kiểm thử:** Bước 1: Ngành nghề = 'Ngân hàng', Bước 2: Địa điểm = 'TP. Hồ Chí Minh'. Bỏ qua ở Bước 3.
-> *Ghi chú nghiệp vụ:* Kết hợp Q-1 (có thể đóng modal giữa chừng) và Q-3 (đồng bộ dữ liệu). Cần xác định các bước đã khai báo dở dang có được lưu sang REQ-005 hay không.
-
-| Bước | Thao tác | Kết quả mong đợi |
-|---|---|---|
-| 1 | Nhập dữ liệu cho Bước 1 và Bước 2 của Onboarding, sau đó bấm 'Tiếp tục' để sang Bước 3. | Chuyển sang Bước 3 thành công. |
-| 2 | Tại Bước 3, nhấn nút 'Bỏ qua' hoặc đóng modal onboarding. | Modal onboarding đóng lại. |
-| 3 | Mở màn hình 'Tiêu chí tìm việc' (REQ-005). | Dữ liệu ngành nghề và địa điểm (đã nhập ở Bước 1 và 2) được đồng bộ lưu trữ đầy đủ, các trường từ Bước 3 trở đi giữ trạng thái trống/mặc định. |
