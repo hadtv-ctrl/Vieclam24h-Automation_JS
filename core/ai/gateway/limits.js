@@ -68,10 +68,16 @@ function checkInputSize(task, messages = []) {
   return { ok: true, totalChars };
 }
 
+function resetLimitsForTesting() {
+  activeCalls = 0;
+}
+
 module.exports = {
   acquireSlot,
   checkInputSize,
   getActiveCallsCount,
+  resetLimitsForTesting,
   MAX_CONCURRENT_CALLS,
   TASK_LIMITS
 };
+

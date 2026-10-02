@@ -433,7 +433,7 @@ class BasePage {
 
   getPhoneVerificationLocators() {
     return {
-      title: this.page.getByText(/Xác thực số điện thoại/i).first(),
+      title: this.page.getByText(/Xác thực số điện thoại|Xác thực OTP|Mã OTP/i).first(),
       phoneInput: this.page.getByRole('textbox', { name: /Số điện thoại|Nhập số điện thoại/i }).first(),
       codeInputs: this.page.locator(
         [

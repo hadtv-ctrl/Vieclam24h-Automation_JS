@@ -8,17 +8,17 @@ const { appendAuditRecord } = require('./audit');
 const { resolveConfig } = require('./config');
 const { createAiError } = require('./errors');
 const { extractJson, validateShape } = require('./json');
-const { acquireSlot, checkInputSize } = require('./limits');
+const { acquireSlot, checkInputSize, resetLimitsForTesting } = require('./limits');
 const { pickModel } = require('./models');
 const { getUsageStatus, recordUsage } = require('./usage');
 const { sendChatCompletion } = require('./adapters/openaiCompatible');
 const { sendGeminiContent } = require('./adapters/gemini');
 
-async function executeAdapterCall({ config, model, messages, tools, signal, timeoutMs, temperature }) {
+async function executeAdapterCall({ config, model, messages, tools, signal, timeoutMs, temperature, fetchImpl }) {
   if (config.provider === 'gemini' && !config.isNineRouter) {
-    return sendGeminiContent({ baseURL: config.baseURL, apiKey: config.apiKey, model, messages, tools, signal, timeoutMs });
+    return sendGeminiContent({ baseURL: config.baseURL, apiKey: config.apiKey, model, messages, tools, signal, timeoutMs, fetchImpl });
   }
-  return sendChatCompletion({ baseURL: config.baseURL, apiKey: config.apiKey, model, messages, tools, signal, timeoutMs, temperature });
+  return sendChatCompletion({ baseURL: config.baseURL, apiKey: config.apiKey, model, messages, tools, signal, timeoutMs, temperature, fetchImpl });
 }
 
 async function callAi({
@@ -31,7 +31,8 @@ async function callAi({
   tools = null,
   tier = 'deep',
   timeoutMs = 60000,
-  temperature = 0.2
+  temperature = 0.2,
+  fetchImpl = globalThis.fetch
 } = {}) {
   const startTs = Date.now();
   const requestId = `ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -67,13 +68,13 @@ async function callAi({
   try {
     let picked = await pickModel({ tier, config, signal });
     let modelToCall = picked.model;
-    let res = await executeAdapterCall({ config, model: modelToCall, messages, tools, signal, timeoutMs, temperature });
+    let res = await executeAdapterCall({ config, model: modelToCall, messages, tools, signal, timeoutMs, temperature, fetchImpl });
 
     // Handle 404 missing alias fallback to settings model
     if (!res.ok && res.notFound && picked.isAlias) {
       aliasFallback = true;
       modelToCall = config.model || 'gpt-4o-mini';
-      res = await executeAdapterCall({ config, model: modelToCall, messages, tools, signal, timeoutMs, temperature });
+      res = await executeAdapterCall({ config, model: modelToCall, messages, tools, signal, timeoutMs, temperature, fetchImpl });
     }
 
     if (!res.ok) {
@@ -98,7 +99,7 @@ async function callAi({
       } catch (_) {
         // Retry once with schema correction hint
         const retryMessages = [...messages, { role: 'assistant', content: res.text }, { role: 'user', content: 'Output strictly valid JSON matching schema.' }];
-        const retryRes = await executeAdapterCall({ config, model: modelToCall, messages: retryMessages, tools, signal, timeoutMs, temperature });
+        const retryRes = await executeAdapterCall({ config, model: modelToCall, messages: retryMessages, tools, signal, timeoutMs, temperature, fetchImpl });
         if (retryRes.ok) {
           try {
             res = retryRes;
@@ -139,5 +140,6 @@ async function callAi({
 
 module.exports = {
   callAi,
-  resolveConfig
+  resolveConfig,
+  resetLimitsForTesting
 };

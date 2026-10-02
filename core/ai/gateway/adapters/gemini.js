@@ -39,7 +39,8 @@ async function sendGeminiContent({
   messages = [],
   tools = null,
   signal = null,
-  timeoutMs = 60000
+  timeoutMs = 60000,
+  fetchImpl = globalThis.fetch
 } = {}) {
   const combinedSignal = signal
     ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
@@ -55,7 +56,8 @@ async function sendGeminiContent({
   if (geminiTools) payload.tools = geminiTools;
 
   try {
-    const res = await fetch(endpoint, {
+    const fetchFn = fetchImpl || globalThis.fetch;
+    const res = await fetchFn(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -67,14 +69,13 @@ async function sendGeminiContent({
     }
 
     if (res.status === 429) {
-      const retryHeader = res.headers.get('retry-after');
+      const retryHeader = res.headers?.get ? res.headers.get('retry-after') : null;
       const seconds = retryHeader ? Math.max(1, parseInt(retryHeader, 10) || 60) : 60;
+      let customMessage;
+      try { const errJson = await res.json(); customMessage = errJson?.error?.message; } catch {}
       return {
         ok: false,
-        error: createAiError('RATE_LIMITED', {
-          seconds,
-          retryAfterMs: seconds * 1000
-        })
+        error: createAiError('RATE_LIMITED', { seconds, retryAfterMs: seconds * 1000, customMessage })
       };
     }
 

@@ -333,6 +333,9 @@ function findMissingAwaits(bodyLines, firstLineNo, asyncMatchers = ASYNC_MATCHER
     const lineOffset = text.slice(0, m.index).split('\n').length - 1;
     out.push({
       line: firstLineNo + lineOffset,
+      // Vị trí (0-based) của chữ `expect` trong dòng: bộ sửa tự động chèn `await` đúng tại đây
+      // thay vì dò lại bằng một regex thứ hai lệch với rule này.
+      column: m.index - (text.lastIndexOf('\n', m.index - 1) + 1),
       matcher: tail[1],
       text: (bodyLines[lineOffset] || '').trim(),
     });
@@ -448,6 +451,10 @@ function loadAutomatedTests(root, options = {}) {
   const walk = (suite) => {
     for (const spec of suite.specs || []) {
       const m = spec.title.match(RE_TC_AC_TITLE);
+      // Một test có thể phủ nhiều TC: `TC-010 - AC-002 Tạo công ty ... [TC-010 TC-011]`.
+      // tcId/acId vẫn là cặp đứng đầu title; allTcIds/allAcIds là mọi mã xuất hiện trong title.
+      const allTcIds = [...new Set([...spec.title.matchAll(/\bTC-(\d{3})\b/g)].map((match) => match[0]))];
+      const allAcIds = [...new Set([...spec.title.matchAll(/\bAC-(\d{3})\b/g)].map((match) => match[0]))];
       const tags = spec.tags || [];
       const testPath = toRepoPath(spec.file);
       let assertionCount = null;
@@ -488,6 +495,8 @@ function loadAutomatedTests(root, options = {}) {
         title: spec.title,
         tcId: m ? m[1] : null,
         acId: m ? m[2] : null,
+        allTcIds,
+        allAcIds,
         reqId,
         tags,
         file: (spec.file || '').replace(/\\/g, '/'),

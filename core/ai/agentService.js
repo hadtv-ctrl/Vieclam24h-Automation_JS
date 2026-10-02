@@ -67,7 +67,7 @@ async function executeTool(root, name, args) {
   throw fail(`Tool không được hỗ trợ: ${name}.`);
 }
 
-function createAgentService({ root = process.cwd(), env = process.env } = {}) {
+function createAgentService({ root = process.cwd(), env = process.env, fetchImpl = globalThis.fetch } = {}) {
   const workspace = path.resolve(root || process.cwd());
   const historyDir = path.join(workspace, '.tmp', 'agent-sessions');
   const sessions = new Map();
@@ -217,6 +217,7 @@ function createAgentService({ root = process.cwd(), env = process.env } = {}) {
         signal,
         tier: 'deep',
         timeoutMs: 60000,
+        fetchImpl,
       });
 
       if (!callRes.ok) {
@@ -382,18 +383,20 @@ function createAgentService({ root = process.cwd(), env = process.env } = {}) {
       root: workspace,
       tier: 'fast',
       timeoutMs: 8000,
+      fetchImpl,
     });
     const latency = Date.now() - start;
     if (!res.ok) {
       const msg = res.error?.message || res.message || 'Kiểm tra kết nối thất bại.';
       throw fail(`Kiểm tra ${provider} thất bại: ${msg}`, 400);
     }
+    const displayProvider = provider === 'gemini' ? 'Google Gemini' : provider;
     return {
       success: true,
-      provider: provider === 'gemini' ? 'Google Gemini' : provider,
+      provider: displayProvider,
       model: res.model || targetModel,
       latencyMs: latency,
-      message: `Kết nối thành công tới ${provider} (${latency}ms)!`
+      message: `Kết nối thành công tới ${displayProvider} (${latency}ms)!`
     };
   }
 
@@ -444,6 +447,7 @@ function createAgentService({ root = process.cwd(), env = process.env } = {}) {
       tier: 'fast',
       timeoutMs: 10000,
       temperature: 0.1,
+      fetchImpl,
     });
 
     if (!res.ok) throw fail(res.error?.message || res.message || 'Lỗi gợi ý AI.', 500);

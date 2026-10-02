@@ -4,12 +4,20 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { createAgentService, MAX_PROMPT } = require('./agentService');
+const { resetLimitsForTesting } = require('./gateway/limits');
 
-function response(body, ok = true, status = 200) {
-  return { ok, status, json: async () => body };
+function response(body, ok = true, status = 200, headers = {}) {
+  return {
+    ok,
+    status,
+    headers: { get: (k) => headers[k] || headers[k.toLowerCase()] || null },
+    json: async () => body,
+    text: async () => typeof body === 'string' ? body : JSON.stringify(body)
+  };
 }
 
 test('Gemini status requires an API key and exposes configured provider', () => {
+  resetLimitsForTesting();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-agent-'));
   const service = createAgentService({ root, env: {} });
   assert.equal(service.status().available, false);
@@ -18,15 +26,19 @@ test('Gemini status requires an API key and exposes configured provider', () => 
 });
 
 test('Gemini agent completes a text response without Codex or Ollama', async () => {
+  resetLimitsForTesting();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-agent-'));
   const requests = [];
-  const service = createAgentService({ root, env: { GEMINI_API_KEY: 'test-key', DASHBOARD_GEMINI_MODEL: 'gemini-test' },
+  const service = createAgentService({
+    root,
+    env: { GEMINI_API_KEY: 'test-key', DASHBOARD_GEMINI_MODEL: 'gemini-test' },
     fetchImpl: async (url, options) => {
       requests.push({ url, options });
       return response({ candidates: [{ content: { role: 'model', parts: [{ text: 'Đã kiểm tra xong.' }] } }] });
-    } });
+    }
+  });
   const session = await service.start({ prompt: 'Kiểm tra trạng thái Agent' });
-  for (let attempt = 0; attempt < 20 && service.isRunning(); attempt += 1) await new Promise(resolve => setImmediate(resolve));
+  for (let attempt = 0; attempt < 50 && service.isRunning(); attempt += 1) await new Promise(resolve => setTimeout(resolve, 5));
   const result = service.get(session.id);
   assert.equal(result.status, 'completed');
   assert.equal(result.summary, 'Đã kiểm tra xong.');
@@ -37,17 +49,23 @@ test('Gemini agent completes a text response without Codex or Ollama', async () 
 });
 
 test('Gemini agent validates prompt length and reports API failures', async () => {
+  resetLimitsForTesting();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-agent-'));
-  const service = createAgentService({ root, env: { GEMINI_API_KEY: 'test-key' }, fetchImpl: async () => response({ error: { message: 'quota exceeded' } }, false, 429) });
+  const service = createAgentService({
+    root,
+    env: { GEMINI_API_KEY: 'test-key' },
+    fetchImpl: async () => response({ error: { message: 'quota exceeded' } }, false, 429)
+  });
   await assert.rejects(service.start({ prompt: 'x'.repeat(MAX_PROMPT + 1) }), /1 đến/);
   const session = await service.start({ prompt: 'Fail safely' });
-  for (let attempt = 0; attempt < 20 && service.isRunning(); attempt += 1) await new Promise(resolve => setImmediate(resolve));
+  for (let attempt = 0; attempt < 50 && service.isRunning(); attempt += 1) await new Promise(resolve => setTimeout(resolve, 5));
   assert.equal(service.get(session.id).status, 'failed');
   assert.match(service.get(session.id).error, /quota exceeded/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
 test('Multi-provider supports OpenAI-compatible agent run and clientConfig override', async () => {
+  resetLimitsForTesting();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-agent-'));
   const requests = [];
   const service = createAgentService({
@@ -62,7 +80,7 @@ test('Multi-provider supports OpenAI-compatible agent run and clientConfig overr
     prompt: 'Kiểm tra OpenAI',
     clientConfig: { provider: 'openai', apiKey: 'sk-test-client', model: 'gpt-4o-mini' },
   });
-  for (let attempt = 0; attempt < 20 && service.isRunning(); attempt += 1) await new Promise(resolve => setImmediate(resolve));
+  for (let attempt = 0; attempt < 50 && service.isRunning(); attempt += 1) await new Promise(resolve => setTimeout(resolve, 5));
   const result = service.get(session.id);
   assert.equal(result.status, 'completed');
   assert.equal(result.summary, 'OpenAI đã hoàn thành.');
@@ -73,6 +91,7 @@ test('Multi-provider supports OpenAI-compatible agent run and clientConfig overr
 });
 
 test('testConnection checks Gemini and OpenAI endpoints successfully', async () => {
+  resetLimitsForTesting();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-agent-'));
   const service = createAgentService({
     root,
@@ -90,6 +109,7 @@ test('testConnection checks Gemini and OpenAI endpoints successfully', async () 
 });
 
 test('Token quota reports percentage and tracks consumed tokens across turns', async () => {
+  resetLimitsForTesting();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-agent-'));
   const service = createAgentService({
     root,
@@ -107,7 +127,7 @@ test('Token quota reports percentage and tracks consumed tokens across turns', a
   assert.equal(initialStatus.tokenQuota.usedTokens, 0);
 
   const session = await service.start({ prompt: 'Kiểm tra token quota' });
-  for (let attempt = 0; attempt < 20 && service.isRunning(); attempt += 1) await new Promise(resolve => setImmediate(resolve));
+  for (let attempt = 0; attempt < 50 && service.isRunning(); attempt += 1) await new Promise(resolve => setTimeout(resolve, 5));
 
   const result = service.get(session.id);
   assert.equal(result.status, 'completed');
@@ -123,6 +143,7 @@ test('Token quota reports percentage and tracks consumed tokens across turns', a
 });
 
 test('inlineSuggest returns stripped code suggestion and tracks tokens', async () => {
+  resetLimitsForTesting();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-agent-'));
   const service = createAgentService({
     root,
@@ -148,6 +169,7 @@ test('inlineSuggest returns stripped code suggestion and tracks tokens', async (
 
   fs.rmSync(root, { recursive: true, force: true });
 });
+
 
 
 

@@ -417,7 +417,7 @@ function cleanCandidateTitle(rawTitle) {
   const str = String(rawTitle).trim();
   if (str.includes('|')) {
     const parts = str.split('|').map((p) => p.trim()).filter(Boolean);
-    const desc = parts.find((p) => !/^(TC-\d{3}|(?:AC-\d{3}\s*)+|P[0-3]|candidate|yes|no|có|không|-)$/i.test(p));
+    const desc = parts.find((p) => !/^(TC-\d{3}|AC-\d{3}|P[0-3]|candidate|yes|no|có|không|-)$/i.test(p));
     if (desc) return desc;
   }
   return str.replace(/^#{1,6}\s*(?:TC-\d{3}\s*[-–:]\s*)?/i, '').trim() || null;

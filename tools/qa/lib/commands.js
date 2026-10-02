@@ -89,7 +89,7 @@ function collect(root, rawOptions) {
         const p = (t.path || t.file || '').toLowerCase();
         return p.includes(`/${dom}/`) || p.startsWith(`${dom}/`);
       });
-      const activeTcIds = new Set(realTests.map((t) => t.tcId).filter(Boolean));
+      const activeTcIds = getAutomatedTcIds(realTests);
       testCases = {
         ...testCases,
         links: testCases.links.filter((l) => {
@@ -106,7 +106,7 @@ function collect(root, rawOptions) {
       const rawTag = options.filterTag;
       const tag = rawTag.startsWith('@') ? rawTag : `@${rawTag}`;
       realTests = realTests.filter((t) => t.tags && t.tags.includes(tag));
-      const activeTcIds = new Set(realTests.map((t) => t.tcId).filter(Boolean));
+      const activeTcIds = getAutomatedTcIds(realTests);
       testCases = {
         ...testCases,
         links: testCases.links.filter((l) => activeTcIds.has(l.tcId)),
@@ -130,6 +130,22 @@ function expectedCasesFromRule(rule) {
   return wanted;
 }
 
+/** Mọi mã TC mà các test đang phủ, kể cả TC phụ liệt kê trong title (xem allTcIds ở sources.js). */
+function getAutomatedTcIds(realTests) {
+  return new Set(
+    (realTests || []).flatMap((t) => (t.allTcIds && t.allTcIds.length ? t.allTcIds : [t.tcId])).filter(Boolean)
+  );
+}
+
+function getWipTcIds(realTests) {
+  return new Set(
+    (realTests || [])
+      .filter((t) => t.tags && t.tags.includes('@wip'))
+      .flatMap((t) => (t.allTcIds && t.allTcIds.length ? t.allTcIds : [t.tcId]))
+      .filter(Boolean)
+  );
+}
+
 function coverage(root, rawOptions) {
   const options = mergeOptions(root, rawOptions);
   const { requirements, testCases, automated, realTests } = collect(root, options);
@@ -139,10 +155,8 @@ function coverage(root, rawOptions) {
     if (!byAc.has(key)) byAc.set(key, []);
     byAc.get(key).push(link);
   }
-  const automatedTcIds = new Set(realTests.map((t) => t.tcId).filter(Boolean));
-  const wipTcIds = new Set(
-    realTests.filter((t) => t.tags && t.tags.includes('@wip')).map((t) => t.tcId).filter(Boolean)
-  );
+  const automatedTcIds = getAutomatedTcIds(realTests);
+  const wipTcIds = getWipTcIds(realTests);
 
   const rows = [];
   for (const req of requirements) {
@@ -182,10 +196,8 @@ function coverage(root, rawOptions) {
 function gaps(root, rawOptions) {
   const options = mergeOptions(root, rawOptions);
   const { requirements, testCases, automated, realTests } = collect(root, options);
-  const automatedTcIds = new Set(realTests.map((t) => t.tcId).filter(Boolean));
-  const wipTcIds = new Set(
-    realTests.filter((t) => t.tags && t.tags.includes('@wip')).map((t) => t.tcId).filter(Boolean)
-  );
+  const automatedTcIds = getAutomatedTcIds(realTests);
+  const wipTcIds = getWipTcIds(realTests);
 
   const linksByAc = new Map();
   const linksByTc = new Map();
@@ -515,9 +527,12 @@ function impact(root, reqId, rawOptions) {
   if (!req) return { error: `Không tìm thấy ${reqId} trong requirements/` };
 
   const testsByTc = new Map();
-  for (const t of automated.tests) if (t.tcId) {
-    if (!testsByTc.has(t.tcId)) testsByTc.set(t.tcId, []);
-    testsByTc.get(t.tcId).push(t);
+  for (const t of automated.tests) {
+    const ids = t.allTcIds && t.allTcIds.length ? t.allTcIds : (t.tcId ? [t.tcId] : []);
+    for (const id of ids) {
+      if (!testsByTc.has(id)) testsByTc.set(id, []);
+      testsByTc.get(id).push(t);
+    }
   }
 
   const acs = req.acs.map((ac) => {
@@ -684,13 +699,14 @@ function drift(root, rawOptions) {
  */
 function matrix(root, rawOptions) {
   const options = mergeOptions(root, rawOptions);
-  const { testCases, realTests } = collect(root, options);
-  const automatedTcIds = new Set(realTests.map((t) => t.tcId).filter(Boolean));
+  const { testCases, automated, realTests } = collect(root, options);
+  const automatedTcIds = getAutomatedTcIds(realTests);
   const specsByTc = new Map();
   for (const t of realTests) {
-    if (t.tcId) {
-      if (!specsByTc.has(t.tcId)) specsByTc.set(t.tcId, []);
-      specsByTc.get(t.tcId).push(specPath(options, t));
+    const ids = t.allTcIds && t.allTcIds.length ? t.allTcIds : (t.tcId ? [t.tcId] : []);
+    for (const id of ids) {
+      if (!specsByTc.has(id)) specsByTc.set(id, []);
+      specsByTc.get(id).push(specPath(options, t));
     }
   }
 
@@ -702,9 +718,15 @@ function matrix(root, rawOptions) {
     '',
     'Bảng tổng hợp sống đối chiếu giữa Requirement, Acceptance Criteria, Test Case và Playwright script.',
     '',
+  ];
+  // Không liệt kê được test thì mọi TC sẽ hiện "Thiếu script": phải nói rõ trong chính file sinh ra.
+  if (automated.error) {
+    lines.push(`> ⚠️ Không liệt kê được test Playwright nên cột Trạng thái Automation chưa đúng: ${automated.error}`, '');
+  }
+  lines.push(
     '| Requirement | Acceptance criterion | Test case | Trạng thái Automation | Spec file | Priority |',
     '|---|---|---|---|---|---|',
-  ];
+  );
 
   let rowsCount = 0;
   for (const link of testCases.links) {

@@ -761,6 +761,17 @@ test('findMissingAwaits: expect trải nhiều dòng — báo đúng dòng, khô
   assert.equal(hits[0].line, 13);
 });
 
+test('findMissingAwaits: trả column là vị trí chữ "expect" trong dòng (cho bộ sửa tự động)', () => {
+  const hits = findMissingAwaits([
+    '  await page.goto("/");',
+    '  doWork();expect(a).toBe(1); expect.soft(page.locator("#x")).toBeVisible();',
+  ], 5);
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].line, 6);
+  assert.equal(hits[0].column, 30);
+  assert.equal(hits[0].text.startsWith('doWork();'), true);
+});
+
 test('findMissingAwaits: danh sách matcher ghi đè được qua tham số', () => {
   const custom = new Set(['toBeSomethingNew']);
   assert.equal(findMissingAwaits(['expect(x).toBeSomethingNew();'], 1, custom).length, 1);

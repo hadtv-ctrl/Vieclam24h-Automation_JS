@@ -110,6 +110,29 @@ function findTestCaseFile(root, reqId) {
 }
 
 /**
+ * Thu thập tất cả các mã TC đã tồn tại trên toàn bộ dự án (trong test-cases/)
+ */
+function collectAllExistingTcIds(root) {
+  const ids = new Set();
+  const dirs = ['test-cases', 'testCases'];
+  for (const d of dirs) {
+    const absDir = path.join(root, d);
+    if (!fs.existsSync(absDir)) continue;
+    try {
+      const files = fs.readdirSync(absDir);
+      for (const f of files) {
+        if (!f.endsWith('.md')) continue;
+        const text = fs.readFileSync(path.join(absDir, f), 'utf8');
+        for (const match of text.matchAll(RE_TC)) {
+          ids.add(match[0].toUpperCase());
+        }
+      }
+    } catch {}
+  }
+  return [...ids];
+}
+
+/**
  * Lấy mã TC kế tiếp không trùng lặp
  */
 function getNextTcId(existingIds, offset = 0) {
@@ -296,19 +319,26 @@ function inferWithHeuristic({ reqId, decidedQuestions, existingTcIds, existingTc
 
     // 4. Nếu câu hỏi không bắt được các rule cụ thể trên, sinh 1 kịch bản xác nhận tổng quát cho quyết định đó
     if (results.length === 0 && item.decision) {
-      results.push({
-        suggestedId: allocateId(),
-        acId: defaultAcId,
-        title: `Kiểm thử hành vi theo quyết định: ${item.question.slice(0, 70)}`,
-        priority: 'P2',
-        automation: 'candidate',
-        rationale: `Quyết định chốt từ ${item.id}: ${item.decision}`,
-        precondition: 'Môi trường sẵn sàng cho kịch bản',
-        testData: 'Dữ liệu theo nghiệp vụ đã chốt',
-        steps: [
-          { step: 1, action: `Thực hiện thao tác với điều kiện: ${item.decision.slice(0, 100)}`, expected: `Hệ thống phản hồi đúng theo quyết định đã chốt` },
-        ],
-      });
+      const generalTitle = `Kiểm thử hành vi theo quyết định: ${item.question.slice(0, 70)}`;
+      const questionCore = item.question.slice(0, 30).trim().toLowerCase();
+      const alreadyCovered = existingTcTitles.some(
+        (t) => t.includes(generalTitle) || (questionCore.length > 5 && t.toLowerCase().includes(questionCore))
+      );
+      if (!alreadyCovered) {
+        results.push({
+          suggestedId: allocateId(),
+          acId: defaultAcId,
+          title: generalTitle,
+          priority: 'P2',
+          automation: 'candidate',
+          rationale: `Quyết định chốt từ ${item.id}: ${item.decision}`,
+          precondition: 'Môi trường sẵn sàng cho kịch bản',
+          testData: 'Dữ liệu theo nghiệp vụ đã chốt',
+          steps: [
+            { step: 1, action: `Thực hiện thao tác với điều kiện: ${item.decision.slice(0, 100)}`, expected: `Hệ thống phản hồi đúng theo quyết định đã chốt` },
+          ],
+        });
+      }
     }
   }
 
@@ -424,27 +454,19 @@ async function inferTestCases({ root, reqPath, mode = 'heuristic', clientConfig 
   const acs = extractAcs(reqContent);
   const tcFile = findTestCaseFile(root, reqId);
 
-  const existingTcIds = [];
+  const existingTcIds = collectAllExistingTcIds(root);
   const existingTcTitles = [];
-
-  const tcDir = path.resolve(root, 'test-cases');
-  if (fs.existsSync(tcDir)) {
-    const tcFiles = fs.readdirSync(tcDir).filter((f) => f.endsWith('.md'));
-    for (const f of tcFiles) {
-      try {
-        const content = fs.readFileSync(path.join(tcDir, f), 'utf8');
-        for (const match of content.matchAll(RE_TC)) {
-          existingTcIds.push(match[0].toUpperCase());
-        }
-      } catch {}
-    }
-  }
 
   if (tcFile.exists) {
     const tcContent = fs.readFileSync(tcFile.absPath, 'utf8');
+    for (const match of tcContent.matchAll(RE_TC)) {
+      if (!existingTcIds.includes(match[0].toUpperCase())) {
+        existingTcIds.push(match[0].toUpperCase());
+      }
+    }
     const lines = tcContent.split(/\r?\n/);
     for (const line of lines) {
-      if (line.includes('TC-')) {
+      if (line.includes('TC-') || line.startsWith('###')) {
         existingTcTitles.push(line.trim());
       }
     }
@@ -488,11 +510,19 @@ async function inferTestCases({ root, reqPath, mode = 'heuristic', clientConfig 
  * Ghi an toàn các Test Cases mới vào file test-cases/REQ-xxx.md
  */
 function buildTestCaseDocument(currentContent, cleanReqId, testCases = []) {
-  const existingDocText = String(currentContent || '');
-  const filteredCases = testCases.filter((tc) => !tc.suggestedId || !existingDocText.includes(tc.suggestedId));
-  if (!filteredCases.length) return existingDocText;
+  let lines = String(currentContent || '').split(/\r?\n/);
 
-  let lines = existingDocText.split(/\r?\n/);
+  // 0. Lọc bỏ các test case đã có mã TC xuất hiện trong tài liệu để chống trùng lặp (dedup)
+  const dedupedTestCases = testCases.filter((tc) => {
+    const id = tc.suggestedId || tc.tcId;
+    if (!id) return true;
+    const re = new RegExp(`\\b${id}\\b`, 'i');
+    return !lines.some((l) => re.test(l));
+  });
+
+  if (!dedupedTestCases.length) {
+    return lines.join('\n');
+  }
 
   // 1. Tìm vị trí bảng Traceability
   let tableHeaderIdx = lines.findIndex((l) => /\|\s*(?:Test\s*case|Requirement)\s*\|/i.test(l));
@@ -511,7 +541,7 @@ function buildTestCaseDocument(currentContent, cleanReqId, testCases = []) {
       tableEndIdx += 1;
     }
 
-    const newTableRows = filteredCases.map((tc) => {
+    const newTableRows = dedupedTestCases.map((tc) => {
       const p = tc.priority || 'P2';
       const ac = tc.acId || '-';
       const title = (tc.title || '').replace(/\|/g, '-').trim();
@@ -527,7 +557,7 @@ function buildTestCaseDocument(currentContent, cleanReqId, testCases = []) {
   }
 
   // 2. Thêm các khối chi tiết Test Case vào cuối file
-  const detailBlocks = filteredCases.map((tc) => {
+  const detailBlocks = dedupedTestCases.map((tc) => {
     const auto = tc.automation || (tc.spec && tc.spec !== '-' ? 'Yes' : 'Candidate');
     const stepsTable = (tc.steps && tc.steps.length)
       ? tc.steps.map((s, idx) => `| ${s.step || idx + 1} | ${(s.action || '').replace(/\|/g, '-')} | ${(s.expected || '').replace(/\|/g, '-')} |`).join('\n')
@@ -572,12 +602,18 @@ function appendTestCasesToDocument(root, { reqId, tcPath, testCases = [] }) {
   const updatedContent = buildTestCaseDocument(currentContent, cleanReqId, testCases);
   fs.writeFileSync(tcFileInfo.absPath, updatedContent, 'utf8');
 
+  const existingMatches = new Set(Array.from(currentContent.matchAll(RE_TC), (m) => m[0].toUpperCase()));
+  const newMatches = Array.from(updatedContent.matchAll(RE_TC), (m) => m[0].toUpperCase());
+  const actuallyAdded = newMatches.filter((m) => !existingMatches.has(m)).length;
+
   return {
     success: true,
     reqId: cleanReqId,
     tcPath: tcFileInfo.relPath,
-    addedCount: testCases.length,
-    message: `Đã thêm thành công ${testCases.length} test case vào ${tcFileInfo.relPath}.`,
+    addedCount: actuallyAdded,
+    message: actuallyAdded > 0
+      ? `Đã thêm thành công ${actuallyAdded} test case vào ${tcFileInfo.relPath}.`
+      : `Các test case đã tồn tại trong ${tcFileInfo.relPath}, không phát sinh trùng lặp.`,
   };
 }
 
@@ -1263,5 +1299,6 @@ module.exports = {
   extractHeuristicFromSpecText,
   extractScaffoldFromRaw,
   synthesizeScaffoldContents,
+  collectAllExistingTcIds,
   buildTestCaseDocument,
 };

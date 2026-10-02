@@ -14,13 +14,15 @@ async function sendChatCompletion({
   temperature = 0.2,
   tools = null,
   signal = null,
-  timeoutMs = 60000
+  timeoutMs = 60000,
+  fetchImpl = globalThis.fetch
 } = {}) {
   const combinedSignal = signal
     ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
     : AbortSignal.timeout(timeoutMs);
 
-  const endpoint = `${baseURL.replace(/\/+$/, '')}/chat/completions`;
+  const base = baseURL ? baseURL.replace(/\/+$/, '') : 'https://api.openai.com/v1';
+  const endpoint = `${base}/chat/completions`;
   const headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
@@ -34,7 +36,8 @@ async function sendChatCompletion({
   }
 
   try {
-    const res = await fetch(endpoint, {
+    const fetchFn = fetchImpl || globalThis.fetch;
+    const res = await fetchFn(endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
@@ -46,7 +49,7 @@ async function sendChatCompletion({
     }
 
     if (res.status === 429) {
-      const retryHeader = res.headers.get('retry-after');
+      const retryHeader = res.headers?.get ? res.headers.get('retry-after') : null;
       const seconds = retryHeader ? Math.max(1, parseInt(retryHeader, 10) || 60) : 60;
       return {
         ok: false,
