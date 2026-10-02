@@ -20,6 +20,9 @@
           <button type="button" class="view-subtab data-subtab" id="btn-tab-data-create">
             <i class="ph-bold ph-plus-circle"></i> Tạo tệp dữ liệu mới
           </button>
+          <button type="button" class="view-subtab data-subtab" id="data-vn-gen-open-btn" title="Sinh dữ liệu kiểm thử Việt Nam & Thư viện Payload biên">
+            <i class="ph-bold ph-sparkle"></i> Sinh dữ liệu VN
+          </button>
         </div>
         <div class="script-subnav-actions" id="data-subnav-actions">
           <button id="data-delete-file-btn" type="button" class="script-subnav-btn script-delete-btn" title="Xóa tệp dữ liệu này khỏi thư mục data/">
@@ -397,6 +400,132 @@
           <div class="app-modal-foot" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--line);">
             <small style="color: var(--muted); font-size: 11px;">Bấm nút copy để sao chép tag vào clipboard.</small>
             <button type="button" class="btn-secondary-sm" onclick="document.getElementById('modal-dynamic-preview').close()">Đóng</button>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- Modal Dialog: Sinh Dữ Liệu Kiểm Thử Việt Nam & Thư Viện Payload Biên (PLAN-19a) -->
+      <dialog id="data-vn-gen-modal" class="app-modal">
+        <div class="app-modal-box data-vn-modal-box">
+          <div class="app-modal-head">
+            <div>
+              <h3 id="data-vn-gen-title" tabindex="-1"><i class="ph-bold ph-identification-card"></i> Sinh Dữ Liệu Kiểm Thử Việt Nam</h3>
+              <p>Tạo dữ liệu định danh Việt Nam chuẩn xác định theo Seed & Thư viện 6 nhóm payload kiểm thử biên (0 token AI).</p>
+            </div>
+            <button type="button" id="data-vn-close-top-btn" class="btn-icon-subtle" title="Đóng modal (Esc)"><i class="ph ph-x"></i></button>
+          </div>
+
+          <div class="data-vn-tabs" role="tablist">
+            <button type="button" class="data-vn-tab active" id="data-vn-tab-identity" role="tab" aria-selected="true" data-vn-mode="identity">
+              <i class="ph-bold ph-user-check"></i> Định danh VN
+            </button>
+            <button type="button" class="data-vn-tab" id="data-vn-tab-payload" role="tab" aria-selected="false" data-vn-mode="payload">
+              <i class="ph-bold ph-shield-warning"></i> Payload biên
+            </button>
+          </div>
+
+          <div class="app-modal-body data-vn-modal-body">
+            <div id="data-vn-alert" class="data-vn-alert" role="alert" style="display: none;"></div>
+
+            <!-- Tab 1: Dữ liệu Định danh VN -->
+            <div id="data-vn-panel-identity" class="data-vn-panel">
+              <form id="data-vn-form" class="data-vn-form" onsubmit="return false;">
+                <div class="data-vn-form-row">
+                  <div class="data-vn-field-group">
+                    <label for="data-vn-type">Loại dữ liệu</label>
+                    <select id="data-vn-type" class="form-input">
+                      <option value="persona">Persona đầy đủ</option>
+                      <option value="cccd">CCCD (12 số)</option>
+                      <option value="mst">Mã số thuế (10/13 số)</option>
+                      <option value="phone">Số điện thoại</option>
+                      <option value="name">Họ và tên</option>
+                    </select>
+                  </div>
+                  <div class="data-vn-field-group">
+                    <label for="data-vn-count">Số lượng (1–500)</label>
+                    <input type="number" id="data-vn-count" class="form-input" value="10" min="1" max="500">
+                  </div>
+                  <div class="data-vn-field-group">
+                    <label for="data-vn-seed">Seed (tùy chọn tái lập)</label>
+                    <input type="text" id="data-vn-seed" class="form-input" placeholder="Ví dụ: demo-01">
+                  </div>
+                </div>
+
+                <div id="data-vn-dynamic-options" class="data-vn-dynamic-options">
+                  <!-- Dynamic fields: gender, carrier, provinceCode, birthYear, diacritics, mstKind -->
+                </div>
+
+                <div class="data-vn-form-actions">
+                  <button type="button" id="data-vn-generate-btn" class="btn-primary-sm">
+                    <i class="ph-bold ph-lightning"></i> Sinh dữ liệu
+                  </button>
+                </div>
+              </form>
+
+              <div class="data-vn-preview-wrapper">
+                <div class="data-vn-preview-header">
+                  <strong>Bản xem trước (<span id="data-vn-preview-count">0</span>)</strong>
+                  <span id="data-vn-seed-display" class="data-vn-seed-tag"></span>
+                </div>
+                <div id="data-vn-preview" class="data-vn-preview-table-container">
+                  <p class="data-vn-empty-hint">Bấm "Sinh dữ liệu" để xem trước danh sách bản ghi.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 2: Thư viện Payload biên -->
+            <div id="data-vn-panel-payload" class="data-vn-panel" style="display: none;">
+              <div class="data-vn-payload-toolbar">
+                <label for="data-vn-payload-category">Nhóm payload:</label>
+                <select id="data-vn-payload-category" class="form-input">
+                  <option value="all">Tất cả nhóm</option>
+                  <option value="xss">XSS</option>
+                  <option value="sqli">SQL Injection</option>
+                  <option value="unicode">Unicode & Edge Cases</option>
+                  <option value="whitespace">Khoảng trắng (Whitespace)</option>
+                  <option value="length">Độ dài chuỗi (Length)</option>
+                  <option value="csv-formula">CSV Formula Injection</option>
+                </select>
+              </div>
+              <div id="data-vn-payload-table-container" class="data-vn-preview-table-container">
+                <!-- Payload table dynamically rendered -->
+              </div>
+            </div>
+          </div>
+
+          <div class="app-modal-foot data-vn-modal-foot">
+            <div class="data-vn-foot-left">
+              <input type="text" id="data-vn-filename" class="form-input form-input-sm" placeholder="dataset-vn.json">
+              <button type="button" id="data-vn-save-btn" class="btn-primary-sm">
+                <i class="ph-bold ph-floppy-disk"></i> Lưu thành dataset mới
+              </button>
+              <button type="button" id="data-vn-copy-btn" class="btn-secondary-sm">
+                <i class="ph-bold ph-copy"></i> Sao chép JSON
+              </button>
+              <span id="data-vn-status-badge" class="data-vn-badge" style="display: none;">Chưa lưu</span>
+            </div>
+            <div class="data-vn-foot-right">
+              <button type="button" id="data-vn-close-btn" class="btn-secondary-sm">Đóng</button>
+            </div>
+          </div>
+          <div class="data-vn-foot-notice">
+            <small>INV-3: Dữ liệu tổng hợp bằng thuật toán chỉ dùng cho kiểm thử tự động, tuyệt đối không dùng xác thực eKYC thật.</small>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- Confirm Dialog: Chặn đóng khi Dirty (UI-05) -->
+      <dialog id="data-vn-confirm" class="app-modal">
+        <div class="app-modal-box" style="max-width: 420px; padding: 20px;">
+          <div class="app-modal-head" style="margin-bottom: 12px;">
+            <h4><i class="ph-bold ph-warning-circle" style="color: var(--accent);"></i> Dữ liệu chưa được lưu</h4>
+          </div>
+          <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px;">
+            Bạn có dữ liệu vừa sinh chưa được lưu thành dataset hoặc sao chép. Bạn có chắc muốn đóng modal không?
+          </p>
+          <div style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" id="data-vn-confirm-stay-btn" class="btn-secondary-sm">Ở lại</button>
+            <button type="button" id="data-vn-confirm-leave-btn" class="btn-primary-sm">Bỏ và đóng</button>
           </div>
         </div>
       </dialog>

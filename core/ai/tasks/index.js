@@ -20,6 +20,8 @@ const { runDraftDecisionRecord } = require('./draftDecisionRecord');
 const { formatForJira } = require('./copyForJira');
 const { runDetectFlakyTests } = require('./detectFlakyTests');
 const { runSummarizeCiRun } = require('./summarizeCiRun');
+const { extractAcBlocks, validateScenarios, renderBddMarkdown } = require('./bddCriteriaRules');
+const { runFormatBddCriteria, buildBddPrompts } = require('./formatBddCriteria');
 
 module.exports = {
   runTriageFailure,
@@ -46,5 +48,10 @@ module.exports = {
   runDraftDecisionRecord,
   formatForJira,
   runDetectFlakyTests,
-  runSummarizeCiRun
+  runSummarizeCiRun,
+  extractAcBlocks,
+  validateScenarios,
+  renderBddMarkdown,
+  runFormatBddCriteria,
+  buildBddPrompts
 };

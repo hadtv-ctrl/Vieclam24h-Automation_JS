@@ -15,7 +15,8 @@ const { createFixtureWorkspace } = require('../tests/dashboard/support/fixtureWo
 
 async function measure() {
   console.log('=== Plan 09 Phase 0 Baseline Measurement ===');
-  const baselineDir = path.resolve(__dirname, '../_Plan_implement/plan09-evidence/visual-baseline');
+  const archiveEvidenceDir = path.resolve(__dirname, '../_Plan_implement/archive/2026-09/plan-09-strangler-architecture/plan09-evidence');
+  const baselineDir = path.join(archiveEvidenceDir, 'visual-baseline');
   if (!fs.existsSync(baselineDir)) {
     fs.mkdirSync(baselineDir, { recursive: true });
   }
@@ -110,7 +111,7 @@ async function measure() {
     }
 
     // Write summary report
-    const summaryFile = path.resolve(__dirname, '../_Plan_implement/plan09-evidence/baseline-measurement.json');
+    const summaryFile = path.join(archiveEvidenceDir, 'baseline-measurement.json');
     fs.writeFileSync(summaryFile, JSON.stringify(results, null, 2), 'utf8');
     console.log(`Measurement saved to: ${summaryFile}`);
 

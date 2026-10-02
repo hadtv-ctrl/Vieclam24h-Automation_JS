@@ -5,14 +5,24 @@
  * rule engines (0 token), so no AI client configuration is read here.
  * Strict ceiling <= 150 lines.
  */
-const { parseBody, sendJson } = require('./routeUtils');
+const { parseBody, sendJson, abortSignalFor } = require('./routeUtils');
 const { runCheckRequirementClarity } = require('../../core/ai/tasks/checkRequirementClarity');
 const { runDraftBugReport } = require('../../core/ai/tasks/draftBugReport');
 const { runGenerateTestCases } = require('../../core/ai/tasks/generateTestCases');
+const { runFormatBddCriteria } = require('../../core/ai/tasks/formatBddCriteria');
 const { readRecentAuditRecords, clearAuditLogs } = require('../../core/ai/gateway/audit');
 
+function parseClientConfigHeader(request) {
+  if (!request?.headers?.['x-ai-config']) return null;
+  try {
+    return JSON.parse(Buffer.from(request.headers['x-ai-config'], 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
 async function handleAiFastWinsRoutes(request, response, url, context = {}) {
-  const root = context.projectRoot || process.cwd();
+  const root = context.projectRoot || context.root || process.cwd();
 
   if (request.method === 'GET' && url.pathname === '/api/ai/audit') {
     const limit = Number(url.searchParams?.get('limit')) || 50;
@@ -71,6 +81,48 @@ async function handleAiFastWinsRoutes(request, response, url, context = {}) {
     } catch (e) {
       sendJson(response, 422, { ok: false, error: e.message });
     }
+    return true;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/ai/format-bdd') {
+    let body;
+    try {
+      body = await parseBody(request, 128 * 1024);
+    } catch {
+      sendJson(response, 400, { ok: false, code: 'EMPTY_TEXT', error: 'Dữ liệu không hợp lệ' });
+      return true;
+    }
+
+    const text = typeof body?.requirementText === 'string' ? body.requirementText.trim() : '';
+    if (!text) {
+      sendJson(response, 400, { ok: false, code: 'EMPTY_TEXT', error: 'Nội dung yêu cầu không được để trống' });
+      return true;
+    }
+    if (text.length > 8000) {
+      sendJson(response, 413, { ok: false, code: 'TEXT_TOO_LONG', error: 'Nội dung vượt quá giới hạn 8.000 ký tự' });
+      return true;
+    }
+
+    const signal = abortSignalFor(request, response);
+    const clientConfig = parseClientConfigHeader(request);
+
+    const res = await runFormatBddCriteria({
+      requirementText: text,
+      title: body.title || '',
+      clientConfig,
+      root,
+      signal
+    });
+
+    if (!res.ok) {
+      const status = (res.code === 'EMPTY_TEXT') ? 400 : (res.code === 'TEXT_TOO_LONG') ? 413 : 502;
+      const payload = { ok: false, code: res.code, error: res.error };
+      if (res.details) payload.details = res.details;
+      sendJson(response, status, payload);
+      return true;
+    }
+
+    sendJson(response, 200, res);
     return true;
   }
 

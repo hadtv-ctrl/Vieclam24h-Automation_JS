@@ -7,6 +7,7 @@
 
 import { apiClient } from '../../core/apiClient.js';
 import { toast } from '../../core/toast.js';
+import { mountSpecPanels } from './specStudio/specStudioPanels.js';
 
 export class ReqAnalyzerHelper {
   constructor(qaSlice) {
@@ -61,15 +62,34 @@ export class ReqAnalyzerHelper {
       toast.success('Đã chuyển đổi Jira markup sang Markdown.');
     });
 
+    this.specPanels = mountSpecPanels(root, {
+      switchTab: (tab) => this.switchTab(root, tab),
+      showResults: () => {
+        const inSec = root.querySelector('#qa-req-analyzer-input-section');
+        const resSec = root.querySelector('#qa-req-analyzer-results-section');
+        if (inSec) inSec.style.display = 'none';
+        if (resSec) resSec.style.display = 'flex';
+      },
+      showInput: () => this.showInputView(root)
+    });
+
     // Mở modal
     addEvt(openBtn, 'click', () => this.openModal(root));
 
-    // Đóng modal
-    const closeModal = () => {
+    // Đóng modal (có dirty guard)
+    const closeModal = async (event) => {
+      if (this.specPanels) {
+        const canClose = await this.specPanels.confirmClose();
+        if (!canClose) {
+          if (event && typeof event.preventDefault === 'function') event.preventDefault();
+          return;
+        }
+      }
       try { modal.close(); } catch (_) {}
     };
     addEvt(closeBtn, 'click', closeModal);
     addEvt(cancelBtn, 'click', closeModal);
+    addEvt(modal, 'cancel', closeModal);
 
     // Nạp requirement mẫu
     addEvt(sampleBtn, 'click', () => {
@@ -987,6 +1007,10 @@ export class ReqAnalyzerHelper {
     if (this._statusBar) {
       try { this._statusBar.dispose(); } catch (_) {}
       this._statusBar = null;
+    }
+    if (this.specPanels) {
+      try { this.specPanels.destroy(); } catch (_) {}
+      this.specPanels = null;
     }
     this.disposers.forEach((d) => {
       try { d(); } catch (_) {}

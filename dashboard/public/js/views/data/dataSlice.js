@@ -8,6 +8,7 @@ import { eventBus } from '../../core/eventBus.js';
 import { stateStore } from '../../core/stateStore.js';
 import { windowBridge } from '../../core/windowBridge.js';
 import { editorSession } from '../../components/editor/editorSession.js';
+import { VnDataGeneratorModal } from './vnDataGeneratorModal.js';
 
 export class DataSlice {
   constructor() {
@@ -26,6 +27,8 @@ export class DataSlice {
     if (typeof window.openDataManager === 'function') {
       try {
         await window.openDataManager();
+        this._vnModal = this._vnModal || new VnDataGeneratorModal();
+        this._vnModal.init(document.getElementById('data-view') || document);
         return;
       } catch (err) {
         console.warn('[DataSlice] openDataManager error:', err);
@@ -40,6 +43,7 @@ export class DataSlice {
 
   unmount() {
     this._mounted = false;
+    if (this._vnModal) { this._vnModal.destroy(); this._vnModal = null; }
     this._disposers.forEach((d) => { try { d(); } catch (_) {} });
     this._disposers = [];
   }

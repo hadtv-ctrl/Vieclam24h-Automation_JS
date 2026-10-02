@@ -208,3 +208,41 @@ test('core/local/commonUtils.local.js lỗi cú pháp không làm sập commonUt
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('TC-12: commonUtils exports 5 new vnData functions and D3 generateRandomVNPhone', () => {
+  const commonUtils = require('./commonUtils');
+
+  assert.equal(typeof commonUtils.generateVnCccd, 'function');
+  assert.equal(typeof commonUtils.generateVnMst, 'function');
+  assert.equal(typeof commonUtils.generateVnPhone, 'function');
+  assert.equal(typeof commonUtils.generateVnFullName, 'function');
+  assert.equal(typeof commonUtils.generateVnPersona, 'function');
+
+  const cccd = commonUtils.generateVnCccd({ seed: 'test-cu-cccd' });
+  assert.match(cccd, /^\d{12}$/);
+
+  const mst = commonUtils.generateVnMst({ seed: 'test-cu-mst' });
+  assert.match(mst, /^\d{10}$/);
+
+  const phone = commonUtils.generateVnPhone({ seed: 'test-cu-phone' });
+  assert.match(phone, /^0\d{9}$/);
+
+  const name = commonUtils.generateVnFullName({ seed: 'test-cu-name' });
+  assert.ok(typeof name === 'string' && name.length > 0);
+
+  const persona = commonUtils.generateVnPersona({ seed: 'test-cu-persona' });
+  assert.ok(persona && persona.cccd && persona.email);
+
+  // D3: generateRandomVNPhone ra dau so thuoc Phu luc B
+  const validPrefixes = new Set([
+    '032', '033', '034', '035', '036', '037', '038', '039', '086', '096', '097', '098',
+    '081', '082', '083', '084', '085', '088', '091', '094',
+    '070', '076', '077', '078', '079', '089', '090', '093'
+  ]);
+  for (let i = 0; i < 50; i++) {
+    const p = commonUtils.generateRandomVNPhone();
+    assert.match(p, /^0\d{9}$/);
+    assert.ok(validPrefixes.has(p.slice(0, 3)), `Dau so ${p.slice(0, 3)} phai thuoc Phu luc B`);
+  }
+});
+

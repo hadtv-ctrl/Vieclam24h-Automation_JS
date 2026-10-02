@@ -157,6 +157,11 @@ async function handleDataRoutes(request, response, url) {
         random_name: generateDynamicValue('{{random_name}}'),
         timestamp: generateDynamicValue('{{timestamp}}'),
         date: generateDynamicValue('{{date}}'),
+        vn_cccd: generateDynamicValue('{{vn_cccd}}'),
+        vn_mst: generateDynamicValue('{{vn_mst}}'),
+        vn_phone: generateDynamicValue('{{vn_phone}}'),
+        vn_name: generateDynamicValue('{{vn_name}}'),
+        vn_email: generateDynamicValue('{{vn_email}}'),
       });
       return true;
     } catch (error) {

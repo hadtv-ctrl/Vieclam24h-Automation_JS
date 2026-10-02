@@ -515,18 +515,23 @@ class UiActions {
   }
 }
 
-const generateRandomVNPhone = () => {
-  const prefixes = ['09', '03', '07', '08', '05'];
-  const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-  const randomSuffix = Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
-  return randomPrefix + randomSuffix;
-};
+let vnData;
+try {
+  vnData = require('./vnData');
+} catch {
+  vnData = null;
+}
+const generateRandomVNPhone = (opts) => (vnData ? vnData.generatePhone(vnData.createRng(opts?.seed), opts) : '0981234567');
+const generateRandomEmail = () => `test_auto_${Date.now()}@example.com`;
 
-const generateRandomEmail = () => {
-  return `test_auto_${Date.now()}@example.com`;
+const baseExports = {
+  ScreenshotHelper, UiActions, generateRandomVNPhone, generateRandomEmail,
+  generateVnCccd: (opts) => vnData?.generateCccd(vnData.createRng(opts?.seed), opts).cccd,
+  generateVnMst: (opts) => vnData?.generateMst(vnData.createRng(opts?.seed), opts),
+  generateVnPhone: (opts) => vnData?.generatePhone(vnData.createRng(opts?.seed), opts),
+  generateVnFullName: (opts) => vnData?.generateFullName(vnData.createRng(opts?.seed), opts).fullName,
+  generateVnPersona: (opts) => vnData?.generateRecords({ type: 'persona', count: 1, seed: opts?.seed, options: opts }).records[0]
 };
-
-const baseExports = { ScreenshotHelper, UiActions, generateRandomVNPhone, generateRandomEmail };
 
 /**
  * Helper riêng của dự án đặt ở `core/local/commonUtils.local.js` (vùng không bao giờ bị

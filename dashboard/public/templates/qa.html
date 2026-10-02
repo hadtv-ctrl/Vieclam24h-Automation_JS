@@ -836,6 +836,12 @@ test.describe('Đổi mật khẩu @account', () => {
                 <button type="button" class="btn-secondary-sm" id="qa-req-btn-clarity" style="color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent);" title="Soát các từ định tính, mơ hồ theo ISO/IEC/IEEE 29148 và đề xuất bản nháp BDD">
                   <i class="ph-bold ph-list-checks"></i> Soát độ rõ
                 </button>
+                <button type="button" class="btn-secondary-sm" id="qa-req-btn-bva" style="color: #06b6d4; border-color: rgba(6, 182, 212, 0.4);" title="Phân tích điểm biên và phân vùng tương đương (0 token AI)">
+                  <i class="ph-bold ph-brackets-curly"></i> Ma trận biên
+                </button>
+                <button type="button" class="btn-secondary-sm" id="qa-req-btn-bdd" style="color: #8b5cf6; border-color: rgba(139, 92, 246, 0.4);" title="Chuẩn hoá Acceptance Criteria sang Given-When-Then tiếng Việt">
+                  <i class="ph-bold ph-git-commit"></i> Chuẩn hoá BDD
+                </button>
                 <button type="button" class="btn-secondary-sm" id="qa-req-btn-generate-tc" style="color: #10b981; border-color: rgba(16, 185, 129, 0.4);" title="Sinh test case (Positive, Negative, giá trị biên) từ Acceptance Criteria">
                   <i class="ph-bold ph-list-plus"></i> Sinh Test Case
                 </button>
@@ -912,6 +918,12 @@ test.describe('Đổi mật khẩu @account', () => {
               <button type="button" class="qa-req-tab" data-tab="spec" id="qa-req-subtab-spec" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;">
                 <i class="ph-bold ph-code"></i> Playwright Spec (<span id="qa-req-tab-spec-status">—</span>)
               </button>
+              <button type="button" class="qa-req-tab" data-tab="bva" id="qa-req-subtab-bva" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;">
+                <i class="ph-bold ph-brackets-curly"></i> Ma trận biên (<span id="qa-req-tab-bva-count">0</span>)
+              </button>
+              <button type="button" class="qa-req-tab" data-tab="bdd" id="qa-req-subtab-bdd" style="padding: 8px 14px; font-size: 12.5px; font-weight: 600; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;">
+                <i class="ph-bold ph-git-commit"></i> Chuẩn hoá BDD (<span id="qa-req-tab-bdd-status">—</span>)
+              </button>
             </div>
 
             <!-- Panel 1: Test Cases -->
@@ -983,6 +995,16 @@ test.describe('Đổi mật khẩu @account', () => {
             <!-- Panel 6: Playwright Spec Code (QA-2) -->
             <div class="qa-req-panel" id="qa-req-panel-spec" style="display: none; flex-direction: column; gap: 12px;">
               <div id="qa-req-spec-result" style="display: flex; flex-direction: column; gap: 12px;"></div>
+            </div>
+
+            <!-- Panel 7: Boundary Value Analysis (BVA) -->
+            <div class="qa-req-panel" id="qa-req-panel-bva" style="display: none; flex-direction: column; gap: 12px;">
+              <div id="qa-req-bva-result" style="display: flex; flex-direction: column; gap: 12px;"></div>
+            </div>
+
+            <!-- Panel 8: BDD Criteria Formatter -->
+            <div class="qa-req-panel" id="qa-req-panel-bdd" style="display: none; flex-direction: column; gap: 12px;">
+              <div id="qa-req-bdd-result" style="display: flex; flex-direction: column; gap: 12px;"></div>
             </div>
           </div>
         </div>

@@ -2,15 +2,22 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT_DIR = path.resolve(__dirname, '../..');
-const DATA_DIR = path.join(ROOT_DIR, 'data');
-const BACKUP_DIR = path.join(ROOT_DIR, '.dashboard-backups', 'data');
+function getRootDir() {
+  return process.env.QA_PROJECT_ROOT ? path.resolve(process.env.QA_PROJECT_ROOT) : path.resolve(__dirname, '../..');
+}
+function getDataDir() {
+  return path.join(getRootDir(), 'data');
+}
+function getBackupDir() {
+  return path.join(getRootDir(), '.dashboard-backups', 'data');
+}
 const MAX_DATASET_BYTES = 1024 * 1024;
 const MAX_CSV_ROWS = 10000;
 
 function ensureBackupDir() {
-  if (!fs.existsSync(BACKUP_DIR)) {
-    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  const backupDir = getBackupDir();
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
   }
 }
 
@@ -39,6 +46,9 @@ function generateDynamicValue(placeholder) {
     case 'date':
       return new Date().toISOString().split('T')[0];
     default:
+      if (placeholder && (placeholder.startsWith('{{vn_') || placeholder.startsWith('vn_'))) {
+        return require('./vnData').resolveVnPlaceholder(placeholder);
+      }
       return placeholder;
   }
 }
@@ -67,11 +77,12 @@ function resolveDynamicValues(data) {
  * Liet ke tat ca dataset files trong data/
  */
 function listDatasets() {
-  if (!fs.existsSync(DATA_DIR)) return [];
-  return fs.readdirSync(DATA_DIR, { withFileTypes: true })
+  const dataDir = getDataDir();
+  if (!fs.existsSync(dataDir)) return [];
+  return fs.readdirSync(dataDir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
     .map((entry) => {
-      const fullPath = path.join(DATA_DIR, entry.name);
+      const fullPath = path.join(dataDir, entry.name);
       const stat = fs.statSync(fullPath);
       let content = null;
       let recordCount = 0;
@@ -105,7 +116,7 @@ function listDatasets() {
  */
 function readDataset(fileName) {
   const safeName = path.basename(fileName);
-  const fullPath = path.join(DATA_DIR, safeName);
+  const fullPath = path.join(getDataDir(), safeName);
   if (!fs.existsSync(fullPath)) {
     throw new Error(`File ${safeName} khong ton tai trong thu muc data/`);
   }
@@ -125,13 +136,17 @@ function readDataset(fileName) {
  */
 function saveDataset(fileName, dataOrRaw) {
   const safeName = normalizeDatasetName(fileName);
-  const fullPath = path.join(DATA_DIR, safeName);
+  const dataDir = getDataDir();
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  const fullPath = path.join(dataDir, safeName);
   ensureBackupDir();
 
   // Tao backup truoc khi ghi
   if (fs.existsSync(fullPath)) {
     const backupName = `${safeName}.${Date.now()}.bak`;
-    fs.copyFileSync(fullPath, path.join(BACKUP_DIR, backupName));
+    fs.copyFileSync(fullPath, path.join(getBackupDir(), backupName));
   }
 
   let formatted = '';
@@ -244,7 +259,7 @@ function normalizeDatasetName(fileName) {
 
 function createDataset(fileName, templateType = 'array', content) {
   const safeName = normalizeDatasetName(fileName);
-  const fullPath = path.join(DATA_DIR, safeName);
+  const fullPath = path.join(getDataDir(), safeName);
   if (fs.existsSync(fullPath)) {
     throw new Error(`File ${safeName} da ton tai trong thu muc data/`);
   }
@@ -283,7 +298,7 @@ function deleteDataset(fileName) {
   if (!safeName || !safeName.endsWith('.json')) {
     throw new Error('Chỉ được xóa file dữ liệu JSON (.json).');
   }
-  const fullPath = path.join(DATA_DIR, safeName);
+  const fullPath = path.join(getDataDir(), safeName);
   if (!fs.existsSync(fullPath)) {
     throw new Error(`Tệp dữ liệu ${safeName} không tồn tại.`);
   }
@@ -291,7 +306,7 @@ function deleteDataset(fileName) {
   // Tao backup truoc khi xoa
   ensureBackupDir();
   const backupName = `${safeName}.${Date.now()}.deleted.bak`;
-  fs.copyFileSync(fullPath, path.join(BACKUP_DIR, backupName));
+  fs.copyFileSync(fullPath, path.join(getBackupDir(), backupName));
 
   fs.unlinkSync(fullPath);
   return {
