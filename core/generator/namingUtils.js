@@ -21,17 +21,19 @@ function sanitizeToIdentifier(str, preservePascal = false) {
   if (splitWords.length === 0) return '';
 
   if (preservePascal) {
-    return splitWords
+    const result = splitWords
       .slice(0, 4)
       .map((w) => capitalize(w.toLowerCase()))
       .join('');
+    return /^[0-9]/.test(result) ? `Item${result}` : result;
   }
 
   // camelCase
-  return splitWords
+  const result = splitWords
     .slice(0, 4)
     .map((w, i) => (i === 0 ? w.toLowerCase() : capitalize(w.toLowerCase())))
     .join('');
+  return /^[0-9]/.test(result) ? `item${capitalize(result)}` : result;
 }
 
 function capitalize(s) {

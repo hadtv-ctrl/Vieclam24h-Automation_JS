@@ -234,3 +234,19 @@
   3. Kiểm thử vòng đời phiên và xóa storage phải kết hợp tái xác thực (`loginIfVisible`) để xác nhận hệ thống khởi tạo lại phiên làm việc an toàn, không bị treo hoặc vỡ giao diện.
   4. Đảm bảo toàn bộ tương tác và assertion qua Page Object Model, tuân thủ 100% rào chắn `npm run check:framework`.
 
+### [LEARN-014] Chuẩn Hóa Định Danh JavaScript Không Bắt Đầu Bằng Chữ Số Trong Bộ Sinh Mã UI Recorder
+- **Nguồn trích xuất:** BUGFIX-UI-RECORDER-IDENTIFIER-SYNTAX-ERROR
+- **Role quan sát:** Senior Automation QA Engineer & Platform Engineer
+- **Quan sát (Observation):**
+  1. Khi người dùng ghi hình kịch bản (Playwright Codegen) tương tác với các phần tử có văn bản bắt đầu bằng số (ví dụ: `+10 việc làm có lương hấp dẫn`), hàm `sanitizeToIdentifier` loại bỏ dấu `+` và sinh ra tên biến định danh bắt đầu bằng chữ số: `10ViecLamCoLink`.
+  2. Trong cú pháp JavaScript (V8 Engine), tên thuộc tính truy cập qua dot notation `this.10ViecLamCoLink` hoặc tên định danh bắt đầu bằng chữ số (0-9) là cú pháp không hợp lệ (`SyntaxError: Invalid or unexpected token` / `Unexpected number`).
+  3. Khi nhấn "Lưu vào Framework", cơ chế Sandbox Validation (`recordWriter.js`) chạy `new Function(pomFile.content)` phát hiện lỗi cú pháp và chặn ghi file, khiến người dùng không thể tạo script.
+- **Bằng chứng (Evidence):** `core/generator/namingUtils.js`, `core/generator/recordWriter.js`, `core/generator/recordGenerator.test.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Mọi hàm xử lý / chuẩn hóa định danh mã nguồn (`sanitizeToIdentifier`) bắt buộc phải kiểm tra ký tự đầu tiên. Nếu chuỗi bắt đầu bằng chữ số (`/^[0-9]/`), phải tự động gắn tiền tố hợp lệ (`item` cho camelCase hoặc `Item` cho PascalCase).
+  2. Bổ sung test tự động kiểm thử toàn diện các trường hợp text/selector bắt đầu bằng số, đảm bảo mã nguồn POM và Spec sinh ra luôn thỏa mãn `new Function(content)` mà không ném lỗi cú pháp.
+
