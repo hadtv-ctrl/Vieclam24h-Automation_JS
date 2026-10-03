@@ -316,5 +316,19 @@
   2. Xử lý triệt để modal Consent dữ liệu cá nhân bằng exact match nút "Đồng ý" và chờ modal biến mất trước khi tương tác form tiếp theo.
   3. Đóng gói 100% assertions SEO/DOM và đếm element vào Page Object để giữ spec thuần BDD logic và tuân thủ rule kiến trúc.
 
-
-
+### [LEARN-019] Tiêu Chuẩn Chụp Bằng Chứng Trực Quan (Evidence Tracing) Đảm Bảo Tính Minh Bạch Trong QA
+- **Nguồn trích xuất:** TASK-QA-EVIDENCE-TRACING-AUDIT (TC-106 & REQ-008)
+- **Role quan sát:** Senior Automation QA Engineer & Test Lead (Gate 4)
+- **Quan sát (Observation):**
+  1. **Lỗi chụp bằng chứng lệch pha (Off-by-one / Race condition):** Khi tester viết hàm thực hiện thao tác (click option/fill text) rồi bấm nút Tiếp theo (Next / Submit) trước khi gọi `capture()`, hiệu ứng chuyển bước của SPA sẽ kích hoạt khiến ảnh chụp bị nhảy sang màn hình của bước sau (thậm chí chưa kịp render hoặc trống trơn) nhưng lại mang tên của bước trước. Người review nhìn vào không thấy được dữ liệu hoặc option nào đã thực sự được chọn.
+  2. **Gom cục blackbox:** Khi gom toàn bộ luồng wizard/stepper (ví dụ cả 3 bước Mini-onboarding: Vị trí -> Khu vực -> Mức lương) vào một hàm lớn trong Page Object mà không chia tách thành các step BDD rõ ràng trong spec, test report và trace không tái hiện được hành vi chi tiết của từng bước.
+  3. **Bẫy regex tiền tố tiếng Việt:** Locator dùng regex `^Khác` để bắt nút dropdown "Khác ⌵" đã vô tình khớp vào các đường link `Khách sạn - Nhà hàng - Du lịch` ngoài viewport, dẫn đến lỗi timeout 15000ms. Cần bổ sung rào chắn loại trừ: `filter({ hasText: /^Khác(\s|$)/ }).filter({ hasNotText: /Khách/i })`.
+- **Bằng chứng (Evidence):** `pages/desktop/PersonalizePage.js`, `tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js`, `tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. **Chụp ngay tại thời điểm tương tác:** Điền giá trị / Click chọn option -> Chờ UI hiển thị giá trị hoặc trạng thái active/checked -> **CHỤP ẢNH BẰNG CHỨNG NGAY TẠI TRẠNG THÁI NÀY** -> Sau đó MỚI bấm nút chuyển bước (Tiếp tục / Tiếp theo / Hoàn tất).
+  2. **Tách nhỏ step BDD:** Mỗi bước chuyển đổi trạng thái quan trọng phải tương ứng với một `test.step()` rõ ràng trong spec để Playwright Report hiển thị cây thời gian và bằng chứng trực quan 100%.
+  3. **Đặt tên ảnh theo trình tự nghiệp vụ:** Sử dụng tiền tố số thứ tự và ngữ cảnh rõ ràng (ví dụ: `auth_01_phone_entered`, `onboarding_03_step2_locations_selected`, `onboarding_04_step3_salary_range_entered`, `onboarding_05_criteria_card_and_recommendations`) để audit trail minh bạch.

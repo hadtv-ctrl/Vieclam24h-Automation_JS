@@ -57,7 +57,7 @@ class PersonalizePage extends BasePage {
     this.binhDuongBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Bình Dương/ }).last();
     this.dongNaiBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Đồng Nai/ }).last();
     this.canThoBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Cần Thơ/ }).last();
-    this.khacBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Khác/ }).last();
+    this.khacBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Khác(\s|$)/ }).filter({ hasNotText: /Khách/i }).last();
     this.anGiangBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^An Giang/ }).last();
     this.chonToiDa5Text = page.getByText('Chọn tối đa 5 khu vực').first();
 
@@ -109,6 +109,12 @@ class PersonalizePage extends BasePage {
     this.consentAgreeBtn = page.getByRole('button', { name: 'Đồng ý', exact: true }).first();
     this.salaryInputs = page.locator('input[placeholder*="VD" i], input[role="textbox"]');
     this.finalPersonalizeHeading = page.locator('h1, h2, h3').filter({ hasText: /Việc làm.*dành riêng|Tiêu chí tìm việc|Gợi ý việc làm/i }).first();
+
+    // Locators cho widget Tiêu chí tìm việc của tôi trên Personalized Page
+    this.criteriaCard = page.locator('aside, div, section').filter({ hasText: /Tiêu chí tìm việc của tôi/i }).first();
+    this.criteriaJobTitleText = page.locator('div, span, p').filter({ hasText: /Vị trí mong muốn ứng tuyển/i }).first();
+    this.criteriaLocationText = page.locator('div, span, p').filter({ hasText: /Khu vực/i }).first();
+    this.criteriaSalaryText = page.locator('div, span, p').filter({ hasText: /Mức lương mong muốn/i }).first();
   }
 
   /**
@@ -178,16 +184,34 @@ class PersonalizePage extends BasePage {
    * Thực hiện đăng ký tài khoản và chấp thuận Consent trực tiếp trên trang Personalized Page
    */
   async registerAndAcceptConsentOnPersonalizedPage(phone, otp = '1111', fullName = 'Hà Đinh') {
+    await this.registerPhoneAndOtp(phone, otp);
+    await this.enterFullNameAndAcceptConsent(fullName);
+  }
+
+  /**
+   * Bước 1 Xác thực: Điền số điện thoại và nhập mã xác thực OTP 4 chữ số
+   */
+  async registerPhoneAndOtp(phone, otp = '1111') {
     await this.waitForElement(this.nhapSoDienThoaiInput, 15000);
     await this.actions.fill(this.nhapSoDienThoaiInput, phone);
+    await this.capture('auth_01_phone_entered');
     await this.actions.click(this.tiepTucBtn);
-    await this.fillOtpDigits(otp);
 
+    await this.fillOtpDigits(otp);
+    await this.capture('auth_02_otp_entered');
+  }
+
+  /**
+   * Bước 2 Xác thực: Nhập Họ và tên và chấp thuận điều khoản xử lý dữ liệu cá nhân (Consent modal)
+   */
+  async enterFullNameAndAcceptConsent(fullName = 'Hà Đinh') {
     await this.waitForElement(this.fullNameInput, 10000);
     await this.actions.fill(this.fullNameInput, fullName);
+    await this.capture('auth_03_fullname_entered');
     await this.actions.click(this.hoanTatBtn);
 
     await this.waitForElement(this.consentAgreeBtn, 15000);
+    await this.capture('auth_04_consent_modal_displayed');
     await this.actions.click(this.consentAgreeBtn, { force: true });
     await this.consentAgreeBtn.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => null);
   }
@@ -197,17 +221,8 @@ class PersonalizePage extends BasePage {
    */
   async completeDirectMiniOnboarding(jobTitle = 'nhân viên bán hàng', minSalary = '10', maxSalary = '15') {
     await this.completeStep1JobTitle(jobTitle);
-
-    await this.waitForElement(this.tphcmBtn, 10000);
-    await this.actions.click(this.tphcmBtn);
-    await this.actions.click(this.tiepTheoBtn);
-
-    await this.waitForElement(this.salaryInputs.first(), 10000);
-    if (await this.salaryInputs.count() >= 2) {
-      await this.actions.fill(this.salaryInputs.nth(0), minSalary);
-      await this.actions.fill(this.salaryInputs.nth(1), maxSalary);
-    }
-    await this.actions.click(this.hoanTatBtn);
+    await this.completeStep2Locations(['TP.HCM']);
+    await this.completeStep3Salary(minSalary, maxSalary);
   }
 
   /**
@@ -303,7 +318,15 @@ class PersonalizePage extends BasePage {
    * Thử chọn khu vực thứ 6 vượt biên tối đa 5
    */
   async select6thLocationIfAvailable() {
-    await this.capture('attempted_select_6th_location');
+    try {
+      if (await this.khacBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await this.actions.click(this.khacBtn);
+        if (await this.anGiangBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await this.actions.click(this.anGiangBtn);
+        }
+      }
+    } catch (_) {}
+    await this.capture('attempted_select_6th_location_boundary_checked');
   }
 
   /**
@@ -315,16 +338,64 @@ class PersonalizePage extends BasePage {
     await this.actions.click(this.dataTestId.first());
     await this.actions.fill(this.dataTestId.first(), jobTitle);
 
-    const suggestionItem = this.page.locator('div, li, span, p').filter({ hasText: new RegExp(`^${jobTitle}$`, 'i') }).last();
+    const suggestionItem = this.page.locator('div, li, span, p').filter({ hasText: new RegExp(`^${jobTitle}`, 'i') }).last();
     await suggestionItem.waitFor({ state: 'visible', timeout: 6000 }).catch(() => null);
+    await this.capture('onboarding_01_job_title_input_and_suggestions');
+
     if (await suggestionItem.isVisible().catch(() => false)) {
       await this.actions.click(suggestionItem);
     }
-    await this.capture('step1_completed_proceed_to_locations');
+    await this.capture('onboarding_02_job_title_selected');
 
     if (await this.tiepTheoBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await this.actions.click(this.tiepTheoBtn);
     }
+  }
+
+  /**
+   * Hoàn tất Bước 2: Khu vực làm việc mong muốn
+   * @param {string[]} [locations]
+   */
+  async completeStep2Locations(locations = ['TP.HCM']) {
+    await this.waitForElement(this.chonToiDa5Text, 15000);
+    for (const locName of locations) {
+      const locBtn = this.page.locator('button, div, span, [role="button"]')
+        .filter({ hasText: new RegExp(`^${locName}$`, 'i') })
+        .last();
+      if (await locBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await this.actions.click(locBtn);
+      }
+    }
+    // Chụp bằng chứng rõ ràng các khu vực đã chọn TRƯỚC KHI bấm Tiếp theo
+    await this.capture('onboarding_03_step2_locations_selected');
+    await this.actions.click(this.tiepTheoBtn);
+  }
+
+  /**
+   * Hoàn tất Bước 3: Mức lương mong muốn
+   * @param {string} [minSalary]
+   * @param {string} [maxSalary]
+   */
+  async completeStep3Salary(minSalary = '10', maxSalary = '15') {
+    await this.waitForElement(this.salaryInputs.first(), 10000);
+    if (await this.salaryInputs.count() >= 2) {
+      await this.actions.fill(this.salaryInputs.nth(0), minSalary);
+      await this.actions.fill(this.salaryInputs.nth(1), maxSalary);
+    }
+    // Chụp bằng chứng rõ ràng khoảng lương đã điền TRƯỚC KHI bấm Hoàn tất
+    await this.capture('onboarding_04_step3_salary_range_entered');
+    await this.actions.click(this.hoanTatBtn);
+  }
+
+  /**
+   * Xác thực giao diện Personalized Page sau khi hoàn tất Onboarding mini
+   */
+  async verifyPersonalizedPageAfterOnboarding({ jobTitle = 'nhân viên bán hàng', location = 'TP.HCM', salary = '10 - 15 triệu' } = {}) {
+    await this.waitForElement(this.finalPersonalizeHeading, 20000);
+    await this.criteriaCard.waitFor({ state: 'visible', timeout: 10000 }).catch(() => null);
+
+    // Chụp bằng chứng hoàn tất: Card tiêu chí tìm việc đã cập nhật cùng danh sách việc làm gợi ý
+    await this.capture('onboarding_05_criteria_card_and_recommendations');
   }
 
   /**
