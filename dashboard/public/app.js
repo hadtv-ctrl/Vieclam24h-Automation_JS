@@ -17145,6 +17145,50 @@ async function loadFixturesList() {
   }
 }
 
+function isFixtureDirty() {
+  if (!currentSelectedFixture || !currentSelectedFixture.isCustom) return false;
+  const editor = document.getElementById('fx-source-editor');
+  if (!editor) return false;
+  return editor.value !== (currentSelectedFixture.rawCode || '');
+}
+
+function updateFixtureDirtyIndicator(dirty) {
+  let dirtyBadge = document.getElementById('fx-dirty-badge');
+  if (!dirtyBadge) {
+    const modeBadge = document.getElementById('fx-mode-badge');
+    if (modeBadge && modeBadge.parentElement) {
+      dirtyBadge = document.createElement('span');
+      dirtyBadge.id = 'fx-dirty-badge';
+      dirtyBadge.className = 'fx-dirty-pill';
+      dirtyBadge.style.fontSize = '11px';
+      dirtyBadge.style.fontWeight = '600';
+      dirtyBadge.style.padding = '2px 8px';
+      dirtyBadge.style.borderRadius = '999px';
+      dirtyBadge.style.display = 'none';
+      dirtyBadge.style.marginLeft = '6px';
+      modeBadge.parentElement.appendChild(dirtyBadge);
+    }
+  }
+  if (dirtyBadge) {
+    if (dirty) {
+      dirtyBadge.textContent = '● Chưa lưu';
+      dirtyBadge.style.display = 'inline-flex';
+      dirtyBadge.style.background = 'rgba(234, 179, 8, 0.15)';
+      dirtyBadge.style.color = '#eab308';
+      dirtyBadge.style.border = '1px solid rgba(234, 179, 8, 0.3)';
+    } else {
+      dirtyBadge.textContent = '✓ Đã lưu';
+      dirtyBadge.style.display = 'inline-flex';
+      dirtyBadge.style.background = 'rgba(34, 197, 94, 0.15)';
+      dirtyBadge.style.color = '#22c55e';
+      dirtyBadge.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+      setTimeout(() => {
+        if (!isFixtureDirty() && dirtyBadge) dirtyBadge.style.display = 'none';
+      }, 2000);
+    }
+  }
+}
+
 function renderFixturesList() {
   const container = $('#fixtures-list-container');
   if (!container) return;
@@ -17207,50 +17251,6 @@ function renderFixturesList() {
       </div>
     `;
   }).join('');
-
-function isFixtureDirty() {
-  if (!currentSelectedFixture || !currentSelectedFixture.isCustom) return false;
-  const editor = document.getElementById('fx-source-editor');
-  if (!editor) return false;
-  return editor.value !== (currentSelectedFixture.rawCode || '');
-}
-
-function updateFixtureDirtyIndicator(dirty) {
-  let dirtyBadge = document.getElementById('fx-dirty-badge');
-  if (!dirtyBadge) {
-    const modeBadge = document.getElementById('fx-mode-badge');
-    if (modeBadge && modeBadge.parentElement) {
-      dirtyBadge = document.createElement('span');
-      dirtyBadge.id = 'fx-dirty-badge';
-      dirtyBadge.className = 'fx-dirty-pill';
-      dirtyBadge.style.fontSize = '11px';
-      dirtyBadge.style.fontWeight = '600';
-      dirtyBadge.style.padding = '2px 8px';
-      dirtyBadge.style.borderRadius = '999px';
-      dirtyBadge.style.display = 'none';
-      dirtyBadge.style.marginLeft = '6px';
-      modeBadge.parentElement.appendChild(dirtyBadge);
-    }
-  }
-  if (dirtyBadge) {
-    if (dirty) {
-      dirtyBadge.textContent = '● Chưa lưu';
-      dirtyBadge.style.display = 'inline-flex';
-      dirtyBadge.style.background = 'rgba(234, 179, 8, 0.15)';
-      dirtyBadge.style.color = '#eab308';
-      dirtyBadge.style.border = '1px solid rgba(234, 179, 8, 0.3)';
-    } else {
-      dirtyBadge.textContent = '✓ Đã lưu';
-      dirtyBadge.style.display = 'inline-flex';
-      dirtyBadge.style.background = 'rgba(34, 197, 94, 0.15)';
-      dirtyBadge.style.color = '#22c55e';
-      dirtyBadge.style.border = '1px solid rgba(34, 197, 94, 0.3)';
-      setTimeout(() => {
-        if (!isFixtureDirty() && dirtyBadge) dirtyBadge.style.display = 'none';
-      }, 2000);
-    }
-  }
-}
 
   container.querySelectorAll('.fixture-card-item').forEach((card) => {
     card.addEventListener('click', () => {
