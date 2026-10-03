@@ -233,10 +233,12 @@ Hệ thống phân tách hành vi hiển thị của 3 trang theo 3 trạng thá
 | Chọn chính xác 5 khu vực làm việc (BVA = 5 biên trên) | **Đã phủ** | TC-101 (`tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js`) |
 | Không chọn khu vực làm việc nào và bấm tiếp tục (BVA biên dưới - Negative) | **Đã phủ** | TC-102 (`tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js`) |
 | Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | **Đã phủ** | TC-103 (`tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js`) |
+| Khách vãng lai truy cập deep link Personalized Page bắt buộc đăng nhập (US-06, US-10) | **Đã phủ** | TC-104 (`tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js`) |
+| Kiểm tra SEO Metadata và Open Graph tags trên Personalized Page (US-13) | **Đã phủ** | TC-105 (`tests/e2e/desktop/personalize-seo-metadata.spec.js`) |
+| Thiết lập Mini-Onboarding 3 bước trực tiếp từ URL Personalized Page (US-07, US-12) | **Đã phủ** | TC-106 (`tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js`) |
 | Toast Home gợi ý khám phá (US-03) & CTA trang Search (US-04) | Đã quy hoạch | Kiểm tra điều kiện cuộn trang khuất header và tự ẩn khi card chạm viewport |
 | Phân trang 30 tin & sắp xếp 3 tiêu chí trên Personalized Page (US-08, US-09) | Đã quy hoạch | Kiểm tra số lượng card mỗi trang và logic sort |
 | Tiêu đề Dynamic Loop text & Chuyển bước không reload trang (US-12) | Đã quy hoạch | Kiểm tra hiệu ứng đổi 3 cụm text trong 5 giây và trạng thái chuyển bước |
-| Kiểm tra SEO Metadata và Open Graph tags (US-13) | Đã quy hoạch | Kiểm tra thẻ title, description, keywords, canonical và og tags |
 
 ---
 

@@ -299,4 +299,22 @@
   2. Tuyệt đối không dùng `.or()` giữa các phần tử xuất hiện đồng thời trong các hàm chờ hoặc assertion hiển thị duy nhất.
   3. Ở bước `Given`, luôn chủ động dọn dẹp popups và blocking modals trước khi kích hoạt luồng tương tác người dùng.
 
+### [LEARN-018] Tách Biệt Kiểm Thử Entry Points Với Destination Page Và Xử Lý Modal Consent Hai Tầng
+- **Nguồn trích xuất:** TASK-PERSONALIZE-PAGE-DIRECT-E2E (TC-104 -> TC-106)
+- **Role quan sát:** Senior Automation QA Engineer (Gate 4)
+- **Quan sát (Observation):**
+  1. Khi một tính năng có cấu trúc gồm Entry Points (Home/Search) và Destination Page độc lập (Personalized Page `/viec-lam-danh-rieng-cho-ban.html`), nếu toàn bộ test case chỉ xuất phát từ `Home`, hệ thống sẽ bị bỏ trống vùng rủi ro lớn nhất: giao diện, phân trang, sorting và luồng trực tiếp trên chính Destination Page. Cần viết kịch bản truy cập trực tiếp deep link URL.
+  2. Sau khi người dùng xác thực OTP và nhập họ tên tạo tài khoản mới, hệ thống xuất hiện modal Consent: "Đồng ý cho phép xử lý dữ liệu cá nhân". Nút "Đồng ý" (`page.getByRole('button', { name: 'Đồng ý', exact: true })`) cần được chờ và bấm dứt khoát. Nếu bấm nhầm nút "Để sau", hệ thống kích hoạt tiếp popup xác nhận lần hai ("Bạn muốn quay lại sau?"), che phủ toàn bộ viewport và gây lỗi `intercepts pointer events`.
+  3. Để tuân thủ 100% kiến trúc dự án (`check:framework`), các thao tác trích xuất SEO metadata (`title`, `meta description`, `canonical`, `og:*`) và đếm số lượng `jobCards` phải được đóng gói thành các helper methods trong Page Object (`PersonalizePage.js`), tuyệt đối không gọi `page.locator()` hay `page.waitForTimeout()` trực tiếp trong file spec.
+- **Bằng chứng (Evidence):** `pages/desktop/PersonalizePage.js`, `tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js`, `tests/e2e/desktop/personalize-seo-metadata.spec.js`, `tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Luôn phủ cả 2 luồng: Luồng qua Entry Point và Luồng truy cập trực tiếp URL Destination Page.
+  2. Xử lý triệt để modal Consent dữ liệu cá nhân bằng exact match nút "Đồng ý" và chờ modal biến mất trước khi tương tác form tiếp theo.
+  3. Đóng gói 100% assertions SEO/DOM và đếm element vào Page Object để giữ spec thuần BDD logic và tuân thủ rule kiến trúc.
+
+
 

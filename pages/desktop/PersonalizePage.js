@@ -45,7 +45,8 @@ class PersonalizePage extends BasePage {
     this.extraCityBtn = page.getByRole('button', { name: /Đà Nẵng|Hải Phòng|Cần Thơ/i }).first();
 
     // Thiết lập tiêu chí: Bước 1 - Vị trí công việc mong muốn
-    this.dataTestId = page.locator('[data-test-id="common__input"]').first();
+    this.jobTitleInput = page.locator('input[name="job_title"], input[placeholder*="vị trí công việc" i], [data-test-id="common__input"]').first();
+    this.dataTestId = this.jobTitleInput;
     this.banDangTimCongHeading = page.getByRole('heading', { name: /Bạn đang tìm công việc gì/i }).first();
     this.nhanVienBanHangText = page.locator('div, span, p, li').filter({ hasText: /^nhân viên bán hàng$/i }).last();
     this.tiepTheoBtn = page.getByRole('button', { name: /Tiếp theo|Tiếp tục/i }).first();
@@ -89,6 +90,25 @@ class PersonalizePage extends BasePage {
     this.viecLamDanhChoHeading = page.getByRole('heading', { name: /Việc làm dành cho bạn với mức/i }).first();
     this.xemTatCaLink = page.getByRole('link', { name: /Xem tất cả/i }).first();
     this.keToanTongHopLink = page.getByRole('link', { name: /Kế Toán Tổng Hợp/i }).first();
+
+    // Thuộc tính trên Personalized Page trực tiếp
+    this.personalizedPath = '/viec-lam-danh-rieng-cho-ban.html';
+    this.loginOrRegisterHeading = page.getByRole('heading', { name: /Đăng nhập hoặc Đăng ký/i }).first();
+    this.personalizedHeading = page.locator('h1, h2').filter({ hasText: /Việc làm.*dành riêng cho/i }).first();
+    this.choChopBietNhuCauText = page.getByText(/Cho Chớp biết nhu cầu/i).first();
+
+    // Locators cho SEO, Social và Direct Flow trên Personalized Page
+    this.jobCards = page.locator('[data-test-id*="job-card"], [class*="job-card"], [class*="job_item"]');
+    this.metaDescription = page.locator('meta[name="description"]');
+    this.metaKeywords = page.locator('meta[name="keywords"]');
+    this.canonicalLink = page.locator('link[rel="canonical"]');
+    this.ogTitleMeta = page.locator('meta[property="og:title"]');
+    this.ogUrlMeta = page.locator('meta[property="og:url"]');
+    this.ogDescriptionMeta = page.locator('meta[property="og:description"]');
+    this.fullNameInput = page.locator('input[placeholder*="họ và tên" i], input[placeholder*="Họ và tên" i]').first();
+    this.consentAgreeBtn = page.getByRole('button', { name: 'Đồng ý', exact: true }).first();
+    this.salaryInputs = page.locator('input[placeholder*="VD" i], input[role="textbox"]');
+    this.finalPersonalizeHeading = page.locator('h1, h2, h3').filter({ hasText: /Việc làm.*dành riêng|Tiêu chí tìm việc|Gợi ý việc làm/i }).first();
   }
 
   /**
@@ -96,6 +116,98 @@ class PersonalizePage extends BasePage {
    */
   async navigate() {
     await super.navigate('/');
+  }
+
+  /**
+   * Mở trực tiếp trang Việc làm dành riêng cho bạn (Personalized Page)
+   */
+  async navigateToPersonalizedPage() {
+    await super.navigate(this.personalizedPath);
+  }
+
+  /**
+   * Lấy nội dung thẻ meta description
+   */
+  async getMetaDescription() {
+    return this.metaDescription.getAttribute('content');
+  }
+
+  /**
+   * Lấy nội dung thẻ meta keywords
+   */
+  async getMetaKeywords() {
+    return this.metaKeywords.getAttribute('content');
+  }
+
+  /**
+   * Lấy thuộc tính href của canonical link
+   */
+  async getCanonicalHref() {
+    return this.canonicalLink.getAttribute('href');
+  }
+
+  /**
+   * Lấy thuộc tính content của og:title
+   */
+  async getOgTitle() {
+    return this.ogTitleMeta.getAttribute('content');
+  }
+
+  /**
+   * Lấy thuộc tính content của og:url
+   */
+  async getOgUrl() {
+    return this.ogUrlMeta.getAttribute('content');
+  }
+
+  /**
+   * Lấy thuộc tính content của og:description
+   */
+  async getOgDescription() {
+    return this.ogDescriptionMeta.getAttribute('content');
+  }
+
+  /**
+   * Đếm số lượng job cards đang hiển thị
+   */
+  async getJobCardsCount() {
+    return this.jobCards.count();
+  }
+
+  /**
+   * Thực hiện đăng ký tài khoản và chấp thuận Consent trực tiếp trên trang Personalized Page
+   */
+  async registerAndAcceptConsentOnPersonalizedPage(phone, otp = '1111', fullName = 'Hà Đinh') {
+    await this.waitForElement(this.nhapSoDienThoaiInput, 15000);
+    await this.actions.fill(this.nhapSoDienThoaiInput, phone);
+    await this.actions.click(this.tiepTucBtn);
+    await this.fillOtpDigits(otp);
+
+    await this.waitForElement(this.fullNameInput, 10000);
+    await this.actions.fill(this.fullNameInput, fullName);
+    await this.actions.click(this.hoanTatBtn);
+
+    await this.waitForElement(this.consentAgreeBtn, 15000);
+    await this.actions.click(this.consentAgreeBtn, { force: true });
+    await this.consentAgreeBtn.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => null);
+  }
+
+  /**
+   * Hoàn tất 3 bước Mini-onboarding trực tiếp trên Personalized Page
+   */
+  async completeDirectMiniOnboarding(jobTitle = 'nhân viên bán hàng', minSalary = '10', maxSalary = '15') {
+    await this.completeStep1JobTitle(jobTitle);
+
+    await this.waitForElement(this.tphcmBtn, 10000);
+    await this.actions.click(this.tphcmBtn);
+    await this.actions.click(this.tiepTheoBtn);
+
+    await this.waitForElement(this.salaryInputs.first(), 10000);
+    if (await this.salaryInputs.count() >= 2) {
+      await this.actions.fill(this.salaryInputs.nth(0), minSalary);
+      await this.actions.fill(this.salaryInputs.nth(1), maxSalary);
+    }
+    await this.actions.click(this.hoanTatBtn);
   }
 
   /**
@@ -199,9 +311,9 @@ class PersonalizePage extends BasePage {
    * @param {string} [jobTitle]
    */
   async completeStep1JobTitle(jobTitle = 'nhân viên bán hàng') {
-    await this.waitForElement(this.dataTestId.or(this.banDangTimCongHeading), 15000);
-    await this.actions.click(this.dataTestId);
-    await this.actions.fill(this.dataTestId, jobTitle);
+    await this.waitForElement(this.dataTestId.first(), 15000);
+    await this.actions.click(this.dataTestId.first());
+    await this.actions.fill(this.dataTestId.first(), jobTitle);
 
     const suggestionItem = this.page.locator('div, li, span, p').filter({ hasText: new RegExp(`^${jobTitle}$`, 'i') }).last();
     await suggestionItem.waitFor({ state: 'visible', timeout: 6000 }).catch(() => null);

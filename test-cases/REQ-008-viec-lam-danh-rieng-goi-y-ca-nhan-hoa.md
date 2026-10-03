@@ -13,6 +13,9 @@
 | TC-101 | AC-024 | Chọn chính xác 5 khu vực làm việc (Giá trị biên tối đa) | P1 | Có | tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js |
 | TC-102 | AC-024 | Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative) | P2 | Có | tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js |
 | TC-103 | AC-024 | Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | P2 | Có | tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js |
+| TC-104 | AC-023 | Khách vãng lai truy cập deep link Personalized Page bắt buộc đăng nhập | P0 | Có | tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js |
+| TC-105 | AC-023 | Kiểm tra cấu hình SEO Metadata và Open Graph tags trên Personalized Page | P2 | Có | tests/e2e/desktop/personalize-seo-metadata.spec.js |
+| TC-106 | AC-024 | Thiết lập Mini-Onboarding 3 bước trực tiếp từ URL Personalized Page | P1 | Có | tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js |
 
 
 ## Chi tiết
@@ -153,3 +156,51 @@
 | 1 | Bỏ chọn 1 khu vực trong danh sách 5 khu vực đã chọn | Hệ thống cho phép bỏ chọn, bộ đếm giảm xuống 4/5, các khu vực khác được mở khóa (enabled) trở lại. |
 | 2 | Chọn 1 khu vực mới khác | Hệ thống cho phép chọn khu vực mới, bộ đếm tăng lên 5/5 và khóa các lựa chọn còn lại. |
 | 3 | Bấm 'Tiếp tục' | Hệ thống lưu thành công danh sách 5 khu vực mới cập nhật. |
+
+
+### TC-104 — Khách vãng lai truy cập deep link Personalized Page bắt buộc đăng nhập
+
+- **Loại:** Chức năng / Bảo mật quyền truy cập | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích luồng điều hướng trực tiếp (Deep Link Flow)
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js`
+- **Tiền điều kiện:** Khách vãng lai chưa đăng nhập truy cập trực tiếp đường dẫn URL trang Việc làm dành riêng cho bạn.
+- **Dữ liệu kiểm thử:** URL `https://seeker.vl24hv2.qc.sieuviet-team.com/viec-lam-danh-rieng-cho-ban.html`
+> *Ghi chú nghiệp vụ:* Kiểm thử US-06 và US-10: khách vãng lai truy cập deep link bắt buộc phải đăng nhập trước khi thấy nội dung việc làm.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Truy cập trực tiếp URL trang Việc làm dành riêng cho bạn | Trang tải xong, URL đúng `/viec-lam-danh-rieng-cho-ban.html` |
+| 2 | Kiểm tra giao diện hiển thị cho khách vãng lai | Tiêu đề trang cá nhân hóa hiển thị, form bắt buộc đăng nhập/đăng ký hiển thị rõ ràng, không hiển thị danh sách việc làm gợi ý |
+
+
+### TC-105 — Kiểm tra cấu hình SEO Metadata và Open Graph tags trên Personalized Page
+
+- **Loại:** Phi chức năng / SEO | **Ưu tiên:** P2 | **Kỹ thuật:** Kiểm thử thẻ Metadata và Social Sharing Tags
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-seo-metadata.spec.js`
+- **Tiền điều kiện:** Truy cập trang Việc làm dành riêng cho bạn để kiểm tra các thẻ SEO & Social Metadata.
+- **Dữ liệu kiểm thử:** URL `https://seeker.vl24hv2.qc.sieuviet-team.com/viec-lam-danh-rieng-cho-ban.html`
+> *Ghi chú nghiệp vụ:* Kiểm thử US-13: xác nhận title, description, keywords, canonical và OG tags khớp với đặc tả của BA.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Truy cập trực tiếp trang Personalized Page | Trang tải xong DOM |
+| 2 | Kiểm tra tiêu đề trang (Title) và các thẻ Meta chuẩn SEO | Title chứa 'Việc làm dành riêng cho bạn', meta description và keywords đúng nội dung, canonical link kết thúc bằng `/viec-lam-danh-rieng-cho-ban.html` |
+| 3 | Kiểm tra các thẻ Open Graph (OG) | og:title, og:url, og:description hiển thị đúng chuẩn |
+
+
+### TC-106 — Thiết lập Mini-Onboarding 3 bước trực tiếp từ URL Personalized Page
+
+- **Loại:** Chức năng / Tích hợp E2E | **Ưu tiên:** P1 | **Kỹ thuật:** Kịch bản luồng thao tác người dùng trên URL riêng (Direct Page Flow)
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js`
+- **Tiền điều kiện:** Người dùng truy cập trực tiếp URL trang Việc làm dành riêng cho bạn, xác thực tài khoản và làm 3 bước Mini-onboarding.
+- **Dữ liệu kiểm thử:** SĐT mới ngẫu nhiên, OTP `1111`, Họ tên `Hà Đinh`, Vị trí `nhân viên bán hàng`, Khu vực `TP.HCM`, Mức lương `10 - 15 triệu`.
+> *Ghi chú nghiệp vụ:* Kiểm thử US-07 và US-12: tài khoản 0/3 data vào trực tiếp Personalized Page bắt buộc hoàn thành Mini-onboarding 3 bước ngay trên trang.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Truy cập URL Personalized Page, nhập SĐT, OTP, Họ tên và chấp thuận điều khoản | Xác thực tài khoản thành công, hệ thống mở khóa luồng Mini-onboarding 3 bước |
+| 2 | Thực hiện Bước 1 (nhập vị trí công việc), Bước 2 (chọn khu vực), Bước 3 (nhập khoảng lương) rồi bấm Hoàn tất | Mỗi bước chuyển mượt mà, lưu tiêu chí thành công |
+| 3 | Kiểm tra giao diện sau khi hoàn tất | Hệ thống cập nhật hiển thị giao diện Personalized Page và danh sách việc làm gợi ý |
+
