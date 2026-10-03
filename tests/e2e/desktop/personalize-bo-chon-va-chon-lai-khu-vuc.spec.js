@@ -43,34 +43,39 @@ test.describe('Feature: Cá nhân hóa tiêu chí tìm việc & kiểm tra giá 
     await test.step('When [Bước 2 Mini-onboarding] Chọn đủ 5 khu vực làm việc ban đầu (TP.HCM, Hà Nội, Bình Dương, Đồng Nai, Cần Thơ)', async () => {
       // Chờ màn hình chọn khu vực hiển thị
       await expect(personalizePage.chonToiDa5Text).toBeVisible({ timeout: 15000 });
+      // Chụp ảnh TRƯỚC KHI chọn option khu vực (màn hình hiển thị đầy đủ, chưa có khu vực nào được chọn)
+      await personalizePage.capture('02_step2_locations_before_selection');
 
       // Chọn lần lượt đủ 5 khu vực ban đầu
-      await personalizePage.select5Locations();
-      await personalizePage.capture('02_initial_5_locations_selected');
+      await personalizePage.select5Locations({ capture: false });
+      // Chụp ảnh SAU KHI đã chọn đủ 5 khu vực ban đầu
+      await personalizePage.capture('03_initial_5_locations_selected');
     });
 
     await test.step('When [3] Bỏ chọn 1 khu vực trong danh sách 5 khu vực đã chọn', async () => {
       // Bỏ chọn khu vực Cần Thơ
-      await personalizePage.deselectLocation('Cần Thơ');
+      await personalizePage.deselectLocation('Cần Thơ', { capture: false });
     });
 
     await test.step('Then [1] Hệ thống cho phép bỏ chọn, các khu vực khác được mở khóa trở lại', async () => {
       // Xác nhận khu vực Cần Thơ không còn trạng thái được chọn (mất border-[#306499])
       await expect(personalizePage.getLocationBtn('Cần Thơ')).not.toHaveClass(/border-\[#306499\]/);
       expect(page.url()).toContain(personalizePage.personalizedPath);
-      await personalizePage.capture('03_location_deselected_verified');
+      // Chụp ảnh SAU KHI bỏ chọn Cần Thơ
+      await personalizePage.capture('04_location_deselected_verified');
     });
 
     await test.step('When [4] Chọn lại khu vực làm việc để đạt đủ 5 khu vực', async () => {
       // Chọn lại khu vực Cần Thơ
-      await personalizePage.selectSingleLocation('Cần Thơ');
+      await personalizePage.selectSingleLocation('Cần Thơ', { capture: false });
     });
 
     await test.step('Then [2] Hệ thống cho phép chọn lại đủ 5 khu vực và khóa các lựa chọn còn lại', async () => {
       // Xác nhận khu vực Cần Thơ được chọn lại thành công (có border-[#306499])
       await expect(personalizePage.getLocationBtn('Cần Thơ')).toHaveClass(/border-\[#306499\]/);
       expect(page.url()).toContain(personalizePage.personalizedPath);
-      await personalizePage.capture('04_location_reselected_verified');
+      // Chụp ảnh SAU KHI chọn lại Cần Thơ
+      await personalizePage.capture('05_location_reselected_verified');
     });
 
     await test.step('When [5] Bấm Tiếp theo để lưu danh sách 5 khu vực', async () => {
@@ -83,7 +88,8 @@ test.describe('Feature: Cá nhân hóa tiêu chí tìm việc & kiểm tra giá 
       // Chuyển sang Bước 3 (Mức lương mong muốn) thành công
       await expect(personalizePage.step3Indicator.first()).toBeVisible({ timeout: 15000 });
       expect(page.url()).toContain(personalizePage.personalizedPath);
-      await personalizePage.capture('05_edge_case_5_locations_saved_successfully');
+      // Chụp ảnh màn hình Bước 3 Mức lương (trước khi input lương)
+      await personalizePage.capture('06_edge_case_5_locations_saved_successfully');
     });
   });
 });

@@ -200,8 +200,11 @@ class PersonalizePage extends BasePage {
     await this.capture('auth_01_phone_entered');
     await this.actions.click(this.tiepTucBtn);
 
+    const otpReady = this.pleaseEnterVerificationInput.or(this.page.locator('input[type="tel"]').first());
+    await this.waitForElement(otpReady, 15000);
+    await this.capture('auth_02_otp_before_input');
     await this.fillOtpDigits(otp);
-    await this.capture('auth_02_otp_entered');
+    await this.capture('auth_03_otp_entered');
   }
 
   /**
@@ -209,12 +212,13 @@ class PersonalizePage extends BasePage {
    */
   async enterFullNameAndAcceptConsent(fullName = 'Hà Đinh') {
     await this.waitForElement(this.fullNameInput, 10000);
+    await this.capture('auth_04_fullname_before_input');
     await this.actions.fill(this.fullNameInput, fullName);
-    await this.capture('auth_03_fullname_entered');
+    await this.capture('auth_05_fullname_entered');
     await this.actions.click(this.hoanTatBtn);
 
     await this.waitForElement(this.consentAgreeBtn, 15000);
-    await this.capture('auth_04_consent_modal_displayed');
+    await this.capture('auth_06_consent_modal_displayed');
     await this.actions.click(this.consentAgreeBtn, { force: true });
     await this.consentAgreeBtn.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => null);
   }
@@ -316,7 +320,7 @@ class PersonalizePage extends BasePage {
   /**
    * Chọn 5 khu vực hợp lệ ban đầu trong Onboarding mini
    */
-  async select5Locations() {
+  async select5Locations(options = {}) {
     await this.waitForElement(this.chonToiDa5Text, 15000);
     const locationNames = ['TP.HCM', 'Hà Nội', 'Bình Dương', 'Đồng Nai', 'Cần Thơ'];
 
@@ -325,8 +329,9 @@ class PersonalizePage extends BasePage {
       await this.waitForElement(btn, 5000);
       await this.actions.click(btn);
     }
-    // Chụp bằng chứng rõ ràng tất cả 5 khu vực đã được chọn TRƯỚC KHI chuyển bước
-    await this.capture('step2_5_locations_selected');
+    if (options.capture !== false) {
+      await this.capture('step2_5_locations_selected');
+    }
   }
 
   /**
@@ -357,17 +362,18 @@ class PersonalizePage extends BasePage {
    */
   async completeStep1JobTitle(jobTitle = 'nhân viên bán hàng') {
     await this.waitForElement(this.dataTestId.first(), 15000);
+    await this.capture('onboarding_01_job_title_before_input');
     await this.actions.click(this.dataTestId.first());
     await this.actions.fill(this.dataTestId.first(), jobTitle);
 
     const suggestionItem = this.page.locator('div, li, span, p').filter({ hasText: new RegExp(`^${jobTitle}`, 'i') }).last();
     await suggestionItem.waitFor({ state: 'visible', timeout: 6000 }).catch(() => null);
-    await this.capture('onboarding_01_job_title_input_and_suggestions');
+    await this.capture('onboarding_02_job_title_input_and_suggestions');
 
     if (await suggestionItem.isVisible().catch(() => false)) {
       await this.actions.click(suggestionItem);
     }
-    await this.capture('onboarding_02_job_title_selected');
+    await this.capture('onboarding_03_job_title_selected');
 
     if (await this.tiepTheoBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await this.actions.click(this.tiepTheoBtn);
@@ -445,19 +451,23 @@ class PersonalizePage extends BasePage {
   /**
    * Bỏ chọn một khu vực làm việc (click lại vào nút đã chọn)
    */
-  async deselectLocation(btnName = 'Cần Thơ') {
+  async deselectLocation(btnName = 'Cần Thơ', options = {}) {
     const btn = this.getLocationBtn(btnName);
     await this.actions.click(btn);
-    await this.capture('location_deselected');
+    if (options.capture) {
+      await this.capture('location_deselected');
+    }
   }
 
   /**
    * Chọn lại một khu vực làm việc
    */
-  async selectSingleLocation(btnName = 'Cần Thơ') {
+  async selectSingleLocation(btnName = 'Cần Thơ', options = {}) {
     const btn = this.getLocationBtn(btnName);
     await this.actions.click(btn);
-    await this.capture('location_selected');
+    if (options.capture) {
+      await this.capture('location_selected');
+    }
   }
 
   /**
