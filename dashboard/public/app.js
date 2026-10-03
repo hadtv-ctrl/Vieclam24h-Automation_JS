@@ -17120,6 +17120,7 @@ async function openFixturesStudio() {
   }
 window.openFixturesStudio = openFixturesStudio;
 window.initFixturesStudioListeners = initFixturesStudioListeners;
+window.selectFixture = selectFixture;
   // Đảm bảo filter mặc định (Tất cả) luôn được kích hoạt đồng bộ
   if (!currentFixtureFilter) currentFixtureFilter = 'all';
   const fxPills = document.querySelectorAll('#fixtures-filter-pills .pm-filter-pill, #fixtures-filter-pills .fx-filter-pill');

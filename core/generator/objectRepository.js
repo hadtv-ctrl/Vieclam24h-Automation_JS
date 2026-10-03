@@ -306,6 +306,11 @@ function parseExtendFixtures(content) {
           params = ['{ option: true }'];
         }
 
+        let fixtureRawCode = `${fixName}: ${val}`;
+        if (val === 'cleanupQueueFixture') {
+          fixtureRawCode = `// Fixture cleanupQueue nạp từ core/fixtures/cleanupRegistry.js\n// Quản lý hàng đợi dọn dẹp tài nguyên (LIFO Teardown)\ncleanupQueue: cleanupQueueFixture`;
+        }
+
         items.push({
           name: fixName,
           params,
@@ -315,6 +320,7 @@ function parseExtendFixtures(content) {
           icon,
           isFixture: true,
           description: `Fixture tự động nạp: ${fixName}`,
+          rawCode: fixtureRawCode,
         });
       }
 
@@ -872,6 +878,7 @@ function scanAllFixtures(rootDir = process.cwd()) {
             canDelete: false,
             sourceFile: rel,
             scope: item.name === 'workerUserData' ? 'worker' : 'test',
+            rawCode: item.rawCode || '',
           });
         }
       }

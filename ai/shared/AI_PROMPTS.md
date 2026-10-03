@@ -193,14 +193,18 @@ Dùng web-first assertion như `await expect(locator).toBeVisible()`. Không dù
 
 ## 8. Evidence
 
-- Spec và Page Object không gọi `page.screenshot()` trực tiếp.
-- Dùng `ScreenshotHelper` trong `core/utils/commonUtils.js` qua `takeScreenshot()` hoặc `takeFullPageScreenshot()`.
+- **Spec và Page Object không gọi `page.screenshot()` trực tiếp.** Dùng `ScreenshotHelper` trong `core/utils/commonUtils.js` qua `takeScreenshot()` / `takeFullPageScreenshot()` hoặc method `capture()` của BasePage.
+- **Quy tắc chụp khi mở trang cần test (Page Entry Milestone):** Khi điều hướng/mở đến đúng page cần test, sau khi assert trang đã load và các thành phần cốt lõi hiển thị sẵn sàng, bắt buộc **capture đúng 1 ảnh** xác nhận trạng thái bối cảnh ban đầu (ví dụ: `precondition_page_loaded`, `<feature>_page_opened`).
+- **Quy tắc chụp theo từng thao tác active (Active Action Milestone):** Kể từ khi mở trang, **cứ mỗi 1 thao tác active** (click button chuyển trạng thái, chọn select/dropdown, nhập xong form, toggle switch, mở/đóng modal, submit, filter...) làm thay đổi trạng thái UI thì **phải capture lại 1 ảnh** phản ánh kết quả sau thao tác đó.
+- **Tuyệt đối KHÔNG để ảnh trùng lặp kế bên nhau (Anti-Duplicate):**
+  - Nghiêm cấm đặt hai lệnh/hàm capture kề nhau nếu giữa chúng không có thao tác active hoặc thay đổi UI thực tế.
+  - Sau một loạt thao tác nhập liệu đơn lẻ liên tiếp trong cùng một form (ví dụ điền tên, email, password), chỉ capture 1 lần ở cuối form sau khi hoàn tất chuỗi nhập liệu (form completed) trước khi click submit.
+  - Nếu một ảnh đồng thời thỏa mãn nhiều mốc evidence thì chỉ chụp một lần duy nhất.
+- **Ổn định giao diện trước khi capture:** Chỉ capture khi UI đã hoàn tất cập nhật và ổn định (chờ skeleton loader biến mất, animation hoàn tất). Tuyệt đối không capture trạng thái loading/chuyển tiếp chớp nhoáng (transient states).
+- **Chế độ Full-page vs Viewport (Modal detection):** Khi không có popup/modal hiển thị, capture full page. Khi popup/modal đang hiển thị, chỉ capture viewport để tập trung vào popup/modal tránh vỡ layout.
+- **Đặt tên file ảnh rõ ràng theo ngữ cảnh:** Tên ảnh phải mô tả trạng thái sau action, ví dụ `profile_page_opened`, `login_form_filled`, `job_applied_success`; không đặt tên chung chung như `screenshot_1`.
 - Việc chụp evidence không được biến một test failure thành pass. Nếu evidence là bắt buộc và chụp thất bại, phải báo lỗi phù hợp.
-- Mỗi scenario phải có một ảnh sau khi đã vào đúng page cần test và một ảnh cuối cùng sau khi hoàn tất toàn bộ action.
-- Sau thao tác click làm thay đổi trạng thái UI và sau khi fill xong một form, phải capture trạng thái kết quả. Không capture trạng thái trung gian khi UI chưa cập nhật xong.
-- Khi không có popup/modal hiển thị, capture full page. Khi popup/modal đang hiển thị, chỉ capture viewport để tập trung vào popup/modal.
-- Không đặt hai lệnh/hàm capture kề nhau nếu giữa chúng không có action hoặc thay đổi UI có ý nghĩa. Tránh tạo nhiều ảnh giống nhau cho cùng một trạng thái; nếu một ảnh đồng thời thỏa nhiều mốc evidence thì chỉ chụp một lần.
-- Tên ảnh phải mô tả trạng thái sau action, ví dụ `profile_page_opened`, `introduction_form_filled`, `introduction_saved`; không đặt tên chung chung như `screenshot_1`.
+
 
 ## 9. Quy trình thực hiện và kiểm chứng
 

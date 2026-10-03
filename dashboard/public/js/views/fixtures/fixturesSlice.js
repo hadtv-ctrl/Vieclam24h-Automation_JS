@@ -19,11 +19,16 @@ export class FixturesSlice {
 
   async mount() {
     this._mounted = true;
-    this._bindDomEvents();
     this._registerBridgeActions();
     if (typeof window.openFixturesStudio === 'function') {
-      try { await window.openFixturesStudio(); } catch (_) {}
+      try {
+        await window.openFixturesStudio();
+        return;
+      } catch (err) {
+        console.warn('[FixturesSlice] openFixturesStudio error:', err);
+      }
     }
+    this._bindDomEvents();
     await this.loadFixtures();
   }
 
@@ -34,6 +39,7 @@ export class FixturesSlice {
   }
 
   _bindDomEvents() {
+    if (typeof window.openFixturesStudio === 'function') return;
     const root = document.getElementById('fixtures-view');
     if (!root) return;
     const on = (sel, evt, fn) => {
@@ -58,6 +64,16 @@ export class FixturesSlice {
       };
       pill.addEventListener('click', h);
       this._disposers.push(() => pill.removeEventListener('click', h));
+    });
+
+    on('#btn-copy-usage-code', 'click', () => {
+      const code = document.getElementById('fx-usage-code')?.textContent || '';
+      if (code) navigator.clipboard?.writeText(code).then(() => this.notify('📋 Đã sao chép mã mẫu!'));
+    });
+
+    on('#btn-copy-source-code', 'click', () => {
+      const code = document.getElementById('fx-source-code')?.textContent || '';
+      if (code) navigator.clipboard?.writeText(code).then(() => this.notify('📋 Đã sao chép mã nguồn!'));
     });
   }
 
@@ -91,6 +107,9 @@ export class FixturesSlice {
     if (!fx) return;
     this.selectedFixture = fx;
     stateStore.setState({ fixtures: { selected: name } }, 'fixturesSlice.selectFixture');
+    if (typeof window.selectFixture === 'function') {
+      try { window.selectFixture(fx); } catch (_) {}
+    }
     this.renderFixturesList();
     this.renderFixtureDetails(fx);
   }
@@ -135,10 +154,35 @@ export class FixturesSlice {
 
   renderFixtureDetails(fx) {
     if (!fx) return;
-    const titleEl = document.getElementById('fixture-detail-title');
-    const descEl = document.getElementById('fixture-detail-desc');
-    if (titleEl) titleEl.textContent = fx.title || fx.name;
-    if (descEl) descEl.textContent = fx.description || '';
+    const catEyebrow = document.getElementById('fx-detail-category-eyebrow');
+    const nameEl = document.getElementById('fx-detail-name');
+    const descEl = document.getElementById('fx-detail-desc');
+    const scopeEl = document.getElementById('fx-grid-scope');
+    const catEl = document.getElementById('fx-grid-cat');
+    const paramsEl = document.getElementById('fx-grid-params');
+    const fileEl = document.getElementById('fx-grid-file');
+    const sourceEl = document.getElementById('fx-source-code');
+    const usageEl = document.getElementById('fx-usage-code');
+
+    if (catEyebrow) catEyebrow.textContent = fx.isCustom ? 'FIXTURE NGHIỆP VỤ TÙY BIẾN' : 'FIXTURE CỐT LÕI HỆ THỐNG';
+    if (nameEl) nameEl.textContent = fx.title ? `${fx.name} (${fx.title})` : fx.name;
+    if (descEl) descEl.textContent = fx.description || fx.title || 'Fixture được nạp tự động vào ngữ cảnh kiểm thử Playwright.';
+    if (scopeEl) scopeEl.textContent = fx.scope || 'test';
+    if (catEl) catEl.textContent = fx.category || 'Hạ tầng & Nền tảng';
+    if (paramsEl) paramsEl.textContent = (fx.params && fx.params.length) ? fx.params.join(', ') : 'Không có';
+    if (fileEl) fileEl.textContent = fx.sourceFile || 'core/fixtures/baseTest.js';
+
+    const source = fx.rawCode || `// Fixture ${fx.name} được định nghĩa trong ${fx.sourceFile}\n// Chữ ký tham số: ${fx.params?.join(', ') || 'Không có'}`;
+    if (sourceEl) {
+      sourceEl.textContent = source;
+      if (window.Prism) Prism.highlightElement(sourceEl);
+    }
+
+    const usage = `const { test, expect } = require('../../../core/fixtures/baseTest');\n\ntest('Kịch bản sử dụng fixture ${fx.name}', async ({ ${fx.name} }) => {\n  console.log('Đang thực thi với fixture:', ${fx.name});\n});`;
+    if (usageEl) {
+      usageEl.textContent = usage;
+      if (window.Prism) Prism.highlightElement(usageEl);
+    }
   }
 
   notify(msg) {
