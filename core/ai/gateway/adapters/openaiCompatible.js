@@ -6,6 +6,30 @@
  */
 const { createAiError } = require('../errors');
 
+function parseResponseBody(rawText, defaultModel) {
+  const trimmed = rawText.trim();
+  if (trimmed.startsWith('data:')) {
+    let content = '';
+    let toolCalls = null;
+    let modelName = defaultModel;
+    for (const line of rawText.split(/\r?\n/)) {
+      const l = line.trim();
+      if (!l.startsWith('data:')) continue;
+      const json = l.slice(5).trim();
+      if (!json || json === '[DONE]') continue;
+      try {
+        const chunk = JSON.parse(json);
+        if (chunk.model) modelName = chunk.model;
+        const delta = chunk.choices?.[0]?.delta;
+        if (delta?.content) content += delta.content;
+        if (delta?.tool_calls) toolCalls = delta.tool_calls;
+      } catch {}
+    }
+    return { choices: [{ message: { role: 'assistant', content, tool_calls: toolCalls } }], model: modelName };
+  }
+  return JSON.parse(rawText);
+}
+
 async function sendChatCompletion({
   baseURL,
   apiKey,
@@ -29,7 +53,8 @@ async function sendChatCompletion({
   const payload = {
     model,
     messages,
-    temperature
+    temperature,
+    stream: false
   };
   if (Array.isArray(tools) && tools.length > 0) {
     payload.tools = tools;
@@ -51,37 +76,20 @@ async function sendChatCompletion({
     if (res.status === 429) {
       const retryHeader = res.headers?.get ? res.headers.get('retry-after') : null;
       const seconds = retryHeader ? Math.max(1, parseInt(retryHeader, 10) || 60) : 60;
-      return {
-        ok: false,
-        error: createAiError('RATE_LIMITED', {
-          seconds,
-          retryAfterMs: seconds * 1000
-        })
-      };
+      return { ok: false, error: createAiError('RATE_LIMITED', { seconds, retryAfterMs: seconds * 1000 }) };
     }
 
     if (res.status === 404) {
-      return {
-        ok: false,
-        status: 404,
-        notFound: true,
-        error: createAiError('PROVIDER_DOWN', {
-          customMessage: `Model "${model}" không tìm thấy tại endpoint.`
-        })
-      };
+      return { ok: false, status: 404, notFound: true, error: createAiError('PROVIDER_DOWN', { customMessage: `Model "${model}" không tìm thấy tại endpoint.` }) };
     }
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      return {
-        ok: false,
-        error: createAiError('PROVIDER_DOWN', {
-          customMessage: `AI provider trả mã ${res.status}: ${errText.slice(0, 150)}`
-        })
-      };
+      return { ok: false, error: createAiError('PROVIDER_DOWN', { customMessage: `AI provider trả mã ${res.status}: ${errText.slice(0, 150)}` }) };
     }
 
-    const data = await res.json();
+    const rawText = await res.text();
+    const data = parseResponseBody(rawText, model);
     const choice = data.choices?.[0];
     const message = choice?.message || {};
     const text = typeof message.content === 'string' ? message.content : '';
@@ -105,10 +113,7 @@ async function sendChatCompletion({
     if (err.name === 'AbortError' || err.name === 'TimeoutError') {
       const isTimeout = combinedSignal.reason?.name === 'TimeoutError' || err.name === 'TimeoutError';
       if (isTimeout) {
-        return {
-          ok: false,
-          error: createAiError('TIMEOUT', { seconds: Math.round(timeoutMs / 1000) })
-        };
+        return { ok: false, error: createAiError('TIMEOUT', { seconds: Math.round(timeoutMs / 1000) }) };
       }
       return { ok: false, error: createAiError('CANCELLED') };
     }

@@ -265,6 +265,21 @@
 - **Nguyên tắc rút ra:**
   1. Luôn sử dụng `waitFor({ state: 'visible' })` hoặc `waitForElement()` trước khi tương tác với các popup/modal bất đồng bộ (như OTP, Form tạo tài khoản, Consent).
   2. Với các luồng kiểm thử đăng ký OTP người dùng mới, luôn dùng `generateRandomVNPhone()` để đảm bảo tính độc lập và lặp lại an toàn của kịch bản kiểm thử.
-  3. Tuân thủ tuyệt đối quy trình nghiệm thu Gate 1 - Gate 4: Khởi tạo REQ -> AC -> TC -> Code -> Spec -> `check:framework` -> `qa-trace`.
+### [LEARN-016] Đồng Bộ Tham Số `stream: false` Và Xử Lý Chuỗi Phản Hồi SSE (Server-Sent Events) Trong AI Gateway
+- **Nguồn trích xuất:** BUGFIX-AI-INFER-STREAM-JSON-PARSE-ERROR
+- **Role quan sát:** Senior AI Platform Engineer & Automation QA
+- **Quan sát (Observation):**
+  1. Một số AI Gateway (như 9Router) hoặc mô hình LLM proxy mặc định trả về luồng phản hồi Server-Sent Events (`Content-Type: text/event-stream`, bắt đầu bằng `data: {"id": ...}`) nếu request không chỉ định rõ ràng `stream: false`.
+  2. Khi adapter OpenAI-compatible (`sendChatCompletion`) gọi trực tiếp `res.json()` trên phản hồi dạng stream, trình duyệt và Node.js văng lỗi cú pháp: `SyntaxError: Unexpected token 'd', "data: {"id"... is not valid JSON`.
+  3. Lỗi này chặn đứng toàn bộ tính năng suy luận AI (Rà soát & Đề xuất Test Case từ Open Questions, Phân tích Requirement BDD).
+- **Bằng chứng (Evidence):** `core/ai/gateway/adapters/openaiCompatible.js`, `core/ai/gateway/adapters/openaiCompatible.test.js`, `dashboard/public/js/views/qa/qaSlice.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Technical Lead / Senior AI Engineer
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Luôn khai báo tường minh `stream: false` trong payload gửi đến các endpoint OpenAI-compatible khi ứng dụng mong muốn nhận JSON tĩnh một lần.
+  2. Xây dựng cơ chế fallback giải mã chuỗi phản hồi: Nếu body bắt đầu bằng `data:`, tự động phân tích và gộp các chunk delta của stream SSE thành cấu trúc dữ liệu hoàn chỉnh thay vì để `JSON.parse` văng ngoại lệ.
+  3. Trên giao diện người dùng (Dashboard modal), khi xảy ra lỗi mạng/AI, luôn reset danh sách thẻ tạm và chuyển đổi icon trạng thái sang cảnh báo lỗi (`ph-warning-circle`, màu đỏ `#ef4444`) để tránh hiển thị icon checkmark xanh gây hiểu nhầm.
 
 
