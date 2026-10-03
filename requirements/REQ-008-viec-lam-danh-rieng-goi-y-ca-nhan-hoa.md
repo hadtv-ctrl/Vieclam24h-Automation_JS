@@ -81,7 +81,8 @@ Hệ thống cung cấp điểm chạm thu hút người tìm việc ngay tại 
 |---|---|---|
 | Khách vãng lai tiếp cận, xác thực OTP, thiết lập 3 bước tiêu chí và khám phá việc làm gợi ý | **Đã phủ** | TC-095 (tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js) |
 | Cập nhật thêm số năm kinh nghiệm, ngành nghề và điều hướng từ menu Việc làm | **Đã phủ** | TC-095 (tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js) |
-| Chọn vượt quá giới hạn 5 khu vực | Chưa phủ | Kiểm tra disable hoặc cảnh báo khi người dùng chọn khu vực thứ 6 |
+| Số điện thoại đã tồn tại ở luồng việc làm riêng hiển thị màn hình mật khẩu | **Đã phủ** | TC-096 (tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js) |
+| Kiểm tra giới hạn biên tối đa 5 ký tự / 5 khu vực lựa chọn | **Đã phủ** | TC-097 (tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js) |
 | Bỏ qua hoặc hủy thiết lập tiêu chí giữa chừng | Chưa phủ | Kiểm tra trạng thái lưu nháp khi đóng modal tiêu chí |
 
 ## Open questions

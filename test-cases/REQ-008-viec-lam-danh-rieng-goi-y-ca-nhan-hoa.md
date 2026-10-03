@@ -5,8 +5,8 @@
 | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
 |---|---|---|---|---|---|
 | TC-095 | AC-023 AC-024 AC-025 AC-026 | Người dùng thiết lập tiêu chí tìm việc cá nhân hóa và khám phá danh sách việc làm gợi ý | P1 | Có | tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js |
-| TC-096 | AC-023 | Kiểm thử hành vi theo quyết định: Số điện thoại nhập ở luồng này nếu đã có tài khoản thì hiển thị màn hì | P2 | candidate | - |
-| TC-097 | AC-023 | Kiểm tra thất bại khi trường dữ liệu có 6 ký tự (vượt biên tối đa 5) | P2 | candidate | - |
+| TC-096 | AC-023 | Số điện thoại đã tồn tại ở luồng việc làm riêng hiển thị màn hình mật khẩu | P2 | Có | tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js |
+| TC-097 | AC-023 | Kiểm tra giới hạn khi nhập vượt quá biên tối đa 5 | P2 | Có | tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js |
 
 
 ## Chi tiết
@@ -29,26 +29,28 @@
 | 5 | Điều hướng đến menu Việc làm -> Tìm việc làm và nhấn "Xem tất cả" tại phần việc làm dành riêng | Danh sách việc làm phù hợp hiển thị đầy đủ, cho phép mở xem chi tiết việc làm |
 
 
-### TC-096 — Kiểm thử hành vi theo quyết định: Số điện thoại nhập ở luồng này nếu đã có tài khoản thì hiển thị màn hì
+### TC-096 — Số điện thoại đã tồn tại ở luồng việc làm riêng hiển thị màn hình mật khẩu
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
-- **Tiền điều kiện:** Môi trường sẵn sàng cho kịch bản
-- **Dữ liệu kiểm thử:** Dữ liệu theo nghiệp vụ đã chốt
-> *Ghi chú nghiệp vụ:* Quyết định chốt từ Q-1: đúng
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js`
+- **Tiền điều kiện:** Môi trường sẵn sàng cho kịch bản (Khách vãng lai nhập số điện thoại đã tồn tại ở luồng việc làm dành riêng)
+- **Dữ liệu kiểm thử:** Dữ liệu theo nghiệp vụ đã chốt (SĐT đã có tài khoản, ví dụ: 0987654321)
+> *Ghi chú nghiệp vụ:* Quyết định chốt từ Q-1: đúng (Hiển thị màn hình nhập mật khẩu thay vì OTP tạo mới).
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|
 | 1 | Thực hiện thao tác với điều kiện: đúng | Hệ thống phản hồi đúng theo quyết định đã chốt |
 
 
-### TC-097 — Kiểm tra thất bại khi trường dữ liệu có 6 ký tự (vượt biên tối đa 5)
+### TC-097 — Kiểm tra giới hạn khi nhập vượt quá biên tối đa 5
 
 - **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
-- **Automation:** Candidate
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js`
 - **Tiền điều kiện:** Người dùng đang ở màn hình nhập liệu
-- **Dữ liệu kiểm thử:** trường dữ liệu: chuỗi 6 ký tự
-> *Ghi chú nghiệp vụ:* Phân tích biên trên từ quyết định Q-2: giới hạn tối đa 5 ký tự.
+- **Dữ liệu kiểm thử:** trường dữ liệu: chuỗi 6 ký tự (hoặc vượt quá giới hạn 5)
+> *Ghi chú nghiệp vụ:* Phân tích biên trên từ quyết định Q-2: giới hạn tối đa 5 ký tự / 5 mục lựa chọn.
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|

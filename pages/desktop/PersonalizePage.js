@@ -31,6 +31,18 @@ class PersonalizePage extends BasePage {
     this.hoanTatBtn = page.getByRole('button', { name: /Hoàn tất|Đăng ký/i }).first();
     this.dongYBtn = page.getByRole('button', { name: 'Đồng ý' }).first();
 
+    // Màn hình mật khẩu khi số điện thoại đã tồn tại (TC-096)
+    this.loginPasswordInput = page.getByPlaceholder(/nhập mật khẩu của bạn|nhập mật khẩu/i).or(page.locator('input[type="password"]')).first();
+    this.passwordInput = this.loginPasswordInput;
+    this.dangNhapBtn = page.getByRole('button', { name: /Đăng nhập/i }).first();
+    this.authModalTitle = page.getByText(/Đăng nhập|Xác thực|Đăng ký/i).first();
+    this.phoneError = page.locator('[class*="error"], [class*="helper"], [class*="feedback"], [role="alert"]').filter({ hasText: /số điện thoại/i }).or(page.getByText(/số điện thoại.*(?:không hợp lệ|đã tồn tại|chưa đúng|không đúng)/i)).first();
+
+    // Cảnh báo giới hạn biên (TC-097)
+    this.fieldError = page.locator('[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]').first();
+    this.limitExceededWarning = page.locator('[class*="error"], [class*="warning"], [class*="alert"], [class*="toast"]').filter({ hasText: /5 khu vực|tối đa 5|vượt quá/i }).or(page.getByText(/tối đa 5/i)).first();
+    this.extraCityBtn = page.getByRole('button', { name: /Đà Nẵng|Hải Phòng|Cần Thơ/i }).first();
+
     // Thiết lập tiêu chí: Bước 1 - Vị trí công việc mong muốn
     this.dataTestId = page.locator('[data-test-id="common__input"]').first();
     this.banDangTimCongHeading = page.getByRole('heading', { name: /Bạn đang tìm công việc gì/i }).first();
@@ -92,6 +104,73 @@ class PersonalizePage extends BasePage {
         await this.actions.click(this.closeBannerBtn);
       }
     } catch (_) {}
+  }
+
+  /**
+   * Mở modal xác thực tài khoản từ khối việc làm dành riêng
+   */
+  async openPersonalizeAuthModal() {
+    await this.closeBannerIfVisible();
+    if (await this.xemViecLamDanhBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await this.actions.click(this.xemViecLamDanhBtn);
+    } else if (await this.item10ViecLamCoLink.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await this.actions.click(this.item10ViecLamCoLink);
+    }
+    await this.waitForElement(this.nhapSoDienThoaiInput);
+  }
+
+  /**
+   * Điền số điện thoại và nhấn Tiếp tục
+   * @param {string} phone
+   */
+  async fillPhoneAndContinue(phone) {
+    await this.actions.fill(this.nhapSoDienThoaiInput, phone);
+    await this.capture('phone_entered_in_personalize_flow');
+    await this.actions.click(this.tiepTucBtn);
+  }
+
+  /**
+   * Nhập giá trị hợp lệ vào trường thông tin tìm kiếm tiêu chí
+   * @param {string} value
+   */
+  async fillValidCriteriaField(value = 'nhân viên bán hàng') {
+    await this.actions.fill(this.dataTestId, value);
+    await this.capture('valid_criteria_field_filled');
+  }
+
+  /**
+   * Nhập chuỗi 6 ký tự để kiểm tra biên tối đa 5
+   * @param {string} value
+   */
+  async fill6CharsField(value = '123456') {
+    await this.actions.fill(this.dataTestId, value);
+    await this.capture('6_chars_field_filled');
+  }
+
+  /**
+   * Chọn 5 khu vực hợp lệ ban đầu
+   */
+  async select5Locations() {
+    await this.waitForElement(this.tphcmBtn.or(this.chonToiDa5Text));
+    if (await this.tphcmBtn.isVisible().catch(() => false)) await this.actions.click(this.tphcmBtn);
+    if (await this.haNoiBtn.isVisible().catch(() => false)) await this.actions.click(this.haNoiBtn);
+    if (await this.binhDuongBtn.isVisible().catch(() => false)) await this.actions.click(this.binhDuongBtn);
+    if (await this.dongNaiBtn.isVisible().catch(() => false)) await this.actions.click(this.dongNaiBtn);
+    if (await this.khacBtn.isVisible().catch(() => false)) {
+      await this.actions.click(this.khacBtn);
+      if (await this.anGiangBtn.isVisible().catch(() => false)) await this.actions.click(this.anGiangBtn);
+    }
+    await this.capture('selected_5_locations');
+  }
+
+  /**
+   * Thử chọn khu vực thứ 6 vượt biên tối đa 5
+   */
+  async select6thLocationIfAvailable() {
+    if (await this.extraCityBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await this.actions.click(this.extraCityBtn);
+      await this.capture('attempted_select_6th_location');
+    }
   }
 
   /**
