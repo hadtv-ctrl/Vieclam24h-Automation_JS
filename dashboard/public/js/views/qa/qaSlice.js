@@ -1139,7 +1139,12 @@ export class QaSlice {
     const empty = root.querySelector('#qa-infer-empty');
     const results = root.querySelector('#qa-infer-results');
     const submitBtn = root.querySelector('#qa-infer-submit-btn');
+    const list = root.querySelector('#qa-infer-cards-list');
     const mode = root.querySelector('input[name="qa-infer-mode"]:checked')?.value || 'heuristic';
+
+    if (list) list.textContent = '';
+    this._inferredItems = [];
+    this._updateInferredSelectedCount();
 
     if (loading) loading.style.display = 'block';
     if (empty) empty.style.display = 'none';
@@ -1169,8 +1174,13 @@ export class QaSlice {
       if (!res.items || !res.items.length) {
         if (empty) {
           empty.style.display = 'block';
+          const emptyIcon = root.querySelector('#qa-infer-empty-icon');
           const emptyTitle = root.querySelector('#qa-infer-empty-title');
           const emptyDesc = root.querySelector('#qa-infer-empty-desc');
+          if (emptyIcon) {
+            emptyIcon.className = 'ph-bold ph-check-circle';
+            emptyIcon.style.color = '#10b981';
+          }
           if (emptyTitle) emptyTitle.textContent = 'Không tìm thấy test case mới cần bổ sung';
           if (emptyDesc) emptyDesc.textContent = res.message || 'Các câu hỏi đã chốt đã được bao phủ hoặc không tìm thấy quy tắc biên mới.';
         }
@@ -1183,11 +1193,17 @@ export class QaSlice {
       if (loading) loading.style.display = 'none';
       if (empty) {
         empty.style.display = 'block';
+        const emptyIcon = root.querySelector('#qa-infer-empty-icon');
         const emptyTitle = root.querySelector('#qa-infer-empty-title');
         const emptyDesc = root.querySelector('#qa-infer-empty-desc');
+        if (emptyIcon) {
+          emptyIcon.className = 'ph-bold ph-warning-circle';
+          emptyIcon.style.color = '#ef4444';
+        }
         if (emptyTitle) emptyTitle.textContent = 'Lỗi phân tích';
         if (emptyDesc) emptyDesc.textContent = err.message || 'Không thể suy luận test case.';
       }
+      this._updateInferredSelectedCount();
     }
   }
 
