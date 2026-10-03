@@ -18,7 +18,7 @@ Sinh lại bằng máy:
 | REQ-005 | Quản lý hồ sơ cá nhân | 5 | 8 | 8 |
 | REQ-006 | Trợ lý AI hoàn thiện hồ sơ | 2 | 3 | 3 |
 | REQ-007 | Tìm kiếm việc làm qua trợ lý Chop AI chatbot | 1 | 5 | 5 |
-| REQ-008 | Việc làm dành riêng & Gợi ý tiêu chí tìm việc cá nhân hóa | 4 | 5 | 5 |
+| REQ-008 | Việc làm dành riêng & Gợi ý tiêu chí tìm việc cá nhân hóa | 4 | 9 | 9 |
 
 Ghi chú: REQ-001 có 15 test case trên 14 file spec vì file spec API chứa hai test case.
 AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của REQ-004, vì danh sách việc làm đã
@@ -85,6 +85,10 @@ AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của RE
 | TC-097 | REQ-008 | AC-023 | Desktop | P2 | Có | tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js |
 | TC-098 | REQ-008 | AC-024 | Desktop | P2 | Có | tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js |
 | TC-099 | REQ-008 | AC-024 | Desktop | P2 | Có | tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js |
+| TC-100 | REQ-008 | AC-023 | Desktop | P0 | Có | tests/e2e/desktop/personalize-so-dien-thoai-chua-ton-tai-otp.spec.js |
+| TC-101 | REQ-008 | AC-024 | Desktop | P1 | Có | tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js |
+| TC-102 | REQ-008 | AC-024 | Desktop | P2 | Có | tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js |
+| TC-103 | REQ-008 | AC-024 | Desktop | P2 | Có | tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js |
 
 ## Chất lượng bằng chứng của từng test case
 
@@ -93,7 +97,7 @@ cấp, đọc từ chính spec.
 
 | Mức | Nghĩa | Test case |
 |---|---|---|
-| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-050, TC-093 đến TC-099 |
+| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-050, TC-093 đến TC-103 |
 
 ### Quan hệ với cảnh báo của công cụ
 

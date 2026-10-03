@@ -9,10 +9,10 @@
 | TC-097 | AC-023 | Kiểm tra giới hạn khi nhập vượt quá biên tối đa 5 | P2 | Có | tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js |
 | TC-098 | AC-024 | Bỏ qua Onboarding mini khi tài khoản đã có sẵn tiêu chí tìm việc | P2 | Có | tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js |
 | TC-099 | AC-024 | Kiểm tra autofill đồng bộ dữ liệu từ Onboarding mini sang Onboarding màn hình Home | P2 | Có | tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js |
-| TC-100 | AC-023 | Số điện thoại chưa tồn tại chuyển hướng sang luồng xác thực OTP | P0 | candidate | - |
-| TC-101 | AC-024 | Chọn chính xác 5 khu vực làm việc (Giá trị biên tối đa) | P1 | candidate | - |
-| TC-102 | AC-024 | Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative) | P2 | candidate | - |
-| TC-103 | AC-024 | Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | P2 | candidate | - |
+| TC-100 | AC-023 | Số điện thoại chưa tồn tại chuyển hướng sang luồng xác thực OTP | P0 | Có | tests/e2e/desktop/personalize-so-dien-thoai-chua-ton-tai-otp.spec.js |
+| TC-101 | AC-024 | Chọn chính xác 5 khu vực làm việc (Giá trị biên tối đa) | P1 | Có | tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js |
+| TC-102 | AC-024 | Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative) | P2 | Có | tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js |
+| TC-103 | AC-024 | Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | P2 | Có | tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js |
 
 
 ## Chi tiết
