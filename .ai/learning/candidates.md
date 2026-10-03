@@ -282,4 +282,21 @@
   2. Xây dựng cơ chế fallback giải mã chuỗi phản hồi: Nếu body bắt đầu bằng `data:`, tự động phân tích và gộp các chunk delta của stream SSE thành cấu trúc dữ liệu hoàn chỉnh thay vì để `JSON.parse` văng ngoại lệ.
   3. Trên giao diện người dùng (Dashboard modal), khi xảy ra lỗi mạng/AI, luôn reset danh sách thẻ tạm và chuyển đổi icon trạng thái sang cảnh báo lỗi (`ph-warning-circle`, màu đỏ `#ef4444`) để tránh hiển thị icon checkmark xanh gây hiểu nhầm.
 
+### [LEARN-017] Định Vị Phần Tử Trong Onboarding Modal Tránh Strict Mode Violation Và Xung Đột Trang Nền
+- **Nguồn trích xuất:** TASK-BDD-AUTOMATION-REQ-008 (TC-100 -> TC-103)
+- **Role quan sát:** Senior Automation QA Engineer (Gate 4)
+- **Quan sát (Observation):**
+  1. Khi kiểm thử Onboarding Modal (hoặc bất kỳ overlay form nào trên trang web SPA), các nhãn lựa chọn khu vực/ngành nghề (như "TP.HCM", "Hà Nội") thường có text trùng lặp hoàn toàn với các link SEO/menu ở trang nền (`<a href="/viec-lam-tp-hcm-p122.html">`). Nếu dùng `.first()`, Playwright sẽ bắt nhầm link ở trang nền và bị timeout 15s do bị modal che khuất (`intercepts pointer events`). Vì các modal được render ở cuối DOM, sử dụng `.last()` hoặc container định vị riêng của modal đảm bảo luôn click chính xác vào chip/button bên trong modal.
+  2. Việc dùng `.or()` giữa hai phần tử mà cả hai đều có khả năng hiển thị đồng thời (ví dụ: `this.tphcmBtn.or(this.chonToiDa5Text)`) trong `waitForElement()` hoặc `expect().toBeVisible()` sẽ gây lỗi nghiêm trọng `Playwright Strict Mode Violation: resolved to 2 elements`. Chỉ dùng `.or()` cho các fallback loại trừ lẫn nhau, hoặc chỉ định rõ `.first()` / `.last()`.
+  3. Luôn dọn dẹp các lớp quảng cáo chiến dịch (`closeAdsIfVisible`, `closeBlockingModalIfVisible`) ở bước `Given` trước khi mở modal để đảm bảo các điểm chạm không bị che khuất và chạy ổn định 100%.
+- **Bằng chứng (Evidence):** `pages/desktop/PersonalizePage.js`, `tests/e2e/desktop/personalize-*.spec.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Với các modal render ở cuối DOM, luôn ưu tiên dùng `.last()` hoặc selector giới hạn trong vùng chứa của modal để tránh xung đột với các liên kết cùng tên trên trang nền.
+  2. Tuyệt đối không dùng `.or()` giữa các phần tử xuất hiện đồng thời trong các hàm chờ hoặc assertion hiển thị duy nhất.
+  3. Ở bước `Given`, luôn chủ động dọn dẹp popups và blocking modals trước khi kích hoạt luồng tương tác người dùng.
+
 
