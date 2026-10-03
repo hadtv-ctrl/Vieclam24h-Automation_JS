@@ -14,7 +14,7 @@
 | TC-102 | AC-024 | Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative) | P2 | Có | tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js |
 | TC-103 | AC-024 | Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | P2 | Có | tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js |
 | TC-104 | AC-023 | Khách vãng lai truy cập deep link Personalized Page bắt buộc đăng nhập | P0 | Có | tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js |
-| TC-105 | AC-023 | Kiểm tra cấu hình SEO Metadata và Open Graph tags trên Personalized Page | P2 | Có | tests/e2e/desktop/personalize-seo-metadata.spec.js |
+| TC-105 | AC-023 | Kiểm tra cấu hình SEO Metadata và Open Graph tags trên Personalized Page | P2 | Không | Không áp dụng automation (Không đo lường SEO qua E2E) |
 | TC-106 | AC-024 | Thiết lập Mini-Onboarding 3 bước trực tiếp từ URL Personalized Page | P1 | Có | tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js |
 
 
@@ -176,11 +176,11 @@
 ### TC-105 — Kiểm tra cấu hình SEO Metadata và Open Graph tags trên Personalized Page
 
 - **Loại:** Phi chức năng / SEO | **Ưu tiên:** P2 | **Kỹ thuật:** Kiểm thử thẻ Metadata và Social Sharing Tags
-- **Automation:** Có
-- **Spec:** `tests/e2e/desktop/personalize-seo-metadata.spec.js`
+- **Automation:** Không (Loại bỏ khỏi suite automation do script không phản ánh đúng SEO thực tế)
+- **Spec:** Không
 - **Tiền điều kiện:** Truy cập trang Việc làm dành riêng cho bạn để kiểm tra các thẻ SEO & Social Metadata.
 - **Dữ liệu kiểm thử:** URL `https://seeker.vl24hv2.qc.sieuviet-team.com/viec-lam-danh-rieng-cho-ban.html`
-> *Ghi chú nghiệp vụ:* Kiểm thử US-13: xác nhận title, description, keywords, canonical và OG tags khớp với đặc tả của BA.
+> *Ghi chú nghiệp vụ:* Kiểm thử thủ công hoặc dùng công cụ audit SEO chuyên dụng; không cần tự động hóa bằng Playwright E2E.
 
 | Bước | Thao tác | Kết quả mong đợi |
 |---|---|---|

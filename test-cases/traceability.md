@@ -18,7 +18,7 @@ Sinh lại bằng máy:
 | REQ-005 | Quản lý hồ sơ cá nhân | 5 | 8 | 8 |
 | REQ-006 | Trợ lý AI hoàn thiện hồ sơ | 2 | 3 | 3 |
 | REQ-007 | Tìm kiếm việc làm qua trợ lý Chop AI chatbot | 1 | 5 | 5 |
-| REQ-008 | Việc làm dành riêng & Gợi ý tiêu chí tìm việc cá nhân hóa | 4 | 12 | 12 |
+| REQ-008 | Việc làm dành riêng & Gợi ý tiêu chí tìm việc cá nhân hóa | 4 | 11 | 11 |
 
 Ghi chú: REQ-001 có 15 test case trên 14 file spec vì file spec API chứa hai test case.
 AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của REQ-004, vì danh sách việc làm đã
@@ -90,7 +90,6 @@ AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của RE
 | TC-102 | REQ-008 | AC-024 | Desktop | P2 | Có | tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js |
 | TC-103 | REQ-008 | AC-024 | Desktop | P2 | Có | tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js |
 | TC-104 | REQ-008 | AC-023 | Desktop | P0 | Có | tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js |
-| TC-105 | REQ-008 | AC-023 | Desktop | P2 | Có | tests/e2e/desktop/personalize-seo-metadata.spec.js |
 | TC-106 | REQ-008 | AC-024 | Desktop | P1 | Có | tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js |
 
 ## Chất lượng bằng chứng của từng test case
@@ -100,7 +99,7 @@ cấp, đọc từ chính spec.
 
 | Mức | Nghĩa | Test case |
 |---|---|---|
-| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-050, TC-093 đến TC-106 |
+| Mạnh | Có assertion ngay trong spec chứng minh kết quả nghiệp vụ | TC-001 đến TC-050, TC-093 đến TC-104, TC-106 |
 
 ### Quan hệ với cảnh báo của công cụ
 
