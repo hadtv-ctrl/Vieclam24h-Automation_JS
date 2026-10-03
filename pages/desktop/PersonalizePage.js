@@ -29,6 +29,8 @@ class PersonalizePage extends BasePage {
     this.digit4Input = page.getByRole('textbox', { name: 'Digit 4' }).or(page.locator('input[type="tel"]').nth(3));
     this.otpInputIndicator = this.pleaseEnterVerificationInput.or(page.locator('input[type="tel"]').first()).or(page.locator('input[autocomplete="one-time-code"]').first());
     this.nhapHoVaTenInput = page.getByPlaceholder(/Nhập họ và tên/i).or(page.getByRole('textbox', { name: /Nhập họ và tên/i })).first();
+    this.emailInput = page.getByPlaceholder(/nhập email/i).or(page.locator('input[type="email"], input[placeholder*="email" i]')).first();
+    this.newUserInfoModal = this.nhapHoVaTenInput.or(this.emailInput);
     this.hoanTatBtn = page.getByRole('button', { name: /Hoàn tất|Đăng ký/i }).first();
     this.dongYBtn = page.getByRole('button', { name: 'Đồng ý' }).first();
 
