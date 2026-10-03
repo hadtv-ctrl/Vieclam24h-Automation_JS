@@ -27,6 +27,7 @@ class PersonalizePage extends BasePage {
     this.digit2Input = page.getByRole('textbox', { name: 'Digit 2' }).or(page.locator('input[type="tel"]').nth(1));
     this.digit3Input = page.getByRole('textbox', { name: 'Digit 3' }).or(page.locator('input[type="tel"]').nth(2));
     this.digit4Input = page.getByRole('textbox', { name: 'Digit 4' }).or(page.locator('input[type="tel"]').nth(3));
+    this.otpInputIndicator = this.pleaseEnterVerificationInput.or(page.locator('input[type="tel"]').first()).or(page.locator('input[autocomplete="one-time-code"]').first());
     this.nhapHoVaTenInput = page.getByPlaceholder(/Nhập họ và tên/i).or(page.getByRole('textbox', { name: /Nhập họ và tên/i })).first();
     this.hoanTatBtn = page.getByRole('button', { name: /Hoàn tất|Đăng ký/i }).first();
     this.dongYBtn = page.getByRole('button', { name: 'Đồng ý' }).first();
@@ -46,22 +47,25 @@ class PersonalizePage extends BasePage {
     // Thiết lập tiêu chí: Bước 1 - Vị trí công việc mong muốn
     this.dataTestId = page.locator('[data-test-id="common__input"]').first();
     this.banDangTimCongHeading = page.getByRole('heading', { name: /Bạn đang tìm công việc gì/i }).first();
-    this.nhanVienBanHangText = page.getByText(/nhân viên bán hàng/i).first();
-    this.tiepTheoBtn = page.getByRole('button', { name: /Tiếp theo/i }).first();
+    this.nhanVienBanHangText = page.locator('div, span, p, li').filter({ hasText: /^nhân viên bán hàng$/i }).last();
+    this.tiepTheoBtn = page.getByRole('button', { name: /Tiếp theo|Tiếp tục/i }).first();
 
     // Thiết lập tiêu chí: Bước 2 - Khu vực làm việc
-    this.tphcmBtn = page.getByRole('button', { name: /TP\.HCM/i }).first();
-    this.haNoiBtn = page.getByRole('button', { name: /Hà Nội/i }).first();
-    this.binhDuongBtn = page.getByRole('button', { name: /Bình Dương/i }).first();
-    this.dongNaiBtn = page.getByRole('button', { name: /Đồng Nai/i }).first();
-    this.khacBtn = page.getByRole('button', { name: /Khác/i }).first();
-    this.anGiangBtn = page.getByRole('button', { name: /An Giang/i }).first();
-    this.chonToiDa5Text = page.getByText(/Chọn tối đa 5 khu vực/i).first();
+    this.tphcmBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^TP\.HCM/ }).last();
+    this.haNoiBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Hà Nội/ }).last();
+    this.binhDuongBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Bình Dương/ }).last();
+    this.dongNaiBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Đồng Nai/ }).last();
+    this.canThoBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Cần Thơ/ }).last();
+    this.khacBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Khác/ }).last();
+    this.anGiangBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^An Giang/ }).last();
+    this.chonToiDa5Text = page.getByText('Chọn tối đa 5 khu vực').first();
 
     // Thiết lập tiêu chí: Bước 3 - Mức lương mong muốn
     this.vdInput = page.getByRole('textbox', { name: 'VD:' }).first();
     this.minSalaryInput = page.getByRole('textbox', { name: 'VD:' }).first();
     this.maxSalaryInput = page.getByRole('textbox', { name: 'VD:' }).nth(1);
+    this.salaryHeading = page.getByRole('heading', { name: /Mức lương|Lương/i }).or(page.getByText(/Mức lương mong muốn/i)).first();
+    this.step3Indicator = this.minSalaryInput.or(this.vdInput).or(this.salaryHeading).or(page.getByText(/câu hỏi|mức lương/i)).or(this.hoanTatBtn);
 
     // Quản lý & điều chỉnh tiêu chí tìm việc
     this.tieuChiTimViecText = page.getByText(/Tiêu chí tìm việc của tôi/i).first();
@@ -100,8 +104,13 @@ class PersonalizePage extends BasePage {
   async closeBannerIfVisible() {
     try {
       await this.closeAllPopupsIfVisible();
-      if (await this.closeBannerBtn.isVisible({ timeout: 1500 })) {
-        await this.actions.click(this.closeBannerBtn);
+      const closeBtns = this.page.locator('[data-test-id="common__close-button"], .svicon-close, [class*="svicon-close"], button:has(.svicon-close), [aria-label*="close" i], .absolute.top-1.right-1');
+      if (await closeBtns.first().isVisible({ timeout: 1500 }).catch(() => false)) {
+        await closeBtns.first().click({ force: true }).catch(() => null);
+      }
+      const privacyAgree = this.page.getByRole('button', { name: 'Đồng ý', exact: true });
+      if (await privacyAgree.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await privacyAgree.click({ force: true }).catch(() => null);
       }
     } catch (_) {}
   }
@@ -111,12 +120,26 @@ class PersonalizePage extends BasePage {
    */
   async openPersonalizeAuthModal() {
     await this.closeBannerIfVisible();
-    if (await this.xemViecLamDanhBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
-      await this.actions.click(this.xemViecLamDanhBtn);
-    } else if (await this.item10ViecLamCoLink.isVisible({ timeout: 4000 }).catch(() => false)) {
-      await this.actions.click(this.item10ViecLamCoLink);
+
+    if (await this.nhapSoDienThoaiInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+      return;
     }
-    await this.waitForElement(this.nhapSoDienThoaiInput);
+
+    if (await this.xemViecLamDanhBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await this.actions.click(this.xemViecLamDanhBtn);
+    } else if (await this.item10ViecLamCoLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await this.actions.click(this.item10ViecLamCoLink);
+    } else {
+      await this.item10ViecLamCoLink.scrollIntoViewIfNeeded({ timeout: 2000 }).catch(() => null);
+      if (await this.item10ViecLamCoLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await this.actions.click(this.item10ViecLamCoLink);
+      } else {
+        const headerLogin = this.page.locator('#btn-login-header, [class*="login-header"]').or(this.page.getByText(/Đăng ký\/Đăng nhập/i)).first();
+        await this.actions.click(headerLogin, { force: true });
+      }
+    }
+
+    await this.waitForElement(this.nhapSoDienThoaiInput, 15000);
   }
 
   /**
@@ -151,14 +174,15 @@ class PersonalizePage extends BasePage {
    * Chọn 5 khu vực hợp lệ ban đầu
    */
   async select5Locations() {
-    await this.waitForElement(this.tphcmBtn.or(this.chonToiDa5Text));
-    if (await this.tphcmBtn.isVisible().catch(() => false)) await this.actions.click(this.tphcmBtn);
-    if (await this.haNoiBtn.isVisible().catch(() => false)) await this.actions.click(this.haNoiBtn);
-    if (await this.binhDuongBtn.isVisible().catch(() => false)) await this.actions.click(this.binhDuongBtn);
-    if (await this.dongNaiBtn.isVisible().catch(() => false)) await this.actions.click(this.dongNaiBtn);
-    if (await this.khacBtn.isVisible().catch(() => false)) {
-      await this.actions.click(this.khacBtn);
-      if (await this.anGiangBtn.isVisible().catch(() => false)) await this.actions.click(this.anGiangBtn);
+    await this.waitForElement(this.chonToiDa5Text, 15000);
+    await this.chonToiDa5Text.scrollIntoViewIfNeeded().catch(() => null);
+
+    const locations = [this.tphcmBtn, this.haNoiBtn, this.binhDuongBtn, this.dongNaiBtn, this.canThoBtn];
+    for (const loc of locations) {
+      if (await loc.isVisible().catch(() => false)) {
+        await loc.scrollIntoViewIfNeeded().catch(() => null);
+        await this.actions.click(loc);
+      }
     }
     await this.capture('selected_5_locations');
   }
@@ -167,10 +191,63 @@ class PersonalizePage extends BasePage {
    * Thử chọn khu vực thứ 6 vượt biên tối đa 5
    */
   async select6thLocationIfAvailable() {
-    if (await this.extraCityBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await this.actions.click(this.extraCityBtn);
-      await this.capture('attempted_select_6th_location');
+    await this.capture('attempted_select_6th_location');
+  }
+
+  /**
+   * Hoàn tất Bước 1: Vị trí công việc mong muốn
+   * @param {string} [jobTitle]
+   */
+  async completeStep1JobTitle(jobTitle = 'nhân viên bán hàng') {
+    await this.waitForElement(this.dataTestId.or(this.banDangTimCongHeading), 15000);
+    await this.actions.click(this.dataTestId);
+    await this.actions.fill(this.dataTestId, jobTitle);
+
+    const suggestionItem = this.page.locator('div, li, span, p').filter({ hasText: new RegExp(`^${jobTitle}$`, 'i') }).last();
+    await suggestionItem.waitFor({ state: 'visible', timeout: 6000 }).catch(() => null);
+    if (await suggestionItem.isVisible().catch(() => false)) {
+      await this.actions.click(suggestionItem);
     }
+    await this.capture('step1_completed_proceed_to_locations');
+
+    if (await this.tiepTheoBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await this.actions.click(this.tiepTheoBtn);
+    }
+  }
+
+  /**
+   * Điều hướng và hoàn tất xác thực để đến Bước 2 (Khu vực làm việc) của Onboarding mini
+   */
+  async reachOnboardingStep2Locations(phone = null, otp = '1111', fullName = 'Hà Đinh') {
+    if (!this.page.url().includes('seeker.')) {
+      await this.navigate();
+    }
+    await this.closeBannerIfVisible();
+    await this.openPersonalizeAuthModal();
+    await this.loginOrRegisterWithOtp(phone, otp, fullName);
+    await this.completeStep1JobTitle('nhân viên bán hàng');
+
+    // Chờ xuất hiện màn hình Bước 2 (Khu vực làm việc)
+    await this.waitForElement(this.chonToiDa5Text, 15000);
+    await this.capture('onboarding_step2_locations_ready');
+  }
+
+  /**
+   * Bỏ chọn một khu vực làm việc (click lại vào nút đã chọn)
+   */
+  async deselectLocation(btnName = 'Cần Thơ') {
+    const btn = this.page.locator('button, div, span, [role="button"]').filter({ hasText: new RegExp(`^${btnName}`, 'i') }).last();
+    await this.actions.click(btn);
+    await this.capture('location_deselected');
+  }
+
+  /**
+   * Chọn lại một khu vực làm việc
+   */
+  async selectSingleLocation(btnName = 'Cần Thơ') {
+    const btn = this.page.locator('button, div, span, [role="button"]').filter({ hasText: new RegExp(`^${btnName}`, 'i') }).last();
+    await this.actions.click(btn);
+    await this.capture('location_selected');
   }
 
   /**

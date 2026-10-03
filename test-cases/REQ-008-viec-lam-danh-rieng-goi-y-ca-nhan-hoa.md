@@ -9,6 +9,10 @@
 | TC-097 | AC-023 | Kiểm tra giới hạn khi nhập vượt quá biên tối đa 5 | P2 | Có | tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js |
 | TC-098 | AC-024 | Bỏ qua Onboarding mini khi tài khoản đã có sẵn tiêu chí tìm việc | P2 | Có | tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js |
 | TC-099 | AC-024 | Kiểm tra autofill đồng bộ dữ liệu từ Onboarding mini sang Onboarding màn hình Home | P2 | Có | tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js |
+| TC-100 | AC-023 | Số điện thoại chưa tồn tại chuyển hướng sang luồng xác thực OTP | P0 | candidate | - |
+| TC-101 | AC-024 | Chọn chính xác 5 khu vực làm việc (Giá trị biên tối đa) | P1 | candidate | - |
+| TC-102 | AC-024 | Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative) | P2 | candidate | - |
+| TC-103 | AC-024 | Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | P2 | candidate | - |
 
 
 ## Chi tiết
@@ -90,3 +94,62 @@
 | 1 | Hoàn tất thiết lập tiêu chí qua Onboarding mini | Tiêu chí được lưu thành công vào hồ sơ |
 | 2 | Điều hướng về màn hình Trang chủ (Home) | Trang chủ hiển thị hoặc mở Onboarding Home |
 | 3 | Kiểm tra các trường thông tin tại Onboarding Home | Các giá trị Khu vực, Vị trí, Mức lương được autofill chính xác theo dữ liệu đã chọn từ Onboarding mini |
+
+
+### TC-100 — Số điện thoại chưa tồn tại chuyển hướng sang luồng xác thực OTP
+
+- **Loại:** Chức năng | **Ưu tiên:** P0 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-so-dien-thoai-chua-ton-tai-otp.spec.js`
+- **Tiền điều kiện:** Người dùng đang ở màn hình nhập số điện thoại của luồng tiếp cận việc làm dành riêng.
+- **Dữ liệu kiểm thử:** Số điện thoại hợp lệ chưa từng đăng ký trên hệ thống (vd: 0999123456)
+> *Ghi chú nghiệp vụ:* Q-1 chốt luồng rẽ nhánh cho số điện thoại. TC-096 đã kiểm tra case tài khoản tồn tại, cần bổ sung case tài khoản chưa tồn tại (luồng tạo mới) để đảm bảo độ phủ.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Nhập số điện thoại chưa đăng ký và bấm 'Tiếp tục' | Hệ thống không hiển thị màn hình mật khẩu mà chuyển hướng sang màn hình nhập mã OTP để tạo tài khoản mới. |
+
+
+### TC-101 — Chọn chính xác 5 khu vực làm việc (Giá trị biên tối đa)
+
+- **Loại:** Chức năng | **Ưu tiên:** P1 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js`
+- **Tiền điều kiện:** Người dùng đang ở bước thiết lập tiêu chí tìm việc (Onboarding mini) - phần chọn khu vực làm việc.
+- **Dữ liệu kiểm thử:** 5 khu vực làm việc bất kỳ (vd: Hà Nội, TP.HCM, Đà Nẵng, Cần Thơ, Hải Phòng)
+> *Ghi chú nghiệp vụ:* Q-2 chốt giới hạn tối đa 5 khu vực. TC-097 đã test case vượt quá biên (>5), cần test case ngay tại giá trị biên (BVA = 5) để đảm bảo hệ thống cho phép lưu thành công.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Chọn lần lượt đúng 5 khu vực làm việc khác nhau | Hệ thống cho phép chọn thành công cả 5 khu vực. Các khu vực còn lại bị vô hiệu hóa (disabled) hoặc có thông báo đã đạt giới hạn. |
+| 2 | Bấm 'Tiếp tục' hoặc 'Lưu' | Hệ thống lưu thành công 5 khu vực và chuyển sang bước tiếp theo. |
+
+
+### TC-102 — Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative)
+
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js`
+- **Tiền điều kiện:** Người dùng đang ở bước thiết lập tiêu chí tìm việc (Onboarding mini) - phần chọn khu vực làm việc.
+- **Dữ liệu kiểm thử:** Không có dữ liệu
+> *Ghi chú nghiệp vụ:* Áp dụng BVA cho Q-2, kiểm tra trường hợp người dùng không chọn khu vực nào (0) xem hệ thống có chặn lại bằng validation message không.
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Để trống, không chọn bất kỳ khu vực làm việc nào | Nút 'Tiếp tục' bị vô hiệu hóa (disabled) hoặc khi bấm vào sẽ hiển thị thông báo lỗi yêu cầu chọn ít nhất 1 khu vực. |
+
+
+### TC-103 — Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case)
+
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân tích giá trị biên / Quyết định chốt
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js`
+- **Tiền điều kiện:** Người dùng đang ở bước chọn khu vực làm việc và đã chọn đủ 5 khu vực.
+- **Dữ liệu kiểm thử:** 5 khu vực đã chọn, 1 khu vực mới chưa chọn
+> *Ghi chú nghiệp vụ:* Edge case cho Q-2, đảm bảo logic đếm số lượng khu vực hoạt động đúng khi người dùng thay đổi quyết định (chọn max, bỏ bớt, chọn lại).
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Bỏ chọn 1 khu vực trong danh sách 5 khu vực đã chọn | Hệ thống cho phép bỏ chọn, bộ đếm giảm xuống 4/5, các khu vực khác được mở khóa (enabled) trở lại. |
+| 2 | Chọn 1 khu vực mới khác | Hệ thống cho phép chọn khu vực mới, bộ đếm tăng lên 5/5 và khóa các lựa chọn còn lại. |
+| 3 | Bấm 'Tiếp tục' | Hệ thống lưu thành công danh sách 5 khu vực mới cập nhật. |
