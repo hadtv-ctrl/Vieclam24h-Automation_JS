@@ -4,43 +4,60 @@ const { generateRandomVNPhone } = require('../../../core/utils/commonUtils');
 
 test.describe('Feature: Cá nhân hóa tiêu chí tìm việc & kiểm tra giá trị biên @guest @no-auth @personalize @bva @negative @desktop @e2e @REQ-008', () => {
   test('TC-102 - AC-024 Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative)', async ({ page }, testInfo) => {
-    const personalizePage = new PersonalizePage(page, 'personalize_empty_locations_negative');
     test.setTimeout(180000);
+    const personalizePage = new PersonalizePage(page, 'personalize_empty_locations_negative');
 
     testInfo.annotations.push({
       type: 'Precondition',
-      description: 'Người dùng truy cập trực tiếp Personalized Page, hoàn tất xác thực và đang ở Bước 2 chọn khu vực làm việc (để trống)',
+      description: 'Người dùng truy cập trực tiếp Personalized Page, hoàn tất xác thực và đang ở Bước 2 chọn khu vực làm việc của Mini-onboarding nhưng để trống không chọn',
     });
 
     const testPhone = generateRandomVNPhone();
+    const testFullName = 'Hà Đinh';
+    const testJobTitle = 'nhân viên bán hàng';
 
-    await test.step('Given Tiền điều kiện: Người dùng ở Bước 2 chọn khu vực làm việc trực tiếp trên Personalized Page', async () => {
-      // Điều hướng và xác thực trực tiếp trên Personalized Page
-      await personalizePage.reachOnboardingStep2Locations(testPhone, '1111', 'Hà Đinh');
+    await test.step('Given Tiền điều kiện: Khách vãng lai truy cập trực tiếp Personalized Page và mở form đăng ký / xác thực', async () => {
+      await personalizePage.navigateToPersonalizedPage();
+      await personalizePage.closeBannerIfVisible();
       expect(page.url()).toContain(personalizePage.personalizedPath);
 
+      await expect(personalizePage.nhapSoDienThoaiInput).toBeVisible({ timeout: 15000 });
+      await personalizePage.capture('01_direct_personalized_page_auth_ready');
+    });
+
+    await test.step('When [1] Đăng ký số điện thoại mới và nhập mã xác thực OTP', async () => {
+      // Điền số điện thoại ngẫu nhiên và nhập OTP 1111
+      await personalizePage.registerPhoneAndOtp(testPhone, '1111');
+    });
+
+    await test.step('When [2] Nhập Họ tên và chấp thuận điều khoản xử lý dữ liệu cá nhân', async () => {
+      // Điền Họ và tên, chấp thuận Consent modal
+      await personalizePage.enterFullNameAndAcceptConsent(testFullName);
+    });
+
+    await test.step('When [Bước 1 Mini-onboarding] Nhập và chọn vị trí công việc mong muốn', async () => {
+      // Điền vị trí công việc mong muốn và chọn gợi ý
+      await personalizePage.completeStep1JobTitle(testJobTitle);
+    });
+
+    await test.step('When [Bước 2 Mini-onboarding] Để trống, không chọn bất kỳ khu vực làm việc nào', async () => {
+      // Màn hình Bước 2 chọn khu vực hiển thị
       await expect(personalizePage.chonToiDa5Text).toBeVisible({ timeout: 15000 });
-      await personalizePage.capture('01_step2_empty_locations_ready');
-    });
-
-    await test.step('When [1] Để trống, không chọn bất kỳ khu vực làm việc nào', async () => {
-      // Để trống, không click chọn bất kỳ tỉnh thành nào
-      await personalizePage.capture('02_no_locations_selected');
-    });
-
-    await test.step('Then [1] Nút Tiếp tục bị vô hiệu hóa hoặc khi bấm vào sẽ hiển thị thông báo lỗi yêu cầu chọn ít nhất 1 khu vực', async () => {
-      // Kiểm tra nút Tiếp theo: hoặc bị vô hiệu hóa (disabled), hoặc bấm vào không chuyển bước
-      const isNextDisabled = await personalizePage.tiepTheoBtn.isDisabled().catch(() => false);
-      if (isNextDisabled) {
-        expect(isNextDisabled).toBeTruthy();
-      } else {
-        await personalizePage.actions.click(personalizePage.tiepTheoBtn);
-        // Khẳng định hệ thống chặn lại, vẫn ở màn hình Bước 2 (Khu vực làm việc) trên Personalized Page
-        await expect(personalizePage.chonToiDa5Text).toBeVisible({ timeout: 5000 });
-        await expect(personalizePage.minSalaryInput).toBeHidden();
-      }
       expect(page.url()).toContain(personalizePage.personalizedPath);
-      await personalizePage.capture('03_empty_locations_prevented_successfully');
+      // Chụp bằng chứng rõ ràng trạng thái chưa có khu vực nào được chọn
+      await personalizePage.capture('02_step2_empty_locations_displayed');
+    });
+
+    await test.step('Then [1] Nút Tiếp theo bị vô hiệu hóa hoặc bị chặn không cho phép chuyển bước khi chưa chọn khu vực', async () => {
+      // Khẳng định nút Tiếp theo bị vô hiệu hóa (disabled) khi để trống khu vực
+      await expect(personalizePage.tiepTheoBtn).toBeDisabled({ timeout: 10000 });
+
+      // Khẳng định hệ thống không chuyển bước, vẫn ở màn hình Bước 2 trên Personalized Page
+      await expect(personalizePage.chonToiDa5Text).toBeVisible();
+      await expect(personalizePage.minSalaryInput).toBeHidden();
+      expect(page.url()).toContain(personalizePage.personalizedPath);
+
+      await personalizePage.capture('03_empty_locations_blocked_successfully');
     });
   });
 });

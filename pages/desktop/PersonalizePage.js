@@ -340,10 +340,15 @@ class PersonalizePage extends BasePage {
         if (await this.anGiangBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
           await this.actions.click(this.anGiangBtn);
         }
+        await this.capture('step2_6th_location_boundary_checked');
+        // Đóng dropdown Khác để lộ nút Tiếp theo
+        await this.actions.click(khacBtn).catch(() => null);
+        await this.actions.click(this.chonToiDa5Text).catch(() => null);
         await this.page.keyboard.press('Escape').catch(() => null);
       }
-    } catch (_) {}
-    await this.capture('step2_6th_location_boundary_checked');
+    } catch (_) {
+      await this.capture('step2_6th_location_boundary_checked');
+    }
   }
 
   /**
