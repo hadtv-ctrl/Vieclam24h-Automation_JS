@@ -963,7 +963,7 @@ class UserProfilePage extends BasePage {
       });
     });
 
-    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/ho-so-cua-toi', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/ho-so-cua-toi', { waitUntil: 'domcontentloaded' });
     await this.actions.waitForVisible(this.btnAiIntro, { timeout: 15000 });
   }
 

@@ -281,7 +281,7 @@ class ChopChatbotPage extends BasePage {
 
   // --- REAL CHATBOT TC-049 & TC-050 METHODS ---
   async navigateToChatbot() {
-    await this.page.goto('https://seeker.vl24hv2.qc.sieuviet-team.com/chop-tro-ly-ai.html', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/chop-tro-ly-ai.html', { waitUntil: 'domcontentloaded' });
   }
 
   async setupRealChatbotPrecondition(user) {
