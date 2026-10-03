@@ -137,6 +137,12 @@ Chỉ **đề xuất**. Không tự viết thêm script ngoài phạm vi đượ
 - Helper/fixture đặt tại `core/utils/` hoặc `core/fixtures/`.
 - Test data đặt tại `data/`; không hard-code bộ dữ liệu nghiệp vụ lớn trong spec.
 - Cấu hình môi trường nằm tại `core/config/env.js` và được dùng qua `baseURL` trong `playwright.config.js`.
+- **Không hard-code link/domain trong script (spec, Page Object, fixture, helper).** Domain thay đổi theo môi trường (`qc`/`staging`/`prod`) nên phải khai báo theo từng môi trường trong `environments` của `dashboardConfig.json` và đọc qua `core/config/env.js`:
+  - Domain chính: khai `baseURL`, điều hướng bằng đường dẫn tương đối `page.goto('/path')` hoặc `this.navigate('/path')`.
+  - Domain phụ (portal đối tác, trang admin, seeker/employer…): thêm key riêng kết thúc bằng `URL` (ví dụ `employerURL`) cho **mọi** môi trường, dùng `new URL('/path', env.employerURL).href`.
+  - API: dùng `env.apiBaseURL`, không viết `request.get('https://...')`.
+  - Assertion URL dùng path/regex (`toHaveURL(/\/inventory/)`) thay vì URL tuyệt đối; không dùng fallback dạng `url || 'https://domain-that.vn'`.
+  - Chỉ được phép dùng literal URL với tên miền dự phòng (`example.com`, `localhost`, `127.0.0.1`) trong sample/mock. `npm run check:framework` chặn các vi phạm còn lại.
 - Spec không được gọi `page.locator()`, `page.getBy*()`, `page.screenshot()`, `page.evaluate()` hoặc thao tác UI trực tiếp. Spec chỉ điều phối Page Object/helper và assertion ở cấp hành vi.
 - Locator thuộc Page Object. Action dùng lại `UiActions` trong `core/utils/commonUtils.js` khi action tương ứng đã tồn tại.
 - Không import `fs` trong spec. File I/O và evidence phải đi qua helper.

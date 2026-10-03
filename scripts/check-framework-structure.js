@@ -2,6 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { findHardcodedSecrets } = require('./lib/secretScan');
 
+// URL tuyệt đối mở đầu một string literal. Chỉ cho phép host dự phòng (example.*) và loopback dùng cho sample/mock.
+const ALLOWED_URL_HOST = String.raw`(?:(?:[\w-]+\.)*example\.(?:com|org|net)|localhost|127\.0\.0\.1)(?=[/:'"\x60?#]|$)`;
+const HARDCODED_URL_PATTERN = new RegExp(String.raw`['"\x60]https?://(?!${ALLOWED_URL_HOST})[^\s'"\x60]+`, 'g');
+
 function runFrameworkCheck({ root = process.cwd(), targetArgs = [] } = {}) {
   const sourceDirs = ['tests/e2e', 'tests/api', 'pages', 'core/utils', 'core/fixtures'];
   const issues = [];
@@ -49,6 +53,10 @@ function runFrameworkCheck({ root = process.cwd(), targetArgs = [] } = {}) {
 
     if (!file.startsWith(`core${path.sep}utils${path.sep}`)) {
       reportMatches(file, content, /\bpage\.screenshot\s*\(/g, 'calls page.screenshot() outside a utility');
+    }
+
+    if (!file.endsWith('.test.js')) {
+      reportMatches(file, content, HARDCODED_URL_PATTERN, 'hard-codes a URL/domain; read it from core/config/env.js (baseURL, apiBaseURL or *URL)');
     }
 
     if (file.endsWith('.spec.js')) {
