@@ -67,13 +67,21 @@ export class FixturesSlice {
     });
 
     on('#btn-copy-usage-code', 'click', () => {
-      const code = document.getElementById('fx-usage-code')?.textContent || '';
-      if (code) navigator.clipboard?.writeText(code).then(() => this.notify('📋 Đã sao chép mã mẫu!'));
+      const c = document.getElementById('fx-usage-code')?.textContent;
+      if (c) navigator.clipboard?.writeText(c).then(() => this.notify('📋 Đã sao chép mã mẫu!'));
     });
-
     on('#btn-copy-source-code', 'click', () => {
-      const code = document.getElementById('fx-source-code')?.textContent || '';
-      if (code) navigator.clipboard?.writeText(code).then(() => this.notify('📋 Đã sao chép mã nguồn!'));
+      const c = document.getElementById('fx-source-code')?.textContent;
+      if (c) navigator.clipboard?.writeText(c).then(() => this.notify('📋 Đã sao chép mã nguồn!'));
+    });
+    on('#btn-toggle-fixture-edit', 'click', () => {
+      const ed = document.getElementById('fx-source-editor');
+      const pre = document.getElementById('fx-source-code-pre');
+      const txt = document.getElementById('fx-toggle-edit-text');
+      const isEd = ed && ed.style.display !== 'none';
+      if (ed) ed.style.display = isEd ? 'none' : 'block';
+      if (pre) pre.style.display = isEd ? 'block' : 'none';
+      if (txt) txt.textContent = isEd ? 'Chỉnh sửa mã' : 'Xem mã highlight';
     });
   }
 
@@ -154,33 +162,27 @@ export class FixturesSlice {
 
   renderFixtureDetails(fx) {
     if (!fx) return;
-    const catEyebrow = document.getElementById('fx-detail-category-eyebrow');
-    const nameEl = document.getElementById('fx-detail-name');
-    const descEl = document.getElementById('fx-detail-desc');
-    const scopeEl = document.getElementById('fx-grid-scope');
-    const catEl = document.getElementById('fx-grid-cat');
-    const paramsEl = document.getElementById('fx-grid-params');
-    const fileEl = document.getElementById('fx-grid-file');
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('fx-detail-category-eyebrow', fx.isCustom ? 'FIXTURE NGHIỆP VỤ TÙY BIẾN' : 'FIXTURE CỐT LÕI HỆ THỐNG');
+    set('fx-detail-name', fx.title ? `${fx.name} (${fx.title})` : fx.name);
+    set('fx-detail-desc', fx.description || fx.title || 'Fixture được nạp tự động vào ngữ cảnh kiểm thử Playwright.');
+    set('fx-grid-scope', fx.scope || 'test');
+    set('fx-grid-cat', fx.category || 'Hạ tầng & Nền tảng');
+    set('fx-grid-params', (fx.params && fx.params.length) ? fx.params.join(', ') : 'Không có');
+    set('fx-grid-file', fx.sourceFile || 'core/fixtures/baseTest.js');
+
+    const toggleBtn = document.getElementById('btn-toggle-fixture-edit');
+    if (toggleBtn) toggleBtn.style.display = fx.isCustom ? 'inline-flex' : 'none';
+
     const sourceEl = document.getElementById('fx-source-code');
-    const usageEl = document.getElementById('fx-usage-code');
-
-    if (catEyebrow) catEyebrow.textContent = fx.isCustom ? 'FIXTURE NGHIỆP VỤ TÙY BIẾN' : 'FIXTURE CỐT LÕI HỆ THỐNG';
-    if (nameEl) nameEl.textContent = fx.title ? `${fx.name} (${fx.title})` : fx.name;
-    if (descEl) descEl.textContent = fx.description || fx.title || 'Fixture được nạp tự động vào ngữ cảnh kiểm thử Playwright.';
-    if (scopeEl) scopeEl.textContent = fx.scope || 'test';
-    if (catEl) catEl.textContent = fx.category || 'Hạ tầng & Nền tảng';
-    if (paramsEl) paramsEl.textContent = (fx.params && fx.params.length) ? fx.params.join(', ') : 'Không có';
-    if (fileEl) fileEl.textContent = fx.sourceFile || 'core/fixtures/baseTest.js';
-
-    const source = fx.rawCode || `// Fixture ${fx.name} được định nghĩa trong ${fx.sourceFile}\n// Chữ ký tham số: ${fx.params?.join(', ') || 'Không có'}`;
     if (sourceEl) {
-      sourceEl.textContent = source;
+      sourceEl.textContent = fx.rawCode || `// Fixture ${fx.name} được định nghĩa trong ${fx.sourceFile}\n// Chữ ký tham số: ${fx.params?.join(', ') || 'Không có'}`;
       if (window.Prism) Prism.highlightElement(sourceEl);
     }
 
-    const usage = `const { test, expect } = require('../../../core/fixtures/baseTest');\n\ntest('Kịch bản sử dụng fixture ${fx.name}', async ({ ${fx.name} }) => {\n  console.log('Đang thực thi với fixture:', ${fx.name});\n});`;
+    const usageEl = document.getElementById('fx-usage-code');
     if (usageEl) {
-      usageEl.textContent = usage;
+      usageEl.textContent = `const { test, expect } = require('../../../core/fixtures/baseTest');\n\ntest('Kịch bản sử dụng fixture ${fx.name}', async ({ ${fx.name} }) => {\n  console.log('Đang thực thi với fixture:', ${fx.name});\n});`;
       if (window.Prism) Prism.highlightElement(usageEl);
     }
   }
@@ -188,11 +190,7 @@ export class FixturesSlice {
   notify(msg) {
     eventBus.emit('ui:notify', { message: msg });
     const toast = document.getElementById('toast');
-    if (toast) {
-      toast.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
-    }
+    if (toast) { toast.textContent = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
   }
 }
 

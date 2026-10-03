@@ -17332,45 +17332,24 @@ async function selectFixture(fx) {
     deleteBtn.style.display = fx.isCustom ? 'inline-flex' : 'none';
   }
 
-  const saveBtn = $('#btn-save-fixture');
-  const valBtn = $('#btn-validate-fixture');
   const sourcePre = $('#fx-source-code-pre');
   const sourceEditor = $('#fx-source-editor');
-  const editorHint = $('#fx-editor-hint');
-  const modeBadge = $('#fx-mode-badge');
-
-  if (modeBadge) {
-    modeBadge.textContent = fx.isCustom ? 'Chỉnh sửa trực tiếp' : 'Chỉ đọc';
-    modeBadge.classList.toggle('editable', Boolean(fx.isCustom));
-  }
+  const toggleEditBtn = $('#btn-toggle-fixture-edit');
 
   const sourceCode = fx.rawCode || `// Fixture ${fx.name} được định nghĩa trong ${fx.sourceFile}
 // Chữ ký tham số: ${fx.params?.join(', ') || 'Không có'}`;
 
+  if (sourceEditor) {
+    sourceEditor.value = sourceCode;
+    updateFixtureDirtyIndicator(false);
+  }
+
   if (fx.isCustom) {
-    if (saveBtn) saveBtn.style.display = 'inline-flex';
-    if (valBtn) valBtn.style.display = 'inline-flex';
-    if (sourcePre) sourcePre.style.display = 'none';
-    if (sourceEditor) {
-      sourceEditor.style.display = 'block';
-      sourceEditor.value = sourceCode;
-      updateFixtureDirtyIndicator(false);
-    }
-    if (editorHint) editorHint.textContent = 'Mã nguồn fixture tùy biến có thể chỉnh sửa trực tiếp. Bấm "Lưu thay đổi" để áp dụng.';
+    if (toggleEditBtn) toggleEditBtn.style.display = 'inline-flex';
+    setFixtureEditorMode(false);
   } else {
-    if (saveBtn) saveBtn.style.display = 'none';
-    if (valBtn) valBtn.style.display = 'none';
-    if (sourcePre) sourcePre.style.display = 'block';
-    if (sourceEditor) sourceEditor.style.display = 'none';
-    const sourceCodeEl = $('#fx-source-code');
-    if (sourceCodeEl) {
-      sourceCodeEl.textContent = sourceCode;
-      sourceCodeEl.className = 'language-javascript';
-      if (window.Prism) {
-        Prism.highlightElement(sourceCodeEl);
-      }
-    }
-    if (editorHint) editorHint.textContent = 'Mã nguồn fixture nền tảng của hệ thống (chế độ chỉ đọc).';
+    if (toggleEditBtn) toggleEditBtn.style.display = 'none';
+    setFixtureEditorMode(false);
   }
 
   const usageCode = `const { test, expect } = require('../../../core/fixtures/baseTest');
@@ -17386,6 +17365,58 @@ test('Kịch bản sử dụng fixture ${fx.name}', async ({ ${fx.name} }) => {
     if (window.Prism) {
       Prism.highlightElement(usageCodeEl);
     }
+  }
+}
+
+function setFixtureEditorMode(isEditing) {
+  const saveBtn = $('#btn-save-fixture');
+  const valBtn = $('#btn-validate-fixture');
+  const toggleEditText = $('#fx-toggle-edit-text');
+  const toggleEditBtn = $('#btn-toggle-fixture-edit');
+  const sourcePre = $('#fx-source-code-pre');
+  const sourceEditor = $('#fx-source-editor');
+  const editorHint = $('#fx-editor-hint');
+  const modeBadge = $('#fx-mode-badge');
+  const sourceCodeEl = $('#fx-source-code');
+
+  if (isEditing) {
+    if (sourcePre) sourcePre.style.display = 'none';
+    if (sourceEditor) {
+      sourceEditor.style.display = 'block';
+      sourceEditor.focus();
+    }
+    if (saveBtn) saveBtn.style.display = 'inline-flex';
+    if (valBtn) valBtn.style.display = 'inline-flex';
+    if (modeBadge) {
+      modeBadge.textContent = 'Chỉnh sửa trực tiếp';
+      modeBadge.classList.add('editable');
+    }
+    if (toggleEditText) toggleEditText.textContent = 'Xem mã highlight';
+    if (toggleEditBtn) {
+      const icon = toggleEditBtn.querySelector('i');
+      if (icon) icon.className = 'ph-bold ph-eye';
+    }
+    if (editorHint) editorHint.textContent = 'Chế độ soạn thảo: bạn có thể gõ, sửa code và bấm "Lưu thay đổi".';
+  } else {
+    if (sourceEditor && sourceCodeEl) {
+      sourceCodeEl.textContent = sourceEditor.value || (currentSelectedFixture?.rawCode || '');
+      sourceCodeEl.className = 'language-javascript';
+      if (window.Prism) Prism.highlightElement(sourceCodeEl);
+    }
+    if (sourcePre) sourcePre.style.display = 'block';
+    if (sourceEditor) sourceEditor.style.display = 'none';
+    if (saveBtn) saveBtn.style.display = 'none';
+    if (valBtn) valBtn.style.display = 'none';
+    if (modeBadge) {
+      modeBadge.textContent = currentSelectedFixture?.isCustom ? 'Tùy biến (Xem mã)' : 'Chỉ đọc';
+      modeBadge.classList.toggle('editable', Boolean(currentSelectedFixture?.isCustom));
+    }
+    if (toggleEditText) toggleEditText.textContent = 'Chỉnh sửa mã';
+    if (toggleEditBtn) {
+      const icon = toggleEditBtn.querySelector('i');
+      if (icon) icon.className = 'ph-bold ph-pencil-simple';
+    }
+    if (editorHint) editorHint.textContent = currentSelectedFixture?.isCustom ? 'Mã nguồn fixture tùy biến (có tô màu cú pháp). Bấm "Chỉnh sửa mã" để sửa.' : 'Mã nguồn fixture nền tảng của hệ thống (chế độ chỉ đọc).';
   }
 }
 
@@ -17419,6 +17450,10 @@ test('Kịch bản sử dụng fixture ${fx.name}', async ({ ${fx.name} }) => {
   }
 
 function initFixturesStudioListeners() {
+  $('#btn-toggle-fixture-edit')?.addEventListener('click', () => {
+    const isCurrentlyEditing = $('#fx-source-editor')?.style.display !== 'none';
+    setFixtureEditorMode(!isCurrentlyEditing);
+  });
   $('#btn-copy-usage-code')?.addEventListener('click', () => {
     const code = $('#fx-usage-code')?.textContent || '';
     if (code) {
