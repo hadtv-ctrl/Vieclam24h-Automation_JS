@@ -232,11 +232,20 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
   return null;
 }
 
+function getRemoteRepo(rootDir = ENGINE_DIR) {
+  try {
+    const url = safeGit(['remote', 'get-url', 'origin'], { cwd: rootDir }).trim();
+    const match = url.match(/github\.com[/:]([^/]+\/[^/.]+)/);
+    if (match) return match[1].replace(/\.git$/, '');
+  } catch (_) {}
+  return 'hadtv-ctrl/Vieclam24h-Automation_JS';
+}
+
 /**
  * Kiểm tra xem có bản cập nhật mới hay không
  * @param {Object} options
  * @param {string} [options.updateUrl] URL manifest hoặc GitHub API release
- * @param {string} [options.githubRepo] Ví dụ: "hadinhkms/Automation_playwright_SV"
+ * @param {string} [options.githubRepo] Ví dụ: "hadtv-ctrl/Vieclam24h-Automation_JS"
  */
 async function checkForUpdates(options = {}) {
   const currentVersion = getCurrentVersion();
@@ -244,23 +253,34 @@ async function checkForUpdates(options = {}) {
 
   // 1. Ưu tiên kiểm tra bản cập nhật Git Framework (áp dụng cho các vệ tinh & nhánh con)
   const gitUpdate = checkGitFrameworkUpdates(rootDir);
-  if (gitUpdate && gitUpdate.hasUpdate) {
+  if (gitUpdate) {
+    if (gitUpdate.hasUpdate) {
+      return {
+        ok: true,
+        hasUpdate: true,
+        isGitFrameworkUpdate: true,
+        currentVersion,
+        latestVersion: gitUpdate.latestVersion,
+        releaseName: gitUpdate.releaseName,
+        releaseNotes: gitUpdate.releaseNotes,
+        publishedAt: new Date().toISOString(),
+        downloadUrl: `https://github.com/${options.githubRepo || getRemoteRepo(rootDir)}`,
+        isOffline: false,
+      };
+    }
     return {
       ok: true,
-      hasUpdate: true,
+      hasUpdate: false,
       isGitFrameworkUpdate: true,
       currentVersion,
-      latestVersion: gitUpdate.latestVersion,
-      releaseName: gitUpdate.releaseName,
-      releaseNotes: gitUpdate.releaseNotes,
-      publishedAt: new Date().toISOString(),
-      downloadUrl: `https://github.com/${options.githubRepo || 'hadinhkms/Automation_playwright_SV'}`,
+      latestVersion: currentVersion,
       isOffline: false,
+      message: gitUpdate.message || 'Dashboard Framework đã đồng bộ hoàn toàn với Hub cục bộ.',
     };
   }
 
   // 2. Kiểm tra qua GitHub Releases (dành cho chế độ độc lập/release SemVer)
-  const githubRepo = options.githubRepo || 'hadinhkms/Automation_playwright_SV';
+  const githubRepo = options.githubRepo || getRemoteRepo(rootDir);
   const updateUrl = options.updateUrl || `https://api.github.com/repos/${githubRepo}/releases/latest`;
 
   try {
