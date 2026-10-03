@@ -349,3 +349,22 @@
   1. Method `navigate()` của một Page Object BẮT BUỘC phải điều hướng về URL của chính trang đó (`this.personalizedPath`), không được fallback về trang chủ `'/'`.
   2. Mọi kịch bản kiểm tra chức năng thuộc trang đích (nhập liệu, kiểm tra biên, chọn tiêu chí, xác thực) phải truy cập trực tiếp URL trang đích và assert `expect(page.url()).toContain(pageObject.path)`.
   3. Chỉ những kịch bản kiểm thử điều hướng liên trang (Cross-page navigation / Funnel sync) mới được phép mở Trang chủ làm điểm khởi đầu.
+
+### [LEARN-021] Điểm Chạm Phân Biệt Tài Khoản Mới vs Tài Khoản Đã Tồn Tại Trong Luồng Đăng Nhập OTP
+- **Nguồn trích xuất:** TASK-PERSONALIZE-AUTH-OTP-NAME-EMAIL-FLOW (TC-096 & TC-100)
+- **Role quan sát:** Senior Automation QA Engineer & Test Lead (Gate 4)
+- **Quan sát (Observation):**
+  1. Trên hệ thống Vieclam24h, cả số điện thoại chưa đăng ký lẫn đã có tài khoản đều gửi mã OTP xác thực (passwordless/OTP authentication).
+  2. Điểm phân nhánh thực tế để khẳng định một số điện thoại đã tồn tại hay chưa nằm ở bước **SAU KHI NHẬP OTP**:
+     - **Tài khoản chưa tồn tại (New User):** Sau OTP, hệ thống mở popup "Tạo tài khoản mới" bắt buộc nhập **Họ và tên \*** và **Email**.
+     - **Tài khoản đã tồn tại (Existing User):** Sau OTP, hệ thống **bỏ qua hoàn toàn** popup tạo tài khoản mới và đăng nhập thẳng vào phiên làm việc.
+  3. Khi assert sự tồn tại của 2 trường trong cùng 1 form (Họ tên và Email), không được dùng locator `.or()` nối giữa 2 element cùng hiển thị vì sẽ vi phạm Playwright Strict Mode Violation (`resolved to 2 elements`). Phải assert độc lập: `await expect(nhapHoVaTenInput).toBeVisible()` và `await expect(emailInput).toBeVisible()`.
+- **Bằng chứng (Evidence):** `tests/e2e/desktop/personalize-so-dien-thoai-chua-ton-tai-otp.spec.js`, `tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js`, `pages/desktop/PersonalizePage.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Với luồng OTP, kịch bản kiểm thử phân nhánh tài khoản mới/cũ bắt buộc phải đi qua bước nhập OTP 4 chữ số rồi mới kiểm tra màn hình tiếp theo.
+  2. Assert `toBeVisible()` đối với Họ tên & Email cho tài khoản mới (TC-100), và `toBeHidden()` đối với tài khoản cũ (TC-096).
+  3. Tuyệt đối không dùng `.or()` giữa các trường cùng xuất hiện trên form để tránh lỗi strict mode.
