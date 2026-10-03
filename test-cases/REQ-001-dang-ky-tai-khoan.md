@@ -28,12 +28,12 @@
 
 - **Precondition**: chưa đăng nhập, đang ở trang chủ.
 - **Dữ liệu**: email sinh ngẫu nhiên mỗi lần chạy; họ tên và mật khẩu lấy từ `data/users.json`, có giá trị mặc định dự phòng.
-- **Các bước**: đóng popup quảng cáo, mở popup Đăng ký/Đăng nhập từ header, chọn phương thức email, nhập email, bấm Tiếp tục, điền họ tên và số điện thoại và mật khẩu, bấm Đăng ký.
+- **Các bước**: đóng popup quảng cáo, mở popup Đăng ký/Đăng nhập từ header, chọn phương thức email, nhập email, bấm Tiếp tục, điền họ tên, số điện thoại (tùy chọn) và mật khẩu, bấm Hoàn tất.
 - **Expected result thực tế đang kiểm**:
   - Trang chủ hiển thị — Có assertion.
   - Form "Tạo tài khoản mới" xuất hiện sau khi nhập email — Có assertion.
-  - Nút Đăng ký hiển thị trước khi bấm — Có assertion.
-  - Tài khoản được tạo thành công — **Không kiểm chứng**. Spec kết thúc ngay sau khi bấm Đăng ký.
+  - Nút Hoàn tất (type="submit") hiển thị trước khi bấm — Có assertion.
+  - Tài khoản được tạo thành công — **Không kiểm chứng**. Spec kết thúc ngay sau khi bấm Hoàn tất.
 - **Khoảng trống**: đây là test case P0 nhưng không có điều kiện thoát nào chứng minh kết quả. Test vẫn xanh kể cả khi đăng ký thất bại.
 - **Ghi chú độ ổn định**: bản desktop có vòng thử lại tối đa ba lần khi popup đăng nhập không mở được, và ném lỗi tường minh nếu vẫn hỏng. Đây là chỗ đã từng không ổn định.
 
@@ -41,12 +41,13 @@
 
 - **Precondition**: chưa đăng nhập, đang ở trang chủ.
 - **Dữ liệu**: số điện thoại di động Việt Nam sinh ngẫu nhiên; email sinh ngẫu nhiên; mã OTP cố định của môi trường test là bốn chữ số 1111.
-- **Các bước**: đóng popup, mở popup đăng nhập, nhập số điện thoại, bấm Tiếp tục cho tới khi ô OTP hiện, nhập OTP, điền họ tên và email và mật khẩu, bấm Đăng ký, đồng ý popup chấp thuận dữ liệu.
+- **Các bước**: đóng popup, mở popup đăng nhập, nhập số điện thoại, bấm Tiếp tục cho tới khi ô OTP hiện, nhập OTP, điền họ tên và email (tùy chọn, form SĐT không yêu cầu mật khẩu), bấm Hoàn tất, đồng ý popup chấp thuận dữ liệu (Consent).
 - **Expected result thực tế đang kiểm**:
   - Ô nhập OTP xuất hiện — Có assertion.
   - Form "Tạo tài khoản mới" xuất hiện sau khi nhập OTP — Có assertion.
+  - Nút Hoàn tất hiển thị và bấm gửi form thành công — Có assertion.
   - Nội dung trang chủ được tải sau khi đồng ý consent — Có assertion. Đây là bằng chứng gián tiếp cho thấy đăng ký đã thành công.
-- **Khác biệt đáng chú ý so với TC-001**: luồng này có bước consent và kết thúc bằng một điều kiện kiểm được, nên chắc chắn hơn luồng email.
+- **Khác biệt đáng chú ý so với TC-001**: luồng này có bước OTP, form không yêu cầu mật khẩu, có bước consent và kết thúc bằng một điều kiện kiểm được.
 - **Ghi chú độ ổn định**: bước bấm Tiếp tục được lặp tối đa ba lần cho tới khi OTP hiện.
 
 ### TC-005 — API đăng ký

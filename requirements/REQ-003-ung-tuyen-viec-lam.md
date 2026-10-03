@@ -71,16 +71,16 @@ Luồng ứng tuyển không cần CV tách riêng tại REQ-004 vì nó có quy
 - Đây là điểm neo quan trọng nhất của cả REQ-003 và REQ-004: nó là bằng chứng duy nhất cho thấy hồ sơ thực sự tới nơi.
 - Nguồn: toàn bộ spec nhóm ứng tuyển
 
-## Nghiệp vụ CHƯA được automation phủ
+## Nghiệp vụ và độ phủ Automation
 
-| Nhánh | Vì sao đáng ngờ |
-|---|---|
-| Ứng tuyển lại một việc đã nộp | Hệ thống chặn hay cho nộp trùng? Chưa ai kiểm |
-| Tải lên file CV sai định dạng hoặc quá dung lượng | Không có kịch bản negative |
-| Ứng tuyển việc làm đã hết hạn / đã đóng | Chưa có kịch bản |
-| Hủy ứng tuyển | Không có spec nào |
-| Nộp hồ sơ trực tuyến khi còn thiếu mục bắt buộc | Chưa biết mục nào bắt buộc |
-| Bỏ qua bulk apply | Chưa kiểm được trạng thái sau khi từ chối gợi ý |
+| Nhánh nghiệp vụ | Tình trạng | Test Case / Ghi chú |
+|---|---|---|
+| Kiểm soát tần suất nộp lại (1 lần/ngày cho cùng 1 job) | **Đã phủ** | TC-047 (tests/e2e/desktop/kiem-thu-quy-tac-kiem-soat-tan-suat-nop-lai-ho-so-cho-cung-mot-cong-viec.spec.js) |
+| Tải lên file CV sai định dạng (.exe/.txt) | **Đã phủ** | TC-044 (tests/e2e/desktop/tai-len-cv-sai-dinh-dang.spec.js) |
+| Nộp hồ sơ hàng loạt (Bulk Apply) | **Đã phủ** | TC-045 (tests/e2e/desktop/nop-ho-so-hang-loat-bulk-apply.spec.js) |
+| Kiểm tra trạng thái việc làm đã ứng tuyển | **Đã phủ** | TC-046 (tests/e2e/desktop/kiem-tra-trang-thai-viec-lam-da-ung-tuyen.spec.js) |
+| Ứng tuyển việc làm đã hết hạn / đã đóng | Chưa phủ | Cần bổ sung kịch bản kiểm tra trạng thái việc làm hết hạn |
+| Hủy ứng tuyển | Chưa phủ | Tính năng thu hồi hồ sơ ứng tuyển |
 
 ## Open questions
 

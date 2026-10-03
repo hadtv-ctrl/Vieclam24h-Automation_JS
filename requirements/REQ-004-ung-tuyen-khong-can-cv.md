@@ -44,14 +44,16 @@ vừa nhập. Đây là lý do luồng này tách khỏi REQ-003 thay vì là m�
 ### AC-013 — Khách vãng lai ứng tuyển và được tạo tài khoản bằng OTP ngay trong luồng
 
 **Given** tôi chưa đăng nhập và đang ở trang chủ
-**When** tôi mở một việc không cần CV và bắt đầu ứng tuyển
-**And** tôi điền thông tin liên hệ gồm số điện thoại, điền hồ sơ rút gọn và nộp
-**Then** hệ thống phải gửi OTP tới số điện thoại đó
-**And** khi tôi nhập đúng OTP thì tài khoản được tạo và tôi được đăng nhập
-**And** popup chấp thuận dữ liệu cá nhân xuất hiện, sau khi tôi đồng ý thì hồ sơ được nộp
+**When** tôi mở một việc không cần CV và bấm "Ứng tuyển không cần CV"
+**And** tôi đóng popup nhắc nhở "Khoan đã, Hình như bạn chưa đăng nhập?" (nếu có)
+**And** tôi điền thông tin liên hệ gồm họ tên (*), số điện thoại (*), năm sinh (*), học vấn (*) và nộp
+**Then** hệ thống phải hiển thị màn hình xác thực OTP gửi tới số điện thoại đó
+**And** khi tôi nhập đúng OTP thì tài khoản được tạo tự động và đăng nhập vào hệ thống
+**And** popup chấp thuận dữ liệu cá nhân (Consent) xuất hiện, sau khi tôi bấm Đồng ý thì hồ sơ được nộp
+**And** trang hiển thị thông báo ứng tuyển thành công kèm danh sách việc làm gợi ý nộp hàng loạt
 
-- Trạng thái: Inferred cho phần tạo tài khoản; Confirmed cho phần OTP và consent (spec bắt buộc hai bước này xảy ra, không có nhánh bỏ qua).
-- Khác biệt quan trọng so với AC-012: khách vãng lai phải điền thêm thông tin liên hệ, và bước consent là bắt buộc chứ không tùy chọn.
+- Trạng thái: Confirmed cho phần OTP, Consent và thông báo thành công.
+- Khác biệt quan trọng so với AC-012: khách vãng lai phải điền thêm thông tin liên hệ, qua popup nhắc đăng nhập nhanh, xác thực OTP và chấp thuận Consent bắt buộc.
 - Nguồn: tests/e2e/desktop/guest_apply_job_noCV_with_otp.spec.js, tests/e2e/mobile-web/guest_apply_job_noCV_with_otp.mobile.spec.js
 
 ### AC-014 — Nộp hàng loạt bằng hồ sơ rút gọn đã điền
@@ -63,15 +65,15 @@ vừa nhập. Đây là lý do luồng này tách khỏi REQ-003 thay vì là m�
 - Trạng thái: Needs confirmation — spec cho phép bước này **không xảy ra** mà test vẫn xanh. Nếu gợi ý bulk apply biến mất khỏi sản phẩm thì automation sẽ không báo gì cả.
 - Nguồn: tests/e2e/desktop/apply_job_noCV_flow.spec.js, tests/e2e/desktop/guest_apply_job_noCV_with_otp.spec.js và hai bản mobile tương ứng
 
-## Nghiệp vụ CHƯA được automation phủ
+## Nghiệp vụ và độ phủ Automation
 
-| Nhánh | Vì sao đáng ngờ |
-|---|---|
-| Khách vãng lai nhập số điện thoại đã có tài khoản | Hệ thống gộp vào tài khoản cũ hay báo lỗi? Đây là nhánh rủi ro cao nhất và đang trống |
-| Nhập sai OTP hoặc OTP hết hạn ở luồng khách vãng lai | Hồ sơ đang điền dở có mất không? |
-| Khách vãng lai từ chối consent sau khi đã nộp | Hồ sơ đã nộp có bị thu hồi không? |
-| Bỏ dở giữa chừng rồi quay lại | Dữ liệu hồ sơ rút gọn có được giữ không? |
-| Trường bắt buộc của hồ sơ rút gọn | Chưa có kịch bản validation nào |
+| Nhánh nghiệp vụ | Tình trạng | Test Case / Ghi chú |
+|---|---|---|
+| Khách vãng lai nhập SĐT đã tồn tại tài khoản | **Đã phủ** | TC-042 (tests/e2e/desktop/khach-vang-lai-ung-tuyen-sdt-da-ton-tai.spec.js) |
+| Chu trình xác thực OTP & hoàn thiện hồ sơ | **Đã phủ** | TC-043 (tests/e2e/desktop/kiem-thu-chu-trinh-xac-thuc-otp-va-dieu-kien-hoan-thien-ho-so.spec.js) |
+| Ứng tuyển nhanh không CV kèm xác thực OTP | **Đã phủ** | TC-036 (tests/e2e/desktop/ung-tuyen-nhanh-nocv-otp.spec.js) |
+| Khách vãng lai từ chối consent sau khi đã nộp | Chưa phủ | Kiểm tra hủy đơn khi từ chối consent |
+| Bỏ dở giữa chừng rồi quay lại | Chưa phủ | Kiểm tra lưu cache bản nháp hồ sơ rút gọn |
 
 ## Open questions
 
@@ -79,3 +81,4 @@ vừa nhập. Đây là lý do luồng này tách khỏi REQ-003 thay vì là m�
 2. Hồ sơ rút gọn gồm những trường bắt buộc nào? — **Đã chốt (Hà Đinh, 2026-09-24):** các thông tin hiển thị trong popup apply đều là trường bắt buộc, còn form đó hiển thị trường nào là do người đăng tin setting ở hệ thống của họ
 3. Tài khoản tạo ngầm qua luồng này khác gì tài khoản đăng ký bình thường ở REQ-001? — **Đã chốt (Hà Đinh, 2026-09-24):** không khác gì cả, nó sẽ thực hiện tạo tài khoản cho user với thông tin như tạo tài khoản bằng số điện thoại, sau khi tạo xong thì user phải chấp nhận consent form thì user mới tiếp tục apply được
 4. Vì sao thành viên đã đăng nhập vẫn có thể bị hỏi OTP khi ứng tuyển? — **Đã chốt (Hà Đinh, 2026-09-24):** vì thông tin số điện thoại chưa xác thực thì vẫn bị hỏi OTP
+5. Xử lý popup nhắc nhở đăng nhập nhanh cho khách vãng lai? — **Đã chốt (Khảo sát QC 2026-10-03):** Khi khách vãng lai mở form ứng tuyển không cần CV, hệ thống hiển thị popup "Khoan đã, Hình như bạn chưa đăng nhập?". Khách vãng lai bấm nút [X] để tiếp tục luồng nộp đơn mà không cần đăng nhập trước.

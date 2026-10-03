@@ -42,17 +42,21 @@ Hệ thống cung cấp trợ lý ảo thông minh Chop AI Chatbot cho phép ng�
 - Ràng buộc quan sát được: các câu hỏi trắc nghiệm đã trả lời trong lịch sử chat sẽ bị vô hiệu hóa, tương tác bộ lọc được thực hiện qua thanh công cụ hoặc modal riêng biệt.
 - Nguồn: tests/e2e/desktop/chop_chatbot_job_search-bdd.spec.js
 
-## Nghiệp vụ CHƯA được automation phủ
+## Nghiệp vụ và độ phủ Automation
 
-| Nhánh | Vì sao đáng ngờ |
-|---|---|
-| Chatbot không tìm thấy việc làm phù hợp | Cần kiểm tra giao diện bot khi từ khóa không có kết quả |
-| Ngắt kết nối mạng hoặc lỗi server bot | Nhánh lỗi kết nối chưa có test case |
-| Ứng tuyển trực tiếp từ trong danh sách bot | Hiện mới kiểm tra mở chi tiết, chưa kiểm tra nộp đơn từ bot |
+| Nhánh nghiệp vụ | Tình trạng | Test Case / Ghi chú |
+|---|---|---|
+| Tìm kiếm, lọc và xem việc làm qua Chop AI chatbot | **Đã phủ** | AC-022 (tests/e2e/desktop/chop_chatbot_job_search-bdd.spec.js) |
+| Hiển thị & cuộn phân trang danh sách việc làm (Infinite Scroll) | **Đã phủ** | TC-049 (tests/e2e/desktop/kiem-thu-hien-thi-va-dieu-huong-phan-trang-danh-sach-viec-la.spec.js) |
+| Quản lý vòng đời & tính toàn vẹn phiên hội thoại Chatbot | **Đã phủ** | TC-050 (tests/e2e/desktop/kiem-thu-quan-ly-vong-doi-va-tinh-toan-ven-phien-hoi-thoai-c.spec.js) |
+| Tìm kiếm việc làm theo tỉnh thành | **Đã phủ** | tests/e2e/desktop/job_search_by_cities-bdd.spec.js |
+| Lọc nâng cao chi tiết việc làm (Lương, kinh nghiệm, cấp bậc) | **Đã phủ** | tests/e2e/desktop/job_search_filter_detail-bdd.spec.js |
+| Chatbot không tìm thấy việc làm phù hợp | Chưa phủ | Kiểm tra hiển thị empty state khi từ khóa không có kết quả |
+| Ứng tuyển trực tiếp từ trong danh sách bot | Chưa phủ | Luồng bấm nút apply ngay trong Job Drawer của bot |
 
 ## Open questions
 
-1. Có giới hạn số lượng tin hiển thị trong Job Drawer của chatbot không? — **Đã chốt (Hà Đinh, 2026-09-21):** không, hiển thị hết số lượng như chatbot trả về nhưng có chia page
+1. Có giới hạn số lượng tin hiển thị trong Job Drawer của chatbot không? — **Đã chốt (Hà Đinh, 2026-09-21):** không, hiển thị hết số lượng như chatbot trả về nhưng có chia page (hiện thực trên web QC là cơ chế Infinite Scroll khi cuộn danh sách).
 2. Chatbot có lưu lại phiên hội thoại sau khi đóng cửa sổ hay không? — **Đã chốt (Hà Đinh, 2026-09-21):** Return (< 24h): User returns within 24 hours -> Resume the previous conversation flow directly (preserve Chat History, Active Target, and Maturity Score).
 
 Return (> 24h): User returns after 24 hours -> The previous session is considered expired and discarded. Show the Onboarding Starting Screen with fresh suggestions. The expired session history is NOT shown or resumable.

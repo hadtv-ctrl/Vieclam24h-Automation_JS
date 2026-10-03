@@ -34,11 +34,11 @@ Sau khi tạo tài khoản, hệ thống yêu cầu người dùng chấp thuậ
 **Given** tôi là khách vãng lai đang ở trang chủ và đã đóng các popup quảng cáo
 **When** tôi mở popup Đăng ký/Đăng nhập, chọn phương thức email, nhập một email chưa tồn tại và bấm Tiếp tục
 **Then** form "Tạo tài khoản mới" phải xuất hiện
-**And** khi tôi điền họ tên, số điện thoại, mật khẩu và bấm Đăng ký thì tài khoản được tạo
+**And** khi tôi điền họ tên, số điện thoại (tùy chọn), mật khẩu và bấm Hoàn tất thì tài khoản được tạo
 
-- Trạng thái: Inferred — spec dừng ở bước bấm Đăng ký, không có assertion nào xác nhận tài khoản đã tạo thành công.
+- Trạng thái: Confirmed — nút xác nhận mang nhãn "Hoàn tất" (type="submit").
 - Ràng buộc quan sát được: email phải là email chưa tồn tại (spec sinh email ngẫu nhiên mỗi lần chạy).
-- Trường bắt buộc quan sát được: họ tên, mật khẩu. Số điện thoại chỉ điền khi ô đó hiển thị — nghĩa là **có thể** là tùy chọn.
+- Trường bắt buộc quan sát được: họ tên (*), mật khẩu (*). Số điện thoại là trường tùy chọn.
 - Nguồn: tests/e2e/desktop/register_by_email-bdd.spec.js, tests/e2e/mobile-web/register_by_email-bdd.mobile.spec.js
 
 ### AC-002 — Đăng ký bằng số điện thoại chưa tồn tại, xác minh bằng OTP
@@ -47,12 +47,12 @@ Sau khi tạo tài khoản, hệ thống yêu cầu người dùng chấp thuậ
 **When** tôi mở popup Đăng ký/Đăng nhập, nhập một số điện thoại chưa tồn tại và bấm Tiếp tục
 **Then** màn hình nhập mã OTP phải xuất hiện
 **And** khi tôi nhập đúng OTP thì form "Tạo tài khoản mới" xuất hiện
-**And** khi tôi điền họ tên, email, mật khẩu và bấm Đăng ký thì tài khoản được tạo
-**And** popup chấp thuận dữ liệu cá nhân xuất hiện; sau khi tôi đồng ý thì nội dung trang chủ được tải
+**And** khi tôi điền họ tên (*), email (tùy chọn) và bấm Hoàn tất thì tài khoản được tạo
+**And** popup chấp thuận dữ liệu cá nhân (Consent) xuất hiện; sau khi tôi bấm Đồng ý thì nội dung trang chủ được tải
 
-- Trạng thái: Inferred cho phần tạo tài khoản; Confirmed cho phần OTP và consent (có chờ hiển thị tường minh).
-- Ràng buộc quan sát được: số điện thoại theo định dạng di động Việt Nam.
-- Khác biệt so với AC-001: luồng số điện thoại có thêm bước OTP và bước consent; luồng email trong spec hiện tại không có hai bước này.
+- Trạng thái: Confirmed — form SĐT không yêu cầu mật khẩu (xác thực danh tính qua OTP); nút xác nhận mang nhãn "Hoàn tất".
+- Ràng buộc quan sát được: số điện thoại theo định dạng di động Việt Nam. SĐT được pre-fill và khóa (readonly).
+- Khác biệt so với AC-001: luồng số điện thoại xác minh OTP trước khi vào form, không cần mật khẩu, và có bước Consent bắt buộc.
 - Nguồn: tests/e2e/desktop/register_by_phone-bdd.spec.js, tests/e2e/mobile-web/register_by_phone-bdd.mobile.spec.js
 
 ### AC-003 — API đăng ký trả về thành công và cấp token
@@ -75,19 +75,20 @@ Sau khi tạo tài khoản, hệ thống yêu cầu người dùng chấp thuậ
 - Phụ thuộc: bước này không chạy độc lập được, bắt buộc chạy sau AC-003 trong cùng một lượt.
 - Nguồn: tests/api/register_api.spec.js
 
-## Nghiệp vụ CHƯA được automation phủ
+## Nghiệp vụ và độ phủ Automation
 
-Những nhánh dưới đây không có spec nào chạm tới. Ghi lại để không nhầm "automation xanh" là "nghiệp
-vụ đã an toàn".
-
-| Nhánh | Vì sao đáng ngờ |
-|---|---|
-| Đăng ký bằng email đã tồn tại | Không có kịch bản negative nào; thông báo lỗi chưa ai kiểm |
-| Đăng ký bằng số điện thoại đã tồn tại | Tương tự |
-| Nhập sai OTP, OTP hết hạn, bấm gửi lại OTP | Toàn bộ nhánh lỗi của OTP đang trống |
-| Mật khẩu không đạt điều kiện | Chưa biết quy tắc mật khẩu là gì |
-| Email/số điện thoại sai định dạng | Chưa có validation test |
-| Từ chối consent | Chưa biết hệ thống xử lý ra sao khi người dùng không đồng ý |
+| Nhánh nghiệp vụ | Tình trạng | Test Case / Ghi chú |
+|---|---|---|
+| Đăng ký bằng email đã tồn tại | **Đã phủ** | TC-032 (tests/e2e/desktop/dang-ky-bang-email-da-ton-tai.spec.js) |
+| Đăng ký bằng số điện thoại đã tồn tại | **Đã phủ** | TC-040, TC-042 (Kiểm thử chuỗi giá trị biên & Khách vãng lai) |
+| Nhập sai OTP khi đăng ký | **Đã phủ** | TC-033 (tests/e2e/desktop/kiem-tra-that-bai-khi-nhap-sai-ma-otp-xac-thuc.spec.js) |
+| Bấm gửi lại mã OTP | **Đã phủ** | TC-039 (tests/e2e/desktop/gui-lai-ma-otp-dang-ky.spec.js) |
+| Mật khẩu dưới 8 ký tự | **Đã phủ** | TC-027 (tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-co-7-ky-tu-duoi-bien-toi-thie.spec.js) |
+| Mật khẩu thiếu chữ số | **Đã phủ** | TC-028 (tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-chi-chua-chu-cai-thieu-chu-so.spec.js) |
+| Mật khẩu thiếu chữ cái | **Đã phủ** | TC-029 (tests/e2e/desktop/kiem-tra-that-bai-khi-mat-khau-chi-chua-chu-so-thieu-chu-cai.spec.js) |
+| Email sai định dạng | **Đã phủ** | TC-034 (tests/e2e/desktop/kiem-tra-bao-loi-khi-nhap-email-sai-dinh-dang.spec.js) |
+| Bỏ trống trường SĐT tùy chọn | **Đã phủ** | TC-026, TC-030 (tests/e2e/desktop/xac-nhan-thanh-cong-khi-bo-trong-so-dien-thoai-truong-tuy-ch.spec.js) |
+| Từ chối consent (Bấm Để sau) | Chưa phủ | Cần bổ sung spec kiểm tra điều hướng khi bấm "Để sau" ở popup Consent |
 
 ## Open questions
 
@@ -95,3 +96,4 @@ vụ đã an toàn".
 2. Quy tắc mật khẩu hợp lệ (độ dài, ký tự đặc biệt)? — **Đã chốt (Hà Đinh, 2026-09-21):** Mật khẩu tối thiểu 8 ký tự, trong đó có ít nhất 1 ký tự chữ và 1 ký tự số.
 3. Vì sao luồng email không có bước OTP còn luồng số điện thoại thì có? Đây là thiết kế hay là spec đang thiếu bước? — **Đã chốt (Hà Đinh, 2026-09-21):** spec nó vậy
 4. Mã OTP dùng trong automation là mã cố định của môi trường test. Ở production luồng này kiểm bằng cách nào? — **Đã chốt (Hà Đinh, 2026-09-21):** đúng vậy , mã 1111 là cố định cho xác thực OTP số điện thoại, và email lúc đăng nhập. Mã này dùng ở mt test
+5. Tên nhãn nút hoàn tất tạo tài khoản và trường mật khẩu ở form SĐT? — **Đã chốt (Khảo sát QC 2026-10-03):** Nút submit mang nhãn "Hoàn tất". Luồng SĐT qua OTP không yêu cầu mật khẩu.

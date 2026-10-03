@@ -53,15 +53,15 @@ Giọng văn quan sát được trong dữ liệu test: Chuyên nghiệp, Thuy�
 - Ràng buộc quan sát được: AI tạo mô tả dựa trên các trường đã điền, nên các trường đó phải có trước.
 - Nguồn: tests/e2e/desktop/profile_ai_writing-bdd.spec.js, tests/e2e/mobile-web/profile_ai_writing-bdd.mobile.spec.js
 
-## Nghiệp vụ CHƯA được automation phủ
+## Nghiệp vụ và độ phủ Automation
 
-| Nhánh | Vì sao đáng ngờ |
-|---|---|
-| AI trả lỗi hoặc quá thời gian chờ | Nhánh lỗi của dịch vụ bên thứ ba đang hoàn toàn trống |
-| Giới hạn số lần dùng AI | Nếu sản phẩm có quota thì chưa ai kiểm |
-| Yêu cầu AI viết lại khi nội dung gốc rỗng | Chưa biết hệ thống chặn hay vẫn sinh nội dung |
-| Hoàn tác bản AI viết lại để về nội dung gốc | Không có spec nào |
-| Chất lượng nội dung AI sinh ra | Không automation được bằng assertion; thuộc kiểm thử thủ công |
+| Nhánh nghiệp vụ | Tình trạng | Test Case / Ghi chú |
+|---|---|---|
+| Viết lại giới thiệu bản thân bằng AI đa giọng văn | **Đã phủ** | TC-017 (tests/e2e/desktop/profile_ai_writing-bdd.spec.js) |
+| Tạo mô tả kinh nghiệm bằng AI từ thông tin điền sẵn | **Đã phủ** | TC-018 (tests/e2e/desktop/profile_ai_writing-bdd.spec.js) |
+| Kiểm thử tương tác trợ lý AI hoàn thiện hồ sơ | **Đã phủ** | TC-052 (tests/e2e/desktop/kiem-thu-tuong-tac-tro-ly-ai-hoan-thien-ho-so.spec.js) |
+| Dịch vụ AI lỗi hoặc timeout | Chưa phủ | Kiểm tra hiển thị popup báo lỗi khi API AI gián đoạn |
+| Hoàn tác bản AI viết lại về nội dung gốc | Chưa phủ | Kiểm tra nút hoàn tác/undo trên form |
 
 ## Open questions
 
