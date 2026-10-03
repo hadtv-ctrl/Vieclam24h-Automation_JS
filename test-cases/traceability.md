@@ -79,6 +79,7 @@ AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của RE
 | TC-050 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-quan-ly-vong-doi-va-tinh-toan-ven-phien-hoi-thoai-c.spec.js |
 | TC-093 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/job_search_by_cities-bdd.spec.js |
 | TC-094 | REQ-007 | AC-022 | Desktop | P2 | Có | tests/e2e/desktop/job_search_filter_detail-bdd.spec.js |
+| TC-095 | REQ-008 | AC-023 AC-024 AC-025 AC-026 | Desktop | P1 | Có | tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js |
 
 ## Chất lượng bằng chứng của từng test case
 

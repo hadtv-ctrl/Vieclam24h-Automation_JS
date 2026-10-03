@@ -250,3 +250,21 @@
   1. Mọi hàm xử lý / chuẩn hóa định danh mã nguồn (`sanitizeToIdentifier`) bắt buộc phải kiểm tra ký tự đầu tiên. Nếu chuỗi bắt đầu bằng chữ số (`/^[0-9]/`), phải tự động gắn tiền tố hợp lệ (`item` cho camelCase hoặc `Item` cho PascalCase).
   2. Bổ sung test tự động kiểm thử toàn diện các trường hợp text/selector bắt đầu bằng số, đảm bảo mã nguồn POM và Spec sinh ra luôn thỏa mãn `new Function(content)` mà không ném lỗi cú pháp.
 
+### [LEARN-015] Xử Lý Màn Hình OTP Động Và Chuẩn Hóa Truy Vết REQ/TC Khi Chuyển Hóa Kịch Bản Ghi Hình
+- **Nguồn trích xuất:** FEATURE-PERSONALIZE-JOB-RECOMMENDATION
+- **Role quan sát:** Senior Automation QA Engineer (Gate 4)
+- **Quan sát (Observation):**
+  1. Trong Playwright, phương thức `locator.isVisible()` không tự động chờ phần tử xuất hiện mà trả về `false` ngay lập tức. Nếu dùng `if (await locator.isVisible())` cho màn hình OTP mở bất đồng bộ qua mạng, điều kiện sẽ bị bỏ qua và dẫn đến lỗi overlay che khuất (`headlessui-dialog-overlay intercepts pointer events`).
+  2. Dùng số điện thoại cố định qua nhiều lần chạy test sẽ gây xung đột trạng thái (tài khoản đã đăng ký sẽ hỏi mật khẩu thay vì gửi OTP). Việc dùng `generateRandomVNPhone()` giúp luồng đăng ký OTP luôn là tài khoản mới tinh.
+  3. Mỗi tính năng mới phát triển bắt buộc phải có tài liệu nghiệp vụ `REQ-xxx` trong `requirements/`, test case `TC-yyy` trong `test-cases/` và ánh xạ đầy đủ trong `test-cases/traceability.md` để đảm bảo cổng `node scripts/qa-trace.js` đạt 0 finding.
+- **Bằng chứng (Evidence):** `pages/desktop/PersonalizePage.js`, `tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js`, `requirements/REQ-008-viec-lam-danh-rieng-goi-y-ca-nhan-hoa.md`, `test-cases/REQ-008-viec-lam-danh-rieng-goi-y-ca-nhan-hoa.md`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Luôn sử dụng `waitFor({ state: 'visible' })` hoặc `waitForElement()` trước khi tương tác với các popup/modal bất đồng bộ (như OTP, Form tạo tài khoản, Consent).
+  2. Với các luồng kiểm thử đăng ký OTP người dùng mới, luôn dùng `generateRandomVNPhone()` để đảm bảo tính độc lập và lặp lại an toàn của kịch bản kiểm thử.
+  3. Tuân thủ tuyệt đối quy trình nghiệm thu Gate 1 - Gate 4: Khởi tạo REQ -> AC -> TC -> Code -> Spec -> `check:framework` -> `qa-trace`.
+
+

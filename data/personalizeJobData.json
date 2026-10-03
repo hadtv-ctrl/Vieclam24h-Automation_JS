@@ -1,0 +1,23 @@
+{
+  "user": {
+    "phone": "0971345786",
+    "otp": "1111",
+    "fullName": "Hà Đinh"
+  },
+  "criteria": {
+    "jobTitle": "nhân viên bán hàng",
+    "locations": [
+      "TP.HCM",
+      "Hà Nội",
+      "Bình Dương",
+      "Đồng Nai",
+      "An Giang"
+    ],
+    "salary": {
+      "min": "10",
+      "max": "15"
+    },
+    "experience": "3 năm",
+    "industry": "Hành chính - Thư ký"
+  }
+}
