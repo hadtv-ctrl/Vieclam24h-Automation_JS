@@ -332,3 +332,20 @@
   1. **Chụp ngay tại thời điểm tương tác:** Điền giá trị / Click chọn option -> Chờ UI hiển thị giá trị hoặc trạng thái active/checked -> **CHỤP ẢNH BẰNG CHỨNG NGAY TẠI TRẠNG THÁI NÀY** -> Sau đó MỚI bấm nút chuyển bước (Tiếp tục / Tiếp theo / Hoàn tất).
   2. **Tách nhỏ step BDD:** Mỗi bước chuyển đổi trạng thái quan trọng phải tương ứng với một `test.step()` rõ ràng trong spec để Playwright Report hiển thị cây thời gian và bằng chứng trực quan 100%.
   3. **Đặt tên ảnh theo trình tự nghiệp vụ:** Sử dụng tiền tố số thứ tự và ngữ cảnh rõ ràng (ví dụ: `auth_01_phone_entered`, `onboarding_03_step2_locations_selected`, `onboarding_04_step3_salary_range_entered`, `onboarding_05_criteria_card_and_recommendations`) để audit trail minh bạch.
+
+### [LEARN-020] Định Tuyến Trực Tiếp Trang Đích (Destination Page) & Tránh Đi Lạc Qua Trang Chủ (Homepage Detour)
+- **Nguồn trích xuất:** TASK-PERSONALIZE-DESTINATION-PAGE-FIX (REQ-008)
+- **Role quan sát:** Senior Automation QA Engineer & Test Lead (Gate 4)
+- **Quan sát (Observation):**
+  1. Khi một tính năng có URL trang đích độc lập (ví dụ Personalized Page `/viec-lam-danh-rieng-cho-ban.html`), nếu Page Object gán `navigate()` trỏ về `'/'` (Trang chủ) và các helper điều hướng đều mở banner từ Trang chủ, các kịch bản test sẽ bị "đi lạc" qua Homepage thay vì kiểm thử đúng trên trang đích.
+  2. Việc thao tác qua modal của Homepage làm sai lệch phạm vi kiểm thử (testing scope), che giấu các lỗi render, URL routing, và metadata của trang đích thực tế.
+  3. Khi Playwright sử dụng fixture `workerUserData`, tài khoản kiểm thử đã được lưu sẵn trong DB, cho phép test phân nhánh xác thực OTP/mật khẩu trực tiếp trên URL đích mà không cần đi qua popup Trang chủ.
+- **Bằng chứng (Evidence):** `pages/desktop/PersonalizePage.js`, `tests/e2e/desktop/personalize-*.spec.js` (12 files)
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Method `navigate()` của một Page Object BẮT BUỘC phải điều hướng về URL của chính trang đó (`this.personalizedPath`), không được fallback về trang chủ `'/'`.
+  2. Mọi kịch bản kiểm tra chức năng thuộc trang đích (nhập liệu, kiểm tra biên, chọn tiêu chí, xác thực) phải truy cập trực tiếp URL trang đích và assert `expect(page.url()).toContain(pageObject.path)`.
+  3. Chỉ những kịch bản kiểm thử điều hướng liên trang (Cross-page navigation / Funnel sync) mới được phép mở Trang chủ làm điểm khởi đầu.
