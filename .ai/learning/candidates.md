@@ -368,3 +368,20 @@
   1. Với luồng OTP, kịch bản kiểm thử phân nhánh tài khoản mới/cũ bắt buộc phải đi qua bước nhập OTP 4 chữ số rồi mới kiểm tra màn hình tiếp theo.
   2. Assert `toBeVisible()` đối với Họ tên & Email cho tài khoản mới (TC-100), và `toBeHidden()` đối với tài khoản cũ (TC-096).
   3. Tuyệt đối không dùng `.or()` giữa các trường cùng xuất hiện trên form để tránh lỗi strict mode.
+
+### [LEARN-022] Scoping Bộ Định Vị Modal Overlay & Kiểm Tra Trạng Thái Kích Hoạt Nút Điều Hướng (BVA 5 Khu Vực)
+- **Nguồn trích xuất:** TASK-PERSONALIZE-5-LOCATIONS-MINI-ONBOARDING (TC-101 / REQ-008)
+- **Role quan sát:** Senior Automation QA Engineer & Test Lead (Gate 4)
+- **Quan sát (Observation):**
+  1. Trong Mini-onboarding trên Personalized Page, các nút chọn khu vực (TP.HCM, Hà Nội, Bình Dương, Đồng Nai, Cần Thơ) trùng tên với thông tin tỉnh thành ở Job card nền và thông tin địa chỉ chi nhánh tại Footer. Nếu dùng `page.locator('button, div, span').filter(...)` kèm `.last()`, Playwright sẽ trỏ nhầm vào phần tử Footer nằm ngoài modal, dẫn đến việc không chọn được chip trong modal và nút "Tiếp theo" vẫn ở trạng thái `disabled`.
+  2. Khi scope modal, việc dùng `div.filter({ hasText: 'Chọn tối đa 5 khu vực' }).last()` sẽ bắt nhầm vào thẻ text nhỏ innermost thay vì container card. Cần dùng bộ lọc kép kết hợp tiêu đề và nút điều hướng: `page.locator('div').filter({ hasText: 'Chọn tối đa 5 khu vực' }).filter({ hasText: /Tiếp theo|Trở về/i }).first()`.
+  3. Hệ thống chỉ kích hoạt (`disabled=false`) nút "Tiếp theo →" khi người dùng đã chọn ít nhất 1 khu vực (hoặc đạt biên 5 khu vực). Do đó, kịch bản kiểm thử BVA cần khẳng định `await expect(tiepTheoBtn).toBeEnabled()` trước khi click lưu.
+- **Bằng chứng (Evidence):** `pages/desktop/PersonalizePage.js`, `tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Định vị các nút lựa chọn trong modal thông qua container được xác định bằng bộ lọc kép (tiêu đề + nút hành động) hoặc `page.getByRole('button', { name: rx })`.
+  2. Thực hiện click lần lượt từng giá trị biên và capture evidence ngay khi cả 5 chip đều hiển thị icon đã chọn (`✓`) trước khi rời bước.
+  3. Bắt buộc kiểm tra `expect(actionBtn).toBeEnabled()` để đảm bảo form đã hợp lệ trước khi submit.

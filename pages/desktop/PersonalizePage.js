@@ -54,14 +54,15 @@ class PersonalizePage extends BasePage {
     this.tiepTheoBtn = page.getByRole('button', { name: /Tiếp theo|Tiếp tục/i }).first();
 
     // Thiết lập tiêu chí: Bước 2 - Khu vực làm việc
-    this.tphcmBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^TP\.HCM/ }).last();
-    this.haNoiBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Hà Nội/ }).last();
-    this.binhDuongBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Bình Dương/ }).last();
-    this.dongNaiBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Đồng Nai/ }).last();
-    this.canThoBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Cần Thơ/ }).last();
-    this.khacBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^Khác(\s|$)/ }).filter({ hasNotText: /Khách/i }).last();
-    this.anGiangBtn = page.locator('button, div, span, [role="button"]').filter({ hasText: /^An Giang/ }).last();
     this.chonToiDa5Text = page.getByText('Chọn tối đa 5 khu vực').first();
+    this.step2Modal = page.locator('div').filter({ hasText: 'Chọn tối đa 5 khu vực' }).filter({ hasText: /Tiếp theo|Trở về/i }).first();
+    this.tphcmBtn = this.getLocationBtn('TP.HCM');
+    this.haNoiBtn = this.getLocationBtn('Hà Nội');
+    this.binhDuongBtn = this.getLocationBtn('Bình Dương');
+    this.dongNaiBtn = this.getLocationBtn('Đồng Nai');
+    this.canThoBtn = this.getLocationBtn('Cần Thơ');
+    this.khacBtn = this.getLocationBtn('Khác');
+    this.anGiangBtn = page.getByRole('button', { name: /An Giang/i }).or(page.locator('button, div, span, [role="button"]').filter({ hasText: /^An Giang/ })).first();
 
     // Thiết lập tiêu chí: Bước 3 - Mức lương mong muốn
     this.vdInput = page.getByRole('textbox', { name: 'VD:' }).first();
@@ -300,20 +301,32 @@ class PersonalizePage extends BasePage {
   }
 
   /**
-   * Chọn 5 khu vực hợp lệ ban đầu
+   * Lấy locator của nút khu vực trong Bước 2 Onboarding mini
+   * @param {string} name
+   */
+  getLocationBtn(name) {
+    const rx = new RegExp(`^${name}`, 'i');
+    return this.step2Modal
+      .getByRole('button', { name: rx })
+      .or(this.step2Modal.locator('button, [role="button"]').filter({ hasText: rx }))
+      .or(this.page.getByRole('button', { name: rx }))
+      .first();
+  }
+
+  /**
+   * Chọn 5 khu vực hợp lệ ban đầu trong Onboarding mini
    */
   async select5Locations() {
     await this.waitForElement(this.chonToiDa5Text, 15000);
-    await this.chonToiDa5Text.scrollIntoViewIfNeeded().catch(() => null);
+    const locationNames = ['TP.HCM', 'Hà Nội', 'Bình Dương', 'Đồng Nai', 'Cần Thơ'];
 
-    const locations = [this.tphcmBtn, this.haNoiBtn, this.binhDuongBtn, this.dongNaiBtn, this.canThoBtn];
-    for (const loc of locations) {
-      if (await loc.isVisible().catch(() => false)) {
-        await loc.scrollIntoViewIfNeeded().catch(() => null);
-        await this.actions.click(loc);
-      }
+    for (const name of locationNames) {
+      const btn = this.getLocationBtn(name);
+      await this.waitForElement(btn, 5000);
+      await this.actions.click(btn);
     }
-    await this.capture('selected_5_locations');
+    // Chụp bằng chứng rõ ràng tất cả 5 khu vực đã được chọn TRƯỚC KHI chuyển bước
+    await this.capture('step2_5_locations_selected');
   }
 
   /**
@@ -321,14 +334,16 @@ class PersonalizePage extends BasePage {
    */
   async select6thLocationIfAvailable() {
     try {
-      if (await this.khacBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await this.actions.click(this.khacBtn);
+      const khacBtn = this.getLocationBtn('Khác');
+      if (await khacBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await this.actions.click(khacBtn);
         if (await this.anGiangBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
           await this.actions.click(this.anGiangBtn);
         }
+        await this.page.keyboard.press('Escape').catch(() => null);
       }
     } catch (_) {}
-    await this.capture('attempted_select_6th_location_boundary_checked');
+    await this.capture('step2_6th_location_boundary_checked');
   }
 
   /**
@@ -361,9 +376,7 @@ class PersonalizePage extends BasePage {
   async completeStep2Locations(locations = ['TP.HCM']) {
     await this.waitForElement(this.chonToiDa5Text, 15000);
     for (const locName of locations) {
-      const locBtn = this.page.locator('button, div, span, [role="button"]')
-        .filter({ hasText: new RegExp(`^${locName}$`, 'i') })
-        .last();
+      const locBtn = this.getLocationBtn(locName);
       if (await locBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await this.actions.click(locBtn);
       }
@@ -428,7 +441,7 @@ class PersonalizePage extends BasePage {
    * Bỏ chọn một khu vực làm việc (click lại vào nút đã chọn)
    */
   async deselectLocation(btnName = 'Cần Thơ') {
-    const btn = this.page.locator('button, div, span, [role="button"]').filter({ hasText: new RegExp(`^${btnName}`, 'i') }).last();
+    const btn = this.getLocationBtn(btnName);
     await this.actions.click(btn);
     await this.capture('location_deselected');
   }
@@ -437,7 +450,7 @@ class PersonalizePage extends BasePage {
    * Chọn lại một khu vực làm việc
    */
   async selectSingleLocation(btnName = 'Cần Thơ') {
-    const btn = this.page.locator('button, div, span, [role="button"]').filter({ hasText: new RegExp(`^${btnName}`, 'i') }).last();
+    const btn = this.getLocationBtn(btnName);
     await this.actions.click(btn);
     await this.capture('location_selected');
   }
