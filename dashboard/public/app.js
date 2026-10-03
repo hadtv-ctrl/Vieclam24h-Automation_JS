@@ -17137,6 +17137,7 @@ async function loadFixturesList() {
   try {
     const res = await request('/api/fixtures');
     repoFixtures = res.fixtures || [];
+    window.repoFixtures = repoFixtures;
     renderFixturesList();
   } catch (err) {
     if (container) {
@@ -17288,8 +17289,15 @@ function renderFixturesList() {
   }
 }
 
-async function selectFixture(fx) {
+async function selectFixture(target) {
+  if (!target) return;
+  const name = typeof target === 'string' ? target : target.name;
+  let fx = (typeof target === 'object' && target.name && target.category) ? target : repoFixtures.find((f) => f.name === name);
+  if (!fx && window.repoFixtures) fx = window.repoFixtures.find((f) => f.name === name);
+  if (!fx) return;
+
   currentSelectedFixture = fx;
+  window.currentSelectedFixture = fx;
 
   document.querySelectorAll('#fixtures-list-container .fixture-card-item').forEach((card) => {
     const isThis = card.dataset.name === fx.name;
