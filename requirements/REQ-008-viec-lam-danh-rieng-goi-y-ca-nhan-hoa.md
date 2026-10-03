@@ -23,13 +23,23 @@ test_cases: test-cases/REQ-008-viec-lam-danh-rieng-goi-y-ca-nhan-hoa.md
 Hệ thống cung cấp điểm chạm thu hút người tìm việc ngay tại trang chủ qua khối "Việc làm dành riêng cho bạn" và link khám phá "+10 việc làm có lương hấp dẫn":
 - Cho phép khách vãng lai tiếp cận tính năng cá nhân hóa gợi ý việc làm.
 - Người dùng thực hiện đăng ký / xác thực tài khoản nhanh chóng qua số điện thoại và mã OTP (4 chữ số).
-- Sau khi nhập họ tên và đồng ý điều khoản xử lý dữ liệu cá nhân (Consent), hệ thống dẫn người dùng vào quy trình 3 bước thiết lập tiêu chí tìm việc ban đầu:
-  1. **Bước 1 — Vị trí công việc mong muốn:** Nhập và chọn gợi ý công việc phù hợp (ví dụ: nhân viên bán hàng).
-  2. **Bước 2 — Khu vực làm việc:** Lựa chọn tối đa 5 tỉnh/thành phố làm việc mong muốn (TP.HCM, Hà Nội, Bình Dương, Đồng Nai, An Giang,...).
-  3. **Bước 3 — Mức lương mong muốn:** Nhập khoảng lương tối thiểu và tối đa mong muốn.
-- Sau khi hoàn tất 3 bước, hệ thống chuyển hướng đến trang danh sách "Tiêu chí tìm việc của tôi", hiển thị các việc làm phù hợp nhất kèm các tab sắp xếp (Lương cao nhất / Mới nhất).
+- Sau khi nhập họ tên và đồng ý điều khoản xử lý dữ liệu cá nhân (Consent), hệ thống kiểm tra trạng thái tiêu chí của người dùng để phân nhánh luồng Onboarding mini:
+  * **Trường hợp hiển thị Onboarding mini:** Khi người dùng chưa có bất kỳ thông tin nào trong 3 tiêu chí cốt lõi (Nơi làm việc, Vị trí mong muốn, Mức lương), hệ thống hiển thị quy trình 3 bước khảo sát:
+    1. **Bước 1 — Vị trí công việc mong muốn:** Nhập và chọn gợi ý công việc phù hợp (ví dụ: nhân viên bán hàng).
+    2. **Bước 2 — Khu vực làm việc:** Lựa chọn tối đa 5 tỉnh/thành phố làm việc mong muốn (TP.HCM, Hà Nội, Bình Dương, Đồng Nai, An Giang,...).
+    3. **Bước 3 — Mức lương mong muốn:** Nhập khoảng lương tối thiểu và tối đa mong muốn.
+  * **Trường hợp bỏ qua Onboarding mini (Bypass):** Nếu người dùng đã có ít nhất một (1) trong các thông tin (nơi làm việc, vị trí làm việc, hoặc mức lương), hệ thống sẽ **không hiển thị** modal Onboarding mini mà chuyển hướng thẳng đến trang "Tiêu chí tìm việc của tôi" và danh sách việc làm gợi ý.
+- Sau khi hoàn tất 3 bước (hoặc được bypass), hệ thống chuyển hướng đến trang danh sách "Tiêu chí tìm việc của tôi", hiển thị các việc làm phù hợp nhất kèm các tab sắp xếp (Lương cao nhất / Mới nhất).
 - Người dùng có thể tiếp tục tùy chỉnh nâng cao (Chỉnh sửa và thêm mới): bổ sung số năm kinh nghiệm và ngành nghề mong muốn để thuật toán gợi ý tối ưu độ chính xác.
 - Danh sách việc làm phù hợp cũng được liên kết từ menu chính ("Việc làm" -> "Tìm việc làm" -> khối "Việc làm dành cho bạn với mức lương hấp dẫn"), cho phép người dùng mở xem chi tiết việc làm.
+
+### Tương tác và ảnh hưởng luồng chéo với Onboarding Home (REQ-002)
+- Khi người dùng hoàn tất các tiêu chí tại Onboarding mini (Vị trí công việc mong muốn, Khu vực làm việc, Mức lương mong muốn), các giá trị này được ghi nhận đồng bộ vào hồ sơ tiêu chí tìm việc của tài khoản.
+- Tại màn hình Trang chủ (Home), khối Onboarding 5 câu hỏi (REQ-002) sẽ tự động đồng bộ (Autofill):
+  * **Khu vực làm việc (Câu 1/5):** Tự động điền/chọn sẵn các tỉnh/thành phố đã chọn tại Onboarding mini.
+  * **Vị trí công việc (Câu 3/5):** Tự động điền vị trí công việc đã chọn từ Onboarding mini.
+  * **Mức lương mong muốn (Câu 4/5):** Tự động chọn khoảng lương tương ứng đã thiết lập.
+- Việc đồng bộ này giúp tránh tình trạng người dùng phải nhập lại cùng một thông tin hai lần giữa hai luồng Onboarding.
 
 ## Acceptance criteria
 
@@ -44,16 +54,17 @@ Hệ thống cung cấp điểm chạm thu hút người tìm việc ngay tại 
 - Trạng thái: Confirmed — spec kiểm chứng luồng đăng ký OTP và mở form tiêu chí.
 - Nguồn: tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js
 
-### AC-024 — Thiết lập 3 bước tiêu chí tìm việc ban đầu
+### AC-024 — Thiết lập 3 bước tiêu chí tìm việc ban đầu (Onboarding mini)
 
-**Given** tôi vừa hoàn tất xác thực tài khoản và chấp thuận điều khoản
+**Given** tôi vừa hoàn tất xác thực tài khoản, chấp thuận điều khoản và tài khoản chưa có thông tin tiêu chí (nơi làm việc, vị trí, mức lương)
 **When** tôi lần lượt:
   1. Chọn công việc mong muốn từ ô tìm kiếm gợi ý
   2. Chọn tối đa 5 khu vực làm việc (kể cả tỉnh thành trong nhóm "Khác")
   3. Nhập mức lương tối thiểu và tối đa mong muốn rồi bấm "Hoàn tất"
 **Then** hệ thống ghi nhận thành công và chuyển hướng đến trang kết quả việc làm được cá nhân hóa
+**Nhánh rẽ (Bypass):** Nếu tài khoản đã có sẵn ít nhất một (1) trong các thông tin trên, hệ thống không mở Onboarding mini mà chuyển thẳng đến trang danh sách việc làm cá nhân hóa
 
-- Trạng thái: Confirmed — spec kiểm chứng luồng 3 bước wizard.
+- Trạng thái: Confirmed — spec kiểm chứng luồng 3 bước wizard cho tài khoản mới.
 - Nguồn: tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js
 
 ### AC-025 — Khám phá việc làm cá nhân hóa và chuyển đổi tab sắp xếp
@@ -83,6 +94,8 @@ Hệ thống cung cấp điểm chạm thu hút người tìm việc ngay tại 
 | Cập nhật thêm số năm kinh nghiệm, ngành nghề và điều hướng từ menu Việc làm | **Đã phủ** | TC-095 (tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js) |
 | Số điện thoại đã tồn tại ở luồng việc làm riêng hiển thị màn hình mật khẩu | **Đã phủ** | TC-096 (tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js) |
 | Kiểm tra giới hạn biên tối đa 5 ký tự / 5 khu vực lựa chọn | **Đã phủ** | TC-097 (tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js) |
+| Tài khoản đã có sẵn 1 trong 3 tiêu chí (nơi làm việc / vị trí / mức lương) | **Đã phủ** | TC-098 (tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js) |
+| Đồng bộ autofill từ Onboarding mini sang Onboarding màn hình Home | **Đã phủ** | TC-099 (tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js) |
 | Bỏ qua hoặc hủy thiết lập tiêu chí giữa chừng | Chưa phủ | Kiểm tra trạng thái lưu nháp khi đóng modal tiêu chí |
 
 ## Open questions

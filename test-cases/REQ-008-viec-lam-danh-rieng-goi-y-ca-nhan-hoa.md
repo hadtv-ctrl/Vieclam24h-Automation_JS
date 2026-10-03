@@ -7,6 +7,8 @@
 | TC-095 | AC-023 AC-024 AC-025 AC-026 | Người dùng thiết lập tiêu chí tìm việc cá nhân hóa và khám phá danh sách việc làm gợi ý | P1 | Có | tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js |
 | TC-096 | AC-023 | Số điện thoại đã tồn tại ở luồng việc làm riêng hiển thị màn hình mật khẩu | P2 | Có | tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js |
 | TC-097 | AC-023 | Kiểm tra giới hạn khi nhập vượt quá biên tối đa 5 | P2 | Có | tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js |
+| TC-098 | AC-024 | Bỏ qua Onboarding mini khi tài khoản đã có sẵn tiêu chí tìm việc | P2 | Có | tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js |
+| TC-099 | AC-024 | Kiểm tra autofill đồng bộ dữ liệu từ Onboarding mini sang Onboarding màn hình Home | P2 | Có | tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js |
 
 
 ## Chi tiết
@@ -56,3 +58,35 @@
 |---|---|---|
 | 1 | Nhập các trường thông tin hợp lệ | Không có cảnh báo lỗi |
 | 2 | Nhập trường dữ liệu có 6 ký tự | Hệ thống báo lỗi hoặc giới hạn không cho nhập quá 5 ký tự |
+
+
+### TC-098 — Bỏ qua Onboarding mini khi tài khoản đã có sẵn tiêu chí tìm việc
+
+- **Loại:** Chức năng | **Ưu tiên:** P2 | **Kỹ thuật:** Phân nhánh nghiệp vụ / Kiểm thử trạng thái
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js`
+- **Tiền điều kiện:** Người dùng đã có sẵn ít nhất 1 trong 3 thông tin tiêu chí (nơi làm việc, vị trí, hoặc mức lương).
+- **Dữ liệu kiểm thử:** Tài khoản kiểm thử đã lưu tiêu chí trước đó.
+> *Ghi chú nghiệp vụ:* Nếu tài khoản đã có tiêu chí, hệ thống không mở Onboarding mini mà chuyển thẳng đến trang "Tiêu chí tìm việc của tôi".
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Truy cập trang chủ và bấm điểm chạm việc làm dành riêng | Mở modal đăng ký/đăng nhập hoặc chuyển hướng luồng cá nhân hóa |
+| 2 | Đăng nhập tài khoản đã có sẵn thông tin tiêu chí | Hệ thống nhận diện tiêu chí đã có và không hiển thị modal Onboarding mini 3 bước |
+| 3 | Kiểm tra màn hình đích | Trang "Tiêu chí tìm việc của tôi" và danh sách việc làm gợi ý hiển thị thành công |
+
+
+### TC-099 — Kiểm tra autofill đồng bộ dữ liệu từ Onboarding mini sang Onboarding màn hình Home
+
+- **Loại:** Chức năng / Tích hợp chéo REQ-008 & REQ-002 | **Ưu tiên:** P2 | **Kỹ thuật:** Luồng tích hợp dữ liệu chéo (Cross-feature Data Sync)
+- **Automation:** Có
+- **Spec:** `tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js`
+- **Tiền điều kiện:** Người dùng thiết lập tiêu chí qua Onboarding mini (Vị trí, Khu vực, Mức lương).
+- **Dữ liệu kiểm thử:** Vị trí `nhân viên bán hàng`, Khu vực `TP.HCM`, Mức lương `10 - 15 triệu`.
+> *Ghi chú nghiệp vụ:* Dữ liệu lưu từ Onboarding mini tự động điền sẵn (autofill) vào các bước tương ứng tại Onboarding màn hình Home (REQ-002).
+
+| Bước | Thao tác | Kết quả mong đợi |
+|---|---|---|
+| 1 | Hoàn tất thiết lập tiêu chí qua Onboarding mini | Tiêu chí được lưu thành công vào hồ sơ |
+| 2 | Điều hướng về màn hình Trang chủ (Home) | Trang chủ hiển thị hoặc mở Onboarding Home |
+| 3 | Kiểm tra các trường thông tin tại Onboarding Home | Các giá trị Khu vực, Vị trí, Mức lương được autofill chính xác theo dữ liệu đã chọn từ Onboarding mini |
