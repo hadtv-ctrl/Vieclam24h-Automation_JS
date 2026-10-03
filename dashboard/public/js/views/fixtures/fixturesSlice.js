@@ -61,10 +61,7 @@ export class FixturesSlice {
       if (c) navigator.clipboard?.writeText(c).then(() => this.notify('📋 Đã sao chép mã nguồn!'));
     });
     on('#btn-toggle-fixture-edit', 'click', () => {
-      const ed = document.getElementById('fx-source-editor');
-      const pre = document.getElementById('fx-source-code-pre');
-      const txt = document.getElementById('fx-toggle-edit-text');
-      const isEd = ed && ed.style.display !== 'none';
+      const ed = document.getElementById('fx-source-editor'), pre = document.getElementById('fx-source-code-pre'), txt = document.getElementById('fx-toggle-edit-text'), isEd = ed && ed.style.display !== 'none';
       if (ed) ed.style.display = isEd ? 'none' : 'block';
       if (pre) pre.style.display = isEd ? 'block' : 'none';
       if (txt) txt.textContent = isEd ? 'Chỉnh sửa mã' : 'Xem mã highlight';
@@ -126,18 +123,30 @@ export class FixturesSlice {
       container.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--muted); font-size: 12.5px;">Không tìm thấy fixture.</div>';
       return;
     }
+    const getMeta = (fx) => {
+      if (fx.isCustom) return { icon: 'ph-sparkle', cls: 'setup', lbl: 'Tùy biến' };
+      if (fx.name === 'pages') return { icon: 'ph-browsers', cls: 'desktop', lbl: 'Cốt lõi' };
+      if (fx.name.includes('User')) return { icon: 'ph-user-circle', cls: 'fixture', lbl: 'Cốt lõi' };
+      if (fx.name.includes('cleanup') || fx.name.includes('Hook')) return { icon: 'ph-trash', cls: 'setup', lbl: 'Cốt lõi' };
+      return { icon: 'ph-gear', cls: 'desktop', lbl: 'Cốt lõi' };
+    };
     container.innerHTML = filtered.map((fx) => {
       const isSel = this.selectedFixture?.name === fx.name;
-      const badgeColor = fx.isCustom ? '#10b981' : '#6366f1';
+      const meta = getMeta(fx);
+      const desc = fx.title || fx.description || 'Fixture tự động nạp.';
       return `
-        <div class="dashboard-list-card fixture-card-item ${isSel ? 'is-selected active' : ''}" data-name="${fx.name}">
-          <span class="dashboard-list-card__icon" style="color: ${badgeColor};"><i class="ph-bold ${fx.isCustom ? 'ph-sparkle' : 'ph-gear'}"></i></span>
+        <div class="dashboard-list-card script-card-item fixture-card-item ${isSel ? 'is-selected active' : ''}" data-name="${fx.name}">
+          <span class="dashboard-list-card__icon script-card-platform-icon ${meta.cls}"><i class="ph-bold ${meta.icon}"></i></span>
           <div class="dashboard-list-card__body">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
               <div class="script-card-title">${fx.name}</div>
-              <span class="script-card-badge-platform ${fx.isCustom ? 'setup' : 'desktop'}" style="font-size:10px;">${fx.isCustom ? 'Tùy biến' : 'Cốt lõi'}</span>
+              <span class="script-card-badge-platform ${meta.cls}">${meta.lbl}</span>
             </div>
-            <div style="color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${fx.title || fx.description || ''}</div>
+            <div class="script-card-file" title="${desc}"><i class="ph ph-file-js"></i> ${desc}</div>
+            <div class="script-card-pills">
+              <span class="script-card-badge-pages" title="${fx.category || 'Hạ tầng'}"><i class="ph ph-tag"></i> ${fx.category || 'Hạ tầng'}</span>
+              <span class="script-card-badge-data"><i class="ph ph-clock"></i> ${fx.scope || 'test'}</span>
+            </div>
           </div>
         </div>`;
     }).join('');
@@ -156,22 +165,17 @@ export class FixturesSlice {
     set('fx-grid-cat', fx.category || 'Hạ tầng & Nền tảng');
     set('fx-grid-params', (fx.params && fx.params.length) ? fx.params.join(', ') : 'Không có');
     set('fx-grid-file', fx.sourceFile || 'core/fixtures/baseTest.js');
-    const rev = document.getElementById('fx-detail-revision');
+    const rev = document.getElementById('fx-detail-revision'), delBtn = document.getElementById('btn-delete-fixture'), toggleBtn = document.getElementById('btn-toggle-fixture-edit'), modeBadge = document.getElementById('fx-mode-badge');
     if (rev) { rev.textContent = fx.revision ? `Bản dựng: ${fx.revision}` : ''; rev.style.display = fx.revision ? 'inline-block' : 'none'; }
-    const delBtn = document.getElementById('btn-delete-fixture');
     if (delBtn) delBtn.style.display = fx.isCustom ? 'inline-flex' : 'none';
-    const toggleBtn = document.getElementById('btn-toggle-fixture-edit');
     if (toggleBtn) toggleBtn.style.display = fx.isCustom ? 'inline-flex' : 'none';
-    const modeBadge = document.getElementById('fx-mode-badge');
     if (modeBadge) { modeBadge.textContent = fx.isCustom ? 'Tùy biến (Xem mã)' : 'Chỉ đọc'; modeBadge.classList.toggle('editable', Boolean(fx.isCustom)); }
-    const ed = document.getElementById('fx-source-editor');
-    const pre = document.getElementById('fx-source-code-pre');
+    const ed = document.getElementById('fx-source-editor'), pre = document.getElementById('fx-source-code-pre');
     const sourceCode = fx.rawCode || `// Fixture ${fx.name} được định nghĩa trong ${fx.sourceFile}\n// Chữ ký tham số: ${fx.params?.join(', ') || 'Không có'}`;
     if (ed) { ed.value = sourceCode; ed.style.display = 'none'; }
     if (pre) pre.style.display = 'block';
-    const sourceEl = document.getElementById('fx-source-code');
+    const sourceEl = document.getElementById('fx-source-code'), usageEl = document.getElementById('fx-usage-code');
     if (sourceEl) { sourceEl.textContent = sourceCode; sourceEl.className = 'language-javascript'; if (window.Prism) Prism.highlightElement(sourceEl); }
-    const usageEl = document.getElementById('fx-usage-code');
     if (usageEl) {
       usageEl.textContent = `const { test, expect } = require('../../../core/fixtures/baseTest');\n\ntest('Kịch bản sử dụng fixture ${fx.name}', async ({ ${fx.name} }) => {\n  console.log('Đang thực thi với fixture:', ${fx.name});\n});`;
       usageEl.className = 'language-javascript';

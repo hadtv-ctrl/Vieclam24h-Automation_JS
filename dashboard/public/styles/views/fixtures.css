@@ -106,104 +106,75 @@
 
 /* Fixture Card Item - Unified with dashboard-list-card & script-card-item */
 .dashboard-list-card.fixture-card-item {
-  min-height: 64px;
+  position: relative;
+  min-height: 68px;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
 
-.fixture-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  font-size: 18px;
+.dashboard-list-card.fixture-card-item:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  transform: translateY(-1px);
+}
+
+.dashboard-list-card.fixture-card-item.is-selected,
+.dashboard-list-card.fixture-card-item.active {
+  border-color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface)) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent) !important;
+}
+
+.dashboard-list-card.fixture-card-item.is-selected .script-card-title,
+.dashboard-list-card.fixture-card-item.active .script-card-title {
+  color: var(--accent) !important;
+  font-weight: 700;
+}
+
+.dashboard-list-card.fixture-card-item.is-selected::before,
+.dashboard-list-card.fixture-card-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3.5px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(to bottom, var(--accent), #6366f1);
+  z-index: 2;
+}
+
+.dashboard-list-card.fixture-card-item .script-card-platform-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  font-size: 15px;
   flex-shrink: 0;
   margin-top: 1px;
 }
 
-.fixture-card-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.fixture-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.fixture-card-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  line-height: 1.4;
+.dashboard-list-card.fixture-card-item .script-card-file {
+  color: var(--muted);
+  font: 10.5px/1.35 var(--font-mono);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.fx-badge-core {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--surface-3);
-  color: var(--muted);
-  flex-shrink: 0;
-  letter-spacing: 0.03em;
-}
-
-.fx-badge-custom {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  flex-shrink: 0;
-  letter-spacing: 0.03em;
-}
-
-.fixture-card-desc {
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--muted);
-  margin-top: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.fixture-card-footer {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.dashboard-list-card.fixture-card-item .script-card-pills {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
   flex-wrap: wrap;
 }
 
-.fx-category-tag {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--surface-3);
-  color: var(--text-muted, var(--muted));
-  font-weight: 500;
-}
-
-.fx-scope-tag {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-family: var(--font-mono, monospace);
-}
 
 /* Khung 2: Config & Usage Panel */
 .fixtures-config-panel {

@@ -17238,7 +17238,7 @@ function renderFixturesList() {
             ${fx.isCustom ? '<span class="script-card-badge-platform setup" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);">Tùy biến</span>' : '<span class="script-card-badge-platform desktop" style="background: rgba(99, 102, 241, 0.15); color: #6366f1; border-color: rgba(99, 102, 241, 0.3);">Cốt lõi</span>'}
           </div>
           <div class="script-card-file" title="${escapeHtml(fx.title || fx.description || '')}">
-            ${escapeHtml(fx.title || fx.description || 'Fixture tự động nạp.')}
+            <i class="ph ph-file-js"></i> ${escapeHtml(fx.title || fx.description || 'Fixture tự động nạp.')}
           </div>
           <div class="script-card-pills">
             <span class="script-card-badge-pages">
