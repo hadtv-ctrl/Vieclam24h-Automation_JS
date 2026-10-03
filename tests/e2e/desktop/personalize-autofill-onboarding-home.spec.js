@@ -7,31 +7,32 @@ const testData = require('../../../data/personalizeJobData.json');
 test.describe('Feature: Đồng bộ dữ liệu tiêu chí giữa Onboarding mini và Onboarding Home @personalize @onboarding @desktop @e2e @REQ-008', () => {
   test('TC-099 - AC-024 Kiểm tra autofill đồng bộ dữ liệu từ Onboarding mini sang Onboarding màn hình Home', async ({ page, pages }, testInfo) => {
     const homePage = pages.homePage;
-    const personalizePage = new PersonalizePage(page, 'personalize_job_recommendation');
+    const personalizePage = new PersonalizePage(page, 'personalize_autofill_sync_home');
     const onboardingPopup = new OnboardingPopup(page);
     test.setTimeout(240000);
 
     testInfo.annotations.push({
       type: 'Precondition',
-      description: 'Khách vãng lai thiết lập tiêu chí qua Onboarding mini và quay lại kiểm tra Onboarding tại trang chủ',
+      description: 'Khách vãng lai thiết lập tiêu chí qua Onboarding mini trực tiếp trên Personalized Page và quay lại kiểm tra Onboarding tại trang chủ',
     });
 
     const testPhone = generateRandomVNPhone();
     const { otp, fullName } = testData.user;
-    const criteria = testData.criteria || {};
 
-    await test.step('Given Tiền điều kiện: Người dùng hoàn tất thiết lập tiêu chí qua Onboarding mini', async () => {
-      await personalizePage.navigate();
+    await test.step('Given Tiền điều kiện: Người dùng hoàn tất thiết lập tiêu chí qua Onboarding mini trực tiếp trên Personalized Page', async () => {
+      // Điều hướng trực tiếp đến Personalized Page
+      await personalizePage.navigateToPersonalizedPage();
       await personalizePage.closeBannerIfVisible();
-      await personalizePage.capture('initial_homepage_loaded');
+      expect(page.url()).toContain(personalizePage.personalizedPath);
+      await personalizePage.capture('01_personalized_page_loaded');
 
-      // Thực hiện đăng ký và thiết lập 3 bước tiêu chí Onboarding mini
-      await personalizePage.performRecordedActions({
-        phone: testPhone,
-        otp: otp || '1111',
-        fullName: fullName || 'Hà Đinh',
-      });
-      await personalizePage.capture('onboarding_mini_criteria_saved');
+      // Thực hiện đăng ký và thiết lập 3 bước tiêu chí Onboarding mini trực tiếp trên trang Personalized
+      await personalizePage.registerPhoneAndOtp(testPhone, otp || '1111');
+      await personalizePage.enterFullNameAndAcceptConsent(fullName || 'Hà Đinh');
+      await personalizePage.completeStep1JobTitle('nhân viên bán hàng');
+      await personalizePage.completeStep2Locations(['TP.HCM']);
+      await personalizePage.completeStep3Salary('10', '15');
+      await personalizePage.capture('02_onboarding_mini_criteria_saved');
     });
 
     await test.step('When Người dùng điều hướng quay lại màn hình Trang chủ', async () => {
@@ -39,7 +40,7 @@ test.describe('Feature: Đồng bộ dữ liệu tiêu chí giữa Onboarding mi
       await homePage.navigate();
       await homePage.expectHomepageVisible();
       await homePage.closeAdsIfVisible().catch(() => null);
-      await homePage.capture('home_page_after_mini_onboarding');
+      await homePage.capture('03_home_page_after_mini_onboarding');
     });
 
     await test.step('Then Các thông tin đã chọn từ Onboarding mini được autofill hoặc đồng bộ trạng thái ở Onboarding Home', async () => {
@@ -55,11 +56,11 @@ test.describe('Feature: Đồng bộ dữ liệu tiêu chí giữa Onboarding mi
           .or(onboardingPopup.nextBtn);
 
         await expect(syncIndicator.first()).toBeVisible({ timeout: 10000 });
-        await onboardingPopup.capture('onboarding_home_autofill_verified');
+        await onboardingPopup.capture('04_onboarding_home_autofill_verified');
       } else {
         // Hệ thống đã đồng bộ tiêu chí từ Onboarding mini vào hồ sơ nên không hiển thị lại câu hỏi trùng lặp tại Home
         await expect(onboardingPopup.modal).toBeHidden();
-        await homePage.capture('onboarding_home_auto_resolved_via_mini');
+        await homePage.capture('04_onboarding_home_auto_resolved_via_mini');
       }
     });
   });

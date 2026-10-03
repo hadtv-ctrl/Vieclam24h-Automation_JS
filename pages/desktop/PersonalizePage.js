@@ -118,10 +118,10 @@ class PersonalizePage extends BasePage {
   }
 
   /**
-   * Mở trang chủ theo baseURL môi trường đã cấu hình trong core/config/env.js
+   * Mở trực tiếp trang Việc làm dành riêng cho bạn (Personalized Page)
    */
   async navigate() {
-    await super.navigate('/');
+    await this.navigateToPersonalizedPage();
   }
 
   /**
@@ -399,15 +399,22 @@ class PersonalizePage extends BasePage {
   }
 
   /**
-   * Điều hướng và hoàn tất xác thực để đến Bước 2 (Khu vực làm việc) của Onboarding mini
+   * Điều hướng trực tiếp đến Personalized Page và hoàn tất xác thực đến Bước 1 (Vị trí mong muốn)
+   */
+  async reachOnboardingStep1JobTitle(phone = null, otp = '1111', fullName = 'Hà Đinh') {
+    await this.navigateToPersonalizedPage();
+    await this.closeBannerIfVisible();
+    await this.registerPhoneAndOtp(phone || generateRandomVNPhone(), otp);
+    await this.enterFullNameAndAcceptConsent(fullName);
+    await this.waitForElement(this.dataTestId.first(), 15000);
+    await this.capture('onboarding_step1_job_title_ready');
+  }
+
+  /**
+   * Điều hướng trực tiếp đến Personalized Page và hoàn tất xác thực để đến Bước 2 (Khu vực làm việc) của Onboarding mini
    */
   async reachOnboardingStep2Locations(phone = null, otp = '1111', fullName = 'Hà Đinh') {
-    if (!this.page.url().includes('seeker.')) {
-      await this.navigate();
-    }
-    await this.closeBannerIfVisible();
-    await this.openPersonalizeAuthModal();
-    await this.loginOrRegisterWithOtp(phone, otp, fullName);
+    await this.reachOnboardingStep1JobTitle(phone, otp, fullName);
     await this.completeStep1JobTitle('nhân viên bán hàng');
 
     // Chờ xuất hiện màn hình Bước 2 (Khu vực làm việc)
