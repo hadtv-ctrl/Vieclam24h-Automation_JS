@@ -38,9 +38,8 @@ test.describe('Feature: Đồng bộ dữ liệu tiêu chí giữa Onboarding mi
     await test.step('When Người dùng điều hướng quay lại màn hình Trang chủ', async () => {
       // Điều hướng về Trang chủ để kiểm tra tác động đồng bộ luồng Onboarding Home
       await homePage.navigate();
+      await page.waitForLoadState('domcontentloaded');
       await homePage.expectHomepageVisible();
-      await homePage.closeAdsIfVisible().catch(() => null);
-      await homePage.capture('03_home_page_after_mini_onboarding');
     });
 
     await test.step('Then Các thông tin đã chọn từ Onboarding mini được autofill hoặc đồng bộ trạng thái ở Onboarding Home', async () => {
@@ -52,15 +51,15 @@ test.describe('Feature: Đồng bộ dữ liệu tiêu chí giữa Onboarding mi
         // Kiểm tra autofill: Nơi làm việc (TP.HCM) hoặc ô công việc hoặc mức lương phản ánh tiêu chí đã thiết lập
         const syncIndicator = onboardingPopup.hcmLocationBtn
           .or(onboardingPopup.jobTitleInput)
-          .or(onboardingPopup.salaryOption1)
-          .or(onboardingPopup.nextBtn);
+          .or(onboardingPopup.salaryOption1);
 
         await expect(syncIndicator.first()).toBeVisible({ timeout: 10000 });
-        await onboardingPopup.capture('04_onboarding_home_autofill_verified');
+        await onboardingPopup.capture('03_onboarding_home_autofill_verified');
       } else {
         // Hệ thống đã đồng bộ tiêu chí từ Onboarding mini vào hồ sơ nên không hiển thị lại câu hỏi trùng lặp tại Home
         await expect(onboardingPopup.modal).toBeHidden();
-        await homePage.capture('04_onboarding_home_auto_resolved_via_mini');
+        await expect(homePage.accountMenuButton).toBeVisible({ timeout: 10000 });
+        await homePage.capture('03_onboarding_home_auto_resolved_via_mini');
       }
     });
   });

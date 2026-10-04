@@ -410,6 +410,8 @@ class PersonalizePage extends BasePage {
    */
   async completeStep2Locations(locations = ['TP.HCM']) {
     await this.waitForElement(this.chonToiDa5Text, 15000);
+    // Chụp bằng chứng Bước 2 trước khi chọn tỉnh thành (màn hình ban đầu, nút Tiếp theo chưa active)
+    await this.capture('onboarding_03_step2_locations_before_selection');
     for (const locName of locations) {
       const locBtn = this.getLocationBtn(locName);
       if (await locBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -417,7 +419,7 @@ class PersonalizePage extends BasePage {
       }
     }
     // Chụp bằng chứng rõ ràng các khu vực đã chọn TRƯỚC KHI bấm Tiếp theo
-    await this.capture('onboarding_03_step2_locations_selected');
+    await this.capture('onboarding_04_step2_locations_selected');
     await this.actions.click(this.tiepTheoBtn);
   }
 
@@ -433,7 +435,7 @@ class PersonalizePage extends BasePage {
       await this.actions.fill(this.salaryInputs.nth(1), maxSalary);
     }
     // Chụp bằng chứng rõ ràng khoảng lương đã điền TRƯỚC KHI bấm Hoàn tất
-    await this.capture('onboarding_04_step3_salary_range_entered');
+    await this.capture('onboarding_05_step3_salary_range_entered');
     await this.actions.click(this.hoanTatBtn);
   }
 
