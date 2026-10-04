@@ -245,7 +245,7 @@ class PersonalizePage extends BasePage {
       if (await privacyAgree.isVisible({ timeout: 1500 }).catch(() => false)) {
         await privacyAgree.click({ force: true }).catch(() => null);
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   /**
@@ -429,6 +429,7 @@ class PersonalizePage extends BasePage {
    * @param {string} [maxSalary]
    */
   async completeStep3Salary(minSalary = '10', maxSalary = '15') {
+    await this.capture('onboarding_05_salary_before_input');
     await this.waitForElement(this.salaryInputs.first(), 10000);
     if (await this.salaryInputs.count() >= 2) {
       await this.actions.fill(this.salaryInputs.nth(0), minSalary);
@@ -578,14 +579,14 @@ class PersonalizePage extends BasePage {
       await this.actions.fill(this.nhapHoVaTenInput, fullName);
       await this.capture('full_name_entered');
       await this.actions.click(this.hoanTatBtn);
-    } catch (_) {}
+    } catch (_) { }
 
     // Xác nhận chấp thuận điều khoản dữ liệu cá nhân nếu có modal Đồng ý
     try {
       await this.waitForElement(this.dongYBtn, 6000);
       await this.actions.click(this.dongYBtn);
       await this.capture('consent_agreed');
-    } catch (_) {}
+    } catch (_) { }
   }
 
   /**
@@ -602,7 +603,7 @@ class PersonalizePage extends BasePage {
       }
       await this.capture('criteria_step1_job_title');
       await this.actions.click(this.tiepTheoBtn);
-    } catch (_) {}
+    } catch (_) { }
 
     // Bước 2: Khu vực làm việc
     try {
@@ -617,7 +618,7 @@ class PersonalizePage extends BasePage {
       }
       await this.capture('criteria_step2_locations');
       await this.actions.click(this.tiepTheoBtn);
-    } catch (_) {}
+    } catch (_) { }
 
     // Bước 3: Mức lương mong muốn
     try {
@@ -628,7 +629,7 @@ class PersonalizePage extends BasePage {
       }
       await this.capture('criteria_step3_salary');
       await this.actions.click(this.hoanTatBtn);
-    } catch (_) {}
+    } catch (_) { }
   }
 
   /**
@@ -656,7 +657,7 @@ class PersonalizePage extends BasePage {
         await this.capture('additional_criteria_selected');
         await this.actions.click(this.luuThongTinBtn);
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   /**
@@ -673,7 +674,7 @@ class PersonalizePage extends BasePage {
       if (await this.xemTatCaLink.isVisible({ timeout: 5000 }).catch(() => false)) {
         await this.actions.click(this.xemTatCaLink);
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   /**
