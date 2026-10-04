@@ -34,9 +34,8 @@ test.describe('Feature: Cá nhân hóa tiêu chí tìm việc & gợi ý việc 
       await expect(personalizePage.otpInputIndicator).toBeVisible({ timeout: 15000 });
       await personalizePage.capture('02_otp_screen_displayed');
 
-      // Nhập 4 chữ số OTP
-      await personalizePage.fillOtpDigits('1111');
-      await personalizePage.capture('03_otp_digits_filled');
+      // Nhập 4 chữ số OTP và chụp bằng chứng ngay khi nhập đủ 4 số
+      await personalizePage.fillOtpDigits('1111', { captureStep: '03_otp_digits_filled' });
     });
 
     await test.step('Then [3] Hệ thống nhận diện số điện thoại chưa tồn tại: hiển thị popup thêm thông tin Họ tên và Email để tạo tài khoản mới', async () => {

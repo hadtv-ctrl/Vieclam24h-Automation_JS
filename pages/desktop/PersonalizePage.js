@@ -203,8 +203,7 @@ class PersonalizePage extends BasePage {
     const otpReady = this.pleaseEnterVerificationInput.or(this.page.locator('input[type="tel"]').first());
     await this.waitForElement(otpReady, 15000);
     await this.capture('auth_02_otp_before_input');
-    await this.fillOtpDigits(otp);
-    await this.capture('auth_03_otp_entered');
+    await this.fillOtpDigits(otp, { captureStep: 'auth_03_otp_entered' });
   }
 
   /**
@@ -498,7 +497,11 @@ class PersonalizePage extends BasePage {
   /**
    * Điền mã xác thực OTP 4 chữ số
    */
-  async fillOtpDigits(otp = '1111') {
+  /**
+   * Nhập mã OTP 4 chữ số vào form xác thực
+   * Chụp ngay lập tức bằng chứng nhập OTP trước khi hệ thống tự động submit và chuyển màn hình
+   */
+  async fillOtpDigits(otp = '1111', options = {}) {
     const digits = String(otp).split('');
     const telInputs = this.page.locator('input[type="tel"]:visible, input[maxlength="1"]:visible, input[aria-label*="Digit"]:visible');
 
@@ -506,7 +509,19 @@ class PersonalizePage extends BasePage {
       await this.waitForElement(this.pleaseEnterVerificationInput.or(telInputs.first()), 15000);
       const count = await telInputs.count();
       if (count >= 4) {
-        await this.fillCodeInputs(telInputs, otp);
+        for (let i = 0; i < 4; i++) {
+          await this.actions.fill(telInputs.nth(i), digits[i] || '1');
+        }
+        if (options.captureStep && this.screenshotHelper) {
+          await this.screenshotHelper.takeScreenshot(options.captureStep, false, {
+            waitForNetworkIdle: false,
+            waitForAnimations: false,
+            waitForStability: false,
+            waitForVisualLoading: false,
+            waitForDomContentLoaded: false,
+            waitForLoadState: false,
+          });
+        }
       } else {
         await this.actions.fill(this.pleaseEnterVerificationInput, digits[0] || '1');
         if (await this.digit2Input.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -514,10 +529,30 @@ class PersonalizePage extends BasePage {
           await this.actions.fill(this.digit3Input, digits[2] || '1');
           await this.actions.fill(this.digit4Input, digits[3] || '1');
         }
+        if (options.captureStep && this.screenshotHelper) {
+          await this.screenshotHelper.takeScreenshot(options.captureStep, false, {
+            waitForNetworkIdle: false,
+            waitForAnimations: false,
+            waitForStability: false,
+            waitForVisualLoading: false,
+            waitForDomContentLoaded: false,
+            waitForLoadState: false,
+          });
+        }
       }
     } catch (_) {
       // Thử fallback trực tiếp với các input tel nếu có
       await this.fillCodeInputs(this.page.locator('input[type="tel"]'), otp).catch(() => null);
+      if (options.captureStep && this.screenshotHelper) {
+        await this.screenshotHelper.takeScreenshot(options.captureStep, false, {
+          waitForNetworkIdle: false,
+          waitForAnimations: false,
+          waitForStability: false,
+          waitForVisualLoading: false,
+          waitForDomContentLoaded: false,
+          waitForLoadState: false,
+        }).catch(() => null);
+      }
     }
   }
 
@@ -531,9 +566,8 @@ class PersonalizePage extends BasePage {
     await this.capture('phone_number_entered');
     await this.actions.click(this.tiepTucBtn);
 
-    // Chờ xuất hiện màn hình OTP và nhập 4 chữ số
-    await this.fillOtpDigits(otp);
-    await this.capture('otp_digits_filled');
+    // Chờ xuất hiện màn hình OTP và nhập 4 chữ số (chụp ngay bằng chứng đã nhập)
+    await this.fillOtpDigits(otp, { captureStep: 'otp_digits_filled' });
 
     // Chờ form Họ và tên xuất hiện (nếu là tài khoản mới)
     try {
