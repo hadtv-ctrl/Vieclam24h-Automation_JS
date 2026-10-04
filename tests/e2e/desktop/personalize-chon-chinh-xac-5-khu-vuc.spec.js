@@ -4,7 +4,7 @@ const { generateRandomVNPhone } = require('../../../core/utils/commonUtils');
 
 test.describe('Feature: Cá nhân hóa tiêu chí tìm việc & kiểm tra giá trị biên @guest @no-auth @personalize @bva @desktop @e2e @REQ-008', () => {
   test('TC-101 - AC-024 Chọn chính xác 5 khu vực làm việc (Giá trị biên tối đa)', async ({ page }, testInfo) => {
-    test.setTimeout(180000);
+    test.setTimeout(240000);
     const personalizePage = new PersonalizePage(page, 'personalize_5_locations_bva');
 
     testInfo.annotations.push({

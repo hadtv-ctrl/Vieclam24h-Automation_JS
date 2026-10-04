@@ -41,8 +41,8 @@ class PersonalizePage extends BasePage {
     this.authModalTitle = page.getByText(/Đăng nhập|Xác thực|Đăng ký/i).first();
     this.phoneError = page.locator('[class*="error"], [class*="helper"], [class*="feedback"], [role="alert"]').filter({ hasText: /số điện thoại/i }).or(page.getByText(/số điện thoại.*(?:không hợp lệ|đã tồn tại|chưa đúng|không đúng)/i)).first();
 
-    // Cảnh báo giới hạn biên (TC-097)
-    this.fieldError = page.locator('[class*="error"], [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]').first();
+    // Cảnh báo giới hạn biên (TC-097) - loại trừ __next-route-announcer__ của Next.js
+    this.fieldError = page.locator('[class*="error"]:not(#__next-route-announcer__), [class*="helper"], [class*="feedback"], [class*="text-danger"], [role="alert"]:not(#__next-route-announcer__)').filter({ hasText: /\S+/ }).first();
     this.limitExceededWarning = page.locator('[class*="error"], [class*="warning"], [class*="alert"], [class*="toast"]').filter({ hasText: /5 khu vực|tối đa 5|vượt quá/i }).or(page.getByText(/tối đa 5/i)).first();
     this.extraCityBtn = page.getByRole('button', { name: /Đà Nẵng|Hải Phòng|Cần Thơ/i }).first();
 
@@ -339,21 +339,46 @@ class PersonalizePage extends BasePage {
    */
   async select6thLocationIfAvailable() {
     try {
-      const khacBtn = this.getLocationBtn('Khác');
+      const khacBtn = this.step2Modal.getByRole('button', { name: /Khác/i }).or(this.page.getByRole('button', { name: /Khác/i })).first();
       if (await khacBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await this.actions.click(khacBtn);
-        if (await this.anGiangBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await this.actions.click(this.anGiangBtn);
+        await khacBtn.click({ force: true });
+        const sixthLocation = this.sixthLocationBtn;
+        await sixthLocation.waitFor({ state: 'attached', timeout: 3000 }).catch(() => null);
+        if (await sixthLocation.isVisible().catch(() => false)) {
+          const isDisabled = await sixthLocation.isDisabled().catch(() => false);
+          if (!isDisabled) {
+            await sixthLocation.click({ force: true }).catch(() => null);
+          }
         }
-        await this.capture('step2_6th_location_boundary_checked');
-        // Đóng dropdown Khác để lộ nút Tiếp theo
-        await this.actions.click(khacBtn).catch(() => null);
-        await this.actions.click(this.chonToiDa5Text).catch(() => null);
-        await this.page.keyboard.press('Escape').catch(() => null);
       }
     } catch (_) {
+      // ignore
+    } finally {
       await this.capture('step2_6th_location_boundary_checked');
+      // Đóng dropdown Khác để lộ nút Tiếp theo
+      const khacBtn = this.step2Modal.getByRole('button', { name: /Khác/i }).or(this.page.getByRole('button', { name: /Khác/i })).first();
+      await khacBtn.click({ force: true }).catch(() => null);
+      await this.step2Modal.getByText(/Bạn đang tìm việc làm|Chọn tối đa 5/i).first().click({ force: true }).catch(() => null);
+      await this.tiepTheoBtn.waitFor({ state: 'visible', timeout: 5000 }).catch(() => null);
     }
+  }
+
+  /**
+   * Mở danh sách các khu vực mở rộng để kiểm tra giới hạn biên
+   */
+  async openExtendedLocationsDropdown() {
+    const khacBtn = this.step2Modal.getByRole('button', { name: /Khác/i }).or(this.page.getByRole('button', { name: /Khác/i })).first();
+    if (await khacBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await khacBtn.click({ force: true });
+      await this.sixthLocationBtn.waitFor({ state: 'attached', timeout: 3000 }).catch(() => null);
+    }
+  }
+
+  /**
+   * Lấy nút khu vực thứ 6 trong danh sách mở rộng (An Giang)
+   */
+  get sixthLocationBtn() {
+    return this.step2Modal.getByRole('button', { name: /An Giang/i }).or(this.page.getByRole('button', { name: /An Giang/i })).first();
   }
 
   /**
@@ -368,12 +393,12 @@ class PersonalizePage extends BasePage {
 
     const suggestionItem = this.page.locator('div, li, span, p').filter({ hasText: new RegExp(`^${jobTitle}`, 'i') }).last();
     await suggestionItem.waitFor({ state: 'visible', timeout: 6000 }).catch(() => null);
-    await this.capture('onboarding_02_job_title_input_and_suggestions');
 
     if (await suggestionItem.isVisible().catch(() => false)) {
       await this.actions.click(suggestionItem);
     }
-    await this.capture('onboarding_03_job_title_selected');
+    // Chụp sau khi input và chọn gợi ý (đồng thời là trước khi bấm nút Tiếp theo)
+    await this.capture('onboarding_02_job_title_entered');
 
     if (await this.tiepTheoBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await this.actions.click(this.tiepTheoBtn);

@@ -385,3 +385,20 @@
   1. Định vị các nút lựa chọn trong modal thông qua container được xác định bằng bộ lọc kép (tiêu đề + nút hành động) hoặc `page.getByRole('button', { name: rx })`.
   2. Thực hiện click lần lượt từng giá trị biên và capture evidence ngay khi cả 5 chip đều hiển thị icon đã chọn (`✓`) trước khi rời bước.
   3. Bắt buộc kiểm tra `expect(actionBtn).toBeEnabled()` để đảm bảo form đã hợp lệ trước khi submit.
+
+### [LEARN-023] Loại Trừ Next.js Route Announcer, Xử Lý Dropdown Portal Khi Đạt Biên & Chuẩn Bị Precondition Bypass
+- **Nguồn trích xuất:** TASK-PERSONALIZE-REGRESSION-SUITE-RUN (TC-097, TC-098, TC-101 / REQ-008)
+- **Role quan sát:** Senior Automation QA Engineer & Test Lead (Gate 4)
+- **Quan sát (Observation):**
+  1. Next.js luôn inject phần tử ẩn `<p role="alert" id="__next-route-announcer__"></p>` vào DOM. Nếu dùng locator `[role="alert"]` để kiểm tra không có lỗi (`toBeHidden()`), locator sẽ bắt trúng phần tử này và gây fail assertion sai.
+  2. Khi kiểm tra biên tối đa 5 khu vực, việc click mở dropdown "Khác" để kiểm tra các mục còn lại bị vô hiệu hóa (`[disabled]`) có thể khiến dropdown portal che khuất nút "Tiếp theo". Nếu click trực tiếp vào nút `[disabled]`, Playwright sẽ treo đợi enabled dẫn đến timeout; và nếu không đóng dropdown, nút điều hướng modal sẽ không thể click.
+  3. Với kịch bản bypass Onboarding mini (TC-098), fixture `authenticatedUser` tạo user mới chưa có tiêu chí tìm việc trong CSDL, khiến hệ thống vẫn hiển thị mini-onboarding. Tiền điều kiện cần kiểm tra và hoàn thành thiết lập tiêu chí trước khi vào lại trang để xác nhận luồng bypass.
+- **Bằng chứng (Evidence):** `pages/desktop/PersonalizePage.js`, `tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js`, `tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js`, `tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Luôn loại trừ `:not(#__next-route-announcer__)` và filter `.filter({ hasText: /\S+/ })` khi định vị thông báo lỗi qua `[role="alert"]`.
+  2. Không click trực tiếp không có guard lên phần tử `[disabled]` để tránh treo actionability; luôn đóng dropdown menu trước khi tương tác với các nút điều hướng bên dưới.
+  3. Tiền điều kiện cho kiểm thử bypass phải đảm bảo tài khoản đã thực sự có dữ liệu điều kiện kích hoạt bypass.

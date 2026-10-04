@@ -4,16 +4,28 @@ const { PersonalizePage } = require('../../../pages/desktop/PersonalizePage');
 test.describe('Feature: Cá nhân hóa tiêu chí tìm việc & gợi ý việc làm phù hợp @personalize @auth @desktop @e2e @REQ-008', () => {
   test('TC-098 - AC-024 Bỏ qua Onboarding mini khi tài khoản đã có sẵn tiêu chí tìm việc', async ({ page, authenticatedUser }, testInfo) => {
     const personalizePage = new PersonalizePage(page, 'personalize_bypass_onboarding');
-    test.setTimeout(180000);
+    test.setTimeout(240000);
 
     testInfo.annotations.push({
       type: 'Precondition',
       description: 'Người dùng đã đăng nhập tài khoản có sẵn thông tin tiêu chí tìm việc, truy cập trực tiếp Personalized Page',
     });
 
-    await test.step('Given Tiền điều kiện: Người dùng đã đăng nhập truy cập trực tiếp Personalized Page', async () => {
+    await test.step('Given Tiền điều kiện: Người dùng đã đăng nhập tài khoản có sẵn tiêu chí tìm việc truy cập Personalized Page', async () => {
       await personalizePage.navigateToPersonalizedPage();
       await personalizePage.closeBannerIfVisible();
+
+      // Đảm bảo tiền điều kiện: nếu tài khoản kiểm thử chưa có tiêu chí, hoàn tất thiết lập ban đầu
+      const isMiniOnboardingVisible = await personalizePage.banDangTimCongHeading.isVisible({ timeout: 5000 }).catch(() => false);
+      if (isMiniOnboardingVisible) {
+        await personalizePage.completeStep1JobTitle('nhân viên bán hàng');
+        await personalizePage.completeStep2Locations(['TP.HCM']);
+        await personalizePage.completeStep3Salary('10', '15');
+        // Sau khi đã có tiêu chí, truy cập lại trang Personalized Page để kiểm tra hành vi bypass
+        await personalizePage.navigateToPersonalizedPage();
+        await personalizePage.closeBannerIfVisible();
+      }
+
       expect(page.url()).toContain(personalizePage.personalizedPath);
       await personalizePage.capture('01_authenticated_user_personalized_page_loaded');
     });
