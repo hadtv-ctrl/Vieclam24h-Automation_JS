@@ -402,3 +402,36 @@
   1. Luôn loại trừ `:not(#__next-route-announcer__)` và filter `.filter({ hasText: /\S+/ })` khi định vị thông báo lỗi qua `[role="alert"]`.
   2. Không click trực tiếp không có guard lên phần tử `[disabled]` để tránh treo actionability; luôn đóng dropdown menu trước khi tương tác với các nút điều hướng bên dưới.
   3. Tiền điều kiện cho kiểm thử bypass phải đảm bảo tài khoản đã thực sự có dữ liệu điều kiện kích hoạt bypass.
+
+### [LEARN-024] Xử Lý Khác Biệt UI Giữa Desktop & Mobile Web (Bottom Drawer Input & Pointer Interception)
+- **Nguồn trích xuất:** TASK-PERSONALIZE-MOBILE-CONVERSION (TC-095 / REQ-008)
+- **Role quan sát:** Senior Automation QA Engineer & Platform Lead (Gate 4)
+- **Quan sát (Observation):**
+  1. Trên Desktop, form Mini-onboarding hiển thị `<input name="job_title">` trực tiếp trên modal. Tuy nhiên trên Mobile Web, giao diện hiển thị button `button "Nhập vị trí công việc"`; khi click mới mở bottom drawer chứa ô tìm kiếm và danh sách gợi ý. Nếu dùng nguyên locator desktop sẽ bị timeout 15000ms.
+  2. Trong bottom drawer trên Mobile Web, container `[data-test-id="common__dialog"]` có `z-[1100]` và `[data-test-id="common__select-dropdown"]` có `z-[1200]`. Việc click trực tiếp phần tử gợi ý không có cờ `force: true` sẽ bị cơ chế Playwright Actionability coi là intercepted pointer events và retry đến timeout.
+  3. Khi khách vãng lai truy cập deep link Personalized Page trên Mobile Web, form đăng ký/đăng nhập hiển thị dưới dạng `[role="dialog"]`. Nếu helper mobile đóng generic dialog theo thói quen thì sẽ vô tình tắt mất chính form xác thực của bài test.
+- **Bằng chứng (Evidence):** `pages/mobile-web/MobilePersonalizePage.js`, `tests/e2e/mobile-web/personalize_job_recommendation-bdd.mobile.spec.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Khi chuyển đổi test sang Mobile Web, luôn kiểm tra xem trường nhập liệu có phải dạng "Tap to open Drawer/Bottom sheet" hay không; chủ động click trigger button trước khi điền text.
+  2. Sử dụng `click({ force: true })` cho các listitem/chip bên trong bottom drawer có nhiều tầng container z-index.
+  3. Tuyệt đối không đóng `[role="dialog"]` trong các luồng mà modal đó chính là màn hình làm việc cốt lõi của test.
+
+### [LEARN-025] Tự Động Bỏ Qua Bước Đã Có Tiêu Chí Khi Đồng Bộ Onboarding & Tránh Dùng `isVisible` Thay Thế `waitFor`
+- **Nguồn trích xuất:** TASK-PERSONALIZE-MOBILE-CONVERSION (TC-099 / REQ-008)
+- **Role quan sát:** Senior Automation QA Engineer (Gate 4)
+- **Quan sát (Observation):**
+  1. Khi người dùng hoàn thành Onboarding mini (chọn Địa điểm, Vị trí, Mức lương) và quay lại Trang chủ, popup Onboarding Home không hiển thị lại từ câu 1 (Địa điểm) mà tự động bỏ qua và hiển thị ngay câu 2 ("2/5 câu hỏi Bạn đang quan tâm đến ngành nghề nào?"). Nếu assertion chỉ kiểm tra nút địa điểm hoặc ô nhập vị trí ban đầu thì sẽ fail.
+  2. Phương thức `locator.isVisible()` trong Playwright không tự động chờ (không wait) mà trả về kết quả ngay lập tức tại mili-giây được gọi. Khi modal đang render/animate hoặc đợi API đồng bộ, `isVisible()` trả về `false` và làm kịch bản rẽ nhánh sai.
+- **Bằng chứng (Evidence):** `tests/e2e/mobile-web/personalize-autofill-onboarding-home.mobile.spec.js`
+- **Đề xuất phân loại:** APPROVED STANDARD
+- **Phạm vi đề xuất:** PROJECT
+- **Đề xuất Owner duyệt:** Principal QA / Automation Lead
+- **Trạng thái:** PENDING
+- **Nguyên tắc rút ra:**
+  1. Khi kiểm tra đồng bộ tiêu chí giữa các luồng, bộ chỉ báo (sync indicator) phải bao quát cả trường hợp hệ thống tự động nhảy bước (skip step) đã được cấu hình trước đó.
+  2. Luôn sử dụng `locator.waitFor({ state: 'visible', timeout }).then(() => true).catch(() => false)` khi cần rẽ nhánh kiểm tra sự xuất hiện của popup thay vì gọi trực tiếp `isVisible()`.
+

@@ -7,7 +7,10 @@ class LoginPopup extends BasePage {
   constructor(page, featureName) {
     super(page, featureName);
 
-    this.loginHeaderBtn = page.locator('#btn-login-header');
+    this.loginHeaderBtn = page.locator('#btn-login-header, [class*="login-header"]')
+      .or(page.getByRole('button', { name: 'Đăng nhập' }))
+      .or(page.getByRole('link', { name: 'Đăng nhập' }))
+      .first();
     // Hỗ trợ nhiều variant text của modal title
     this.modalTitle = page.getByText(/Đăng nhập hoặc Đăng ký/i).first();
     this.modalTitleAlt = page.locator(

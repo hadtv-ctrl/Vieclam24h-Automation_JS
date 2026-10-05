@@ -223,19 +223,19 @@ Hệ thống phân tách hành vi hiển thị của 3 trang theo 3 trạng thá
 
 | Nhánh nghiệp vụ | Tình trạng | Test Case / Ghi chú |
 |---|---|---|
-| Khách vãng lai tiếp cận, xác thực OTP, thiết lập 3 bước tiêu chí và khám phá việc làm gợi ý | **Đã phủ** | TC-095 (`tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js`) |
+| Khách vãng lai tiếp cận, xác thực OTP, thiết lập 3 bước tiêu chí và khám phá việc làm gợi ý | **Đã phủ** | TC-095 (`tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js`, `tests/e2e/mobile-web/personalize_job_recommendation-bdd.mobile.spec.js`) |
 | Cập nhật thêm số năm kinh nghiệm, ngành nghề và điều hướng từ menu Việc làm | **Đã phủ** | TC-095 (`tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js`) |
-| Số điện thoại đã tồn tại ở luồng việc làm riêng hiển thị màn hình mật khẩu | **Đã phủ** | TC-096 (`tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js`) |
-| Kiểm tra giới hạn khi nhập vượt quá biên tối đa 5 khu vực | **Đã phủ** | TC-097 (`tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js`) |
-| Bỏ qua Onboarding mini khi tài khoản đã có sẵn ít nhất 1 trong 3 tiêu chí (Bypass) | **Đã phủ** | TC-098 (`tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js`) |
-| Kiểm tra autofill đồng bộ dữ liệu từ Onboarding mini sang Onboarding Home (REQ-002) | **Đã phủ** | TC-099 (`tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js`) |
-| Số điện thoại chưa tồn tại chuyển hướng sang màn hình nhập OTP tạo mới | **Đã phủ** | TC-100 (`tests/e2e/desktop/personalize-so-dien-thoai-chua-ton-tai-otp.spec.js`) |
-| Chọn chính xác 5 khu vực làm việc (BVA = 5 biên trên) | **Đã phủ** | TC-101 (`tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js`) |
-| Không chọn khu vực làm việc nào và bấm tiếp tục (BVA biên dưới - Negative) | **Đã phủ** | TC-102 (`tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js`) |
-| Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | **Đã phủ** | TC-103 (`tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js`) |
-| Khách vãng lai truy cập deep link Personalized Page bắt buộc đăng nhập (US-06, US-10) | **Đã phủ** | TC-104 (`tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js`) |
+| Số điện thoại đã tồn tại ở luồng việc làm riêng hiển thị màn hình mật khẩu | **Đã phủ** | TC-096 (`tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js`, `tests/e2e/mobile-web/personalize-sdt-da-ton-tai.mobile.spec.js`) |
+| Kiểm tra giới hạn khi nhập vượt quá biên tối đa 5 khu vực | **Đã phủ** | TC-097 (`tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js`, `tests/e2e/mobile-web/personalize-kiem-tra-bien-toi-da.mobile.spec.js`) |
+| Bỏ qua Onboarding mini khi tài khoản đã có sẵn ít nhất 1 trong 3 tiêu chí (Bypass) | **Đã phủ** | TC-098 (`tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js`, `tests/e2e/mobile-web/personalize-bypass-onboarding-mini.mobile.spec.js`) |
+| Kiểm tra autofill đồng bộ dữ liệu từ Onboarding mini sang Onboarding Home (REQ-002) | **Đã phủ** | TC-099 (`tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js`, `tests/e2e/mobile-web/personalize-autofill-onboarding-home.mobile.spec.js`) |
+| Số điện thoại chưa tồn tại chuyển hướng sang màn hình nhập OTP tạo mới | **Đã phủ** | TC-100 (`tests/e2e/desktop/personalize-so-dien-thoai-chua-ton-tai-otp.spec.js`, `tests/e2e/mobile-web/personalize-so-dien-thoai-chua-ton-tai-otp.mobile.spec.js`) |
+| Chọn chính xác 5 khu vực làm việc (BVA = 5 biên trên) | **Đã phủ** | TC-101 (`tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js`, `tests/e2e/mobile-web/personalize-chon-chinh-xac-5-khu-vuc.mobile.spec.js`) |
+| Không chọn khu vực làm việc nào và bấm tiếp tục (BVA biên dưới - Negative) | **Đã phủ** | TC-102 (`tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js`, `tests/e2e/mobile-web/personalize-khong-chon-khu-vuc-negative.mobile.spec.js`) |
+| Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | **Đã phủ** | TC-103 (`tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js`, `tests/e2e/mobile-web/personalize-bo-chon-va-chon-lai-khu-vuc.mobile.spec.js`) |
+| Khách vãng lai truy cập deep link Personalized Page bắt buộc đăng nhập (US-06, US-10) | **Đã phủ** | TC-104 (`tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js`, `tests/e2e/mobile-web/personalize-deeplink-bat-buoc-login.mobile.spec.js`) |
 | Kiểm tra SEO Metadata và Open Graph tags trên Personalized Page (US-13) | Không áp dụng E2E | TC-105 (Kiểm thử thủ công / Audit chuyên dụng) |
-| Thiết lập Mini-Onboarding 3 bước trực tiếp từ URL Personalized Page (US-07, US-12) | **Đã phủ** | TC-106 (`tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js`) |
+| Thiết lập Mini-Onboarding 3 bước trực tiếp từ URL Personalized Page (US-07, US-12) | **Đã phủ** | TC-106 (`tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js`, `tests/e2e/mobile-web/personalize-onboarding-truc-tiep-tren-trang.mobile.spec.js`) |
 | Toast Home gợi ý khám phá (US-03) & CTA trang Search (US-04) | Đã quy hoạch | Kiểm tra điều kiện cuộn trang khuất header và tự ẩn khi card chạm viewport |
 | Phân trang 30 tin & sắp xếp 3 tiêu chí trên Personalized Page (US-08, US-09) | Đã quy hoạch | Kiểm tra số lượng card mỗi trang và logic sort |
 | Tiêu đề Dynamic Loop text & Chuyển bước không reload trang (US-12) | Đã quy hoạch | Kiểm tra hiệu ứng đổi 3 cụm text trong 5 giây và trạng thái chuyển bước |

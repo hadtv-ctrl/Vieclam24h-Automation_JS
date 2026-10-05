@@ -4,18 +4,18 @@
 
 | Test case | AC | Mô tả | Ưu tiên | Automation | Spec |
 |---|---|---|---|---|---|
-| TC-095 | AC-023 AC-024 AC-025 AC-026 | Người dùng thiết lập tiêu chí tìm việc cá nhân hóa và khám phá danh sách việc làm gợi ý | P1 | Có | tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js |
-| TC-096 | AC-023 | Số điện thoại đã tồn tại ở luồng việc làm riêng hiển thị màn hình mật khẩu | P2 | Có | tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js |
-| TC-097 | AC-023 | Kiểm tra giới hạn khi nhập vượt quá biên tối đa 5 | P2 | Có | tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js |
-| TC-098 | AC-024 | Bỏ qua Onboarding mini khi tài khoản đã có sẵn tiêu chí tìm việc | P2 | Có | tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js |
-| TC-099 | AC-024 | Kiểm tra autofill đồng bộ dữ liệu từ Onboarding mini sang Onboarding màn hình Home | P2 | Có | tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js |
-| TC-100 | AC-023 | Số điện thoại chưa tồn tại chuyển hướng sang luồng xác thực OTP | P0 | Có | tests/e2e/desktop/personalize-so-dien-thoai-chua-ton-tai-otp.spec.js |
-| TC-101 | AC-024 | Chọn chính xác 5 khu vực làm việc (Giá trị biên tối đa) | P1 | Có | tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js |
-| TC-102 | AC-024 | Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative) | P2 | Có | tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js |
-| TC-103 | AC-024 | Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | P2 | Có | tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js |
-| TC-104 | AC-023 | Khách vãng lai truy cập deep link Personalized Page bắt buộc đăng nhập | P0 | Có | tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js |
+| TC-095 | AC-023 AC-024 AC-025 AC-026 | Người dùng thiết lập tiêu chí tìm việc cá nhân hóa và khám phá danh sách việc làm gợi ý | P1 | Có | tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js<br>tests/e2e/mobile-web/personalize_job_recommendation-bdd.mobile.spec.js |
+| TC-096 | AC-023 | Số điện thoại đã tồn tại ở luồng việc làm riêng hiển thị màn hình mật khẩu | P2 | Có | tests/e2e/desktop/personalize-sdt-da-ton-tai.spec.js<br>tests/e2e/mobile-web/personalize-sdt-da-ton-tai.mobile.spec.js |
+| TC-097 | AC-023 | Kiểm tra giới hạn khi nhập vượt quá biên tối đa 5 | P2 | Có | tests/e2e/desktop/personalize-kiem-tra-bien-toi-da.spec.js<br>tests/e2e/mobile-web/personalize-kiem-tra-bien-toi-da.mobile.spec.js |
+| TC-098 | AC-024 | Bỏ qua Onboarding mini khi tài khoản đã có sẵn tiêu chí tìm việc | P2 | Có | tests/e2e/desktop/personalize-bypass-onboarding-mini.spec.js<br>tests/e2e/mobile-web/personalize-bypass-onboarding-mini.mobile.spec.js |
+| TC-099 | AC-024 | Kiểm tra autofill đồng bộ dữ liệu từ Onboarding mini sang Onboarding màn hình Home | P2 | Có | tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js<br>tests/e2e/mobile-web/personalize-autofill-onboarding-home.mobile.spec.js |
+| TC-100 | AC-023 | Số điện thoại chưa tồn tại chuyển hướng sang luồng xác thực OTP | P0 | Có | tests/e2e/desktop/personalize-so-dien-thoai-chua-ton-tai-otp.spec.js<br>tests/e2e/mobile-web/personalize-so-dien-thoai-chua-ton-tai-otp.mobile.spec.js |
+| TC-101 | AC-024 | Chọn chính xác 5 khu vực làm việc (Giá trị biên tối đa) | P1 | Có | tests/e2e/desktop/personalize-chon-chinh-xac-5-khu-vuc.spec.js<br>tests/e2e/mobile-web/personalize-chon-chinh-xac-5-khu-vuc.mobile.spec.js |
+| TC-102 | AC-024 | Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative) | P2 | Có | tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js<br>tests/e2e/mobile-web/personalize-khong-chon-khu-vuc-negative.mobile.spec.js |
+| TC-103 | AC-024 | Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | P2 | Có | tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js<br>tests/e2e/mobile-web/personalize-bo-chon-va-chon-lai-khu-vuc.mobile.spec.js |
+| TC-104 | AC-023 | Khách vãng lai truy cập deep link Personalized Page bắt buộc đăng nhập | P0 | Có | tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js<br>tests/e2e/mobile-web/personalize-deeplink-bat-buoc-login.mobile.spec.js |
 | TC-105 | AC-023 | Kiểm tra cấu hình SEO Metadata và Open Graph tags trên Personalized Page | P2 | Không | Không áp dụng automation (Không đo lường SEO qua E2E) |
-| TC-106 | AC-024 | Thiết lập Mini-Onboarding 3 bước trực tiếp từ URL Personalized Page | P1 | Có | tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js |
+| TC-106 | AC-024 | Thiết lập Mini-Onboarding 3 bước trực tiếp từ URL Personalized Page | P1 | Có | tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js<br>tests/e2e/mobile-web/personalize-onboarding-truc-tiep-tren-trang.mobile.spec.js |
 
 
 ## Chi tiết
@@ -24,7 +24,7 @@
 
 - **Loại:** Chức năng / Tích hợp E2E | **Ưu tiên:** P1 | **Kỹ thuật:** Kịch bản luồng thao tác người dùng (User Journey Flow)
 - **Automation:** Có
-- **Spec:** `tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js`
+- **Spec:** `tests/e2e/desktop/personalize_job_recommendation-bdd.spec.js`, `tests/e2e/mobile-web/personalize_job_recommendation-bdd.mobile.spec.js`
 - **Tiền điều kiện:** Khách vãng lai truy cập màn hình trang chủ Việc Làm 24h (Chưa đăng nhập).
 - **Dữ liệu kiểm thử:** `data/personalizeJobData.json` (Số điện thoại mới ngẫu nhiên hoặc tài khoản kiểm thử, OTP `1111`, Họ tên `Hà Đinh`, Ngành nghề: `nhân viên bán hàng`, Khu vực: `TP.HCM, Hà Nội, Bình Dương, Đồng Nai, An Giang`, Mức lương: `10 - 15 triệu`, Kinh nghiệm: `3 năm`, Ngành: `Hành chính - Thư ký`).
 > *Ghi chú nghiệp vụ:* Kịch bản kiểm thử luồng người dùng tiếp cận khối gợi ý việc làm riêng ("+10 việc làm có lương hấp dẫn"), tiến hành đăng ký/xác thực tài khoản qua OTP, hoàn tất 3 bước khảo sát tiêu chí tìm việc, tinh chỉnh thêm kinh nghiệm/ngành nghề và truy cập danh sách việc làm phù hợp.
@@ -87,7 +87,7 @@
 
 - **Loại:** Chức năng / Tích hợp chéo REQ-008 & REQ-002 | **Ưu tiên:** P2 | **Kỹ thuật:** Luồng tích hợp dữ liệu chéo (Cross-feature Data Sync)
 - **Automation:** Có
-- **Spec:** `tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js`
+- **Spec:** `tests/e2e/desktop/personalize-autofill-onboarding-home.spec.js`, `tests/e2e/mobile-web/personalize-autofill-onboarding-home.mobile.spec.js`
 - **Tiền điều kiện:** Người dùng thiết lập tiêu chí qua Onboarding mini (Vị trí, Khu vực, Mức lương).
 - **Dữ liệu kiểm thử:** Vị trí `nhân viên bán hàng`, Khu vực `TP.HCM`, Mức lương `10 - 15 triệu`.
 > *Ghi chú nghiệp vụ:* Dữ liệu lưu từ Onboarding mini tự động điền sẵn (autofill) vào các bước tương ứng tại Onboarding màn hình Home (REQ-002).

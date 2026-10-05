@@ -1,5 +1,7 @@
 const { test: baseTest, expect } = require('./baseTest');
 const { loginUserFromDataForPrecondition } = require('../utils/authSetup');
+const { MobileLoginPopup } = require('../../pages/mobile-web/MobileLoginPopup');
+const { MobileHomePage } = require('../../pages/mobile-web/MobileHomePage');
 const {
   dumpPageHtml,
   trackTestFailure,
@@ -32,7 +34,10 @@ const test = baseTest.extend({
       description: `Đã xác thực Mobile Web (authSetup: ${workerUserData.user?.phone || workerUserData.user?.username || 'Test User'})`,
     });
     const user = await test.step('[Precondition] Khởi tạo tài khoản xác thực Mobile Web (authSetup)', async () => {
-      return await loginUserFromDataForPrecondition(page, workerUserData.user);
+      return await loginUserFromDataForPrecondition(page, workerUserData.user, {
+        LoginPopupClass: MobileLoginPopup,
+        HomePageClass: MobileHomePage,
+      });
     });
     await use({ ...user, runtimeDataPath: workerUserData.filePath });
   },
