@@ -47,6 +47,24 @@ function resolveConfiguredPort(projectRoot) {
   return 4180;
 }
 
+function resolveConfiguredHost(projectRoot) {
+  const root = projectRoot || process.env.QA_PROJECT_ROOT || process.cwd();
+  if (process.env.DASHBOARD_HOST) return String(process.env.DASHBOARD_HOST).trim();
+  if (process.env.HOST) return String(process.env.HOST).trim();
+  try {
+    const envPath = path.join(root, '.env');
+    if (fs.existsSync(envPath)) {
+      const match = fs.readFileSync(envPath, 'utf8').match(/^DASHBOARD_HOST\s*=\s*(.+)$/m);
+      if (match) return match[1].trim();
+    }
+  } catch (_) {}
+  try {
+    const cfg = getDashboardConfig();
+    if (cfg?.server?.host) return String(cfg.server.host).trim();
+  } catch (_) {}
+  return '0.0.0.0';
+}
+
 function getResolvedConfigPath() {
   const projectRoot = process.env.QA_PROJECT_ROOT || process.cwd();
   const projectConfigPath = path.join(projectRoot, 'qa-engine.config.json');
