@@ -10,10 +10,12 @@ if (path.basename(detectedRoot) === 'dashboard' && fs.existsSync(path.join(detec
 const ROOT = detectedRoot;
 
 let resolveConfiguredPort;
+let resolveConfiguredHost;
 try {
-  ({ resolveConfiguredPort } = require('../core/config/dashboardConfig'));
+  ({ resolveConfiguredPort, resolveConfiguredHost } = require('../core/config/dashboardConfig'));
 } catch (_) {
   resolveConfiguredPort = () => 4180;
+  resolveConfiguredHost = () => '0.0.0.0';
 }
 
 function getAppName() {
@@ -178,6 +180,7 @@ async function start() {
     await stopRunningDashboard(selected.port);
   }
 
+  const configuredHost = resolveConfiguredHost ? resolveConfiguredHost(ROOT) : (process.env.DASHBOARD_HOST || '0.0.0.0');
   const child = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
     cwd: ROOT,
     detached: true,
@@ -187,6 +190,7 @@ async function start() {
       ...process.env,
       DASHBOARD_APP_NAME: APP_NAME,
       DASHBOARD_PORT: String(selected.port),
+      DASHBOARD_HOST: configuredHost,
     },
   });
   child.unref();
@@ -195,7 +199,8 @@ async function start() {
     await new Promise((resolve) => setTimeout(resolve, 100));
     if (await isRunning(selected.port)) {
       writeState(selected.port);
-      console.log(`${PROJECT_TITLE} dashboard đang chạy ngầm tại ${url}`);
+      const { printServerAddresses } = require('./utils/networkUtils');
+      printServerAddresses(PROJECT_TITLE, selected.port, configuredHost, true);
       console.log('Tắt bằng: npm run dashboard:stop');
       return;
     }

@@ -5,7 +5,8 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { getDashboardConfig, resolveConfiguredPort } = require('../core/config/dashboardConfig');
+const os = require('os');
+const { getDashboardConfig, resolveConfiguredPort, resolveConfiguredHost } = require('../core/config/dashboardConfig');
 const { createAgentService } = require('../core/ai/agentService');
 const { createAgentRoutes } = require('../core/ai/agentRoutes');
 
@@ -26,6 +27,7 @@ const { handleMasterProcessRoutes } = require('./routes/masterProcessRoutes');
 const { handleResourceRoutes, serveFile } = require('./routes/resourceRoutes');
 const { sendJson, parseBody, safeChildPath } = require('./routes/routeUtils');
 const { getActiveRun, stopRun } = require('./services/runnerService');
+const { getLanIps, printServerAddresses } = require('./utils/networkUtils');
 
 const ENGINE_DIR = path.resolve(__dirname, '..');
 let detectedRoot = process.env.QA_PROJECT_ROOT ? path.resolve(process.env.QA_PROJECT_ROOT) : process.cwd();
@@ -124,9 +126,12 @@ const {
 } = require('./services/serverStateService');
 
 const STATE_PATH = stateFilePath(ROOT);
+const CONFIGURED_HOST = resolveConfiguredHost ? resolveConfiguredHost(ROOT) : (process.env.DASHBOARD_HOST || '0.0.0.0');
+
+
 
 function tryListen(port) {
-  server.listen(port, '127.0.0.1');
+  server.listen(port, CONFIGURED_HOST);
 }
 
 server.on('listening', () => {
@@ -144,11 +149,12 @@ server.on('listening', () => {
   try {
     fs.writeFileSync(
       STATE_PATH,
-      JSON.stringify({ appName: APP_NAME, workspaceRoot: ROOT, port: actualPort, pid: process.pid }, null, 2) + '\n',
+      JSON.stringify({ appName: APP_NAME, workspaceRoot: ROOT, port: actualPort, host: CONFIGURED_HOST, pid: process.pid }, null, 2) + '\n',
       'utf8'
     );
   } catch (_) {}
-  console.log(`Playwright Dashboard (${APP_NAME}): http://127.0.0.1:${actualPort}`);
+
+  printServerAddresses(APP_NAME, actualPort, CONFIGURED_HOST);
 });
 
 server.on('error', (error) => {
