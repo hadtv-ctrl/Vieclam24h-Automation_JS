@@ -5,8 +5,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
-const { getDashboardConfig, resolveConfiguredPort, resolveConfiguredHost } = require('../core/config/dashboardConfig');
+const { getDashboardConfig, resolveConfiguredPort } = require('../core/config/dashboardConfig');
 const { createAgentService } = require('../core/ai/agentService');
 const { createAgentRoutes } = require('../core/ai/agentRoutes');
 
@@ -16,18 +15,15 @@ const { handleRunnerRoutes } = require('./routes/runnerRoutes');
 const { handleRecorderRoutes, stopRecorderSession, getActiveRecorder } = require('./routes/recorderRoutes');
 const { handleGitRoutes } = require('./routes/gitRoutes');
 const { handleDataRoutes } = require('./routes/dataRoutes');
-const { handleDataGenerateRoutes } = require('./routes/dataGenerateRoutes');
 const { handleBddRoutes } = require('./routes/bddRoutes');
 const { handlePageRoutes } = require('./routes/pageRoutes');
 const { handleFixtureRoutes } = require('./routes/fixtureRoutes');
 const { handleQaRoutes } = require('./routes/qaRoutes');
-const { handleQaSpecRoutes } = require('./routes/qaSpecRoutes');
 const { handleQaBatchRoutes } = require('./routes/qaBatchRoutes');
 const { handleMasterProcessRoutes } = require('./routes/masterProcessRoutes');
 const { handleResourceRoutes, serveFile } = require('./routes/resourceRoutes');
 const { sendJson, parseBody, safeChildPath } = require('./routes/routeUtils');
 const { getActiveRun, stopRun } = require('./services/runnerService');
-const { getLanIps, printServerAddresses } = require('./utils/networkUtils');
 
 const ENGINE_DIR = path.resolve(__dirname, '..');
 let detectedRoot = process.env.QA_PROJECT_ROOT ? path.resolve(process.env.QA_PROJECT_ROOT) : process.cwd();
@@ -70,7 +66,6 @@ const AGENT_SAFE_POST_ROUTES = new Set([
   '/api/stop', '/api/shutdown', '/api/recorder/stop', '/api/recorder/reset', '/api/recorder/scan-pages',
   '/api/recorder/convert', '/api/recorder/generate-draft', '/api/ai/generate-state',
   '/api/ai/config', '/api/ai/test-connection', '/api/ai/inline-suggest',
-  '/api/ai/format-bdd', '/api/qa/boundary-matrix',
   '/api/diagnostics/analyze', '/api/builder/compile', '/api/system/apply-update',
 ]);
 
@@ -101,12 +96,10 @@ const server = http.createServer(async (request, response) => {
   if (await handleRunnerRoutes(request, response, url, context)) return;
   if (await handleRecorderRoutes(request, response, url, context)) return;
   if (await handleGitRoutes(request, response, url, context)) return;
-  if (await handleDataGenerateRoutes(request, response, url, context)) return;
   if (await handleDataRoutes(request, response, url, context)) return;
   if (await handleBddRoutes(request, response, url, context)) return;
   if (await handlePageRoutes(request, response, url, context)) return;
   if (await handleFixtureRoutes(request, response, url, context)) return;
-  if (await handleQaSpecRoutes(request, response, url, context)) return;
   if (await handleQaBatchRoutes(request, response, url, context)) return;
   if (await handleQaRoutes(request, response, url, context)) return;
   if (await handleMasterProcessRoutes(request, response, url, context)) return;
@@ -126,12 +119,9 @@ const {
 } = require('./services/serverStateService');
 
 const STATE_PATH = stateFilePath(ROOT);
-const CONFIGURED_HOST = resolveConfiguredHost ? resolveConfiguredHost(ROOT) : (process.env.DASHBOARD_HOST || '0.0.0.0');
-
-
 
 function tryListen(port) {
-  server.listen(port, CONFIGURED_HOST);
+  server.listen(port, '127.0.0.1');
 }
 
 server.on('listening', () => {
@@ -149,12 +139,11 @@ server.on('listening', () => {
   try {
     fs.writeFileSync(
       STATE_PATH,
-      JSON.stringify({ appName: APP_NAME, workspaceRoot: ROOT, port: actualPort, host: CONFIGURED_HOST, pid: process.pid }, null, 2) + '\n',
+      JSON.stringify({ appName: APP_NAME, workspaceRoot: ROOT, port: actualPort, pid: process.pid }, null, 2) + '\n',
       'utf8'
     );
   } catch (_) {}
-
-  printServerAddresses(APP_NAME, actualPort, CONFIGURED_HOST);
+  console.log(`Playwright Dashboard (${APP_NAME}): http://127.0.0.1:${actualPort}`);
 });
 
 server.on('error', (error) => {

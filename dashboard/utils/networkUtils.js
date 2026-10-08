@@ -13,4 +13,26 @@ function getLanIps() {
   return ips;
 }
 
-module.exports = { getLanIps };
+function printServerAddresses(appName, port, configuredHost, isBackground = false) {
+  const isAll = configuredHost === '0.0.0.0' || configuredHost === '::';
+  if (isBackground) {
+    console.log(`${appName} dashboard đang chạy ngầm:`);
+    console.log(`  > Local:   http://localhost:${port}`);
+  } else {
+    if (isAll) {
+      console.log(`Playwright Dashboard (${appName}):`);
+      console.log(`  > Local:   http://localhost:${port}`);
+    } else {
+      console.log(`Playwright Dashboard (${appName}): http://${configuredHost}:${port}`);
+    }
+  }
+
+  if (isAll) {
+    const lanIps = getLanIps();
+    lanIps.forEach((ip) => {
+      console.log(`  > Network: http://${ip}:${port}`);
+    });
+  }
+}
+
+module.exports = { getLanIps, printServerAddresses };

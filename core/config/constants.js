@@ -52,7 +52,6 @@ const DEFAULT_CONFIG = Object.freeze({
   },
   server: {
     port: 4180,
-    host: '0.0.0.0',
   },
   // Vị trí tài liệu QA của TỪNG dự án. Thư mục spec khác nhau giữa các repo
   // (tests/ ở đây, playwright/tests ở repo khác) nên phải khai được, không hard-code.

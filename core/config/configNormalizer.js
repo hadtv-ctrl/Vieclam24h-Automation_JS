@@ -171,10 +171,9 @@ function normalizeDashboardConfig(input = {}, existingConfig = DEFAULT_CONFIG) {
   const docs = { dir: asRelPath(docsInput.dir, docsFallback.dir) };
 
   const serverInput = source.server && typeof source.server === 'object' ? source.server : {};
-  const serverFallback = existing.server || DEFAULT_CONFIG.server || { port: 4180, host: '0.0.0.0' };
+  const serverFallback = existing.server || DEFAULT_CONFIG.server || { port: 4180 };
   const server = {
     port: normalizePort(serverInput.port, serverFallback.port),
-    host: asString(serverInput.host, serverFallback.host || '0.0.0.0'),
   };
 
   return { environments, runtime, server, api, artifacts, branding, suites, discord, qa, docs };
