@@ -62,18 +62,18 @@ export class QaSlice {
   async mount() {
     this._mounted = true;
     this._bindDomEvents();
-    if (this.reqAnalyzer) this.reqAnalyzer.init(this._root());
-    if (this.batch) this.batch.init(this._root());
-    if (this.conflictStudio) this.conflictStudio.init(this._root());
+    if (typeof this.reqAnalyzer?.init === 'function') this.reqAnalyzer.init(this._root());
+    if (typeof this.batch?.init === 'function') this.batch.init(this._root());
+    if (typeof this.conflictStudio?.init === 'function') this.conflictStudio.init(this._root());
     await this.reload();
   }
 
   unmount() {
     this._mounted = false;
     this._flushRenderDisposers();
-    if (this.reqAnalyzer) this.reqAnalyzer.destroy();
-    if (this.batch) this.batch.destroy();
-    if (this.conflictStudio) this.conflictStudio.destroy();
+    if (typeof this.reqAnalyzer?.destroy === 'function') this.reqAnalyzer.destroy();
+    if (typeof this.batch?.destroy === 'function') this.batch.destroy();
+    if (typeof this.conflictStudio?.destroy === 'function') this.conflictStudio.destroy();
     this._disposers.forEach((d) => { try { d(); } catch (_) {} });
     this._disposers = [];
   }
@@ -245,3 +245,5 @@ export class QaSlice {
 
   _el(tag, text, className) { const el = document.createElement(tag); if (text) el.textContent = text; if (className) el.className = className; return el; }
 }
+
+export const qaSlice = new QaSlice();
