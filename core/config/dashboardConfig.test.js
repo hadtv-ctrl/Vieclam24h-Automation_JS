@@ -154,4 +154,14 @@ test('normalizePort handles static port, random, auto, and fallbacks', () => {
   assert.ok(hashPort >= 4180 && hashPort <= 4280);
 });
 
+test('dashboard server host uses the default and preserves an explicit host', () => {
+  const defaults = normalizeDashboardConfig();
+  const configured = normalizeDashboardConfig({
+    ...DEFAULT_CONFIG,
+    server: { ...DEFAULT_CONFIG.server, host: '127.0.0.1' },
+  });
+
+  assert.equal(defaults.server.host, '0.0.0.0');
+  assert.equal(configured.server.host, '127.0.0.1');
+});
 
