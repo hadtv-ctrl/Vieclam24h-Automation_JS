@@ -13,6 +13,7 @@ import { templateLoader } from './core/templateLoader.js';
 import { editorSession } from './components/editor/editorSession.js';
 import { sharedShell } from './components/shell/sharedShell.js';
 import { legacyAdapter } from './legacy/legacyAdapter.js';
+import { tabRouter } from './core/tabRouter.js';
 
 // 1. Import all 13 Feature Slices (Phase 4.1 - 4.8)
 import { dataSlice } from './views/data/dataSlice.js';
@@ -59,6 +60,7 @@ Object.entries(SLICE_REGISTRY).forEach(([id, { slice, title }]) => {
 });
 
 sharedShell.init();
+tabRouter.init();
 legacyAdapter.init();
 templateLoader.preloadAll().catch((err) => console.warn('[TemplateLoader] Preload warning:', err));
 
@@ -70,6 +72,7 @@ if (typeof window !== 'undefined') {
     stateStore,
     windowBridge,
     featureRegistry,
+    tabRouter,
     apiClient,
     templateLoader,
     editorSession,

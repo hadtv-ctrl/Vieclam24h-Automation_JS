@@ -64,6 +64,17 @@ export class FeatureRegistry {
     // 2. Update active state
     this._activeViewId = targetViewId;
     stateStore.setState({ activeView: targetViewId }, 'featureRegistry.switchView');
+    try {
+      localStorage.setItem('dashboard_active_view', targetViewId);
+      const targetHash = '#/' + targetViewId;
+      if (typeof window !== 'undefined' && window.location.hash !== targetHash && window.location.hash !== `#${targetViewId}`) {
+        if (window.history?.replaceState) {
+          window.history.replaceState(null, '', targetHash);
+        } else {
+          window.location.hash = targetHash;
+        }
+      }
+    } catch (_) {}
 
     // 3. Update DOM view visibility
     this._updateDomTabsAndPanels(targetViewId);

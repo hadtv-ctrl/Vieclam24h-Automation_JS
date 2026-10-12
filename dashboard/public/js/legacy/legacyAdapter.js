@@ -29,12 +29,15 @@ export class LegacyAdapter {
       }
     });
 
-    // 2. Synchronize active view from DOM on load
-    const currentActiveTab = document.querySelector('.view-tab.active');
-    if (currentActiveTab) {
-      const activeId = currentActiveTab.getAttribute('data-view');
-      if (activeId) {
-        stateStore.setState({ activeView: activeId }, 'legacyAdapter.init');
+    // 2. Synchronize active view from DOM on load only if not set by router
+    if (!featureRegistry.getActiveViewId()) {
+      const currentActiveTab = document.querySelector('.view-tab.active');
+      if (currentActiveTab) {
+        const activeId = currentActiveTab.getAttribute('data-view');
+        if (activeId) {
+          stateStore.setState({ activeView: activeId }, 'legacyAdapter.init');
+          featureRegistry.switchView(activeId);
+        }
       }
     }
 

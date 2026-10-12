@@ -33,7 +33,7 @@ export class QaSlice {
     this._fixChanges = [];
     this.candidates = [];
     this.decisions = null;
-    this.activeTab = 'docs';
+    this.activeTab = (typeof localStorage !== 'undefined' && localStorage.getItem('dashboard_qa_subtab')) || 'docs';
     this.priorityFilter = 'all';
     this.documents = [];
     this.activeDocPath = null;
@@ -153,7 +153,7 @@ export class QaSlice {
 
   switchTab(tabName) {
     if (!tabName) return;
-    this.activeTab = tabName;
+    this.activeTab = tabName; try { localStorage.setItem('dashboard_qa_subtab', tabName); } catch (_) {}
     const root = this._root();
     if (!root) return;
 
