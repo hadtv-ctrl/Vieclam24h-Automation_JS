@@ -119,6 +119,7 @@ module.exports = {
   normalizePort,
   getProjectHashPort,
   resolveConfiguredPort,
+  resolveConfiguredHost,
   publicDashboardConfig,
   saveDashboardConfig,
 };

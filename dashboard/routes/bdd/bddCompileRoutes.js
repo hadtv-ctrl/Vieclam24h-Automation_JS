@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { PRESET_ACTIONS, compileVisualScenario } = require('../../../core/generator/visualBuilderCompiler');
+const { PRESET_ACTIONS, compileVisualScenario, invalidateScriptCache } = require('../../../core/generator/visualBuilderCompiler');
 const { injectSmartEvidenceCaptures } = require('../../../core/generator/evidenceInjector');
 const { hashText } = require('../../../core/generator/wizardSchema');
 const { cleanupDraft } = require('../../../core/generator/draftManager');
@@ -114,6 +114,7 @@ async function handleBddCompileRoutes(request, response, url, context = {}) {
       const tempPath = `${fullPath}.${process.pid}.tmp`;
       fs.writeFileSync(tempPath, compiled.specCode, 'utf8');
       fs.renameSync(tempPath, fullPath);
+      invalidateScriptCache();
       if (body.draftId) cleanupDraft({ type: 'script', id: body.draftId, rootDir: root });
       sendJson(response, 200, {
         success: true, message: 'Đã lưu kịch bản kiểm thử thành công', specPath: compiled.specRelativePath, backup, compiledHash: compiled.compiledHash,
