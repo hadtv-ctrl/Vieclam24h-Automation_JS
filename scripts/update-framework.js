@@ -157,8 +157,8 @@ function copyDirRecursive(srcDir, destDir, excludes = [], logs = []) {
  * @param {string} targetDir Thư mục vệ tinh hiện tại
  */
 function resolveFrameworkSource(targetDir) {
-  // 1. Kiểm tra nếu có Hub cục bộ (D:\_Automation-Project)
-  const defaultLocalHub = 'D:\\_Automation-Project';
+  // 1. Kiểm tra nếu có Hub cục bộ (D:\_Automation-Project hoặc qua biến môi trường QA_HUB_PATH)
+  const defaultLocalHub = process.env.QA_HUB_PATH || 'D:\\_Automation-Project';
   if (path.resolve(targetDir) !== path.resolve(defaultLocalHub)) {
     const hubDashboardServer = path.join(defaultLocalHub, 'dashboard', 'server.js');
     if (fs.existsSync(hubDashboardServer)) {
@@ -222,8 +222,26 @@ function updateFramework(options = {}) {
 
       tempExtractDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fw-update-'));
       logs.push(`Đang trích xuất snapshot Framework từ origin/main...`);
-      // Trích xuất qua git archive
-      execSync('git archive origin/main dashboard core bin scripts ai Start_Dashboard.bat Stop_Dashboard.bat | tar -x -C "' + tempExtractDir.replace(/\\/g, '/') + '"', {
+      // Trích xuất qua git archive an toàn trên Windows với tar -xf - (tránh lỗi tape0)
+      const candidatePaths = [
+        'dashboard', 'core', 'bin', 'scripts', 'ai',
+        'Start_Dashboard.bat', 'Stop_Dashboard.bat',
+        'AGENTS.md', 'CLAUDE.md', 'GEMINI.md', 'QA_AI_RULES.md',
+      ];
+      const existingPaths = [];
+      for (const p of candidatePaths) {
+        try {
+          const out = execSync(`git ls-tree --name-only origin/main "${p}"`, {
+            cwd: targetDir,
+            encoding: 'utf8',
+            windowsHide: true,
+            stdio: ['pipe', 'pipe', 'pipe'],
+          }).trim();
+          if (out) existingPaths.push(p);
+        } catch (_) {}
+      }
+      const pathsArg = existingPaths.length ? existingPaths.join(' ') : 'dashboard core bin scripts ai';
+      execSync(`git archive origin/main ${pathsArg} | tar -xf - -C "${tempExtractDir.replace(/\\/g, '/')}"`, {
         cwd: targetDir,
         windowsHide: true,
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -307,6 +325,7 @@ function updateFramework(options = {}) {
     return {
       ok: false,
       error: errorMsg,
+      message: errorMsg,
       logs,
     };
   } finally {
@@ -347,5 +366,6 @@ module.exports = {
   FRAMEWORK_ROOT_FILES,
   FORBIDDEN_PATHS,
   updateFramework,
+  resolveFrameworkSource,
   isExcludedPath,
 };

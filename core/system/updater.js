@@ -150,12 +150,12 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
   // 1. ƯU TIÊN KIỂM TRA NGUỒN LOCAL HUB (D:\_Automation-Project)
   // Vì updateFramework ưu tiên lấy từ Local Hub nên nguồn check cũng phải ưu tiên Local Hub để đồng nhất
   try {
-    const localHub = 'D:\\_Automation-Project';
+    const localHub = process.env.QA_HUB_PATH || 'D:\\_Automation-Project';
     if (!isHub && path.resolve(rootDir) !== path.resolve(localHub) && fs.existsSync(path.join(localHub, 'dashboard', 'server.js'))) {
       const hubHead = safeGit(['rev-parse', '--short', 'HEAD'], { cwd: localHub }).trim();
       const hubLastLog = safeGit(['log', '-n', '3', '--oneline', '--', 'dashboard', 'core', 'bin', 'scripts'], { cwd: localHub }).trim();
 
-      // Kiểm tra file mẫu trong dashboard xem có khác biệt không
+      // Kiểm tra file mẫu trong dashboard và core xem có khác biệt không
       const sampleFiles = [
         path.join('dashboard', 'public', 'js', 'views', 'qa', 'qaSlice.js'),
         path.join('dashboard', 'public', 'app.js'),
@@ -163,6 +163,8 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
         path.join('dashboard', 'public', 'styles', 'views', 'qa.css'),
         path.join('dashboard', 'routes', 'qaRoutes.js'),
         path.join('dashboard', 'server.js'),
+        path.join('core', 'system', 'updater.js'),
+        path.join('scripts', 'update-framework.js'),
       ];
 
       const isDifferent = sampleFiles.some((f) => {
@@ -232,20 +234,11 @@ function checkGitFrameworkUpdates(rootDir = ENGINE_DIR) {
   return null;
 }
 
-function getRemoteRepo(rootDir = ENGINE_DIR) {
-  try {
-    const url = safeGit(['remote', 'get-url', 'origin'], { cwd: rootDir }).trim();
-    const match = url.match(/github\.com[/:]([^/]+\/[^/.]+)/);
-    if (match) return match[1].replace(/\.git$/, '');
-  } catch (_) {}
-  return 'hadtv-ctrl/Vieclam24h-Automation_JS';
-}
-
 /**
  * Kiểm tra xem có bản cập nhật mới hay không
  * @param {Object} options
  * @param {string} [options.updateUrl] URL manifest hoặc GitHub API release
- * @param {string} [options.githubRepo] Ví dụ: "hadtv-ctrl/Vieclam24h-Automation_JS"
+ * @param {string} [options.githubRepo] Ví dụ: "hadinhkms/Automation_playwright_SV"
  */
 async function checkForUpdates(options = {}) {
   const currentVersion = getCurrentVersion();
@@ -253,34 +246,23 @@ async function checkForUpdates(options = {}) {
 
   // 1. Ưu tiên kiểm tra bản cập nhật Git Framework (áp dụng cho các vệ tinh & nhánh con)
   const gitUpdate = checkGitFrameworkUpdates(rootDir);
-  if (gitUpdate) {
-    if (gitUpdate.hasUpdate) {
-      return {
-        ok: true,
-        hasUpdate: true,
-        isGitFrameworkUpdate: true,
-        currentVersion,
-        latestVersion: gitUpdate.latestVersion,
-        releaseName: gitUpdate.releaseName,
-        releaseNotes: gitUpdate.releaseNotes,
-        publishedAt: new Date().toISOString(),
-        downloadUrl: `https://github.com/${options.githubRepo || getRemoteRepo(rootDir)}`,
-        isOffline: false,
-      };
-    }
+  if (gitUpdate && gitUpdate.hasUpdate) {
     return {
       ok: true,
-      hasUpdate: false,
+      hasUpdate: true,
       isGitFrameworkUpdate: true,
       currentVersion,
-      latestVersion: currentVersion,
+      latestVersion: gitUpdate.latestVersion,
+      releaseName: gitUpdate.releaseName,
+      releaseNotes: gitUpdate.releaseNotes,
+      publishedAt: new Date().toISOString(),
+      downloadUrl: `https://github.com/${options.githubRepo || 'hadinhkms/Automation_playwright_SV'}`,
       isOffline: false,
-      message: gitUpdate.message || 'Dashboard Framework đã đồng bộ hoàn toàn với Hub cục bộ.',
     };
   }
 
   // 2. Kiểm tra qua GitHub Releases (dành cho chế độ độc lập/release SemVer)
-  const githubRepo = options.githubRepo || getRemoteRepo(rootDir);
+  const githubRepo = options.githubRepo || 'hadinhkms/Automation_playwright_SV';
   const updateUrl = options.updateUrl || `https://api.github.com/repos/${githubRepo}/releases/latest`;
 
   try {
@@ -340,9 +322,18 @@ function applyUpdate(options = {}) {
         if (Array.isArray(fwResult.logs)) {
           fwResult.logs.forEach((l) => log.push(l));
         }
+        if (fwResult.ok) {
+          return {
+            ok: true,
+            message: fwResult.message || 'Đã cập nhật Framework thành công!',
+            logs: log,
+            newVersion: getCurrentVersion(),
+          };
+        }
         return {
-          ok: fwResult.ok,
-          message: fwResult.message || 'Đã cập nhật Framework thành công!',
+          ok: false,
+          message: fwResult.message || fwResult.error || 'Cập nhật Framework thất bại.',
+          error: fwResult.error || fwResult.message || 'Cập nhật Framework thất bại.',
           logs: log,
           newVersion: getCurrentVersion(),
         };

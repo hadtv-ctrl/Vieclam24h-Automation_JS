@@ -7,7 +7,6 @@ import { eventBus } from '../../core/eventBus.js';
 import { stateStore } from '../../core/stateStore.js';
 import { windowBridge } from '../../core/windowBridge.js';
 import { editorSession } from '../../components/editor/editorSession.js';
-import { bindBddSidebarEvents } from './bddSidebarHelper.js';
 
 export class BddSlice {
   constructor() {
@@ -26,12 +25,7 @@ export class BddSlice {
     if (typeof window.initVisualBuilder === 'function') {
       try { await window.initVisualBuilder(); } catch (_) {}
     }
-    if (Array.isArray(window.projectScripts) && window.projectScripts.length > 0) {
-      this.scripts = window.projectScripts;
-      stateStore.setState({ bdd: { scripts: this.scripts } }, 'bddSlice.mount');
-    } else {
-      await this.loadScripts();
-    }
+    await this.loadScripts();
   }
 
   unmount() {
@@ -59,8 +53,55 @@ export class BddSlice {
     on('#btn-bdd-compile', 'click', () => this.compileScript());
     on('#btn-bdd-save', 'click', () => this.saveScript());
 
-    // Sidebar collapse / expand handled cleanly by bddSidebarHelper
-    bindBddSidebarEvents(root, this._disposers);
+    // Sidebar collapse / expand: delegate cleanly to universal controller with fallback
+    on('#btn-collapse-script-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('bdd', true, true);
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.add('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-script-sidebar-head', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('bdd');
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-script-sidebar-head-edit', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('bdd');
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-toggle-script-sidebar-head-create', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar('bdd');
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.toggle('sidebar-collapsed');
+      }
+    });
+    on('#btn-expand-script-sidebar', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('bdd', false);
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.remove('sidebar-collapsed');
+      }
+    });
+    on('#script-sidebar-collapsed-strip', 'click', (e) => {
+      e.stopPropagation();
+      if (typeof window.setSidebarCollapsed === 'function') {
+        window.setSidebarCollapsed('bdd', false);
+      } else {
+        root.querySelector('.script-workspace-panel')?.classList.remove('sidebar-collapsed');
+      }
+    });
   }
 
   _registerBridgeActions() {
@@ -70,16 +111,7 @@ export class BddSlice {
     reg('saveBddScript', () => this.saveScript());
   }
 
-  async loadScripts(force = false) {
-    if (!force && Array.isArray(window.projectScripts) && window.projectScripts.length > 0) {
-      this.scripts = window.projectScripts;
-      stateStore.setState({ bdd: { scripts: this.scripts } }, 'bddSlice.loadScripts');
-      this.renderScriptsList();
-      if (this.scripts.length > 0 && !this.currentScript) {
-        this.selectScript(this.scripts[0].id || this.scripts[0].fileName);
-      }
-      return;
-    }
+  async loadScripts() {
     const container = document.getElementById('bdd-scripts-list');
     if (container && this.scripts.length === 0) {
       container.innerHTML = '<p class="empty-resource">Đang tải kịch bản BDD...</p>';
@@ -87,17 +119,13 @@ export class BddSlice {
     try {
       const res = await apiClient.get('/api/builder/scripts');
       this.scripts = res?.scripts || [];
-      window.projectScripts = this.scripts;
       stateStore.setState({ bdd: { scripts: this.scripts } }, 'bddSlice.loadScripts');
       this.renderScriptsList();
       if (this.scripts.length > 0 && !this.currentScript) {
         this.selectScript(this.scripts[0].id || this.scripts[0].fileName);
       }
     } catch (err) {
-      console.warn('[BddSlice] Failed to load scripts:', err);
-      if (container) {
-        container.innerHTML = `<p class="empty-resource" style="color: #ef4444;">Không thể tải kịch bản: ${err.message || 'Lỗi mạng'}</p>`;
-      }
+      console.error('[BddSlice] Failed to load scripts:', err);
     }
   }
 

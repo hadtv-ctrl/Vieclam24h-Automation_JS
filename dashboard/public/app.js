@@ -394,8 +394,11 @@ async function request(url, options) {
   const response = await fetch(url, options);
   const body = await response.json();
   if (!response.ok) {
-    const errorMsg = body.error || (Array.isArray(body.errors) && body.errors.length ? body.errors.join('; ') : '') || 'Có lỗi xảy ra.';
-    throw new Error(errorMsg);
+    const errorMsg = body.error || body.message || (Array.isArray(body.errors) && body.errors.length ? body.errors.join('; ') : '') || 'Có lỗi xảy ra.';
+    const err = new Error(errorMsg);
+    err.status = response.status;
+    err.body = body;
+    throw err;
   }
   return body;
 }
@@ -16203,9 +16206,15 @@ async function applySystemUpdate() {
       showToast('Cập nhật thất bại: ' + res.message, 'error');
     }
   } catch (err) {
-    const errText = '\nLỗi: ' + err.message;
-    if (terminalBody) terminalBody.textContent += errText;
-    else if (terminal) terminal.textContent += errText;
+    if (err.body && Array.isArray(err.body.logs) && err.body.logs.length) {
+      const logsOutput = err.body.logs.join('\n');
+      if (terminalBody) terminalBody.textContent = logsOutput + '\n\nLỗi: ' + err.message;
+      else if (terminal) terminal.textContent = logsOutput + '\n\nLỗi: ' + err.message;
+    } else {
+      const errText = '\nLỗi: ' + err.message;
+      if (terminalBody) terminalBody.textContent += errText;
+      else if (terminal) terminal.textContent += errText;
+    }
     if (statusMsg) statusMsg.textContent = 'Lỗi: ' + err.message;
     showToast('Lỗi khi thực hiện cập nhật: ' + err.message, 'error');
   } finally {

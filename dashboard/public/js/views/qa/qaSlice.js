@@ -146,24 +146,53 @@ export class QaSlice {
       on(root.querySelector('#qa-btn-submit-inferred'), 'click', () => this.inferenceSlice.submitInferredTestCases());
     }
 
-    root.querySelectorAll('.qa-tab-btn').forEach((btn) => {
-      on(btn, 'click', () => this.switchTab(btn.dataset.tab));
+    on(root.querySelector('#qa-docs-filter'), 'input', (event) => {
+      this.docFilter = event.target.value || '';
+      this.docsSlice.renderDocList(root);
     });
+
+    root.querySelectorAll('[data-qa-tab]').forEach((btn) => {
+      on(btn, 'click', () => this.switchTab(btn.dataset.qaTab));
+    });
+
+    root.querySelectorAll('[data-qa-priority]').forEach((btn) => {
+      on(btn, 'click', () => {
+        this.priorityFilter = btn.dataset.qaPriority;
+        root.querySelectorAll('[data-qa-priority]').forEach((b) => {
+          b.classList.toggle('active', b === btn);
+        });
+        this.candidatesSlice.renderCandidates(root);
+      });
+    });
+
+    this.processStudio = new ProcessStudioHelper(this);
+    this.processStudio.bindEvents(root, this._disposers);
   }
 
   switchTab(tabName) {
     if (!tabName) return;
-    this.activeTab = tabName; try { localStorage.setItem('dashboard_qa_subtab', tabName); } catch (_) {}
+    this.activeTab = tabName;
+    try { localStorage.setItem('dashboard_qa_subtab', tabName); } catch (_) {}
     const root = this._root();
     if (!root) return;
 
-    root.querySelectorAll('.qa-tab-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.tab === tabName);
-    });
-    root.querySelectorAll('.qa-tab-panel').forEach((panel) => {
-      panel.style.display = panel.id === `qa-tab-${tabName}` ? 'block' : 'none';
+    root.querySelectorAll('[data-qa-tab]').forEach((btn) => {
+      const active = btn.dataset.qaTab === tabName;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
     });
 
+    ['docs', 'candidates', 'findings', 'decisions', 'process-studio'].forEach((name) => {
+      const panel = root.querySelector(`#qa-panel-${name}`);
+      if (panel) panel.hidden = name !== tabName;
+    });
+
+    if (tabName === 'candidates') {
+      this.candidatesSlice.renderCandidates(root);
+    }
+    if (tabName === 'process-studio' && this.processStudio) {
+      this.processStudio.loadStatus(root);
+    }
     if (tabName === 'conflicts') {
       this.conflictSlice.renderConflicts(root);
     }
@@ -176,26 +205,84 @@ export class QaSlice {
     if (!root) return;
 
     try {
-      const [summary, trace, candRes, decRes, docsRes] = await Promise.all([
-        apiClient.get('/api/qa/summary').catch(() => null),
-        apiClient.get('/api/qa/trace').catch(() => null),
-        apiClient.get('/api/qa/candidates').catch(() => ({ candidates: [] })),
-        apiClient.get('/api/qa/decisions').catch(() => ({ decisions: [] })),
-        apiClient.get('/api/qa/documents').catch(() => ({ documents: [] })),
+      const [trace, candidates, decisions, documents] = await Promise.allSettled([
+        apiClient.get('/api/qa/trace'),
+        apiClient.get('/api/qa/candidates', { limit: 50 }),
+        apiClient.get('/api/qa/decisions'),
+        apiClient.get('/api/qa/documents'),
       ]);
 
       if (seq !== this._summarySeq || !this._mounted) return;
 
-      this.summary = summary;
-      this.trace = trace;
-      this.candidates = candRes?.candidates || [];
-      this.decisions = decRes;
-      this.documents = docsRes?.documents || [];
+      if (trace.status !== 'fulfilled') {
+        this._showAlert(
+          `Không tải được dữ liệu QA: ${trace.reason && trace.reason.message}`,
+          'danger',
+        );
+        return;
+      }
+
+      this.trace = trace.value;
+      this.candidates = candidates.status === 'fulfilled' && Array.isArray(candidates.value?.candidates)
+        ? candidates.value.candidates
+        : [];
+      this.decisions = decisions.status === 'fulfilled' ? decisions.value : null;
+      this.documents = documents.status === 'fulfilled' && Array.isArray(documents.value?.documents)
+        ? documents.value.documents
+        : [];
+
+      this._degraded = [
+        candidates.status === 'rejected' ? { part: 'ứng viên automation', reason: candidates.reason } : null,
+        decisions.status === 'rejected' ? { part: 'sổ quyết định', reason: decisions.reason } : null,
+        documents.status === 'rejected' ? { part: 'danh sách tài liệu', reason: documents.reason } : null,
+      ].filter(Boolean);
 
       this.renderAll();
+
+      const summaryUrl = force ? '/api/qa/summary?force=true' : '/api/qa/summary';
+      if (this.batch) this.batch.setScanPending(true);
+      apiClient.get(summaryUrl).then((summaryRes) => {
+        if (!this._mounted || seq !== this._summarySeq) return;
+        if (this.batch) this.batch.scanPending = false;
+        this.summary = summaryRes;
+        this.overviewSlice.renderStats(root, this.trace);
+        this.overviewSlice.renderExecutiveScorecard(root, this.summary, this.trace);
+        this.overviewSlice.renderTabBadges(root, this.summary, this.trace);
+        this.batchSlice.renderFindings(root);
+      }).catch((err) => {
+        if (!this._mounted || seq !== this._summarySeq) return;
+        if (this.batch) this.batch.setScanPending(false);
+        this._degraded.push({ part: 'bộ chỉ số QA Core', reason: err });
+      });
     } catch (err) {
       toast.error(`Lỗi cập nhật dữ liệu QA: ${err.message}`);
     }
+  }
+
+  _degradedMessage() {
+    if (!this._degraded || !this._degraded.length) return null;
+    const parts = this._degraded.map((d) => d.part).join(', ');
+    const anyMissing = this._degraded.some((d) => d.reason && (d.reason.status === 404 || String(d.reason.message || '').includes('404')));
+    return anyMissing
+      ? `Server đang chạy là bản cũ hơn giao diện: thiếu API cho ${parts}.`
+        + ' Dừng rồi khởi động lại dashboard (Stop_Dashboard.bat rồi Start_Dashboard.bat).'
+      : `Chưa tải được ${parts}. Phần còn lại vẫn dùng bình thường.`;
+  }
+
+  _showAlert(text, severity = 'warn') {
+    const root = this._root();
+    const box = root && root.querySelector('#qa-alert');
+    const span = root && root.querySelector('#qa-alert-text');
+    if (!box || !span) return;
+    span.textContent = text;
+    box.classList.toggle('qa-alert-danger', severity === 'danger');
+    box.classList.toggle('qa-alert-warn', severity !== 'danger');
+    box.hidden = false;
+  }
+
+  _hideAlert() {
+    const box = this._root() && this._root().querySelector('#qa-alert');
+    if (box) box.hidden = true;
   }
 
   renderAll() {
@@ -243,7 +330,34 @@ export class QaSlice {
     eventBus.emit('ui:notify', { message: msg });
   }
 
-  _el(tag, text, className) { const el = document.createElement(tag); if (text) el.textContent = text; if (className) el.className = className; return el; }
+  _el(tag, text, className) {
+    const el = document.createElement(tag);
+    if (text !== undefined && text !== null) el.textContent = String(text);
+    if (className) el.className = className;
+    return el;
+  }
+
+  _row(cells, className) {
+    const tr = document.createElement('tr');
+    if (className) tr.className = className;
+    cells.forEach((c) => tr.appendChild(c instanceof Node ? c : this._el('td', c)));
+    return tr;
+  }
+
+  _cell(text, className) {
+    return this._el('td', text, className);
+  }
+
+  _setEmpty(id, lines) {
+    const node = this._root() && this._root().querySelector(`#${id}`);
+    if (!node) return;
+    node.textContent = '';
+    if (!lines || !lines.length) { node.hidden = true; return; }
+    lines.forEach((line, i) => {
+      node.appendChild(this._el('p', line, i === 0 ? 'qa-empty-title' : 'qa-empty-line'));
+    });
+    node.hidden = false;
+  }
 }
 
 export const qaSlice = new QaSlice();

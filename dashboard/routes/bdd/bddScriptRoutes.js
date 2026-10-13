@@ -4,7 +4,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { scanAllProjectScripts, parseExistingSpecFile, invalidateScriptCache } = require('../../../core/generator/visualBuilderCompiler');
+const { scanAllProjectScripts, parseExistingSpecFile } = require('../../../core/generator/visualBuilderCompiler');
 const { deleteTestScript, createBackup } = require('../../services/resourceService');
 const { saveDraft, listDrafts, getDraft, deleteDraft, cleanupDraft } = require('../../../core/generator/draftManager');
 const { sendJson, parseBody, safeChildPath } = require('../routeUtils');
@@ -30,9 +30,7 @@ async function handleBddScriptRoutes(request, response, url, context = {}) {
       const body = request.method === 'POST' ? await parseBody(request) : {};
       const spec = body.spec || body.specPath || body.path || body.file || url.searchParams.get('spec') || url.searchParams.get('specPath') || url.searchParams.get('file');
       if (!spec) { sendJson(response, 400, { error: 'Thiếu đường dẫn kịch bản cần xóa.' }); return true; }
-      const res = deleteTestScript(spec, root);
-      invalidateScriptCache();
-      sendJson(response, 200, res);
+      sendJson(response, 200, deleteTestScript(spec, root));
     } catch (e) { sendJson(response, 400, { error: e.message }); }
     return true;
   }
@@ -131,7 +129,6 @@ async function handleInsertStep(request, response, root) {
     try { new Function(content); } catch (e) { return sendJson(response, 400, { error: `Mã nguồn sau khi chèn bước có lỗi cú pháp JS: ${e.message}` }) || true; }
     const backup = createBackup(scriptPath, fullPath, root);
     fs.writeFileSync(fullPath, content, 'utf8');
-    invalidateScriptCache();
     sendJson(response, 200, {
       success: true, message: `Đã thêm bước "${stepType} ${safeStepTitle}" gọi ${cleanClassName}.${actionName}() thành công!`,
       script: parseExistingSpecFile(scriptPath, root), backup,
@@ -152,30 +149,11 @@ async function handleCreateScript(request, response, root) {
     const fullPath = path.resolve(root, relPath);
     if (fs.existsSync(fullPath)) return sendJson(response, 400, { error: `File kịch bản ${fileName} đã tồn tại trong ${platform}.` }) || true;
     const fixtureName = body.primaryPage ? path.basename(body.primaryPage, '.js').charAt(0).toLowerCase() + path.basename(body.primaryPage, '.js').slice(1) : 'homePage';
-    const featureTitle = (body.featureName || 'Tính năng kiểm thử').trim();
-    const tagList = (body.tags || '@e2e @custom').trim();
-    const scnTitle = (body.scenarioName || 'Người dùng thực hiện quy trình kiểm thử').trim();
-    const template = [
-      `const { test, expect } = require('${fixtureRelPath}');`,
-      '',
-      `test.describe('Feature: ${featureTitle} ${tagList}', () => {`,
-      `  test('${scnTitle}', async ({`,
-      `    ${fixtureName},`,
-      '  }, testInfo) => {',
-      '    test.setTimeout(180000);',
-      '    testInfo.annotations.push({ type: \'Precondition\', description: \'Môi trường sẵn sàng, khởi tạo kịch bản kiểm thử\' });',
-      '    await test.step(\'Given Tiền điều kiện: Mở trang kiểm thử và chuẩn bị môi trường\', async () => {',
-      `      await ${fixtureName}.capture('precondition_ready');`,
-      '    });',
-      '    await test.step(\'When Người dùng thực hiện các bước kiểm thử\', async () => {});',
-      '    await test.step(\'Then Hệ thống phản hồi đúng kết quả mong đợi\', async () => {});',
-      '  });',
-      '});',
-      '',
-    ].join('\n');
+    const fixtureRelPath = platform === 'mobile-web' ? '../../../core/fixtures/mobileWebTest' : '../../../core/fixtures/baseTest';
+    const template = `const { test, expect } = require('${fixtureRelPath}');\n\ntest.describe('Feature: ${(body.featureName || 'Tính năng kiểm thử').trim()} ${(body.tags || '@e2e @custom').trim()}', () => {\n  test('${(body.scenarioName || 'Người dùng thực hiện quy trình kiểm thử').trim()}', async ({\n    ${fixtureName},\n  }, testInfo) => {\n    test.setTimeout(180000);\n    testInfo.annotations.push({ type: 'Precondition', description: 'Môi trường sẵn sàng, khởi tạo kịch bản kiểm thử' });\n    await test.step('Given Tiền điều kiện: Mở trang kiểm thử và chuẩn bị môi trường', async () => {\n      await ${fixtureName}.capture('precondition_ready');\n    });\n    await test.step('When Người dùng thực hiện các bước kiểm thử', async () => {});\n    await test.step('Then Hệ thống phản hồi đúng kết quả mong đợi', async () => {});\n  });\n});\n`;
+    const dir = path.dirname(fullPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(fullPath, (typeof body.specCode === 'string' && body.specCode.trim()) ? body.specCode : template, 'utf8');
-    invalidateScriptCache();
     if (body.draftId) cleanupDraft({ type: 'script', id: body.draftId, rootDir: root });
     sendJson(response, 200, { success: true, message: `Đã tạo kịch bản BDD ${fileName} thành công!`, script: parseExistingSpecFile(relPath, root) });
   } catch (err) { sendJson(response, 500, { error: `Lỗi tạo kịch bản: ${err.message}` }); }

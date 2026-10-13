@@ -20,10 +20,13 @@ export class QaDecisionsSlice {
     const items = (decisionsObj && Array.isArray(decisionsObj.decisions)) ? decisionsObj.decisions : [];
 
     if (!items.length) {
-      if (empty) empty.style.display = 'block';
+      this.qaSlice._setEmpty('qa-decisions-empty', [
+        'Chưa có quyết định kiểm thử nào được ghi nhận',
+        'Các quyết định về kiến trúc và test strategy sẽ hiển thị ở đây.'
+      ]);
       return;
     }
-    if (empty) empty.style.display = 'none';
+    this.qaSlice._setEmpty('qa-decisions-empty', null);
 
     items.forEach((dec) => {
       const card = document.createElement('div');
