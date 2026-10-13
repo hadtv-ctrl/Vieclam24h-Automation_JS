@@ -61,7 +61,10 @@ export class ApiClient {
       }
 
       if (!response.ok) {
-        const errorMsg = data?.error || `HTTP ${response.status}: ${response.statusText}`;
+        const errorMsg = data?.error
+          || data?.message
+          || (Array.isArray(data?.errors) ? data.errors.join('; ') : null)
+          || `HTTP ${response.status}: ${response.statusText}`;
         throw new ApiError(errorMsg, response.status, data);
       }
 

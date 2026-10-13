@@ -183,8 +183,11 @@ function parseGitArgs(command) {
 const GIT_EXECUTABLE = (() => {
   if (process.platform === 'win32') {
     const candidates = [
+      'C:\\Program Files\\Git\\cmd\\git.exe',
       'C:\\Program Files\\Git\\mingw64\\bin\\git.exe',
+      'C:\\Program Files (x86)\\Git\\cmd\\git.exe',
       'C:\\Program Files (x86)\\Git\\mingw64\\bin\\git.exe',
+      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'cmd', 'git.exe'),
       path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Git', 'mingw64', 'bin', 'git.exe'),
     ];
     for (const c of candidates) {
