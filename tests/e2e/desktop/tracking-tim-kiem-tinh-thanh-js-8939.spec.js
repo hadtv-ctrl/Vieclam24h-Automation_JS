@@ -48,32 +48,36 @@ test.describe('Feature: Tracking tìm kiếm theo tỉnh thành (JS-8939) @guest
     });
   });
 
-  for (const [key, title] of [
-    ['oldHaNoi', 'TC-173 - AC-072 Filter tỉnh/thành cũ chọn Hà Nội ghi nhận province_number 1 và filter_version 1.0'],
-    ['newNationwide', 'TC-174 - AC-073 Filter sau sáp nhập chọn Toàn quốc ghi nhận province_number 34 và filter_version 2.0'],
-  ]) {
+  /** Chọn tỉnh theo kịch bản rồi Tìm kiếm; assert event bắn đúng 1 lần với property mong đợi. */
+  async function expectProvinceSearchEvent(key, { page, pages }, testInfo) {
     const scenario = scenarios[key];
+    testInfo.annotations.push({ type: 'Precondition', description: 'Khách vãng lai, Desktop, trang tìm việc' });
+    const { capture, jobSearchPage } = await openSearchWithCapture(page, pages);
+    const provinceFilter = new ProvinceFilterVersionHelper(jobSearchPage);
+    let mark = 0;
 
-    test(title, async ({ page, pages }, testInfo) => {
-      testInfo.annotations.push({ type: 'Precondition', description: 'Khách vãng lai, Desktop, trang tìm việc' });
-      const { capture, jobSearchPage } = await openSearchWithCapture(page, pages);
-      const provinceFilter = new ProvinceFilterVersionHelper(jobSearchPage);
-      let mark = 0;
+    await test.step(`When Người dùng chọn "${scenario.province}" ở danh sách ${scenario.version}, Áp dụng rồi Tìm kiếm`, async () => {
+      mark = capture.events.length;
+      await provinceFilter.searchByProvince(scenario.version, scenario.province);
+    });
 
-      await test.step(`When Người dùng chọn "${scenario.province}" ở danh sách ${scenario.version}, Áp dụng rồi Tìm kiếm`, async () => {
-        mark = capture.events.length;
-        await provinceFilter.searchByProvince(scenario.version, scenario.province);
+    await test.step(`Then Event "${SEARCH_EVENT}" bắn đúng 1 lần với ${JSON.stringify(scenario.expected)}`, async () => {
+      await expectMixpanelEvent(capture, SEARCH_EVENT, {
+        where: afterMark(capture, mark),
+        count: 1,
+        settleMs: 2000,
+        properties: scenario.expected,
       });
-
-      await test.step(`Then Event "${SEARCH_EVENT}" bắn đúng 1 lần với ${JSON.stringify(scenario.expected)}`, async () => {
-        await expectMixpanelEvent(capture, SEARCH_EVENT, {
-          where: afterMark(capture, mark),
-          count: 1,
-          settleMs: 2000,
-          properties: scenario.expected,
-        });
-        await jobSearchPage.capture(`js8939_${key}_search`, false);
-      });
+      await jobSearchPage.capture(`js8939_${key}_search`, false);
     });
   }
+
+  // Title viết literal (không sinh từ vòng lặp) để bộ quét truy vết đọc được mã TC/AC.
+  test('TC-173 - AC-072 Filter tỉnh/thành cũ chọn Hà Nội ghi nhận province_number 1 và filter_version 1.0', async ({ page, pages }, testInfo) => {
+    await expectProvinceSearchEvent('oldHaNoi', { page, pages }, testInfo);
+  });
+
+  test('TC-174 - AC-073 Filter sau sáp nhập chọn Toàn quốc ghi nhận province_number 34 và filter_version 2.0', async ({ page, pages }, testInfo) => {
+    await expectProvinceSearchEvent('newNationwide', { page, pages }, testInfo);
+  });
 });

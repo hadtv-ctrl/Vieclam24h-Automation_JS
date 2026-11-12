@@ -532,6 +532,20 @@ test('gaps: spec khai đường dẫn không tồn tại -> spec-khong-ton-tai m
   });
 });
 
+test('gaps: ô Spec khai nhiều file nối bằng <br> -> kiểm từng file, chỉ báo file thiếu', () => {
+  const bothExist = mustReplace(TC, '`tests/login.spec.js`', '`tests/login.spec.js`<br>`tests/login.spec.js`');
+  withRepo({ ...DOCS, 'test-cases/REQ-001.md': bothExist }, (root) => {
+    assert.deepEqual(only(gaps(root, opts(CLEAN_TESTS)), 'spec-khong-ton-tai'), []);
+  });
+
+  const oneGhost = mustReplace(TC, '`tests/login.spec.js`', '`tests/login.spec.js`<br>`tests/ghost-file.spec.js`');
+  withRepo({ ...DOCS, 'test-cases/REQ-001.md': oneGhost }, (root) => {
+    const found = only(gaps(root, opts(CLEAN_TESTS)), 'spec-khong-ton-tai');
+    assert.equal(found.length, 1);
+    assert.match(found[0].message, /"tests\/ghost-file\.spec\.js"/);
+  });
+});
+
 test('gaps: phát hiện finding assertion-thieu-await khi matcher async thiếu await', () => {
   withRepo(DOCS, (root) => {
     const testsWithMissingAwait = [

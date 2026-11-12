@@ -108,9 +108,8 @@ class JobSearchRestoreHelper {
    * Kiểm tra thông báo lỗi fallback khi cookie độc lập quá lớn
    */
   async expectFallbackErrorVisible() {
-    if (await this.owner.fallbackErrorMsg.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await expect(this.owner.retrySearchBtn.or(this.owner.homeRedirectBtn).first()).toBeVisible({ timeout: 5000 });
-    }
+    await expect(this.owner.fallbackErrorMsg).toBeVisible({ timeout: 15000 });
+    await expect(this.owner.retrySearchBtn.or(this.owner.homeRedirectBtn).first()).toBeVisible({ timeout: 5000 });
   }
 }
 

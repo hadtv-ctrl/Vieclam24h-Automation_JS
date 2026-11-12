@@ -14,14 +14,14 @@
 
 const { test, expect } = require('../../../core/fixtures/baseTest');
 
-test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và HTTP 431 @e2e  @search @JS-8865', () => {
+test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và HTTP 431 @e2e  @search @JS-8865 @REQ-014', () => {
 
   // Chuẩn nghiệp vụ Seeker: districts chỉ gồm dãy ID số ngăn cách bằng dấu phẩy, không có chữ
   const generateLongDistrictsQuery = (count = 100, start = 1000) => {
     return Array.from({ length: count }, (_, i) => start + i).join(',');
   };
 
-  test('TC-JS8865-01: Kiểm tra loại bỏ cookie phình to và giới hạn độ dài cookie sv_p_r <= 200 chars', async ({
+  test('TC-182 - AC-078 Kiểm tra loại bỏ cookie phình to và giới hạn độ dài cookie sv_p_r <= 200 chars', async ({
     pages,
     context,
   }, testInfo) => {
@@ -55,7 +55,7 @@ test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và H
     }
   });
 
-  test('TC-JS8865-02: Kiểm tra referral_url được lưu trữ trong localStorage thay vì cookie và giữ nguyên URL đầy đủ', async ({
+  test('TC-183 - AC-078 Kiểm tra referral_url được lưu trữ trong localStorage thay vì cookie và giữ nguyên URL đầy đủ', async ({
     pages,
     context,
   }, testInfo) => {
@@ -83,7 +83,7 @@ test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và H
     }
   });
 
-  test('TC-JS8865-03: Kiểm tra luồng khôi phục tự động qua ?_restore=1 và sessionStorage khi URL dài', async ({
+  test('TC-184 - AC-079 Kiểm tra luồng khôi phục tự động qua ?_restore=1 và sessionStorage khi URL dài', async ({
     page,
     pages,
     context,
@@ -113,7 +113,7 @@ test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và H
     await jobSearchPage.expectWarningToastHidden();
   });
 
-  test('TC-JS8865-04: Kiểm tra chặn gọi Search API và hiển thị toast warning khi URL vượt ngưỡng ~8 KB (>= 750 quận)', async ({
+  test('TC-185 - AC-080 Kiểm tra chặn gọi Search API và hiển thị toast warning khi URL vượt ngưỡng ~8 KB (>= 750 quận)', async ({
     page,
     pages,
   }, testInfo) => {
@@ -137,7 +137,7 @@ test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và H
     expect(searchCalls.filter((c) => c.hasDistricts), 'Search API không được gọi với link vượt giới hạn').toHaveLength(0);
   });
 
-  test('TC-JS8865-05: Kiểm tra KHÔNG gửi tracking events khi đang ở trang khôi phục ?_restore=1', async ({
+  test('TC-186 - AC-081 Kiểm tra KHÔNG gửi tracking events khi đang ở trang khôi phục ?_restore=1', async ({
     page,
     pages,
   }, testInfo) => {
@@ -167,7 +167,7 @@ test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và H
     expect(trackingRequests.length, `Bị phát hiện tracking request trái phép khi ở ?_restore=1: ${JSON.stringify(trackingRequests)}`).toBe(0);
   });
 
-  test('TC-JS8865-06: Kiểm tra SEO robots directive noindex, nofollow trên trang khôi phục ?_restore=1', async ({
+  test('TC-187 - AC-082 Kiểm tra SEO robots directive noindex, nofollow trên trang khôi phục ?_restore=1', async ({
     pages,
   }, testInfo) => {
     testInfo.annotations.push({
@@ -185,7 +185,7 @@ test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và H
       .toContain('nofollow');
   });
 
-  test('TC-JS8865-07: Kiểm tra SEO robots directive index, follow khi tìm kiếm bình thường có kết quả', async ({
+  test('TC-188 - AC-082 Kiểm tra SEO robots directive index, follow khi tìm kiếm bình thường có kết quả', async ({
     pages,
   }, testInfo) => {
     testInfo.annotations.push({
@@ -204,7 +204,7 @@ test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và H
     expect(robotsContent?.toLowerCase()).not.toContain('noindex');
   });
 
-  test('TC-JS8865-08: Kiểm tra xử lý trường hợp lỗi cookie quá lớn (Standalone Cookie Overflow Fallback)', async ({
+  test('TC-189 - AC-083 Kiểm tra xử lý trường hợp lỗi cookie quá lớn (Standalone Cookie Overflow Fallback)', async ({
     pages,
     context,
   }, testInfo) => {
@@ -215,14 +215,12 @@ test.describe('Ticket JS-8865: Kiểm thử chuyên sâu xử lý URL dài và H
 
     const jobSearchPage = pages.jobSearchPage;
 
-    await context.addCookies([
-      {
-        name: 'test_bloated_cookie',
-        value: 'A'.repeat(7000),
-        domain: '.vieclam24h.vn',
-        path: '/',
-      },
-    ]).catch(() => null);
+    // 3 cookie x 2,5 KB = 7,5 KB trên đúng host môi trường: đủ để app trả 431 (từ ~7 KB) nhưng dưới ~8,2 KB,
+    // ngưỡng mà gateway trả trang 400 thô trước khi request tới app.
+    const { hostname } = new URL(testInfo.project.use.baseURL);
+    await context.addCookies(
+      [1, 2, 3].map((i) => ({ name: `qa_bloated_cookie_${i}`, value: 'A'.repeat(2500), domain: hostname, path: '/' })),
+    );
 
     await jobSearchPage.openCustomUrl('/tim-kiem-viec-lam-nhanh').catch(() => null);
     await jobSearchPage.expectFallbackErrorVisible();

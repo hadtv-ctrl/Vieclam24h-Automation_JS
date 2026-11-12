@@ -1,7 +1,5 @@
 'use strict';
 
-const fs = require('node:fs');
-const path = require('node:path');
 const {
   mergeOptions,
   specPath,
@@ -11,6 +9,7 @@ const {
   collect,
 } = require('./commandsCore');
 const { checkGlobalDocumentIntegrity, checkRequirementGaps } = require('./commandsGapsReqs');
+const { missingSpecPaths } = require('./specLinkPaths');
 
 function checkTraceabilityLinkGaps(root, testCases, automated, automatedTcIds, options, findings) {
   for (const link of testCases.links) {
@@ -41,27 +40,15 @@ function checkTraceabilityLinkGaps(root, testCases, automated, automatedTcIds, o
         action: 'P0/P1 nên được automation, hoặc hạ priority kèm giải thích.',
       });
     }
-    if (link.spec && link.spec !== '-') {
-      const cand1 = path.resolve(root, link.spec);
-      const cand2 = path.resolve(root, (options && options.projectDir) || 'playwright', link.spec);
-      const existsOnDisk = fs.existsSync(cand1) || fs.existsSync(cand2);
-      const existsInAutomated = Boolean(
-        automated.tests &&
-          automated.tests.some((t) => {
-            const f = (t.path || t.file || '').replace(/\\/g, '/');
-            const s = link.spec.replace(/\\/g, '/');
-            return f === s || f.endsWith('/' + s) || s.endsWith('/' + f);
-          }),
-      );
-      if (!existsOnDisk && !existsInAutomated) {
-        findings.push({
-          severity: 'major',
-          kind: 'spec-khong-ton-tai',
-          where: link.file,
-          message: `${link.tcId} khai spec "${link.spec}" nhưng file không tồn tại trên filesystem.`,
-          action: 'Kiểm tra lại đường dẫn spec trong bảng Traceability.',
-        });
-      }
+    const missing = missingSpecPaths(root, link.spec, automated, options);
+    if (missing.length > 0) {
+      findings.push({
+        severity: 'major',
+        kind: 'spec-khong-ton-tai',
+        where: link.file,
+        message: `${link.tcId} khai spec "${missing.join(', ')}" nhưng file không tồn tại trên filesystem.`,
+        action: 'Kiểm tra lại đường dẫn spec trong bảng Traceability.',
+      });
     }
   }
 }

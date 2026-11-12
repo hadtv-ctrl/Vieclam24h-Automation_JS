@@ -22,6 +22,7 @@ Sinh lại bằng máy:
 | REQ-009 | Job Near Me v1.1 – Tìm việc làm theo bán kính quanh vị trí | 3 | 3 | 2 |
 | REQ-012 | Xác thực OTP qua Zalo (mặc định) và SMS | 2 | 4 | 2 |
 | REQ-013 | Tracking tìm kiếm theo tỉnh thành (JS-8939) | 3 | 3 | 1 |
+| REQ-014 | Tìm kiếm việc làm với link dài – xử lý lỗi HTTP 431 (JS-8865) | 6 | 8 | 1 |
 
 Ghi chú: REQ-001 có 15 test case trên 14 file spec vì file spec API chứa hai test case.
 AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của REQ-004, vì danh sách việc làm đã
@@ -114,6 +115,14 @@ AC-011 thuộc REQ-003 nhưng cũng được phủ bởi các test case của RE
 | TC-172 | REQ-013 | AC-071 | Desktop | P1 | Có | tests/e2e/desktop/tracking-tim-kiem-tinh-thanh-js-8939.spec.js |
 | TC-173 | REQ-013 | AC-072 | Desktop | P1 | Có | tests/e2e/desktop/tracking-tim-kiem-tinh-thanh-js-8939.spec.js |
 | TC-174 | REQ-013 | AC-073 | Desktop | P1 | Có | tests/e2e/desktop/tracking-tim-kiem-tinh-thanh-js-8939.spec.js |
+| TC-182 | REQ-014 | AC-078 | Desktop | P1 | Có | tests/e2e/desktop/kiem-thu-chuyen-sau-http-431-restore-search-url-js-8865.spec.js |
+| TC-183 | REQ-014 | AC-078 | Desktop | P1 | Có | tests/e2e/desktop/kiem-thu-chuyen-sau-http-431-restore-search-url-js-8865.spec.js |
+| TC-184 | REQ-014 | AC-079 | Desktop | P0 | Có | tests/e2e/desktop/kiem-thu-chuyen-sau-http-431-restore-search-url-js-8865.spec.js |
+| TC-185 | REQ-014 | AC-080 | Desktop | P0 | Có | tests/e2e/desktop/kiem-thu-chuyen-sau-http-431-restore-search-url-js-8865.spec.js |
+| TC-186 | REQ-014 | AC-081 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-chuyen-sau-http-431-restore-search-url-js-8865.spec.js |
+| TC-187 | REQ-014 | AC-082 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-chuyen-sau-http-431-restore-search-url-js-8865.spec.js |
+| TC-188 | REQ-014 | AC-082 | Desktop | P2 | Có | tests/e2e/desktop/kiem-thu-chuyen-sau-http-431-restore-search-url-js-8865.spec.js |
+| TC-189 | REQ-014 | AC-083 | Desktop | P1 | Có | tests/e2e/desktop/kiem-thu-chuyen-sau-http-431-restore-search-url-js-8865.spec.js |
 | TC-160 | REQ-009 | AC-060 | Desktop | P0 | Có | tests/e2e/desktop/job_near_me_radius_filter-bdd.spec.js |
 | TC-161 | REQ-009 | AC-061 | Desktop | P1 | Có | tests/e2e/desktop/job_near_me_radius_filter-bdd.spec.js |
 | TC-162 | REQ-009 | AC-062 | Mobile web | P1 | Có | tests/e2e/mobile-web/job_near_me_radius_filter-bdd.mobile.spec.js |

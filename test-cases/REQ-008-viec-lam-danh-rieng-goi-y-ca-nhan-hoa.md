@@ -14,7 +14,7 @@
 | TC-102 | AC-024 | Không chọn khu vực làm việc nào và tiếp tục (Giá trị biên dưới - Negative) | P2 | Có | tests/e2e/desktop/personalize-khong-chon-khu-vuc-negative.spec.js<br>tests/e2e/mobile-web/personalize-khong-chon-khu-vuc-negative.mobile.spec.js |
 | TC-103 | AC-024 | Bỏ chọn khu vực khi đã đạt tối đa 5 và chọn lại khu vực mới (Edge case) | P2 | Có | tests/e2e/desktop/personalize-bo-chon-va-chon-lai-khu-vuc.spec.js<br>tests/e2e/mobile-web/personalize-bo-chon-va-chon-lai-khu-vuc.mobile.spec.js |
 | TC-104 | AC-023 | Khách vãng lai truy cập deep link Personalized Page bắt buộc đăng nhập | P0 | Có | tests/e2e/desktop/personalize-deeplink-bat-buoc-login.spec.js<br>tests/e2e/mobile-web/personalize-deeplink-bat-buoc-login.mobile.spec.js |
-| TC-105 | AC-023 | Kiểm tra cấu hình SEO Metadata và Open Graph tags trên Personalized Page | P2 | Không | Không áp dụng automation (Không đo lường SEO qua E2E) |
+| TC-105 | AC-023 | Kiểm tra cấu hình SEO Metadata và Open Graph tags trên Personalized Page | P2 | Không | - |
 | TC-106 | AC-024 | Thiết lập Mini-Onboarding 3 bước trực tiếp từ URL Personalized Page | P1 | Có | tests/e2e/desktop/personalize-onboarding-truc-tiep-tren-trang.spec.js<br>tests/e2e/mobile-web/personalize-onboarding-truc-tiep-tren-trang.mobile.spec.js |
 
 
@@ -204,3 +204,9 @@
 | 2 | Thực hiện Bước 1 (nhập vị trí công việc), Bước 2 (chọn khu vực), Bước 3 (nhập khoảng lương) rồi bấm Hoàn tất | Mỗi bước chuyển mượt mà, lưu tiêu chí thành công |
 | 3 | Kiểm tra giao diện sau khi hoàn tất | Hệ thống cập nhật hiển thị giao diện Personalized Page và danh sách việc làm gợi ý |
 
+
+## Case không automation
+
+| Hành vi | Lý do | Bù đắp |
+|---|---|---|
+| TC-105 — SEO Metadata và Open Graph tags trên Personalized Page | Script Playwright E2E không phản ánh đúng SEO thực tế nên đã loại khỏi suite automation | Kiểm thử thủ công hoặc dùng công cụ audit SEO chuyên dụng |

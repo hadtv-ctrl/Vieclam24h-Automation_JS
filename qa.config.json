@@ -2,5 +2,13 @@
   "projectDir": ".",
   "project": "all",
   "requirementsDir": "requirements",
-  "testCasesDir": "test-cases"
+  "testCasesDir": "test-cases",
+  "ignoreSpecs": [
+    "tests/e2e/desktop/dang-nhap-giu-phien-smoke.spec.js",
+    "tests/e2e/desktop/tim-viec-xem-chi-tiet-smoke.spec.js",
+    "tests/e2e/desktop/trang-chu-suc-khoe-smoke.spec.js",
+    "tests/e2e/mobile-web/dang-nhap-giu-phien-smoke.mobile.spec.js",
+    "tests/e2e/mobile-web/tim-viec-xem-chi-tiet-smoke.mobile.spec.js",
+    "tests/e2e/mobile-web/trang-chu-suc-khoe-smoke.mobile.spec.js"
+  ]
 }
