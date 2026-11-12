@@ -258,6 +258,26 @@ test('requirement không có acceptance criterion nào -> major', () => {
 
 // --- Khắc phục hạn chế 2: kiểm được phần nội dung mà máy kiểm được ---
 
+test('assertion nằm trong helper/Page Object (expectXxx, verifyXxx) -> không báo thiếu assertion', () => {
+  withRepo({
+    'requirements/REQ-001.md': REQ_DOC,
+    'test-cases/REQ-001.md': TC_DOC,
+    'tests/e2e/pom.spec.js': `const { test } = require('x');
+test.describe('Đăng nhập @REQ-001', () => {
+  test('TC-001 - AC-001 assert qua page object @smoke', async ({ loginPage }) => {
+    await loginPage.open();
+    await loginPage.expectDashboardVisible();
+  });
+  test('TC-002 - AC-002 assert qua helper verify @smoke', async ({ loginPage }) => {
+    await loginPage.verifyErrorShown();
+  });
+});
+`,
+  }, (root) => {
+    assert.deepEqual(kinds(buildTraceReport({ root }), 'test-khong-co-assertion'), []);
+  });
+});
+
 test('test khai phủ AC nhưng không có assertion -> major', () => {
   withRepo({
     'requirements/REQ-001.md': REQ_DOC,
